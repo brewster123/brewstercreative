@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Primeform Pro Demo';
+  src: local('Primeform Pro Demo'),
+       local('Primeform Pro Demo Regular'),
+       local('Primeform Pro'),
+       local('PrimeformProDemo-Regular'),
+       local('PrimeformPro-Regular'),
+       local('PrimeformProDemo'),
+       local('PrimeformPro'),
+       url('/fonts/PrimeformProDemo-Regular.woff2') format('woff2'),
+       url('/fonts/PrimeformProDemo-Regular.woff') format('woff'),
+       url('/fonts/PrimeformProDemo-Regular.otf') format('opentype'),
+       url('/fonts/PrimeformProDemo-Regular.ttf') format('truetype'),
+       url('/fonts/PrimeformProDemo.otf') format('opentype'),
+       url('/fonts/PrimeformProDemo.ttf') format('truetype');
+  font-weight: 300 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Primeform Pro Demo';
+  src: local('Primeform Pro Demo Bold'),
+       local('Primeform Pro Demo Heavy'),
+       local('Primeform Pro Bold'),
+       local('PrimeformProDemo-Bold'),
+       local('PrimeformProDemo-Heavy'),
+       local('PrimeformPro-Bold'),
+       url('/fonts/PrimeformProDemo-Bold.woff2') format('woff2'),
+       url('/fonts/PrimeformProDemo-Bold.woff') format('woff'),
+       url('/fonts/PrimeformProDemo-Bold.otf') format('opentype'),
+       url('/fonts/PrimeformProDemo-Bold.ttf') format('truetype');
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: 'Primeform Pro Demo', 'Primeform Pro', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Primeform Pro Demo', 'Primeform Pro', 'Syne', 'Plus Jakarta Sans', sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: 'Primeform Pro Demo', 'Primeform Pro', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #F8F8F8;
+    color: #18181b;
+    word-spacing: 0.12em;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: 'Primeform Pro Demo', 'Primeform Pro', 'Syne', 'Plus Jakarta Sans', sans-serif;
+    word-spacing: 0.28em;
+    letter-spacing: 0.02em;
+  }
+
+  .font-mono-code {
+    font-family: 'Space Mono', monospace;
+  }
+}
+
+/* Subtle studio noise texture for light & dark bento elements */
+.bg-noise {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f4f4f5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}

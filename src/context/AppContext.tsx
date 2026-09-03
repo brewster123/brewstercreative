@@ -156,9 +156,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-    if (saved) return JSON.parse(saved);
-    // Default to Alex Rivera (Sample Client) so demo works right out of the box!
-    return INITIAL_USERS[1];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.id === 'usr-client-1') {
+          return null;
+        }
+        return parsed;
+      } catch {
+        return null;
+      }
+    }
+    return null;
   });
 
   const [commissions, setCommissions] = useState<Commission[]>(() => {

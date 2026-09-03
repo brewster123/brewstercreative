@@ -78,24 +78,58 @@ export const ClientDashboardView: React.FC = () => {
     setTimeout(() => setProfileSavedMsg(''), 4000);
   };
 
+  if (!currentUser) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
+        <div className="w-16 h-16 rounded-3xl bg-zinc-100 border border-zinc-200 flex items-center justify-center mx-auto text-zinc-600 shadow-xs">
+          <UserIcon className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
+            Sign In to Access Your Workspace
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed">
+            Please sign in with your email to view your ongoing projects, approve milestone design proofs, and chat directly with Brewster.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setActiveView('auth')}
+            className="px-6 py-3 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs sm:text-sm shadow-sm transition-all"
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveView('commission-form')}
+            className="px-6 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs sm:text-sm shadow-sm transition-all"
+          >
+            Start a Commission
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const commission = activeCommission || (currentUserCommissions && currentUserCommissions.length > 0 ? currentUserCommissions[0] : undefined);
 
   if (!commission) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-20 text-center space-y-6">
-        <div className="w-16 h-16 rounded-3xl bg-zinc-800 border border-zinc-700 flex items-center justify-center mx-auto text-zinc-500">
+      <div className="max-w-3xl mx-auto px-4 py-20 text-center space-y-6">
+        <div className="w-16 h-16 rounded-3xl bg-zinc-100 border border-zinc-200 flex items-center justify-center mx-auto text-zinc-500">
           <FolderArchive className="w-8 h-8" />
         </div>
-        <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-zinc-100">
+        <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
           No Active Commissions Found
         </h2>
-        <p className="text-sm text-zinc-400 max-w-md mx-auto">
+        <p className="text-sm text-zinc-500 max-w-md mx-auto">
           You don't have any ongoing graphic design commissions. Submit a new brief to collaborate with {studioProfile.designerName}.
         </p>
         <button
           type="button"
           onClick={() => setActiveView('commission-form')}
-          className="px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-lg shadow-orange-500/20"
+          className="px-6 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-sm"
         >
           Start a Commission
         </button>

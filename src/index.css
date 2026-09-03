@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Dedicated Metric Spacer: Guarantees balanced space & dash metrics even if a demo font has broken/zero advance widths */
+@font-face {
+  font-family: 'PrimeformSpacer';
+  src: local('Outfit'), local('Plus Jakarta Sans'), local('Inter'), local('Arial');
+  unicode-range: U+0020, U+00A0, U+2000-U+200B, U+2010-U+2015;
+}
+
 @font-face {
   font-family: 'Primeform Pro Demo';
   src: local('Primeform Pro Demo'),
@@ -38,20 +45,20 @@
 }
 
 @theme {
-  --font-sans: 'Primeform Pro Demo', 'Primeform Pro', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-display: 'Primeform Pro Demo', 'Primeform Pro', 'Syne', 'Plus Jakarta Sans', sans-serif;
+  --font-sans: 'PrimeformSpacer', 'Primeform Pro Demo', 'Primeform Pro', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'PrimeformSpacer', 'Primeform Pro Demo', 'Primeform Pro', 'Syne', 'Plus Jakarta Sans', sans-serif;
 }
 
 @layer base {
   body {
-    font-family: 'Primeform Pro Demo', 'Primeform Pro', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'PrimeformSpacer', 'Primeform Pro Demo', 'Primeform Pro', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background-color: #F8F8F8;
     color: #18181b;
     word-spacing: 0.12em;
   }
 
   h1, h2, h3, h4, h5, h6, .font-display {
-    font-family: 'Primeform Pro Demo', 'Primeform Pro', 'Syne', 'Plus Jakarta Sans', sans-serif;
+    font-family: 'PrimeformSpacer', 'Primeform Pro Demo', 'Primeform Pro', 'Syne', 'Plus Jakarta Sans', sans-serif;
     word-spacing: 0.28em;
     letter-spacing: 0.02em;
   }

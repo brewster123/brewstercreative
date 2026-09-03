@@ -154,7 +154,7 @@ export const HomeView: React.FC = () => {
                   onClick={() => setActiveView('client-dashboard')}
                   className="text-xs text-orange-600 font-bold hover:underline flex items-center gap-1"
                 >
-                  Demo Portal →
+                  Client Portal →
                 </button>
               </div>
             </div>

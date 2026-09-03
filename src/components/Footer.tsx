@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { Sparkles, Send, ShieldCheck, Instagram, Dribbble, Twitter, ArrowUp, Mail, MapPin } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 
 export const Footer: React.FC = () => {
   const { studioProfile, setActiveView } = useApp();
@@ -19,13 +20,7 @@ export const Footer: React.FC = () => {
           {/* Studio Brand & Bio */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 p-0.5 shadow-md shadow-orange-500/20">
-                <div className="w-full h-full bg-zinc-950 rounded-[10px] flex items-center justify-center">
-                  <span className="font-display font-black text-lg text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-200">
-                    {studioProfile.studioName.charAt(0) || 'C'}
-                  </span>
-                </div>
-              </div>
+              <BrandLogo size="md" />
               <div>
                 <span className="font-display font-bold text-lg text-zinc-900 tracking-tight">
                   {studioProfile.studioName}

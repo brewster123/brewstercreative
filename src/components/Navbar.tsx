@@ -14,6 +14,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { NotificationPanel } from './NotificationPanel';
+import { BrandLogo } from './BrandLogo';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -55,13 +56,7 @@ export const Navbar: React.FC = () => {
             onClick={() => setActiveView('home')}
             className="flex items-center gap-3 group text-left focus:outline-none"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 p-0.5 shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-zinc-950 rounded-[10px] flex items-center justify-center">
-                <span className="font-display font-black text-xl text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-200">
-                  {studioProfile.studioName.charAt(0) || 'C'}
-                </span>
-              </div>
-            </div>
+            <BrandLogo size="md" className="group-hover:scale-105 transition-transform" />
             <div>
               <span className="font-display font-bold text-lg text-zinc-900 tracking-tight flex items-center gap-1.5">
                 {studioProfile.studioName}
@@ -152,7 +147,7 @@ export const Navbar: React.FC = () => {
                       <p className="text-xs font-bold text-zinc-900">{currentUser.name}</p>
                       <p className="text-[11px] text-zinc-500 truncate">{currentUser.email}</p>
                       <span className="inline-block mt-1 px-2 py-0.5 text-[10px] rounded bg-orange-50 text-orange-600 font-semibold border border-orange-100">
-                        {currentUser.role === 'admin' ? 'Studio Director (Admin)' : 'Client Account'}
+                        {currentUser.role === 'admin' ? 'Studio Director (Admin)' : 'Workspace Member'}
                       </span>
                     </div>
 
@@ -206,7 +201,7 @@ export const Navbar: React.FC = () => {
                   onClick={() => setActiveView('auth')}
                   className="px-3.5 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 transition-colors"
                 >
-                  Client Login
+                  Sign In
                 </button>
                 <button
                   id="btn-nav-start-commission"
@@ -317,7 +312,7 @@ export const Navbar: React.FC = () => {
                 className="w-full py-2.5 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-sm font-semibold flex items-center justify-center gap-2"
               >
                 <UserIcon className="w-4 h-4" />
-                Client Login / Register
+                Sign In / Register
               </button>
             )}
 

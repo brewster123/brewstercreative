@@ -7,8 +7,10 @@ export interface User {
   role: UserRole;
   avatar: string;
   handle?: string;
+  phone?: string;
   contactMethod?: string;
   bio?: string;
+  createdAt?: string;
 }
 
 export type CommissionStageName = 

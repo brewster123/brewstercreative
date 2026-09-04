@@ -35,13 +35,19 @@ import {
   Image as ImageIcon,
   Briefcase,
   Globe,
-  ExternalLink
+  ExternalLink,
+  Mail,
+  Copy,
+  CheckCheck,
+  Users,
+  Phone
 } from 'lucide-react';
 import { loadCustomFontFile, isFontLoaded } from '../utils/fontLoader';
 
 export const AdminDashboardView: React.FC = () => {
   const { 
     commissions, 
+    users,
     activeCommission, 
     setActiveCommissionId, 
     updateCommissionStage, 
@@ -50,7 +56,7 @@ export const AdminDashboardView: React.FC = () => {
     declineCommission, 
     uploadDesignReviewDraft,
     services, 
-    addServiceItem,
+    addServiceItem, 
     updateServiceItem,
     deleteServiceItem,
     portfolio, 
@@ -59,15 +65,78 @@ export const AdminDashboardView: React.FC = () => {
     deletePortfolioProject,
     studioProfile, 
     updateStudioProfile,
+    currentUser,
+    authLoading,
     setActiveView 
   } = useApp();
 
   const [activeAdminTab, setActiveAdminTab] = useState<
-    'commissions' | 'website-info' | 'portfolio' | 'services' | 'proof-uploader' | 'chat' | 'typography'
+    'commissions' | 'clients' | 'website-info' | 'portfolio' | 'services' | 'proof-uploader' | 'chat' | 'typography'
   >('commissions');
 
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>(activeCommission?.id || commissions[0]?.id || '');
   const [commissionFilter, setCommissionFilter] = useState<string>('all');
+  const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
+
+  const handleCopyEmail = (email: string, id: string) => {
+    navigator.clipboard.writeText(email);
+    setCopiedEmailId(id);
+    setTimeout(() => setCopiedEmailId(null), 2000);
+  };
+
+  // Consolidated client directory for Brewster
+  const clientList = React.useMemo(() => {
+    const map = new Map<string, {
+      id: string;
+      name: string;
+      email: string;
+      avatar: string;
+      handle?: string;
+      phone?: string;
+      contactMethod?: string;
+      commissionsCount: number;
+      latestProject?: string;
+      latestStatus?: string;
+    }>();
+
+    // From registered users state
+    users.filter(u => u.role === 'client').forEach(u => {
+      const userComms = commissions.filter(c => c.clientId === u.id || c.clientEmail.toLowerCase() === u.email.toLowerCase());
+      map.set(u.email.toLowerCase(), {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        avatar: u.avatar,
+        handle: u.handle,
+        phone: u.phone,
+        contactMethod: u.contactMethod,
+        commissionsCount: userComms.length,
+        latestProject: userComms[0]?.projectName,
+        latestStatus: userComms[0]?.status,
+      });
+    });
+
+    // From commissions table
+    commissions.forEach(c => {
+      const key = c.clientEmail.toLowerCase();
+      if (!map.has(key)) {
+        const commsForClient = commissions.filter(x => x.clientEmail.toLowerCase() === key);
+        map.set(key, {
+          id: c.clientId,
+          name: c.clientName,
+          email: c.clientEmail,
+          avatar: c.clientAvatar,
+          handle: c.clientHandle,
+          contactMethod: c.contactMethod,
+          commissionsCount: commsForClient.length,
+          latestProject: c.projectName,
+          latestStatus: c.status,
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [users, commissions]);
   
   // Proof upload form state
   const [proofNote, setProofNote] = useState('Version 2.1: Here are the refined brand identity icon marks, custom typography lockup, and dark/light collateral proofs.');
@@ -278,6 +347,46 @@ export const AdminDashboardView: React.FC = () => {
     return true;
   });
 
+  if (authLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto animate-pulse">
+          <ShieldCheck className="w-6 h-6 text-orange-600" />
+        </div>
+        <p className="text-xs text-zinc-500 font-mono-code">
+          Hydrating Supabase session & verifying studio director privileges...
+        </p>
+      </div>
+    );
+  }
+
+  if (currentUser?.role !== 'admin') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6">
+        <div className="w-16 h-16 rounded-3xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto shadow-sm">
+          <ShieldCheck className="w-8 h-8 text-rose-600" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
+            Studio Director Access Restricted
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed">
+            This administrative dashboard is restricted to authorized studio directors. To access management tools, your account must have an administrator role assigned in the database.
+          </p>
+        </div>
+        <div className="flex justify-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setActiveView('home')}
+            className="px-5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+          >
+            Return to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
@@ -326,7 +435,7 @@ export const AdminDashboardView: React.FC = () => {
         <button
           id="admin-tab-commissions"
           onClick={() => setActiveAdminTab('commissions')}
-          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeAdminTab === 'commissions'
               ? 'bg-zinc-900 text-white shadow-xs'
               : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
@@ -334,6 +443,19 @@ export const AdminDashboardView: React.FC = () => {
         >
           <FolderArchive className="w-4 h-4" />
           <span>All Commissions ({commissions.length})</span>
+        </button>
+
+        <button
+          id="admin-tab-clients"
+          onClick={() => setActiveAdminTab('clients')}
+          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shrink-0 ${
+            activeAdminTab === 'clients'
+              ? 'bg-zinc-900 text-white shadow-xs'
+              : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Clients & Inquiries ({clientList.length})</span>
         </button>
 
         <button
@@ -485,6 +607,51 @@ export const AdminDashboardView: React.FC = () => {
                         <p className="text-xs text-zinc-500 mt-1 font-medium">
                           Client: <strong className="text-zinc-800 font-bold">{comm.clientName}</strong> ({comm.clientEmail}) • Deadline: <span className="text-orange-600 font-bold">{comm.deadline}</span>
                         </p>
+
+                        {/* Direct Email & Contact Actions for Brewster */}
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <a
+                            id={`btn-email-client-${comm.id}`}
+                            href={`mailto:${comm.clientEmail}?subject=${encodeURIComponent(`Brewster Creative — Update on ${comm.projectName}`)}&body=${encodeURIComponent(`Hi ${comm.clientName},\n\nThis is Brewster from Brewster Creative following up on your project "${comm.projectName}".\n\n`)}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold border border-orange-200 transition-colors"
+                            title={`Open email client to contact ${comm.clientEmail}`}
+                          >
+                            <Mail className="w-3.5 h-3.5 text-orange-600" />
+                            <span>Email Client</span>
+                          </a>
+
+                          <button
+                            id={`btn-copy-email-${comm.id}`}
+                            type="button"
+                            onClick={() => handleCopyEmail(comm.clientEmail, `comm-${comm.id}`)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold border border-zinc-200 transition-colors cursor-pointer"
+                            title="Copy client email to clipboard"
+                          >
+                            {copiedEmailId === `comm-${comm.id}` ? (
+                              <>
+                                <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                <span className="text-emerald-700 font-bold text-xs">Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5 text-zinc-500" />
+                                <span>Copy Email</span>
+                              </>
+                            )}
+                          </button>
+
+                          {comm.clientHandle && (
+                            <span className="px-2.5 py-1 rounded-xl bg-zinc-50 text-zinc-600 text-xs font-mono-code border border-zinc-200">
+                              {comm.clientHandle}
+                            </span>
+                          )}
+
+                          {comm.contactMethod && (
+                            <span className="px-2.5 py-1 rounded-xl bg-zinc-50 text-zinc-500 text-xs font-medium border border-zinc-200">
+                              Contact: {comm.contactMethod}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -620,8 +787,141 @@ export const AdminDashboardView: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* TAB 2: PORTFOLIO MANAGER (ADD, EDIT, DELETE WEBSITE SHOWCASE) */}
+      {/* TAB: CLIENTS & CONTACT DIRECTORY (FOR BREWSTER OUTREACH) */}
       {/* ======================================================== */}
+      {activeAdminTab === 'clients' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-[28px] border border-[#E5E5E5] shadow-xs">
+            <div>
+              <h3 className="font-display text-xl font-black text-zinc-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-orange-500" />
+                <span>Client Contact Directory</span>
+              </h3>
+              <p className="text-xs text-zinc-500 font-medium mt-0.5">
+                Quick access to all client email addresses, contact handles, and commission histories.
+              </p>
+            </div>
+
+            <div className="text-xs text-zinc-500 bg-zinc-50 border border-zinc-200 px-3.5 py-2 rounded-xl font-medium">
+              Total Clients on Record: <strong className="text-zinc-900 font-bold">{clientList.length}</strong>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {clientList.map((client) => {
+              return (
+                <div 
+                  key={client.email}
+                  className="bg-white border border-zinc-200/90 rounded-[28px] p-6 shadow-xs hover:border-zinc-300 transition-all flex flex-col justify-between gap-5"
+                >
+                  <div className="flex items-start gap-4">
+                    <img 
+                      src={client.avatar} 
+                      alt={client.name} 
+                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-zinc-100 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="font-display font-bold text-base text-zinc-900 truncate">
+                          {client.name}
+                        </h4>
+                        <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 text-[11px] font-bold shrink-0">
+                          {client.commissionsCount} {client.commissionsCount === 1 ? 'Project' : 'Projects'}
+                        </span>
+                      </div>
+
+                      {/* Email address row */}
+                      <p className="text-xs text-zinc-500 font-mono-code truncate mt-0.5">
+                        {client.email}
+                      </p>
+
+                      {/* Additional contact metadata */}
+                      <div className="flex items-center gap-2 flex-wrap mt-2.5">
+                        {client.handle && (
+                          <span className="px-2 py-0.5 rounded-lg bg-zinc-100 text-zinc-700 text-[11px] font-mono-code">
+                            {client.handle}
+                          </span>
+                        )}
+                        {client.contactMethod && (
+                          <span className="px-2 py-0.5 rounded-lg bg-zinc-100 text-zinc-600 text-[11px]">
+                            {client.contactMethod}
+                          </span>
+                        )}
+                        {client.phone && (
+                          <a
+                            href={`tel:${client.phone}`}
+                            className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] flex items-center gap-1 font-mono-code"
+                          >
+                            <Phone className="w-3 h-3" />
+                            <span>{client.phone}</span>
+                          </a>
+                        )}
+                      </div>
+
+                      {client.latestProject && (
+                        <p className="text-xs text-zinc-600 mt-2">
+                          Latest Project: <strong className="text-zinc-900">{client.latestProject}</strong>
+                          {client.latestStatus && (
+                            <span className="text-zinc-400 font-normal"> ({client.latestStatus})</span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Outreach Action Buttons */}
+                  <div className="pt-4 border-t border-zinc-100 flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`mailto:${client.email}?subject=${encodeURIComponent(`Brewster Creative — Hello ${client.name}`)}&body=${encodeURIComponent(`Hi ${client.name},\n\nThis is Brewster from Brewster Creative.\n\n`)}`}
+                        className="px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Send Email</span>
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyEmail(client.email, `client-dir-${client.id}`)}
+                        className="px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold transition-all border border-zinc-200 flex items-center gap-1.5"
+                      >
+                        {copiedEmailId === `client-dir-${client.id}` ? (
+                          <>
+                            <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-emerald-700 font-bold">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-zinc-500" />
+                            <span>Copy Email</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const comm = commissions.find(c => c.clientEmail.toLowerCase() === client.email.toLowerCase() || c.clientId === client.id);
+                        if (comm) {
+                          setSelectedCommissionId(comm.id);
+                          setActiveCommissionId(comm.id);
+                        }
+                        setActiveAdminTab('chat');
+                      }}
+                      className="px-3 py-2 rounded-xl bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-bold transition-all border border-zinc-200 flex items-center gap-1.5"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-zinc-600" />
+                      <span>Open Chat</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {activeAdminTab === 'portfolio' && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-[28px] border border-[#E5E5E5] shadow-xs">

@@ -33,6 +33,7 @@ export const ClientDashboardView: React.FC = () => {
     setActiveView,
     updatePaymentStatus,
     currentUser,
+    authLoading,
     updateUserProfile,
     studioProfile,
     timelineUpdates = []
@@ -44,6 +45,7 @@ export const ClientDashboardView: React.FC = () => {
   const [profileName, setProfileName] = useState(currentUser?.name || '');
   const [profileEmail, setProfileEmail] = useState(currentUser?.email || '');
   const [profileHandle, setProfileHandle] = useState(currentUser?.handle || '');
+  const [profilePhone, setProfilePhone] = useState(currentUser?.phone || '');
   const [profileContact, setProfileContact] = useState(currentUser?.contactMethod || 'Platform Chat & Email');
   const [profileBio, setProfileBio] = useState(currentUser?.bio || '');
   const [profileAvatar, setProfileAvatar] = useState(currentUser?.avatar || '');
@@ -55,6 +57,7 @@ export const ClientDashboardView: React.FC = () => {
       setProfileName(currentUser.name);
       setProfileEmail(currentUser.email);
       setProfileHandle(currentUser.handle || '');
+      setProfilePhone(currentUser.phone || '');
       setProfileContact(currentUser.contactMethod || 'Platform Chat & Email');
       setProfileBio(currentUser.bio || '');
       setProfileAvatar(currentUser.avatar || '');
@@ -67,8 +70,8 @@ export const ClientDashboardView: React.FC = () => {
 
     updateUserProfile(currentUser.id, {
       name: profileName,
-      email: profileEmail,
       handle: profileHandle,
+      phone: profilePhone,
       contactMethod: profileContact,
       bio: profileBio,
       avatar: profileAvatar || currentUser.avatar,
@@ -77,6 +80,19 @@ export const ClientDashboardView: React.FC = () => {
     setProfileSavedMsg('Your personal client profile has been updated successfully!');
     setTimeout(() => setProfileSavedMsg(''), 4000);
   };
+
+  if (authLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto animate-pulse">
+          <span className="font-display font-black text-xl">✨</span>
+        </div>
+        <p className="text-xs text-zinc-500 font-mono-code">
+          Hydrating client workspace session...
+        </p>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return (
@@ -649,19 +665,18 @@ export const ClientDashboardView: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-zinc-800 mb-1">
-                    Email Address *
+                    Email Address (Account Login)
                   </label>
                   <input
                     type="email"
-                    required
+                    disabled
                     value={profileEmail}
-                    onChange={(e) => setProfileEmail(e.target.value)}
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white font-medium"
+                    className="w-full bg-zinc-100 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-zinc-500 font-mono-code cursor-not-allowed"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-zinc-800 mb-1">
                     Brand / Company Handle
@@ -676,7 +691,19 @@ export const ClientDashboardView: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-zinc-800 mb-1">
-                    Preferred Communication Method
+                    Phone / WhatsApp
+                  </label>
+                  <input
+                    type="tel"
+                    value={profilePhone}
+                    onChange={(e) => setProfilePhone(e.target.value)}
+                    placeholder="+1 (555) 019-2834"
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-zinc-800 mb-1">
+                    Preferred Communication
                   </label>
                   <select
                     value={profileContact}
@@ -687,6 +714,7 @@ export const ClientDashboardView: React.FC = () => {
                     <option value="Discord">Discord</option>
                     <option value="Telegram">Telegram</option>
                     <option value="WhatsApp">WhatsApp</option>
+                    <option value="Instagram / Social">Instagram / Social DM</option>
                     <option value="Email Only">Email Only</option>
                   </select>
                 </div>

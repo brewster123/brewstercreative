@@ -63,7 +63,7 @@ export const PortfolioView: React.FC = () => {
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-xs">
           <div className="flex items-center gap-2.5 text-emerald-950 font-bold">
             <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span>Studio Admin View (Brewster A. Cabando): You can add new projects, update existing artwork, or delete items.</span>
+            <span>Studio Director View: You can add new projects, update existing artwork, or manage showcase items.</span>
           </div>
           <button
             type="button"

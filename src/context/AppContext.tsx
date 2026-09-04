@@ -26,7 +26,7 @@ import {
   INITIAL_FILES,
   INITIAL_NOTIFICATIONS,
 } from '../data/initialData';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, supabaseUrl } from '../lib/supabase';
 
 export type AppView = 
   | 'home'
@@ -53,11 +53,13 @@ interface AppContextType {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
   authLoading: boolean;
+  databaseError: string | null;
+  clearDatabaseError: () => void;
+  refreshCurrentUserProfile: () => Promise<User | null>;
   users: User[];
-  switchDemoRole: (role: 'client' | 'admin' | 'guest') => void;
   loginUser: (email: string, password?: string) => Promise<{ success: boolean; error?: string; user?: User }>;
-  signUpUser: (name: string, email: string, password: string, handle?: string, contactMethod?: string) => Promise<{ success: boolean; error?: string; user?: User; requiresEmailConfirmation?: boolean }>;
-  registerClient: (name: string, email: string, handle?: string, contactMethod?: string) => User;
+  signUpUser: (name: string, email: string, password?: string, handle?: string, contactMethod?: string, phone?: string) => Promise<{ success: boolean; error?: string; user?: User; confirmationRequired?: boolean }>;
+  registerClient: (name: string, email: string, handle?: string, contactMethod?: string, phone?: string) => User;
   updateUserProfile: (userId: string, updates: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
   
@@ -121,8 +123,8 @@ const STORAGE_KEYS = {
   TIMELINE: 'cabando_timeline_v3',
   FILES: 'cabando_files_v3',
   NOTIFICATIONS: 'cabando_notifications_v3',
-  CURRENT_USER: 'cabando_current_user_v3',
 };
+
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeView, setActiveView] = useState<AppView>('home');
@@ -158,21 +160,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : INITIAL_USERS;
   });
 
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.id === 'usr-client-1') {
-          return null;
-        }
-        return parsed;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [databaseError, setDatabaseError] = useState<string | null>(null);
+
+  const clearDatabaseError = () => setDatabaseError(null);
 
   const [commissions, setCommissions] = useState<Commission[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.COMMISSIONS);
@@ -217,10 +209,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [users]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.COMMISSIONS, JSON.stringify(commissions));
   }, [commissions]);
 
@@ -240,263 +228,421 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
   }, [notifications]);
 
-  // Supabase Auth Loading State
-  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  // Securely query profile from Supabase profiles table using the authenticated user's UUID
+  // Admin role is strictly derived from the database 'public.profiles.role' column
+  const fetchUserProfileFromDb = async (
+    userId: string, 
+    fallbackEmail: string, 
+    metadataPhone?: string
+  ): Promise<{ profile: User | null; error?: string; rawError?: any }> => {
+    // 1. Log authenticated user's ID and email
+    console.log('[Supabase Auth] Fetching profile for authenticated user:', {
+      userId,
+      email: fallbackEmail,
+    });
 
-  // Securely query profile from Supabase profiles table
-  // Admin role is strictly derived from the database 'profiles.role' column
-  const fetchUserProfileFromDb = async (userId: string, fallbackEmail: string): Promise<User | null> => {
+    // 2. Log the Supabase URL being used (DO NOT log or expose the API key)
+    console.log('[Supabase Config] Supabase project URL being used:', supabaseUrl);
+
     try {
-      const { data, error } = await supabase
+      const { data, error, status, statusText } = await supabase
         .from('profiles')
         .select('id, name, email, role, avatar, handle, contact_method, bio')
         .eq('id', userId)
         .maybeSingle();
 
+      // 3. Log whether the profile query returns data, null, or an error
+      console.log('[Supabase Auth] Query response status:', {
+        returnsData: Boolean(data),
+        isNull: data === null,
+        hasError: Boolean(error),
+        httpStatus: status,
+        statusText,
+        roleFromDb: data?.role ?? null,
+      });
+
+      // 4. Log the complete Supabase query error (message, code, details, hint)
       if (error) {
-        console.warn('Could not load profile from database:', error.message);
-        // Fallback profile strictly with 'client' role
+        console.error(`[Supabase Auth] Complete query error for UUID (${userId}):`, {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+
+        // 5. Do not fall back silently to client when the database query fails. Return the real error.
+        const formattedErr = `[Code: ${error.code || 'UNKNOWN'}] ${error.message}${error.details ? ` (Details: ${error.details})` : ''}${error.hint ? ` (Hint: ${error.hint})` : ''}`;
+        setDatabaseError(formattedErr);
         return {
-          id: userId,
-          name: fallbackEmail.split('@')[0] || 'Client',
-          email: fallbackEmail,
-          role: 'client',
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-          handle: `@${(fallbackEmail.split('@')[0] || 'client').toLowerCase()}`,
-          contactMethod: 'Platform Chat & Email',
+          profile: null,
+          error: formattedErr,
+          rawError: error,
         };
       }
 
       if (!data) {
-        // Automatically insert initial profile row with role 'client'
-        const initialClientProfile: User = {
-          id: userId,
-          name: fallbackEmail.split('@')[0] || 'Client',
-          email: fallbackEmail,
-          role: 'client', // Strictly defaults to client
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-          handle: `@${(fallbackEmail.split('@')[0] || 'client').toLowerCase()}`,
-          contactMethod: 'Platform Chat & Email',
+        console.warn(`[Supabase Auth] No profile record found in public.profiles for UUID (${userId}). Query returned null.`);
+        return {
+          profile: null,
+          error: `No record found in public.profiles matching user UUID "${userId}".`,
+          rawError: null,
         };
-        try {
-          await supabase.from('profiles').insert({
-            id: userId,
-            email: initialClientProfile.email,
-            name: initialClientProfile.name,
-            role: 'client',
-            avatar: initialClientProfile.avatar,
-            handle: initialClientProfile.handle,
-            contact_method: initialClientProfile.contactMethod,
-          });
-        } catch {
-          // Handled by RLS or trigger
-        }
-        return initialClientProfile;
       }
 
-      // Determine role STRICTLY from profiles.role column in Supabase
+      // Success: clear previous database errors
+      setDatabaseError(null);
+
+      // Determine role STRICTLY from public.profiles.role column in Supabase
       const assignedRole: UserRole = data.role === 'admin' ? 'admin' : 'client';
 
-      return {
+      const userProfile: User = {
         id: data.id,
-        name: data.name || fallbackEmail.split('@')[0] || 'Client',
+        name: data.name || fallbackEmail.split('@')[0] || 'User',
         email: data.email || fallbackEmail,
         role: assignedRole,
         avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-        handle: data.handle || `@${(fallbackEmail.split('@')[0] || 'client').toLowerCase()}`,
+        handle: data.handle || `@${(fallbackEmail.split('@')[0] || 'user').toLowerCase()}`,
+        phone: metadataPhone || (data as any).phone || undefined,
         contactMethod: data.contact_method || 'Platform Chat & Email',
         bio: data.bio || '',
       };
+
+      console.log(`[Supabase Auth] Profile loaded successfully from Supabase. Role from public.profiles: "${assignedRole}"`);
+
+      return { profile: userProfile, error: undefined, rawError: null };
+    } catch (err: any) {
+      console.error('[Supabase Auth] Unexpected exception in fetchUserProfileFromDb:', err);
+      return {
+        profile: null,
+        error: err?.message || 'Unexpected exception during profile query.',
+        rawError: err,
+      };
+    }
+  };
+
+  // Explicit helper to refresh the current user's profile and latest role from Supabase
+  const refreshCurrentUserProfile = async (): Promise<User | null> => {
+    if (!isSupabaseConfigured()) return null;
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session?.user) {
+        return null;
+      }
+      const { profile, error: profileErr } = await fetchUserProfileFromDb(
+        session.user.id, 
+        session.user.email || '', 
+        session.user.user_metadata?.phone
+      );
+      if (profile) {
+        setCurrentUser(profile);
+      } else if (profileErr) {
+        console.error('[Supabase Auth] Failed to refresh profile:', profileErr);
+      }
+      return profile;
     } catch (err) {
-      console.error('Error in fetchUserProfileFromDb:', err);
+      console.error('[Supabase Auth] Error refreshing profile:', err);
       return null;
     }
   };
 
-  // Sync Supabase Auth Session on mount
+  // Sync Supabase Auth Session on mount and after page refresh
   useEffect(() => {
+    let isMounted = true;
+
     if (!isSupabaseConfigured()) {
       setAuthLoading(false);
       return;
     }
 
-    // Hydrate existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const profile = await fetchUserProfileFromDb(session.user.id, session.user.email || '');
-        if (profile) setCurrentUser(profile);
+    // Hydrate existing session from Supabase before deciding user role
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) {
+        console.error('[Supabase Auth] Error hydrating session on mount:', error.message);
       }
-      setAuthLoading(false);
+      if (session?.user) {
+        const { profile, error: profileErr } = await fetchUserProfileFromDb(
+          session.user.id, 
+          session.user.email || '', 
+          session.user.user_metadata?.phone
+        );
+        if (profile && isMounted) {
+          setCurrentUser(profile);
+        } else if (profileErr) {
+          console.warn('[Supabase Auth] Hydration notice:', profileErr);
+        }
+      }
+      if (isMounted) {
+        setAuthLoading(false);
+      }
     });
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (session?.user) {
-          const profile = await fetchUserProfileFromDb(session.user.id, session.user.email || '');
-          if (profile) setCurrentUser(profile);
+          const { profile, error: profileErr } = await fetchUserProfileFromDb(
+            session.user.id, 
+            session.user.email || '', 
+            session.user.user_metadata?.phone
+          );
+          if (profile && isMounted) {
+            setCurrentUser(profile);
+          } else if (profileErr) {
+            console.warn('[Supabase Auth] Auth state change profile notice:', profileErr);
+          }
         }
       } else if (event === 'SIGNED_OUT') {
-        setCurrentUser(null);
+        if (isMounted) {
+          setCurrentUser(null);
+        }
       }
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  // Role Switcher helper (for demo mode / testing)
-  const switchDemoRole = (role: 'client' | 'admin' | 'guest') => {
-    if (role === 'client') {
-      const alex = users.find(u => u.id === 'usr-client-1') || INITIAL_USERS[1];
-      setCurrentUser(alex);
-      setSelectedCommissionId('comm-sample-alex');
-      setActiveView('client-dashboard');
-    } else if (role === 'admin') {
-      const admin = users.find(u => u.role === 'admin') || INITIAL_USERS[0];
-      setCurrentUser(admin);
-      setSelectedCommissionId('comm-sample-alex');
-      setActiveView('admin-dashboard');
-    } else {
-      setCurrentUser(null);
-      setActiveView('home');
+  // When an admin is logged in, load registered clients from public.profiles table
+  useEffect(() => {
+    if (currentUser?.role === 'admin' && isSupabaseConfigured()) {
+      supabase
+        .from('profiles')
+        .select('id, name, email, role, avatar, handle, contact_method, bio, created_at')
+        .then(({ data, error }) => {
+          if (!error && data) {
+            const dbUsers: User[] = data.map(p => ({
+              id: p.id,
+              name: p.name || p.email?.split('@')[0] || 'Client',
+              email: p.email || '',
+              role: p.role === 'admin' ? 'admin' : 'client',
+              avatar: p.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+              handle: p.handle,
+              contactMethod: p.contact_method,
+              phone: (p as any).phone || undefined,
+              bio: p.bio,
+              createdAt: p.created_at,
+            }));
+            setUsers(dbUsers);
+          }
+        });
     }
-  };
+  }, [currentUser?.role]);
 
-  const loginUser = async (email: string, password?: string): Promise<{ success: boolean; error?: string; user?: User }> => {
+  const loginUser = async (
+    email: string, 
+    password?: string
+  ): Promise<{ success: boolean; error?: string; user?: User }> => {
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password?.trim() || '';
 
-    if (isSupabaseConfigured()) {
-      if (!password) {
-        return { success: false, error: 'Password is required to sign in.' };
-      }
+    if (!cleanEmail) {
+      return { success: false, error: 'Please enter your email address.' };
+    }
+    if (!cleanPassword) {
+      return { success: false, error: 'Please enter your password.' };
+    }
 
+    if (!isSupabaseConfigured()) {
+      return {
+        success: false,
+        error: 'Supabase authentication is not configured. Please check your environment variables.',
+      };
+    }
+
+    try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
-        password,
+        password: cleanPassword,
       });
 
       if (error) {
-        return { success: false, error: error.message };
-      }
-
-      if (data.user) {
-        const profile = await fetchUserProfileFromDb(data.user.id, data.user.email || cleanEmail);
-        if (profile) {
-          setCurrentUser(profile);
-          if (profile.role === 'admin') {
-            setActiveView('admin-dashboard');
-          } else {
-            const clientComm = commissions.find(c => c.clientId === profile.id);
-            if (clientComm) setSelectedCommissionId(clientComm.id);
-            setActiveView('client-dashboard');
-          }
-          return { success: true, user: profile };
+        let msg = error.message;
+        if (error.message.toLowerCase().includes('invalid login credentials')) {
+          msg = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (error.message.toLowerCase().includes('email not confirmed')) {
+          msg = 'Please verify your email address to sign in.';
         }
+        return { success: false, error: msg };
       }
 
-      return { success: false, error: 'Failed to retrieve profile.' };
-    } else {
-      // Local fallback mode if Supabase credentials are not yet configured
-      let found = users.find(u => u.email.toLowerCase() === cleanEmail);
-      if (!found) {
-        found = users.find(u => u.role === 'client') || INITIAL_USERS[1];
+      if (!data.user) {
+        return { success: false, error: 'Authentication failed. Please try again.' };
       }
-      setCurrentUser(found);
-      if (found.role === 'admin') {
+
+      // Retrieve authenticated user's UUID
+      const authUserId = data.user.id;
+      const authUserEmail = data.user.email || cleanEmail;
+
+      // Role MUST come strictly from public.profiles.role using user UUID
+      const { profile, error: profileError } = await fetchUserProfileFromDb(authUserId, authUserEmail, data.user.user_metadata?.phone);
+      if (!profile) {
+        return { 
+          success: false, 
+          error: `Signed in successfully, but failed to load your user profile from Supabase: ${profileError || 'No profile record found.'}` 
+        };
+      }
+
+      setCurrentUser(profile);
+
+      // Route strictly based on the database role from public.profiles
+      if (profile.role === 'admin') {
         setActiveView('admin-dashboard');
       } else {
-        const clientComm = commissions.find(c => c.clientId === found?.id);
+        const clientComm = commissions.find(c => c.clientId === profile.id || c.clientEmail.toLowerCase() === cleanEmail);
         if (clientComm) setSelectedCommissionId(clientComm.id);
         setActiveView('client-dashboard');
       }
-      return { success: true, user: found };
+
+      return { success: true, user: profile };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'An unexpected error occurred during sign in.' };
     }
   };
 
   const signUpUser = async (
     name: string,
     email: string,
-    password: string,
+    password?: string,
     handle?: string,
-    contactMethod?: string
-  ): Promise<{ success: boolean; error?: string; user?: User; requiresEmailConfirmation?: boolean }> => {
+    contactMethod?: string,
+    phone?: string
+  ): Promise<{ success: boolean; error?: string; user?: User; confirmationRequired?: boolean }> => {
+    const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password?.trim() || '';
 
-    if (isSupabaseConfigured()) {
-      if (!password || password.length < 6) {
-        return { success: false, error: 'Password must be at least 6 characters long.' };
-      }
+    if (!cleanName) {
+      return { success: false, error: 'Please enter your full name.' };
+    }
+    if (!cleanEmail) {
+      return { success: false, error: 'Please enter your email address.' };
+    }
+    if (!cleanPassword) {
+      return { success: false, error: 'Please enter a password.' };
+    }
+    if (cleanPassword.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters long.' };
+    }
 
-      const cleanHandle = handle || `@${(name || 'client').toLowerCase().replace(/\s+/g, '_')}`;
+    if (!isSupabaseConfigured()) {
+      return {
+        success: false,
+        error: 'Supabase authentication is not configured. Please check your environment variables.',
+      };
+    }
 
-      // Sign up the user; always assign role = 'client'
+    try {
+      const cleanHandle = handle?.trim() || `@${cleanName.toLowerCase().replace(/\s+/g, '_')}`;
+      const cleanContact = contactMethod || 'Platform Chat & Email';
+
       const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
-        password,
+        password: cleanPassword,
         options: {
           data: {
-            name,
+            name: cleanName,
+            full_name: cleanName,
             handle: cleanHandle,
-            contactMethod: contactMethod || 'Platform Chat & Email',
-            role: 'client', // Clients can never choose admin role
+            contactMethod: cleanContact,
+            phone: phone?.trim() || '',
           },
         },
       });
 
       if (error) {
-        return { success: false, error: error.message };
+        let msg = error.message;
+        if (error.message.toLowerCase().includes('user already registered') || error.message.toLowerCase().includes('already exists')) {
+          msg = 'An account with this email address already exists. Please sign in instead.';
+        } else if (error.message.toLowerCase().includes('password should be at least')) {
+          msg = 'Password must be at least 6 characters long.';
+        }
+        return { success: false, error: msg };
       }
 
-      if (data.user) {
-        // Ensure profile row exists with role 'client'
-        try {
-          await supabase.from('profiles').upsert({
+      if (!data.user) {
+        return { success: false, error: 'Failed to create account. Please try again.' };
+      }
+
+      // Check if email confirmation is required by Supabase project settings
+      if (!data.session) {
+        return {
+          success: true,
+          confirmationRequired: true,
+          user: {
             id: data.user.id,
+            name: cleanName,
             email: cleanEmail,
-            name: name || cleanEmail.split('@')[0],
-            role: 'client', // Strictly 'client'
-            handle: cleanHandle,
-            contact_method: contactMethod || 'Platform Chat & Email',
+            role: 'client', // Strictly client
             avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-          });
-        } catch (dbErr) {
-          console.warn('Profile upsert note:', dbErr);
-        }
-
-        if (data.session) {
-          const profile = await fetchUserProfileFromDb(data.user.id, cleanEmail);
-          if (profile) {
-            setCurrentUser(profile);
-            setActiveView('client-dashboard');
-          }
-          return { success: true, user: profile || undefined, requiresEmailConfirmation: false };
-        } else {
-          return { success: true, requiresEmailConfirmation: true };
-        }
+            handle: cleanHandle,
+            contactMethod: cleanContact,
+            phone: phone?.trim(),
+          },
+        };
       }
 
-      return { success: false, error: 'Registration failed. Please try again.' };
-    } else {
-      // Local fallback mode
-      const newUser = registerClient(name, email, handle, contactMethod);
-      return { success: true, user: newUser, requiresEmailConfirmation: false };
+      // Retrieve profile from public.profiles to verify role
+      const { profile } = await fetchUserProfileFromDb(data.user.id, data.user.email || cleanEmail, phone?.trim());
+      const finalUser: User = profile || {
+        id: data.user.id,
+        name: cleanName,
+        email: cleanEmail,
+        role: 'client', // Strictly client
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+        handle: cleanHandle,
+        contactMethod: cleanContact,
+        phone: phone?.trim(),
+      };
+
+      setCurrentUser(finalUser);
+
+      const clientComm = commissions.find(c => c.clientEmail.toLowerCase() === cleanEmail);
+      if (clientComm) setSelectedCommissionId(clientComm.id);
+      setActiveView('client-dashboard');
+
+      return { success: true, user: finalUser };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'An unexpected error occurred during registration.' };
     }
   };
 
-  const registerClient = (name: string, email: string, handle?: string, contactMethod?: string): User => {
+  const registerClient = (
+    name: string, 
+    email: string, 
+    handle?: string, 
+    contactMethod?: string,
+    phone?: string
+  ): User => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+
+    const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      const updated: User = {
+        ...existing,
+        name: cleanName || existing.name,
+        handle: handle || existing.handle,
+        contactMethod: contactMethod || existing.contactMethod,
+        phone: phone || existing.phone,
+      };
+      setUsers(prev => prev.map(u => (u.id === existing.id ? updated : u)));
+      return updated;
+    }
+
     const newUser: User = {
       id: `usr-client-${Date.now()}`,
-      name: name || 'New Client',
-      email: email || `client-${Date.now()}@example.com`,
+      name: cleanName || 'New Client',
+      email: cleanEmail || `client-${Date.now()}@example.com`,
       role: 'client',
       avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80`,
-      handle: handle || `@${(name || 'client').toLowerCase().replace(/\s+/g, '_')}`,
+      handle: handle || `@${(cleanName || 'client').toLowerCase().replace(/\s+/g, '_')}`,
       contactMethod: contactMethod || 'Platform Chat & Email',
+      phone: phone,
+      createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     };
     setUsers(prev => [...prev, newUser]);
-    setCurrentUser(newUser);
     return newUser;
   };
 
@@ -509,9 +655,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
     setCurrentUser(null);
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     setActiveView('home');
   };
+
 
   const submitCommission = (formData: any): string => {
     let client = currentUser;
@@ -1017,6 +1163,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (Object.keys(dbPayload).length > 0) {
           await supabase.from('profiles').update(dbPayload).eq('id', userId);
         }
+
+        // Store phone in Supabase auth user_metadata if updated
+        if (safeUpdates.phone !== undefined) {
+          try {
+            await supabase.auth.updateUser({
+              data: { phone: safeUpdates.phone }
+            });
+          } catch {
+            // non-blocking
+          }
+        }
       } catch (err) {
         console.error('Error updating profile in Supabase:', err);
       }
@@ -1085,8 +1242,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setStudioProfile(INITIAL_STUDIO_PROFILE);
     setServices(INITIAL_SERVICES);
     setPortfolio(INITIAL_PORTFOLIO);
-    setUsers(INITIAL_USERS);
-    setCurrentUser(INITIAL_USERS[1]);
+    setUsers([]);
+    setCurrentUser(null);
     setCommissions(INITIAL_COMMISSIONS);
     setMessages(INITIAL_MESSAGES);
     setTimelineUpdates(INITIAL_TIMELINE);
@@ -1125,8 +1282,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         setCurrentUser,
         authLoading,
+        databaseError,
+        clearDatabaseError,
+        refreshCurrentUserProfile,
         users,
-        switchDemoRole,
         loginUser,
         signUpUser,
         registerClient,

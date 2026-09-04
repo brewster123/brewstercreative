@@ -260,45 +260,7 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
   },
 ];
 
-export const INITIAL_USERS: User[] = [
-  {
-    id: 'usr-admin-1',
-    name: 'Brewster A. Cabando',
-    email: 'cabandobrewster@gmail.com',
-    role: 'admin',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-    handle: '@brewstercabando',
-    bio: 'Lead Multimedia Artist, Designer & Studio Director',
-  },
-  {
-    id: 'usr-client-1',
-    name: 'Alex Rivera',
-    email: 'alex.rivera@solislabs.io',
-    role: 'client',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-    handle: '@alexrivera_co',
-    contactMethod: 'Platform Chat & Email',
-    bio: 'Founder at Solis Labs — Sustainable Tech Products',
-  },
-  {
-    id: 'usr-client-2',
-    name: 'Maya Chen',
-    email: 'maya@synthwaves.fm',
-    role: 'client',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
-    handle: '@mayachen_fm',
-    contactMethod: 'Discord & Email',
-  },
-  {
-    id: 'usr-client-3',
-    name: 'Liam Vance',
-    email: 'liam@vortexgaming.gg',
-    role: 'client',
-    avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=400&auto=format&fit=crop&q=80',
-    handle: '@liamvance',
-    contactMethod: 'Email',
-  },
-];
+export const INITIAL_USERS: User[] = [];
 
 export const INITIAL_COMMISSIONS: Commission[] = [
   // Required Sample Project

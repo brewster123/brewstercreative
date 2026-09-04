@@ -10,7 +10,8 @@ import {
   CheckCircle2, 
   Briefcase,
   Sparkles,
-  Lock
+  Lock,
+  Loader2
 } from 'lucide-react';
 import { BrandLogo } from '../components/BrandLogo';
 
@@ -18,11 +19,9 @@ export const AuthView: React.FC = () => {
   const { 
     currentUser, 
     loginUser, 
-    registerClient, 
+    signUpUser, 
     logout, 
-    setActiveView, 
-    users, 
-    studioProfile 
+    setActiveView 
   } = useApp();
 
   const [mode, setMode] = useState<'signin' | 'register'>('signin');
@@ -30,14 +29,16 @@ export const AuthView: React.FC = () => {
   const [inputPassword, setInputPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Register form state
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
   const [regHandle, setRegHandle] = useState('');
   const [regContact, setRegContact] = useState('Platform Chat & Email');
 
-  const handleLogin = (emailToUse?: string, e?: React.FormEvent) => {
+  const handleLogin = async (emailToUse?: string, e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setAuthError('');
     setAuthSuccess('');
@@ -47,23 +48,34 @@ export const AuthView: React.FC = () => {
       setAuthError('Please enter your email address.');
       return;
     }
+    if (!inputPassword) {
+      setAuthError('Please enter your password.');
+      return;
+    }
 
-    const success = loginUser(email);
-    if (success) {
-      const isBrewster = email.toLowerCase() === 'cabandobrewster@gmail.com' || email.toLowerCase().includes('brewster') || email.toLowerCase().includes('admin');
-      if (isBrewster) {
-        setAuthSuccess(`Welcome back, Brewster! Opening Admin Studio...`);
-        setTimeout(() => setActiveView('admin-dashboard'), 350);
+    setIsLoading(true);
+    try {
+      const result = await loginUser(email, inputPassword);
+      if (result.success && result.user) {
+        // Role is strictly derived from trusted database profiles.role column
+        if (result.user.role === 'admin') {
+          setAuthSuccess(`Welcome back, Brewster! Opening Admin Studio...`);
+          setTimeout(() => setActiveView('admin-dashboard'), 350);
+        } else {
+          setAuthSuccess(`Welcome back, ${result.user.name}! Opening Client Portal...`);
+          setTimeout(() => setActiveView('client-dashboard'), 350);
+        }
       } else {
-        setAuthSuccess(`Welcome back! Opening Client Portal...`);
-        setTimeout(() => setActiveView('client-dashboard'), 350);
+        setAuthError(result.error || 'Unable to sign in. Please check your credentials.');
       }
-    } else {
-      setAuthError('Unable to sign in. Please check your credentials.');
+    } catch (err: any) {
+      setAuthError(err?.message || 'An unexpected error occurred during sign in.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     setAuthSuccess('');
@@ -72,12 +84,39 @@ export const AuthView: React.FC = () => {
       setAuthError('Please provide your full name and email.');
       return;
     }
+    if (!regPassword || regPassword.length < 6) {
+      setAuthError('Password must be at least 6 characters.');
+      return;
+    }
 
-    const newClient = registerClient(regName, regEmail, regHandle, regContact);
-    setAuthSuccess(`Welcome, ${newClient.name}! Your workspace is ready.`);
-    setTimeout(() => {
-      setActiveView('client-dashboard');
-    }, 400);
+    setIsLoading(true);
+    try {
+      // Role is always assigned as 'client' on registration
+      const result = await signUpUser(
+        regName.trim(),
+        regEmail.trim(),
+        regPassword,
+        regHandle.trim(),
+        regContact
+      );
+
+      if (result.success) {
+        if (result.requiresEmailConfirmation) {
+          setAuthSuccess('Account created! Please check your email inbox to confirm your account before signing in.');
+        } else {
+          setAuthSuccess(`Welcome, ${result.user?.name || regName}! Your workspace is ready.`);
+          setTimeout(() => {
+            setActiveView('client-dashboard');
+          }, 400);
+        }
+      } else {
+        setAuthError(result.error || 'Registration failed. Please try again.');
+      }
+    } catch (err: any) {
+      setAuthError(err?.message || 'An unexpected error occurred during registration.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -241,10 +280,20 @@ export const AuthView: React.FC = () => {
               <button
                 id="btn-auth-submit"
                 type="submit"
-                className="w-full py-3 px-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                disabled={isLoading}
+                className="w-full py-3 px-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 disabled:opacity-60 text-white font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
-                <span>Sign In</span>
-                <ArrowRight className="w-4 h-4" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Signing In...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
 
@@ -278,6 +327,24 @@ export const AuthView: React.FC = () => {
                 placeholder="jordan@example.com"
                 className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:bg-white"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-zinc-800 mb-1">
+                Password * (min. 6 characters)
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -314,10 +381,20 @@ export const AuthView: React.FC = () => {
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full py-3 px-4 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                disabled={isLoading}
+                className="w-full py-3 px-4 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
-                <UserCheck className="w-4 h-4" />
-                <span>Create Account</span>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Creating Account...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="w-4 h-4" />
+                    <span>Create Account</span>
+                  </>
+                )}
               </button>
             </div>
           </form>

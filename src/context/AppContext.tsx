@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   User,
+  UserRole,
   Commission,
   Message,
   ProgressUpdate,
@@ -25,6 +26,7 @@ import {
   INITIAL_FILES,
   INITIAL_NOTIFICATIONS,
 } from '../data/initialData';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export type AppView = 
   | 'home'
@@ -50,12 +52,14 @@ interface AppContextType {
   // Auth & Roles
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
+  authLoading: boolean;
   users: User[];
   switchDemoRole: (role: 'client' | 'admin' | 'guest') => void;
-  loginUser: (email: string, role?: 'client' | 'admin') => boolean;
+  loginUser: (email: string, password?: string) => Promise<{ success: boolean; error?: string; user?: User }>;
+  signUpUser: (name: string, email: string, password: string, handle?: string, contactMethod?: string) => Promise<{ success: boolean; error?: string; user?: User; requiresEmailConfirmation?: boolean }>;
   registerClient: (name: string, email: string, handle?: string, contactMethod?: string) => User;
-  updateUserProfile: (userId: string, updates: Partial<User>) => void;
-  logout: () => void;
+  updateUserProfile: (userId: string, updates: Partial<User>) => Promise<void>;
+  logout: () => Promise<void>;
   
   // Data entities
   studioProfile: StudioProfile;
@@ -236,7 +240,113 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
   }, [notifications]);
 
-  // Role Switcher helper
+  // Supabase Auth Loading State
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+
+  // Securely query profile from Supabase profiles table
+  // Admin role is strictly derived from the database 'profiles.role' column
+  const fetchUserProfileFromDb = async (userId: string, fallbackEmail: string): Promise<User | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, email, role, avatar, handle, contact_method, bio')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Could not load profile from database:', error.message);
+        // Fallback profile strictly with 'client' role
+        return {
+          id: userId,
+          name: fallbackEmail.split('@')[0] || 'Client',
+          email: fallbackEmail,
+          role: 'client',
+          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+          handle: `@${(fallbackEmail.split('@')[0] || 'client').toLowerCase()}`,
+          contactMethod: 'Platform Chat & Email',
+        };
+      }
+
+      if (!data) {
+        // Automatically insert initial profile row with role 'client'
+        const initialClientProfile: User = {
+          id: userId,
+          name: fallbackEmail.split('@')[0] || 'Client',
+          email: fallbackEmail,
+          role: 'client', // Strictly defaults to client
+          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+          handle: `@${(fallbackEmail.split('@')[0] || 'client').toLowerCase()}`,
+          contactMethod: 'Platform Chat & Email',
+        };
+        try {
+          await supabase.from('profiles').insert({
+            id: userId,
+            email: initialClientProfile.email,
+            name: initialClientProfile.name,
+            role: 'client',
+            avatar: initialClientProfile.avatar,
+            handle: initialClientProfile.handle,
+            contact_method: initialClientProfile.contactMethod,
+          });
+        } catch {
+          // Handled by RLS or trigger
+        }
+        return initialClientProfile;
+      }
+
+      // Determine role STRICTLY from profiles.role column in Supabase
+      const assignedRole: UserRole = data.role === 'admin' ? 'admin' : 'client';
+
+      return {
+        id: data.id,
+        name: data.name || fallbackEmail.split('@')[0] || 'Client',
+        email: data.email || fallbackEmail,
+        role: assignedRole,
+        avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+        handle: data.handle || `@${(fallbackEmail.split('@')[0] || 'client').toLowerCase()}`,
+        contactMethod: data.contact_method || 'Platform Chat & Email',
+        bio: data.bio || '',
+      };
+    } catch (err) {
+      console.error('Error in fetchUserProfileFromDb:', err);
+      return null;
+    }
+  };
+
+  // Sync Supabase Auth Session on mount
+  useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      setAuthLoading(false);
+      return;
+    }
+
+    // Hydrate existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const profile = await fetchUserProfileFromDb(session.user.id, session.user.email || '');
+        if (profile) setCurrentUser(profile);
+      }
+      setAuthLoading(false);
+    });
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        if (session?.user) {
+          const profile = await fetchUserProfileFromDb(session.user.id, session.user.email || '');
+          if (profile) setCurrentUser(profile);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Role Switcher helper (for demo mode / testing)
   const switchDemoRole = (role: 'client' | 'admin' | 'guest') => {
     if (role === 'client') {
       const alex = users.find(u => u.id === 'usr-client-1') || INITIAL_USERS[1];
@@ -254,26 +364,125 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const loginUser = (email: string, role?: 'client' | 'admin'): boolean => {
+  const loginUser = async (email: string, password?: string): Promise<{ success: boolean; error?: string; user?: User }> => {
     const cleanEmail = email.trim().toLowerCase();
-    let found = users.find(u => u.email.toLowerCase() === cleanEmail);
-    if (!found) {
-      if (cleanEmail.includes('admin') || cleanEmail.includes('brewster') || cleanEmail.includes('cabando') || role === 'admin') {
-        found = users.find(u => u.role === 'admin') || INITIAL_USERS[0];
-      } else {
+
+    if (isSupabaseConfigured()) {
+      if (!password) {
+        return { success: false, error: 'Password is required to sign in.' };
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        const profile = await fetchUserProfileFromDb(data.user.id, data.user.email || cleanEmail);
+        if (profile) {
+          setCurrentUser(profile);
+          if (profile.role === 'admin') {
+            setActiveView('admin-dashboard');
+          } else {
+            const clientComm = commissions.find(c => c.clientId === profile.id);
+            if (clientComm) setSelectedCommissionId(clientComm.id);
+            setActiveView('client-dashboard');
+          }
+          return { success: true, user: profile };
+        }
+      }
+
+      return { success: false, error: 'Failed to retrieve profile.' };
+    } else {
+      // Local fallback mode if Supabase credentials are not yet configured
+      let found = users.find(u => u.email.toLowerCase() === cleanEmail);
+      if (!found) {
         found = users.find(u => u.role === 'client') || INITIAL_USERS[1];
       }
+      setCurrentUser(found);
+      if (found.role === 'admin') {
+        setActiveView('admin-dashboard');
+      } else {
+        const clientComm = commissions.find(c => c.clientId === found?.id);
+        if (clientComm) setSelectedCommissionId(clientComm.id);
+        setActiveView('client-dashboard');
+      }
+      return { success: true, user: found };
     }
-    setCurrentUser(found);
-    if (found.role === 'admin') {
-      setActiveView('admin-dashboard');
+  };
+
+  const signUpUser = async (
+    name: string,
+    email: string,
+    password: string,
+    handle?: string,
+    contactMethod?: string
+  ): Promise<{ success: boolean; error?: string; user?: User; requiresEmailConfirmation?: boolean }> => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (isSupabaseConfigured()) {
+      if (!password || password.length < 6) {
+        return { success: false, error: 'Password must be at least 6 characters long.' };
+      }
+
+      const cleanHandle = handle || `@${(name || 'client').toLowerCase().replace(/\s+/g, '_')}`;
+
+      // Sign up the user; always assign role = 'client'
+      const { data, error } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          data: {
+            name,
+            handle: cleanHandle,
+            contactMethod: contactMethod || 'Platform Chat & Email',
+            role: 'client', // Clients can never choose admin role
+          },
+        },
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        // Ensure profile row exists with role 'client'
+        try {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            email: cleanEmail,
+            name: name || cleanEmail.split('@')[0],
+            role: 'client', // Strictly 'client'
+            handle: cleanHandle,
+            contact_method: contactMethod || 'Platform Chat & Email',
+            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+          });
+        } catch (dbErr) {
+          console.warn('Profile upsert note:', dbErr);
+        }
+
+        if (data.session) {
+          const profile = await fetchUserProfileFromDb(data.user.id, cleanEmail);
+          if (profile) {
+            setCurrentUser(profile);
+            setActiveView('client-dashboard');
+          }
+          return { success: true, user: profile || undefined, requiresEmailConfirmation: false };
+        } else {
+          return { success: true, requiresEmailConfirmation: true };
+        }
+      }
+
+      return { success: false, error: 'Registration failed. Please try again.' };
     } else {
-      // Pick first commission for this client if exists
-      const clientComm = commissions.find(c => c.clientId === found?.id);
-      if (clientComm) setSelectedCommissionId(clientComm.id);
-      setActiveView('client-dashboard');
+      // Local fallback mode
+      const newUser = registerClient(name, email, handle, contactMethod);
+      return { success: true, user: newUser, requiresEmailConfirmation: false };
     }
-    return true;
   };
 
   const registerClient = (name: string, email: string, handle?: string, contactMethod?: string): User => {
@@ -284,15 +493,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       role: 'client',
       avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80`,
       handle: handle || `@${(name || 'client').toLowerCase().replace(/\s+/g, '_')}`,
-      contactMethod: contactMethod || 'Platform Chat',
+      contactMethod: contactMethod || 'Platform Chat & Email',
     };
     setUsers(prev => [...prev, newUser]);
     setCurrentUser(newUser);
     return newUser;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('Error signing out from Supabase:', err);
+      }
+    }
     setCurrentUser(null);
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     setActiveView('home');
   };
 
@@ -783,10 +1000,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => prev.map(n => ({ ...n, readStatus: true })));
   };
 
-  const updateUserProfile = (userId: string, updates: Partial<User>) => {
-    setUsers(prev => prev.map(u => (u.id === userId ? { ...u, ...updates } : u)));
+  const updateUserProfile = async (userId: string, updates: Partial<User>) => {
+    // Security: explicitly strip role, id, and email so clients cannot tamper with roles
+    const { role: _ignoredRole, id: _ignoredId, email: _ignoredEmail, ...safeUpdates } = updates as any;
+
+    if (isSupabaseConfigured() && currentUser?.id === userId) {
+      try {
+        const dbPayload: any = {};
+        if (safeUpdates.name !== undefined) dbPayload.name = safeUpdates.name;
+        if (safeUpdates.handle !== undefined) dbPayload.handle = safeUpdates.handle;
+        if (safeUpdates.contactMethod !== undefined) dbPayload.contact_method = safeUpdates.contactMethod;
+        if (safeUpdates.bio !== undefined) dbPayload.bio = safeUpdates.bio;
+        if (safeUpdates.avatar !== undefined) dbPayload.avatar = safeUpdates.avatar;
+        dbPayload.updated_at = new Date().toISOString();
+
+        if (Object.keys(dbPayload).length > 0) {
+          await supabase.from('profiles').update(dbPayload).eq('id', userId);
+        }
+      } catch (err) {
+        console.error('Error updating profile in Supabase:', err);
+      }
+    }
+
+    setUsers(prev => prev.map(u => (u.id === userId ? { ...u, ...safeUpdates } : u)));
     if (currentUser && currentUser.id === userId) {
-      setCurrentUser(prev => (prev ? { ...prev, ...updates } : null));
+      setCurrentUser(prev => (prev ? { ...prev, ...safeUpdates } : null));
     }
     // Also sync client fields on their commission records
     if (updates.name || updates.email || updates.handle || updates.avatar || updates.contactMethod) {
@@ -886,9 +1124,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setPreselectedService,
         currentUser,
         setCurrentUser,
+        authLoading,
         users,
         switchDemoRole,
         loginUser,
+        signUpUser,
         registerClient,
         updateUserProfile,
         logout,

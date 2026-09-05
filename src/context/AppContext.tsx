@@ -153,6 +153,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (parsed.studioName === 'Cabando Studio' || !parsed.studioName) {
         parsed.studioName = 'Brewster Creative';
       }
+      if (parsed.email === 'cabandobrewster@gmail.com') {
+        parsed.email = 'brewstercreates@gmail.com';
+      }
       return parsed;
     }
     return INITIAL_STUDIO_PROFILE;

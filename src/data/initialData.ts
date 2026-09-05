@@ -16,7 +16,7 @@ export const INITIAL_STUDIO_PROFILE: StudioProfile = {
   title: 'Multimedia Artist & Brand Designer',
   bio: 'Specializing in distinctive visual identities, conceptual poster art, typographic systems, and high-impact digital illustration for innovative brands, creators, and indie studios worldwide.',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-  email: 'cabandobrewster@gmail.com',
+  email: 'brewstercreates@gmail.com',
   location: 'Manila / Remote Worldwide',
   socialLinks: {
     instagram: 'instagram.com/brewster.cabando',

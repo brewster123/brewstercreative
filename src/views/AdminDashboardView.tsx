@@ -1498,7 +1498,7 @@ export const AdminDashboardView: React.FC = () => {
                     required
                     value={profileForm.email}
                     onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                    placeholder="cabandobrewster@gmail.com"
+                    placeholder="brewstercreates@gmail.com"
                     className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white font-medium"
                   />
                 </div>

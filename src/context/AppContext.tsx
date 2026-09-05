@@ -153,7 +153,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (parsed.studioName === 'Cabando Studio' || !parsed.studioName) {
         parsed.studioName = 'Brewster Creative';
       }
-      if (parsed.email === 'cabandobrewster@gmail.com') {
+      if (parsed.email?.toLowerCase().includes('cabandobrewster') || !parsed.email) {
         parsed.email = 'brewstercreates@gmail.com';
       }
       return parsed;

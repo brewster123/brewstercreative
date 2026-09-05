@@ -143,7 +143,13 @@ export const AdminDashboardView: React.FC = () => {
   const [proofImageInput, setProofImageInput] = useState('https://images.unsplash.com/photo-1626785774573-4b799315345d?w=1200&auto=format&fit=crop&q=80');
 
   // Website Info Form State
-  const [profileForm, setProfileForm] = useState<StudioProfile>({ ...studioProfile });
+  const [profileForm, setProfileForm] = useState<StudioProfile>(() => {
+    const p = { ...studioProfile };
+    if (p.email?.toLowerCase().includes('cabandobrewster') || !p.email) {
+      p.email = 'brewstercreates@gmail.com';
+    }
+    return p;
+  });
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
 
   // Portfolio Management State
@@ -398,10 +404,10 @@ export const AdminDashboardView: React.FC = () => {
               Studio Owner Portal
             </span>
             <span className="text-xs text-zinc-500 font-mono-code font-medium">
-              Administrator: <strong className="text-zinc-800">{studioProfile.designerName}</strong>
+              Administrator: <strong className="text-zinc-800">{currentUser?.name || studioProfile.designerName}</strong>
             </span>
             <span className="text-[11px] text-zinc-400 font-mono-code">
-              ({studioProfile.email})
+              ({currentUser?.email || studioProfile.email})
             </span>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">

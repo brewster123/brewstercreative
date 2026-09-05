@@ -27,6 +27,10 @@ import {
   INITIAL_NOTIFICATIONS,
 } from '../data/initialData';
 import { supabase, isSupabaseConfigured, supabaseUrl } from '../lib/supabase';
+import {
+  insertCommissionToSupabase,
+  fetchCommissionsFromSupabase,
+} from '../data/commissionsData';
 
 export type AppView = 
   | 'home'
@@ -77,6 +81,15 @@ interface AppContextType {
   
   // Commission Actions
   submitCommission: (formData: any) => string;
+  submitCommissionRequest: (data: {
+    serviceType: string;
+    title: string;
+    description: string;
+    budget: number | string;
+    deadline: string;
+    additionalNotes?: string;
+  }) => Promise<{ success: boolean; commission?: Commission; error?: string }>;
+  refreshCommissions: () => Promise<void>;
   updateCommissionStage: (commissionId: string, newStageNumber: number, stageName?: string, stageNote?: string) => void;
   updateCommissionStatus: (commissionId: string, status: CommissionStatus) => void;
   updateCommissionDetails: (commissionId: string, updates: Partial<Commission>) => void;
@@ -430,6 +443,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [currentUser?.role]);
 
+  // Fetch real commissions from public.commissions in Supabase when user is authenticated
+  const refreshCommissions = async () => {
+    if (!currentUser || !isSupabaseConfigured()) return;
+    try {
+      const { success, data, error } = await fetchCommissionsFromSupabase(currentUser);
+      if (success && data && data.length > 0) {
+        setCommissions(prev => {
+          const dbIds = new Set(data.map(d => d.id));
+          const retained = prev.filter(p => !dbIds.has(p.id));
+          return [...data, ...retained];
+        });
+      } else if (error) {
+        console.warn('[Supabase Commissions] Notice fetching commissions:', error);
+      }
+    } catch (err) {
+      console.error('[Supabase Commissions] Error in refreshCommissions:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser && isSupabaseConfigured()) {
+      refreshCommissions();
+    }
+  }, [currentUser?.id, currentUser?.role]);
+
   const loginUser = async (
     email: string, 
     password?: string
@@ -755,6 +793,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setActiveView('client-dashboard');
     return newId;
+  };
+
+  const submitCommissionRequest = async (data: {
+    serviceType: string;
+    title: string;
+    description: string;
+    budget: number | string;
+    deadline: string;
+    additionalNotes?: string;
+  }): Promise<{ success: boolean; commission?: Commission; error?: string }> => {
+    if (!currentUser) {
+      return {
+        success: false,
+        error: 'You must be signed in to submit a commission request. Please sign in or create an account.',
+      };
+    }
+
+    if (!isSupabaseConfigured()) {
+      return {
+        success: false,
+        error: 'Supabase authentication is not configured. Please check your environment variables.',
+      };
+    }
+
+    // Insert directly into public.commissions table in Supabase
+    // Uses currently authenticated user's id as client_id (cannot be modified by client)
+    const result = await insertCommissionToSupabase(
+      {
+        clientId: currentUser.id,
+        title: data.title,
+        serviceType: data.serviceType,
+        description: data.description,
+        budget: data.budget,
+        deadline: data.deadline,
+        additionalNotes: data.additionalNotes,
+      },
+      currentUser
+    );
+
+    if (!result.success || !result.data) {
+      return {
+        success: false,
+        error: result.error || 'Failed to submit commission to Supabase.',
+      };
+    }
+
+    const newCommission = result.data;
+
+    // Update in-memory state so it appears immediately in all views
+    setCommissions(prev => [newCommission, ...prev.filter(c => c.id !== newCommission.id)]);
+    setSelectedCommissionId(newCommission.id);
+
+    const todayStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+    // Add initial timeline event
+    const newTimelineUpdate: ProgressUpdate = {
+      id: `upd-${Date.now()}`,
+      commissionId: newCommission.id,
+      stage: 'Commission Received',
+      stageNumber: 1,
+      percentage: 10,
+      note: `Commission submitted by ${currentUser.name}. Request queued in Supabase database with default status (pending).`,
+      timestamp: todayStr,
+      updatedBy: 'System',
+    };
+    setTimelineUpdates(prev => [...prev, newTimelineUpdate]);
+
+    // Initial welcoming message
+    const welcomeMsg: Message = {
+      id: `msg-${Date.now()}`,
+      commissionId: newCommission.id,
+      senderId: 'usr-admin-1',
+      senderName: studioProfile.designerName,
+      senderRole: 'admin',
+      senderAvatar: studioProfile.avatar,
+      message: `Hello ${currentUser.name}! Thanks for submitting your commission request for "${newCommission.projectName}". Your request has been recorded in our Supabase commissions table. I will review your design brief and scope shortly!`,
+      timestamp: `${todayStr} · Just now`,
+      readStatus: false,
+    };
+    setMessages(prev => [...prev, welcomeMsg]);
+
+    // Notification for client
+    const newNotif: AppNotification = {
+      id: `notif-${Date.now()}`,
+      userId: currentUser.id,
+      commissionId: newCommission.id,
+      message: `Your commission request for "${newCommission.projectName}" was successfully submitted!`,
+      type: 'status',
+      readStatus: false,
+      timestamp: todayStr,
+      linkTab: 'overview',
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+
+    return { success: true, commission: newCommission };
   };
 
   const updateCommissionStage = (commissionId: string, newStageNumber: number, stageNameOrNote?: string, optionalNote?: string) => {
@@ -1302,6 +1435,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         projectFiles,
         notifications,
         submitCommission,
+        submitCommissionRequest,
+        refreshCommissions,
         updateCommissionStage,
         updateCommissionStatus,
         updateCommissionDetails,

@@ -14,7 +14,6 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { NotificationPanel } from './NotificationPanel';
-import { BrandLogo } from './BrandLogo';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -56,7 +55,11 @@ export const Navbar: React.FC = () => {
             onClick={() => setActiveView('home')}
             className="flex items-center gap-3 group text-left focus:outline-none"
           >
-            <BrandLogo size="md" className="group-hover:scale-105 transition-transform" />
+            <img
+              src="https://cdn.builder.io/api/v1/image/assets%2F48bafc0997de4f0cbe1f0163687e4e1d%2F5f1152145f47462e9c7541115b503221?format=webp&width=800&height=1200"
+              alt="Brewster Creative logo"
+              className="w-10 h-10 object-contain shrink-0 block select-none group-hover:scale-105 transition-transform"
+            />
             <div>
               <span className="font-display font-bold text-lg text-zinc-900 tracking-tight flex items-center gap-1.5">
                 {studioProfile.studioName}

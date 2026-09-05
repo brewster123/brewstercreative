@@ -407,7 +407,7 @@ export const AdminDashboardView: React.FC = () => {
               Administrator: <strong className="text-zinc-800">{currentUser?.name || studioProfile.designerName}</strong>
             </span>
             <span className="text-[11px] text-zinc-400 font-mono-code">
-              ({currentUser?.email || studioProfile.email})
+              ({(currentUser?.email && !currentUser.email.toLowerCase().includes('cabandobrewster')) ? currentUser.email : (studioProfile.email && !studioProfile.email.toLowerCase().includes('cabandobrewster')) ? studioProfile.email : 'brewstercreates@gmail.com'})
             </span>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">

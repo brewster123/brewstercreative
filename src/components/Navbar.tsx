@@ -148,7 +148,9 @@ export const Navbar: React.FC = () => {
                   >
                     <div className="px-4 py-2 border-b border-zinc-100">
                       <p className="text-xs font-bold text-zinc-900">{currentUser.name}</p>
-                      <p className="text-[11px] text-zinc-500 truncate">{currentUser.email}</p>
+                      <p className="text-[11px] text-zinc-500 truncate">
+                        {(currentUser.id === 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69' || currentUser.role === 'admin' || currentUser.email?.toLowerCase().includes('cabandobrewster')) ? 'brewstercreates@gmail.com' : currentUser.email}
+                      </p>
                       <span className="inline-block mt-1 px-2 py-0.5 text-[10px] rounded bg-orange-50 text-orange-600 font-semibold border border-orange-100">
                         {currentUser.role === 'admin' ? 'Studio Director (Admin)' : 'Workspace Member'}
                       </span>

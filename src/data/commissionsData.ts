@@ -25,6 +25,17 @@ export interface CommissionDbRow {
   updated_at: string;
 }
 
+export const CANONICAL_COMMISSION_STATUSES: readonly CommissionStatus[] = [
+  'pending',
+  'reviewing',
+  'accepted',
+  'in_progress',
+  'for_review',
+  'revision',
+  'completed',
+  'cancelled',
+] as const;
+
 /**
  * Maps a Supabase database row from public.commissions into the application's Commission domain model.
  */
@@ -32,34 +43,42 @@ export function mapDbCommissionToAppCommission(
   row: CommissionDbRow,
   clientUser?: User | null
 ): Commission {
-  const rawStatus = (row.status || 'pending').toLowerCase();
-  let status: CommissionStatus = 'Pending';
+  const rawStatus = (row.status || 'pending').toLowerCase().trim();
+  let status: CommissionStatus = 'pending';
   let progress = 10;
   let currentStage = 1;
 
-  if (rawStatus === 'in progress' || rawStatus === 'in_progress') {
-    status = 'In Progress';
-    progress = 40;
-    currentStage = 3;
-  } else if (rawStatus === 'client review' || rawStatus === 'review') {
-    status = 'Client Review';
+  if (rawStatus === 'reviewing') {
+    status = 'reviewing';
+    progress = 25;
+    currentStage = 2;
+  } else if (rawStatus === 'accepted') {
+    status = 'accepted';
+    progress = 30;
+    currentStage = 2;
+  } else if (rawStatus === 'in_progress' || rawStatus === 'in progress') {
+    status = 'in_progress';
+    progress = 55;
+    currentStage = 4;
+  } else if (rawStatus === 'for_review' || rawStatus === 'client review' || rawStatus === 'review') {
+    status = 'for_review';
     progress = 70;
     currentStage = 5;
-  } else if (rawStatus === 'revision requested' || rawStatus === 'revision') {
-    status = 'Revision Requested';
+  } else if (rawStatus === 'revision' || rawStatus === 'revision requested') {
+    status = 'revision';
     progress = 85;
     currentStage = 6;
-  } else if (rawStatus === 'final approval' || rawStatus === 'approved') {
-    status = 'Final Approval';
-    progress = 95;
-    currentStage = 7;
   } else if (rawStatus === 'completed') {
-    status = 'Completed';
+    status = 'completed';
     progress = 100;
     currentStage = 8;
-  } else if (rawStatus === 'rejected' || rawStatus === 'declined') {
-    status = 'Rejected';
+  } else if (rawStatus === 'cancelled' || rawStatus === 'rejected' || rawStatus === 'declined') {
+    status = 'cancelled';
     progress = 0;
+    currentStage = 1;
+  } else {
+    status = 'pending';
+    progress = 10;
     currentStage = 1;
   }
 
@@ -309,3 +328,76 @@ export async function fetchCommissionsFromSupabase(
     return { success: false, data: [], error: err?.message };
   }
 }
+
+/**
+ * Updates a commission's status in the Supabase public.commissions table.
+ * - Validates that status is one of the 8 canonical database values.
+ * - Updates ONLY 'status' and 'updated_at'.
+ * - NEVER updates 'client_id'.
+ */
+export async function updateCommissionStatusInSupabase(
+  commissionId: string,
+  status: string
+): Promise<{ success: boolean; error?: string; data?: CommissionDbRow }> {
+  if (!commissionId) {
+    return { success: false, error: 'Commission ID is required.' };
+  }
+
+  const normalizedStatus = status?.trim().toLowerCase();
+  const validStatuses: readonly string[] = [
+    'pending',
+    'reviewing',
+    'accepted',
+    'in_progress',
+    'for_review',
+    'revision',
+    'completed',
+    'cancelled',
+  ];
+
+  if (!validStatuses.includes(normalizedStatus)) {
+    return {
+      success: false,
+      error: `Invalid status "${status}". Allowed values: ${validStatuses.join(', ')}.`,
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('commissions')
+      .update({
+        status: normalizedStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', commissionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[Supabase Commissions] Update status error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to update commission status in database.',
+      };
+    }
+
+    if (!data) {
+      return {
+        success: false,
+        error: 'No updated commission record returned by the database.',
+      };
+    }
+
+    return {
+      success: true,
+      data: data as CommissionDbRow,
+    };
+  } catch (err: any) {
+    console.error('[Supabase Commissions] Unexpected exception during update status:', err);
+    return {
+      success: false,
+      error: err?.message || 'An unexpected error occurred while updating status in Supabase.',
+    };
+  }
+}
+

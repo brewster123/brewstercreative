@@ -26,6 +26,34 @@ import {
 } from 'lucide-react';
 
 export const ClientDashboardView: React.FC = () => {
+  const formatCommissionStatus = (status: string | undefined): string => {
+    if (!status) return 'Pending';
+    switch (status.toLowerCase()) {
+      case 'in_progress':
+      case 'in progress':
+        return 'In Progress';
+      case 'for_review':
+      case 'client review':
+        return 'For Review';
+      case 'pending':
+        return 'Pending';
+      case 'reviewing':
+        return 'Reviewing';
+      case 'accepted':
+        return 'Accepted';
+      case 'revision':
+      case 'revision requested':
+        return 'Revision';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+      case 'rejected':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  };
+
   const { 
     currentUserCommissions = [], 
     activeCommission, 
@@ -165,7 +193,7 @@ export const ClientDashboardView: React.FC = () => {
     }
   };
 
-  const isFinalDelivery = commission.currentStage === 8 || commission.status === 'Completed';
+  const isFinalDelivery = commission.currentStage === 8 || commission.status === 'Completed' || commission.status === 'completed';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -184,7 +212,7 @@ export const ClientDashboardView: React.FC = () => {
                   : 'bg-white text-zinc-700 hover:text-zinc-900 border border-zinc-200'
               }`}
             >
-              {c.projectName} ({c.status})
+              {c.projectName} ({formatCommissionStatus(c.status)})
             </button>
           ))}
           <button
@@ -204,6 +232,19 @@ export const ClientDashboardView: React.FC = () => {
             <div className="flex items-center gap-2 flex-wrap mb-2">
               <span className="px-3 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code font-bold border border-orange-200">
                 {commission.serviceType}
+              </span>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono-code font-bold border ${
+                commission.status === 'Completed' || commission.status === 'completed'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : commission.status === 'In Progress' || commission.status === 'in_progress' || commission.status === 'accepted'
+                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  : commission.status === 'Client Review' || commission.status === 'Revision Requested' || commission.status === 'for_review' || commission.status === 'reviewing' || commission.status === 'revision'
+                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  : commission.status === 'Rejected' || commission.status === 'cancelled'
+                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                  : 'bg-orange-50 text-orange-700 border-orange-200'
+              }`}>
+                Status: {formatCommissionStatus(commission.status)}
               </span>
               <span className="text-xs font-mono-code text-zinc-400 font-medium">
                 Project Ref: #{commission.id.slice(0, 8)}

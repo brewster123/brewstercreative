@@ -30,6 +30,7 @@ import { supabase, isSupabaseConfigured, supabaseUrl } from '../lib/supabase';
 import {
   insertCommissionToSupabase,
   fetchCommissionsFromSupabase,
+  updateCommissionStatusInSupabase,
 } from '../data/commissionsData';
 
 export type AppView = 
@@ -91,7 +92,7 @@ interface AppContextType {
   }) => Promise<{ success: boolean; commission?: Commission; error?: string }>;
   refreshCommissions: () => Promise<void>;
   updateCommissionStage: (commissionId: string, newStageNumber: number, stageName?: string, stageNote?: string) => void;
-  updateCommissionStatus: (commissionId: string, status: CommissionStatus) => void;
+  updateCommissionStatus: (commissionId: string, status: CommissionStatus) => Promise<{ success: boolean; error?: string }>;
   updateCommissionDetails: (commissionId: string, updates: Partial<Commission>) => void;
   updatePaymentStatus: (commissionId: string, status: 'Unpaid' | 'Partial' | 'Paid') => void;
   acceptCommission: (commissionId: string) => void;
@@ -988,10 +989,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateCommissionStatus = (commissionId: string, status: CommissionStatus) => {
+  const updateCommissionStatus = async (
+    commissionId: string,
+    status: CommissionStatus
+  ): Promise<{ success: boolean; error?: string }> => {
+    // 1. Persist status update to Supabase public.commissions
+    const res = await updateCommissionStatusInSupabase(commissionId, status);
+    if (!res.success) {
+      console.error('[AppContext] Failed to update commission status in Supabase:', res.error);
+      return { success: false, error: res.error || 'Failed to update commission status in database.' };
+    }
+
+    // 2. Only update local React state after Supabase successfully updates
+    const todayStr = new Date().toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
     setCommissions(prev =>
-      prev.map(c => (c.id === commissionId ? { ...c, status, updatedAt: 'Just now' } : c))
+      prev.map(c => {
+        if (c.id === commissionId) {
+          return {
+            ...c,
+            status,
+            updatedAt: todayStr,
+          };
+        }
+        return c;
+      })
     );
+
+    return { success: true };
   };
 
   const updateCommissionDetails = (commissionId: string, updates: Partial<Commission>) => {

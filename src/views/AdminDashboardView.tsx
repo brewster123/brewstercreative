@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Commission, 
+  CommissionStatus,
   CommissionStageName, 
   COMMISSION_STAGES, 
   ServiceItem, 
@@ -40,7 +41,9 @@ import {
   Copy,
   CheckCheck,
   Users,
-  Phone
+  Phone,
+  Loader2,
+  ChevronDown
 } from 'lucide-react';
 import { loadCustomFontFile, isFontLoaded } from '../utils/fontLoader';
 import { formatCommissionDate } from '../utils/dateUtils';
@@ -52,6 +55,7 @@ export const AdminDashboardView: React.FC = () => {
     activeCommission, 
     setActiveCommissionId, 
     updateCommissionStage, 
+    updateCommissionStatus,
     updatePaymentStatus, 
     acceptCommission, 
     declineCommission, 
@@ -78,6 +82,81 @@ export const AdminDashboardView: React.FC = () => {
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>(activeCommission?.id || commissions[0]?.id || '');
   const [commissionFilter, setCommissionFilter] = useState<string>('all');
   const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
+
+  // Supabase Commission Status Management state (Phase 3B.2)
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [statusSuccessId, setStatusSuccessId] = useState<string | null>(null);
+  const [statusErrorMap, setStatusErrorMap] = useState<Record<string, string>>({});
+
+  const STATUS_OPTIONS: { value: CommissionStatus; label: string }[] = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'reviewing', label: 'Reviewing' },
+    { value: 'accepted', label: 'Accepted' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'for_review', label: 'For Review' },
+    { value: 'revision', label: 'Revision' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' },
+  ];
+
+  const formatCommissionStatus = (status: string | undefined): string => {
+    if (!status) return 'Pending';
+    switch (status.toLowerCase()) {
+      case 'in_progress':
+      case 'in progress':
+        return 'In Progress';
+      case 'for_review':
+      case 'client review':
+        return 'For Review';
+      case 'pending':
+        return 'Pending';
+      case 'reviewing':
+        return 'Reviewing';
+      case 'accepted':
+        return 'Accepted';
+      case 'revision':
+      case 'revision requested':
+        return 'Revision';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+      case 'rejected':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  };
+
+  const handleStatusChange = async (commissionId: string, newStatus: CommissionStatus) => {
+    setStatusUpdatingId(commissionId);
+    setStatusErrorMap(prev => {
+      const copy = { ...prev };
+      delete copy[commissionId];
+      return copy;
+    });
+
+    try {
+      const res = await updateCommissionStatus(commissionId, newStatus);
+      if (res.success) {
+        setStatusSuccessId(commissionId);
+        setTimeout(() => {
+          setStatusSuccessId(curr => (curr === commissionId ? null : curr));
+        }, 3000);
+      } else {
+        setStatusErrorMap(prev => ({
+          ...prev,
+          [commissionId]: res.error || 'Failed to update commission status in Supabase.',
+        }));
+      }
+    } catch (err: any) {
+      setStatusErrorMap(prev => ({
+        ...prev,
+        [commissionId]: err?.message || 'An unexpected error occurred while updating status.',
+      }));
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
 
   const handleCopyEmail = (email: string, id: string) => {
     navigator.clipboard.writeText(email);
@@ -347,10 +426,19 @@ export const AdminDashboardView: React.FC = () => {
 
   const filteredCommissions = commissions.filter(c => {
     if (commissionFilter === 'all') return true;
-    if (commissionFilter === 'pending') return c.status === 'Request Submitted' || c.status === 'Pending';
-    if (commissionFilter === 'in_progress') return c.status === 'In Progress';
-    if (commissionFilter === 'review') return c.status === 'Client Review' || c.status === 'Revision Requested';
-    if (commissionFilter === 'completed') return c.status === 'Completed';
+    const s = (c.status || '').toLowerCase().replace(/\s+/g, '_');
+    if (commissionFilter === 'pending') {
+      return s === 'pending' || s === 'request_submitted' || s === 'reviewing';
+    }
+    if (commissionFilter === 'in_progress') {
+      return s === 'in_progress' || s === 'accepted';
+    }
+    if (commissionFilter === 'review') {
+      return s === 'for_review' || s === 'revision' || s === 'client_review' || s === 'revision_requested';
+    }
+    if (commissionFilter === 'completed') {
+      return s === 'completed' || s === 'final_approval';
+    }
     return true;
   });
 
@@ -611,17 +699,17 @@ export const AdminDashboardView: React.FC = () => {
                             ID: #{comm.id.length > 12 ? `${comm.id.slice(0, 8)}...` : comm.id}
                           </span>
                           <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono-code font-bold border ${
-                            comm.status === 'Completed' || comm.status === 'Final Approval'
+                            comm.status === 'Completed' || comm.status === 'Final Approval' || comm.status === 'completed'
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : comm.status === 'In Progress'
+                              : comm.status === 'In Progress' || comm.status === 'in_progress' || comm.status === 'accepted'
                               ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : comm.status === 'Client Review' || comm.status === 'Revision Requested'
+                              : comm.status === 'Client Review' || comm.status === 'Revision Requested' || comm.status === 'for_review' || comm.status === 'reviewing' || comm.status === 'revision'
                               ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : comm.status === 'Rejected'
+                              : comm.status === 'Rejected' || comm.status === 'cancelled'
                               ? 'bg-rose-50 text-rose-700 border-rose-200'
                               : 'bg-orange-50 text-orange-700 border-orange-200'
                           }`}>
-                            Status: {comm.status}
+                            Status: {formatCommissionStatus(comm.status)}
                           </span>
                           <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono-code font-bold border ${
                             (comm.priority || 'Normal').toLowerCase().includes('urgent') || (comm.priority || 'Normal').toLowerCase().includes('high')
@@ -692,56 +780,127 @@ export const AdminDashboardView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Quick Action Buttons for Designer */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {comm.status === 'Request Submitted' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => acceptCommission(comm.id)}
-                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
+                    {/* Quick Action Buttons & Status Management for Designer */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
+                      {/* Status Dropdown Selector (Phase 3B.2 Supabase backed) */}
+                      <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-200 rounded-2xl px-3 py-1.5">
+                        <label
+                          htmlFor={`status-select-${comm.id}`}
+                          className="text-[11px] font-bold text-zinc-500 font-mono-code uppercase tracking-wider shrink-0"
+                        >
+                          Status:
+                        </label>
+                        <div className="relative inline-flex items-center">
+                          <select
+                            id={`status-select-${comm.id}`}
+                            value={
+                              comm.status === 'In Progress' ? 'in_progress' :
+                              comm.status === 'Client Review' ? 'for_review' :
+                              comm.status === 'Revision Requested' ? 'revision' :
+                              comm.status === 'Final Approval' ? 'for_review' :
+                              comm.status === 'Rejected' ? 'cancelled' :
+                              comm.status === 'Completed' ? 'completed' :
+                              comm.status === 'Pending' ? 'pending' :
+                              comm.status
+                            }
+                            disabled={statusUpdatingId === comm.id}
+                            onChange={(e) => handleStatusChange(comm.id, e.target.value as CommissionStatus)}
+                            className="appearance-none pl-2.5 pr-7 py-1 text-xs font-mono-code font-bold bg-white text-zinc-900 border border-zinc-200 rounded-xl hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 disabled:opacity-50 cursor-pointer transition-colors"
+                            title="Update commission status in Supabase"
                           >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Accept Commission</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => declineCommission(comm.id)}
-                            className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                            <span>Decline</span>
-                          </button>
-                        </>
-                      )}
+                            {STATUS_OPTIONS.map(opt => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400">
+                            {statusUpdatingId === comm.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+                            )}
+                          </div>
+                        </div>
+                        {statusSuccessId === comm.id && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-mono-code font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-lg border border-emerald-300 animate-fade-in">
+                            <Check className="w-3 h-3 text-emerald-600" /> Saved
+                          </span>
+                        )}
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedCommissionId(comm.id);
-                          setActiveCommissionId(comm.id);
-                          setActiveAdminTab('proof-uploader');
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
-                      >
-                        <UploadCloud className="w-3.5 h-3.5" />
-                        <span>Upload Proof</span>
-                      </button>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {comm.status === 'Request Submitted' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => acceptCommission(comm.id)}
+                              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Accept Commission</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => declineCommission(comm.id)}
+                              className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              <span>Decline</span>
+                            </button>
+                          </>
+                        )}
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedCommissionId(comm.id);
-                          setActiveCommissionId(comm.id);
-                          setActiveAdminTab('chat');
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold transition-all flex items-center gap-1.5 border border-zinc-200"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 text-zinc-600" />
-                        <span>Client Chat</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCommissionId(comm.id);
+                            setActiveCommissionId(comm.id);
+                            setActiveAdminTab('proof-uploader');
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
+                        >
+                          <UploadCloud className="w-3.5 h-3.5" />
+                          <span>Upload Proof</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCommissionId(comm.id);
+                            setActiveCommissionId(comm.id);
+                            setActiveAdminTab('chat');
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold transition-all flex items-center gap-1.5 border border-zinc-200"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-zinc-600" />
+                          <span>Client Chat</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Supabase status update error banner if any */}
+                  {statusErrorMap[comm.id] && (
+                    <div className="mt-4 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl px-4 py-2.5 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                        <span>{statusErrorMap[comm.id]}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setStatusErrorMap(prev => {
+                          const copy = { ...prev };
+                          delete copy[comm.id];
+                          return copy;
+                        })}
+                        className="text-rose-400 hover:text-rose-700 font-bold ml-3 text-sm leading-none cursor-pointer"
+                        title="Dismiss error"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
 
                   {/* Stage Controller Selector */}
                   <div className="mt-5 space-y-3">
@@ -1650,7 +1809,7 @@ export const AdminDashboardView: React.FC = () => {
               >
                 {commissions.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.projectName} ({c.clientName}) — Current: {c.status}
+                    {c.projectName} ({c.clientName}) — Current: {formatCommissionStatus(c.status)}
                   </option>
                 ))}
               </select>

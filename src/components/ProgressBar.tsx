@@ -33,7 +33,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
           </div>
           <h3 className="font-display text-lg sm:text-xl font-bold text-zinc-900 mt-1 flex items-center gap-2">
             <span>{currentStageInfo.name}</span>
-            {commission.status === 'Completed' && (
+            {(commission.status === 'Completed' || commission.status === 'completed') && (
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-sans font-semibold border border-emerald-200">
                 ✓ Completed
               </span>

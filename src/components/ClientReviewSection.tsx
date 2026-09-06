@@ -28,8 +28,8 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
   const [zoomImage, setZoomImage] = useState<string | null>(null);
 
   const reviewData = commission.clientReviewData;
-  const isApproved = commission.status === 'Final Approval' || commission.status === 'Completed' || reviewData?.clientStatus === 'Approved';
-  const isRevisionRequested = commission.status === 'Revision Requested' || reviewData?.clientStatus === 'Revision Requested';
+  const isApproved = commission.status === 'Final Approval' || commission.status === 'Completed' || commission.status === 'completed' || reviewData?.clientStatus === 'Approved';
+  const isRevisionRequested = commission.status === 'Revision Requested' || commission.status === 'revision' || reviewData?.clientStatus === 'Revision Requested';
 
   const handleApprove = () => {
     submitClientReviewAction(commission.id, 'approve');

@@ -42,6 +42,14 @@ export const COMMISSION_STAGES: CommissionStageInfo[] = [
 ];
 
 export type CommissionStatus = 
+  | 'pending'
+  | 'reviewing'
+  | 'accepted'
+  | 'in_progress'
+  | 'for_review'
+  | 'revision'
+  | 'completed'
+  | 'cancelled'
   | 'Pending'
   | 'In Progress'
   | 'Client Review'

@@ -14,6 +14,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { NotificationPanel } from './NotificationPanel';
+import { BrandLogo } from './BrandLogo';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -55,11 +56,7 @@ export const Navbar: React.FC = () => {
             onClick={() => setActiveView('home')}
             className="flex items-center gap-3 group text-left focus:outline-none"
           >
-            <img
-              src="https://cdn.builder.io/api/v1/image/assets%2F48bafc0997de4f0cbe1f0163687e4e1d%2F5f1152145f47462e9c7541115b503221?format=webp&width=800&height=1200"
-              alt="Brewster Creative logo"
-              className="w-10 h-10 object-contain shrink-0 block select-none group-hover:scale-105 transition-transform"
-            />
+            <BrandLogo size="md" className="group-hover:scale-105 transition-transform" />
             <div>
               <span className="font-display font-bold text-lg text-zinc-900 tracking-tight flex items-center gap-1.5">
                 {studioProfile.studioName}
@@ -148,9 +145,7 @@ export const Navbar: React.FC = () => {
                   >
                     <div className="px-4 py-2 border-b border-zinc-100">
                       <p className="text-xs font-bold text-zinc-900">{currentUser.name}</p>
-                      <p className="text-[11px] text-zinc-500 truncate">
-                        {(currentUser.id === 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69' || currentUser.role === 'admin' || currentUser.email?.toLowerCase().includes('cabandobrewster')) ? 'brewstercreates@gmail.com' : currentUser.email}
-                      </p>
+                      <p className="text-[11px] text-zinc-500 truncate">{currentUser.email}</p>
                       <span className="inline-block mt-1 px-2 py-0.5 text-[10px] rounded bg-orange-50 text-orange-600 font-semibold border border-orange-100">
                         {currentUser.role === 'admin' ? 'Studio Director (Admin)' : 'Workspace Member'}
                       </span>

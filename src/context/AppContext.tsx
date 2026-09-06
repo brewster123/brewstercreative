@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   User,
   UserRole,
@@ -189,24 +189,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_USERS;
   });
 
-  const [currentUserRaw, setCurrentUserRaw] = useState<User | null>(null);
-
-  const setCurrentUser = useCallback((userOrFn: User | null | ((prev: User | null) => User | null)) => {
-    setCurrentUserRaw(prev => {
-      const next = typeof userOrFn === 'function' ? userOrFn(prev) : userOrFn;
-      if (!next) return null;
-      let email = next.email;
-      if (next.id === 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69' || next.role === 'admin' || email?.toLowerCase().includes('cabandobrewster')) {
-        email = 'brewstercreates@gmail.com';
-      }
-      return {
-        ...next,
-        email,
-      };
-    });
-  }, []);
-
-  const currentUser = currentUserRaw;
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [databaseError, setDatabaseError] = useState<string | null>(null);
 
@@ -354,35 +337,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Determine role STRICTLY from public.profiles.role column in Supabase
       const assignedRole: UserRole = data.role === 'admin' ? 'admin' : 'client';
 
-      // IMPORTANT: The authenticated user's email MUST come from the active Supabase Auth session/user.
-      // Do NOT overwrite the authenticated Supabase email with stale database profile or localStorage data.
-      let resolvedEmail = (fallbackEmail && fallbackEmail.trim()) || '';
-
-      if (!resolvedEmail || resolvedEmail.toLowerCase().includes('cabandobrewster')) {
-        if (data.email && !data.email.toLowerCase().includes('cabandobrewster')) {
-          resolvedEmail = data.email.trim();
-        } else {
-          resolvedEmail = 'brewstercreates@gmail.com';
-        }
-      }
-
-      if (userId === 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69' || assignedRole === 'admin' || resolvedEmail.toLowerCase().includes('cabandobrewster')) {
-        resolvedEmail = 'brewstercreates@gmail.com';
-      }
-
       const userProfile: User = {
         id: data.id,
-        name: data.name || (assignedRole === 'admin' ? 'Brewster A. Cabando' : resolvedEmail.split('@')[0] || 'User'),
-        email: resolvedEmail,
+        name: data.name || fallbackEmail.split('@')[0] || 'User',
+        // IMPORTANT: the authenticated Supabase Auth session email
+        // (`fallbackEmail`, passed in from `session.user.email` at every
+        // call site) is the source of truth for the user's email — never
+        // `public.profiles.email`, and never a hardcoded value keyed off
+        // role or user ID. Changing a user's email in Supabase Auth does
+        // not automatically update the `profiles.email` column (there is
+        // no trigger syncing it), so that column can silently go stale.
+        // `data.email` is only used as a last-resort fallback for the rare
+        // case where the session itself has no email on it. This must stay
+        // role-agnostic: hardcoding a specific email for "the admin" breaks
+        // the moment that account's email changes again, or a second admin
+        // is added.
+        email: fallbackEmail || data.email || '',
         role: assignedRole,
-        avatar: data.avatar || (assignedRole === 'admin' ? studioProfile.avatar : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'),
-        handle: data.handle || (assignedRole === 'admin' ? '@brewster_creative' : `@${(resolvedEmail.split('@')[0] || 'user').toLowerCase()}`),
+        avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+        handle: data.handle || `@${(fallbackEmail.split('@')[0] || 'user').toLowerCase()}`,
         phone: metadataPhone || (data as any).phone || undefined,
         contactMethod: data.contact_method || 'Platform Chat & Email',
         bio: data.bio || '',
       };
 
-      console.log(`[Supabase Auth] Profile loaded successfully from Supabase. Email: "${resolvedEmail}", Role: "${assignedRole}"`);
+      console.log(`[Supabase Auth] Profile loaded successfully from Supabase. Role from public.profiles: "${assignedRole}"`);
 
       return { profile: userProfile, error: undefined, rawError: null };
     } catch (err: any) {
@@ -399,21 +378,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const refreshCurrentUserProfile = async (): Promise<User | null> => {
     if (!isSupabaseConfigured()) return null;
     try {
-      const { data: userData } = await supabase.auth.getUser();
       const { data: { session }, error } = await supabase.auth.getSession();
-      const activeUser = userData?.user || session?.user;
-      if (!activeUser) {
+      if (error || !session?.user) {
         return null;
       }
-      let activeEmail = userData?.user?.email || session?.user?.email || '';
-      if (activeUser.id === 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69' || activeEmail.toLowerCase().includes('cabandobrewster')) {
-        activeEmail = 'brewstercreates@gmail.com';
-      }
-
       const { profile, error: profileErr } = await fetchUserProfileFromDb(
-        activeUser.id, 
-        activeEmail, 
-        activeUser.user_metadata?.phone
+        session.user.id, 
+        session.user.email || '', 
+        session.user.user_metadata?.phone
       );
       if (profile) {
         setCurrentUser(profile);
@@ -431,85 +403,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     let isMounted = true;
 
-    // Local-storage migration: sanitize any stale cached email strings in localStorage
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('cabando_') || key.startsWith('sb-'))) {
-          const val = localStorage.getItem(key);
-          if (val && val.toLowerCase().includes('cabandobrewster@gmail.com')) {
-            const updated = val.replace(/cabandobrewster@gmail\.com/gi, 'brewstercreates@gmail.com');
-            localStorage.setItem(key, updated);
-          }
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
     if (!isSupabaseConfigured()) {
       setAuthLoading(false);
       return;
     }
 
-    // Hydrate existing user from Supabase Auth
-    const initAuth = async () => {
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('[Supabase Auth] Error hydrating session on mount:', error.message);
-        }
-        const activeUser = userData?.user || session?.user;
-        if (activeUser) {
-          let activeEmail = userData?.user?.email || session?.user?.email || '';
-          if (activeUser.id === 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69' || activeEmail.toLowerCase().includes('cabandobrewster')) {
-            activeEmail = 'brewstercreates@gmail.com';
-          }
-
-          const { profile, error: profileErr } = await fetchUserProfileFromDb(
-            activeUser.id, 
-            activeEmail, 
-            activeUser.user_metadata?.phone
-          );
-          if (profile && isMounted) {
-            setCurrentUser(profile);
-          } else if (profileErr) {
-            console.warn('[Supabase Auth] Hydration notice:', profileErr);
-          }
-        }
-      } catch (err) {
-        console.error('[Supabase Auth] Error during initAuth:', err);
-      } finally {
-        if (isMounted) {
-          setAuthLoading(false);
+    // Hydrate existing session from Supabase before deciding user role
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) {
+        console.error('[Supabase Auth] Error hydrating session on mount:', error.message);
+      }
+      if (session?.user) {
+        const { profile, error: profileErr } = await fetchUserProfileFromDb(
+          session.user.id, 
+          session.user.email || '', 
+          session.user.user_metadata?.phone
+        );
+        if (profile && isMounted) {
+          setCurrentUser(profile);
+        } else if (profileErr) {
+          console.warn('[Supabase Auth] Hydration notice:', profileErr);
         }
       }
-    };
-
-    initAuth();
+      if (isMounted) {
+        setAuthLoading(false);
+      }
+    });
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (session?.user) {
-          let activeEmail = session.user.email || '';
-          try {
-            const { data: userData } = await supabase.auth.getUser();
-            if (userData?.user?.email) {
-              activeEmail = userData.user.email;
-            }
-          } catch (e) {
-            // ignore
-          }
-
-          if (session.user.id === 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69' || activeEmail.toLowerCase().includes('cabandobrewster')) {
-            activeEmail = 'brewstercreates@gmail.com';
-          }
-
           const { profile, error: profileErr } = await fetchUserProfileFromDb(
             session.user.id, 
-            activeEmail, 
+            session.user.email || '', 
             session.user.user_metadata?.phone
           );
           if (profile && isMounted) {
@@ -542,9 +469,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const dbUsers: User[] = data.map(p => ({
               id: p.id,
               name: p.name || p.email?.split('@')[0] || 'Client',
-              email: (p.id === 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69' || p.role === 'admin' || p.email?.toLowerCase().includes('cabandobrewster'))
-                ? 'brewstercreates@gmail.com'
-                : (p.email || ''),
+              email: p.email || '',
               role: p.role === 'admin' ? 'admin' : 'client',
               avatar: p.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
               handle: p.handle,
@@ -627,10 +552,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Retrieve authenticated user's UUID
       const authUserId = data.user.id;
-      let authUserEmail = data.user.email || cleanEmail;
-      if (authUserId === 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69' || authUserEmail.toLowerCase().includes('cabandobrewster')) {
-        authUserEmail = 'brewstercreates@gmail.com';
-      }
+      const authUserEmail = data.user.email || cleanEmail;
 
       // Role MUST come strictly from public.profiles.role using user UUID
       const { profile, error: profileError } = await fetchUserProfileFromDb(authUserId, authUserEmail, data.user.user_metadata?.phone);

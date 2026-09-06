@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Commission, CommissionStatus, User } from '../types';
+import { Commission, CommissionPriority, CommissionStatus, User } from '../types';
 
 export interface CreateCommissionInput {
   clientId: string;
@@ -35,6 +35,27 @@ export const CANONICAL_COMMISSION_STATUSES: readonly CommissionStatus[] = [
   'completed',
   'cancelled',
 ] as const;
+
+export const CANONICAL_COMMISSION_PRIORITIES: readonly CommissionPriority[] = [
+  'low',
+  'normal',
+  'high',
+  'urgent',
+] as const;
+
+/**
+ * Normalizes existing database priority values into the four canonical lowercase values.
+ * Defaults missing or invalid priorities to 'normal'.
+ */
+export function normalizeCommissionPriority(rawPriority?: string | null): CommissionPriority {
+  if (!rawPriority) return 'normal';
+  const clean = rawPriority.trim().toLowerCase();
+  if (clean === 'low') return 'low';
+  if (clean === 'normal') return 'normal';
+  if (clean === 'high') return 'high';
+  if (clean === 'urgent') return 'urgent';
+  return 'normal';
+}
 
 /**
  * Maps a Supabase database row from public.commissions into the application's Commission domain model.
@@ -129,8 +150,8 @@ export function mapDbCommissionToAppCommission(
     currency: 'PHP',
     deadline: row.deadline || 'Flexible',
     paymentStatus: 'Unpaid',
-    priority: row.priority || 'Normal',
-
+    priority: normalizeCommissionPriority(row.priority),
+ 
     // Progress & State
     status,
     progress,
@@ -397,6 +418,68 @@ export async function updateCommissionStatusInSupabase(
     return {
       success: false,
       error: err?.message || 'An unexpected error occurred while updating status in Supabase.',
+    };
+  }
+}
+
+/**
+ * Updates a commission priority in the Supabase public.commissions table.
+ * Validates against canonical priorities ('low' | 'normal' | 'high' | 'urgent').
+ * Strictly updates ONLY priority and updated_at, never client_id.
+ */
+export async function updateCommissionPriorityInSupabase(
+  commissionId: string,
+  priority: string
+): Promise<{ success: boolean; error?: string; data?: CommissionDbRow }> {
+  if (!commissionId) {
+    return { success: false, error: 'Commission ID is required.' };
+  }
+
+  const normalizedPriority = priority?.trim().toLowerCase();
+  const validPriorities: readonly string[] = CANONICAL_COMMISSION_PRIORITIES;
+
+  if (!validPriorities.includes(normalizedPriority as any)) {
+    return {
+      success: false,
+      error: `Invalid priority "${priority}". Allowed values: ${validPriorities.join(', ')}.`,
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('commissions')
+      .update({
+        priority: normalizedPriority,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', commissionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[Supabase Commissions] Update priority error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to update commission priority in database.',
+      };
+    }
+
+    if (!data) {
+      return {
+        success: false,
+        error: 'No updated commission record returned by the database.',
+      };
+    }
+
+    return {
+      success: true,
+      data: data as CommissionDbRow,
+    };
+  } catch (err: any) {
+    console.error('[Supabase Commissions] Unexpected exception during update priority:', err);
+    return {
+      success: false,
+      error: err?.message || 'An unexpected error occurred while updating priority in Supabase.',
     };
   }
 }

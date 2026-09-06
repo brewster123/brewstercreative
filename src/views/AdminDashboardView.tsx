@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { 
   Commission, 
   CommissionStatus,
+  CommissionPriority,
   CommissionStageName, 
   COMMISSION_STAGES, 
   ServiceItem, 
@@ -56,6 +57,7 @@ export const AdminDashboardView: React.FC = () => {
     setActiveCommissionId, 
     updateCommissionStage, 
     updateCommissionStatus,
+    updateCommissionPriority,
     updatePaymentStatus, 
     acceptCommission, 
     declineCommission, 
@@ -155,6 +157,49 @@ export const AdminDashboardView: React.FC = () => {
       }));
     } finally {
       setStatusUpdatingId(null);
+    }
+  };
+
+  // Supabase Commission Priority Management state (Phase 3B.3)
+  const [priorityUpdatingId, setPriorityUpdatingId] = useState<string | null>(null);
+  const [prioritySuccessId, setPrioritySuccessId] = useState<string | null>(null);
+  const [priorityErrorMap, setPriorityErrorMap] = useState<Record<string, string>>({});
+
+  const PRIORITY_OPTIONS: { value: CommissionPriority; label: string }[] = [
+    { value: 'low', label: 'Low' },
+    { value: 'normal', label: 'Normal' },
+    { value: 'high', label: 'High' },
+    { value: 'urgent', label: 'Urgent' },
+  ];
+
+  const handlePriorityChange = async (commissionId: string, newPriority: CommissionPriority) => {
+    setPriorityUpdatingId(commissionId);
+    setPriorityErrorMap(prev => {
+      const copy = { ...prev };
+      delete copy[commissionId];
+      return copy;
+    });
+
+    try {
+      const res = await updateCommissionPriority(commissionId, newPriority);
+      if (res.success) {
+        setPrioritySuccessId(commissionId);
+        setTimeout(() => {
+          setPrioritySuccessId(curr => (curr === commissionId ? null : curr));
+        }, 3000);
+      } else {
+        setPriorityErrorMap(prev => ({
+          ...prev,
+          [commissionId]: res.error || 'Failed to update commission priority in Supabase.',
+        }));
+      }
+    } catch (err: any) {
+      setPriorityErrorMap(prev => ({
+        ...prev,
+        [commissionId]: err?.message || 'An unexpected error occurred while updating priority.',
+      }));
+    } finally {
+      setPriorityUpdatingId(null);
     }
   };
 
@@ -711,13 +756,44 @@ export const AdminDashboardView: React.FC = () => {
                           }`}>
                             Status: {formatCommissionStatus(comm.status)}
                           </span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono-code font-bold border ${
-                            (comm.priority || 'Normal').toLowerCase().includes('urgent') || (comm.priority || 'Normal').toLowerCase().includes('high')
-                              ? 'bg-rose-50 text-rose-700 border-rose-200'
-                              : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                          }`}>
-                            Priority: {comm.priority || 'Normal'}
-                          </span>
+                          {/* Supabase Priority Selector (Phase 3B.3) */}
+                          <div className="inline-flex items-center gap-1.5">
+                            <div className={`relative inline-flex items-center rounded-full border pl-2.5 pr-6 py-0.5 text-[11px] font-mono-code font-bold transition-colors ${
+                              (comm.priority || 'normal').toLowerCase() === 'urgent' || (comm.priority || 'normal').toLowerCase() === 'high'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+                            }`}>
+                              <label htmlFor={`priority-select-${comm.id}`} className="mr-1 select-none cursor-pointer">
+                                Priority:
+                              </label>
+                              <select
+                                id={`priority-select-${comm.id}`}
+                                value={(comm.priority || 'normal').toLowerCase()}
+                                disabled={priorityUpdatingId === comm.id}
+                                onChange={(e) => handlePriorityChange(comm.id, e.target.value as CommissionPriority)}
+                                className="appearance-none bg-transparent font-mono-code font-bold focus:outline-none cursor-pointer disabled:opacity-50"
+                                title="Update commission priority in Supabase"
+                              >
+                                {PRIORITY_OPTIONS.map(opt => (
+                                  <option key={opt.value} value={opt.value} className="bg-white text-zinc-900 font-sans">
+                                    {opt.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-current">
+                                {priorityUpdatingId === comm.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin text-orange-500" />
+                                ) : (
+                                  <ChevronDown className="w-3 h-3 opacity-60" />
+                                )}
+                              </div>
+                            </div>
+                            {prioritySuccessId === comm.id && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-mono-code font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full border border-emerald-300 animate-fade-in">
+                                <Check className="w-3 h-3 text-emerald-600" /> Saved
+                              </span>
+                            )}
+                          </div>
                           <span className="px-3 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code font-bold border border-orange-200">
                             {comm.serviceType}
                           </span>
@@ -890,6 +966,28 @@ export const AdminDashboardView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setStatusErrorMap(prev => {
+                          const copy = { ...prev };
+                          delete copy[comm.id];
+                          return copy;
+                        })}
+                        className="text-rose-400 hover:text-rose-700 font-bold ml-3 text-sm leading-none cursor-pointer"
+                        title="Dismiss error"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Supabase priority update error banner if any */}
+                  {priorityErrorMap[comm.id] && (
+                    <div className="mt-4 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl px-4 py-2.5 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                        <span>{priorityErrorMap[comm.id]}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPriorityErrorMap(prev => {
                           const copy = { ...prev };
                           delete copy[comm.id];
                           return copy;

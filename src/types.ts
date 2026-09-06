@@ -58,6 +58,8 @@ export type CommissionStatus =
   | 'Completed'
   | 'Rejected';
 
+export type CommissionPriority = 'low' | 'normal' | 'high' | 'urgent';
+
 export interface ReferenceDocument {
   id: string;
   name: string;
@@ -118,7 +120,7 @@ export interface Commission {
   deadline: string;
   startDate?: string;
   paymentStatus?: 'Unpaid' | 'Partial' | 'Paid';
-  priority?: string;
+  priority?: CommissionPriority;
   
   // Progress & State
   status: CommissionStatus;

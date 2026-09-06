@@ -11,6 +11,7 @@ import {
   ServiceItem,
   PortfolioProject,
   CommissionStatus,
+  CommissionPriority,
   COMMISSION_STAGES,
   FinalFilesPackage,
   MessageAttachment,
@@ -31,6 +32,7 @@ import {
   insertCommissionToSupabase,
   fetchCommissionsFromSupabase,
   updateCommissionStatusInSupabase,
+  updateCommissionPriorityInSupabase,
 } from '../data/commissionsData';
 
 export type AppView = 
@@ -93,6 +95,7 @@ interface AppContextType {
   refreshCommissions: () => Promise<void>;
   updateCommissionStage: (commissionId: string, newStageNumber: number, stageName?: string, stageNote?: string) => void;
   updateCommissionStatus: (commissionId: string, status: CommissionStatus) => Promise<{ success: boolean; error?: string }>;
+  updateCommissionPriority: (commissionId: string, priority: CommissionPriority) => Promise<{ success: boolean; error?: string }>;
   updateCommissionDetails: (commissionId: string, updates: Partial<Commission>) => void;
   updatePaymentStatus: (commissionId: string, status: 'Unpaid' | 'Partial' | 'Paid') => void;
   acceptCommission: (commissionId: string) => void;
@@ -1023,6 +1026,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
+  const updateCommissionPriority = async (
+    commissionId: string,
+    priority: CommissionPriority
+  ): Promise<{ success: boolean; error?: string }> => {
+    // 1. Persist priority update to Supabase public.commissions
+    const res = await updateCommissionPriorityInSupabase(commissionId, priority);
+    if (!res.success) {
+      console.error('[AppContext] Failed to update commission priority in Supabase:', res.error);
+      return { success: false, error: res.error || 'Failed to update commission priority in database.' };
+    }
+
+    // 2. Only update local React state after Supabase successfully updates
+    const todayStr = new Date().toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    setCommissions(prev =>
+      prev.map(c => {
+        if (c.id === commissionId) {
+          return {
+            ...c,
+            priority,
+            updatedAt: todayStr,
+          };
+        }
+        return c;
+      })
+    );
+
+    return { success: true };
+  };
+
   const updateCommissionDetails = (commissionId: string, updates: Partial<Commission>) => {
     setCommissions(prev =>
       prev.map(c => (c.id === commissionId ? { ...c, ...updates, updatedAt: 'Just now' } : c))
@@ -1509,6 +1546,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         refreshCommissions,
         updateCommissionStage,
         updateCommissionStatus,
+        updateCommissionPriority,
         updateCommissionDetails,
         updatePaymentStatus,
         acceptCommission,

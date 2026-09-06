@@ -110,6 +110,7 @@ export interface Commission {
   deadline: string;
   startDate?: string;
   paymentStatus?: 'Unpaid' | 'Partial' | 'Paid';
+  priority?: string;
   
   // Progress & State
   status: CommissionStatus;

@@ -43,6 +43,7 @@ import {
   Phone
 } from 'lucide-react';
 import { loadCustomFontFile, isFontLoaded } from '../utils/fontLoader';
+import { formatCommissionDate } from '../utils/dateUtils';
 
 export const AdminDashboardView: React.FC = () => {
   const { 
@@ -603,6 +604,32 @@ export const AdminDashboardView: React.FC = () => {
                           <h3 className="font-display text-lg sm:text-xl font-black text-zinc-900">
                             {comm.projectName}
                           </h3>
+                          <span 
+                            className="px-2.5 py-0.5 rounded-full text-[11px] font-mono-code bg-zinc-100 text-zinc-600 font-bold border border-zinc-200"
+                            title={`Commission ID: ${comm.id}`}
+                          >
+                            ID: #{comm.id.length > 12 ? `${comm.id.slice(0, 8)}...` : comm.id}
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono-code font-bold border ${
+                            comm.status === 'Completed' || comm.status === 'Final Approval'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : comm.status === 'In Progress'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : comm.status === 'Client Review' || comm.status === 'Revision Requested'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : comm.status === 'Rejected'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-orange-50 text-orange-700 border-orange-200'
+                          }`}>
+                            Status: {comm.status}
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono-code font-bold border ${
+                            (comm.priority || 'Normal').toLowerCase().includes('urgent') || (comm.priority || 'Normal').toLowerCase().includes('high')
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+                          }`}>
+                            Priority: {comm.priority || 'Normal'}
+                          </span>
                           <span className="px-3 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code font-bold border border-orange-200">
                             {comm.serviceType}
                           </span>
@@ -610,8 +637,12 @@ export const AdminDashboardView: React.FC = () => {
                             Budget: {comm.budget}
                           </span>
                         </div>
-                        <p className="text-xs text-zinc-500 mt-1 font-medium">
-                          Client: <strong className="text-zinc-800 font-bold">{comm.clientName}</strong> ({comm.clientEmail}) • Deadline: <span className="text-orange-600 font-bold">{comm.deadline}</span>
+                        <p className="text-xs text-zinc-500 mt-1.5 font-medium flex items-center gap-1.5 flex-wrap">
+                          <span>Client: <strong className="text-zinc-800 font-bold">{comm.clientName}</strong> ({comm.clientEmail})</span>
+                          <span>•</span>
+                          <span>Date Submitted: <strong className="text-zinc-700 font-semibold">{formatCommissionDate(comm.createdAt)}</strong></span>
+                          <span>•</span>
+                          <span>Deadline: <strong className="text-orange-600 font-bold">{formatCommissionDate(comm.deadline)}</strong></span>
                         </p>
 
                         {/* Direct Email & Contact Actions for Brewster */}
@@ -780,7 +811,7 @@ export const AdminDashboardView: React.FC = () => {
                     </div>
 
                     <div className="text-zinc-400 font-mono-code text-[11px]">
-                      Created: {comm.createdAt} • Revisions Used: {comm.revisionsUsed}/{comm.revisionsAllowed}
+                      Date Submitted: {formatCommissionDate(comm.createdAt)} • Deadline: {formatCommissionDate(comm.deadline)} • Revisions Used: {comm.revisionsUsed}/{comm.revisionsAllowed}
                     </div>
                   </div>
 

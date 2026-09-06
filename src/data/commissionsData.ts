@@ -110,6 +110,7 @@ export function mapDbCommissionToAppCommission(
     currency: 'PHP',
     deadline: row.deadline || 'Flexible',
     paymentStatus: 'Unpaid',
+    priority: row.priority || 'Normal',
 
     // Progress & State
     status,

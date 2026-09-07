@@ -571,110 +571,41 @@ export const AdminDashboardView: React.FC = () => {
       </div>
 
       {/* Admin Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-200 pb-2 overflow-x-auto no-scrollbar">
-        <button
-          id="admin-tab-commissions"
-          onClick={() => setActiveAdminTab('commissions')}
-          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shrink-0 ${
-            activeAdminTab === 'commissions'
-              ? 'bg-zinc-900 text-white shadow-xs'
-              : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
-          }`}
-        >
-          <FolderArchive className="w-4 h-4" />
-          <span>All Commissions ({commissions.length})</span>
-        </button>
-
-        <button
-          id="admin-tab-clients"
-          onClick={() => setActiveAdminTab('clients')}
-          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shrink-0 ${
-            activeAdminTab === 'clients'
-              ? 'bg-zinc-900 text-white shadow-xs'
-              : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Clients & Inquiries ({clientList.length})</span>
-        </button>
-
-        <button
-          id="admin-tab-portfolio"
-          onClick={() => setActiveAdminTab('portfolio')}
-          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
-            activeAdminTab === 'portfolio'
-              ? 'bg-zinc-900 text-white shadow-xs'
-              : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
-          }`}
-        >
-          <ImageIcon className="w-4 h-4" />
-          <span>Edit Portfolio ({portfolio.length})</span>
-        </button>
-
-        <button
-          id="admin-tab-services"
-          onClick={() => setActiveAdminTab('services')}
-          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
-            activeAdminTab === 'services'
-              ? 'bg-zinc-900 text-white shadow-xs'
-              : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>Services & Pricing ({services.length})</span>
-        </button>
-
-        <button
-          id="admin-tab-website-info"
-          onClick={() => setActiveAdminTab('website-info')}
-          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
-            activeAdminTab === 'website-info'
-              ? 'bg-zinc-900 text-white shadow-xs'
-              : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
-          }`}
-        >
-          <Settings className="w-4 h-4" />
-          <span>Edit Website Info</span>
-        </button>
-
-        <button
-          id="admin-tab-proofs"
-          onClick={() => setActiveAdminTab('proof-uploader')}
-          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
-            activeAdminTab === 'proof-uploader'
-              ? 'bg-zinc-900 text-white shadow-xs'
-              : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
-          }`}
-        >
-          <UploadCloud className="w-4 h-4" />
-          <span>Upload Proofs</span>
-        </button>
-
-        <button
-          id="admin-tab-chat"
-          onClick={() => setActiveAdminTab('chat')}
-          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
-            activeAdminTab === 'chat'
-              ? 'bg-zinc-900 text-white shadow-xs'
-              : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>Client Chat</span>
-        </button>
-
-        <button
-          id="admin-tab-typography"
-          onClick={() => setActiveAdminTab('typography')}
-          className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
-            activeAdminTab === 'typography'
-              ? 'bg-zinc-900 text-white shadow-xs'
-              : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
-          }`}
-        >
-          <Type className="w-4 h-4" />
-          <span>Typography (Primeform Pro)</span>
-        </button>
+      <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 overflow-x-auto no-scrollbar">
+        {(
+          [
+            { id: 'admin-tab-commissions', tab: 'commissions' as const, label: 'All Commissions', icon: FolderArchive, count: commissions.length },
+            { id: 'admin-tab-clients', tab: 'clients' as const, label: 'Clients & Inquiries', icon: Users, count: clientList.length },
+            { id: 'admin-tab-portfolio', tab: 'portfolio' as const, label: 'Edit Portfolio', icon: ImageIcon, count: portfolio.length },
+            { id: 'admin-tab-services', tab: 'services' as const, label: 'Services & Pricing', icon: Layers, count: services.length },
+            { id: 'admin-tab-website-info', tab: 'website-info' as const, label: 'Edit Website Info', icon: Settings, count: undefined },
+            { id: 'admin-tab-proofs', tab: 'proof-uploader' as const, label: 'Upload Proofs', icon: UploadCloud, count: undefined },
+            { id: 'admin-tab-chat', tab: 'chat' as const, label: 'Client Chat', icon: MessageSquare, count: undefined },
+            { id: 'admin-tab-typography', tab: 'typography' as const, label: 'Typography (Primeform Pro)', icon: Type, count: undefined },
+          ]
+        ).map(({ id, tab, label, icon: TabIcon, count }) => (
+          <button
+            key={id}
+            id={id}
+            type="button"
+            title={label}
+            aria-label={label}
+            aria-current={activeAdminTab === tab ? 'true' : undefined}
+            onClick={() => setActiveAdminTab(tab)}
+            className={`relative shrink-0 w-11 h-11 rounded-full transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 ${
+              activeAdminTab === tab
+                ? 'bg-zinc-900 text-white shadow-xs'
+                : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
+            }`}
+          >
+            <TabIcon className="w-4 h-4" />
+            {typeof count === 'number' && count > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-orange-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border-2 border-white">
+                {count}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* ======================================================== */}

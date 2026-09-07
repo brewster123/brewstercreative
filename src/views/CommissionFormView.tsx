@@ -9,10 +9,8 @@ import {
   Calendar, 
   Layers, 
   ShieldCheck, 
-  Lock,
   ArrowRight,
   RotateCcw,
-  UserCheck,
   Info,
   ExternalLink,
   ChevronRight,
@@ -300,32 +298,8 @@ export const CommissionFormView: React.FC = () => {
         </p>
       </div>
 
-      {/* AUTHENTICATION STATUS BANNER */}
-      {currentUser ? (
-        <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-white border border-emerald-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0">
-              <UserCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-zinc-900">{currentUser.name}</span>
-                <span className="text-[10px] font-mono-code bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
-                  Logged In
-                </span>
-              </div>
-              <p className="text-xs text-zinc-500 font-mono-code mt-0.5">
-                {currentUser.email} · Client ID: <span className="text-zinc-700 font-bold">{currentUser.id.slice(0, 8)}...</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium self-end sm:self-center">
-            <Lock className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Authenticated Client ID Locked</span>
-          </div>
-        </div>
-      ) : (
+      {/* Sign-in prompt for unauthenticated visitors */}
+      {!currentUser && (
         <div className="mb-8 p-5 sm:p-6 rounded-2xl bg-amber-50/70 border border-amber-300 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
@@ -494,7 +468,7 @@ export const CommissionFormView: React.FC = () => {
                   type="number"
                   required
                   min="1"
-                  step="100"
+                  step="1"
                   placeholder="5000"
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}

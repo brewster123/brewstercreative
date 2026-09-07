@@ -11,6 +11,8 @@ import {
   StudioProfile 
 } from '../types';
 import { ChatWindow } from '../components/ChatWindow';
+import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
+import { StudioPhotoUploader } from '../components/StudioPhotoUploader';
 import { 
   Sparkles, 
   Layers, 
@@ -78,7 +80,7 @@ export const AdminDashboardView: React.FC = () => {
   } = useApp();
 
   const [activeAdminTab, setActiveAdminTab] = useState<
-    'commissions' | 'clients' | 'website-info' | 'portfolio' | 'services' | 'proof-uploader' | 'chat' | 'typography'
+    'commissions' | 'clients' | 'website-info' | 'portfolio' | 'services' | 'proof-uploader' | 'chat' | 'typography' | 'admin-account'
   >('commissions');
 
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>(activeCommission?.id || commissions[0]?.id || '');
@@ -532,24 +534,42 @@ export const AdminDashboardView: React.FC = () => {
       
       {/* Admin Studio Header Banner */}
       <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-mono-code font-bold uppercase">
-              Studio Owner Portal
-            </span>
-            <span className="text-xs text-zinc-500 font-mono-code font-medium">
-              Administrator: <strong className="text-zinc-800">{currentUser?.name || studioProfile.designerName}</strong>
-            </span>
-            <span className="text-[11px] text-zinc-400 font-mono-code">
-              ({currentUser?.email || studioProfile.email})
-            </span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+          {/* Admin personal account avatar */}
+          <div className="relative shrink-0">
+            <img
+              src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
+              alt={currentUser?.name || 'Administrator'}
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-4 ring-orange-500/20 shadow-xs"
+            />
+            <button
+              type="button"
+              onClick={() => setActiveAdminTab('admin-account')}
+              title="Edit Admin Account Profile Photo"
+              className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-zinc-900 text-white hover:bg-orange-600 transition-colors shadow-xs border border-white cursor-pointer"
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <h1 className="font-display text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
-            Designer Control & Website Management Center
-          </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 mt-1 font-medium max-w-2xl leading-relaxed">
-            Full administrative control: customize your website profile & bio, publish or edit portfolio works, configure design packages & pricing, and oversee all client commission orders.
-          </p>
+          <div>
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span className="px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-mono-code font-bold uppercase">
+                Studio Owner Portal
+              </span>
+              <span className="text-xs text-zinc-500 font-mono-code font-medium">
+                Administrator: <strong className="text-zinc-800">{currentUser?.name || studioProfile.designerName}</strong>
+              </span>
+              <span className="text-[11px] text-zinc-400 font-mono-code">
+                ({currentUser?.email || studioProfile.email})
+              </span>
+            </div>
+            <h1 className="font-display text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
+              Designer Control & Website Management Center
+            </h1>
+            <p className="text-xs sm:text-sm text-zinc-500 mt-1 font-medium max-w-2xl leading-relaxed">
+              Full administrative control: customize your website profile & bio, publish or edit portfolio works, configure design packages & pricing, and oversee all client commission orders.
+            </p>
+          </div>
         </div>
 
         {/* Studio Slots & Orders Status Badge */}
@@ -579,6 +599,7 @@ export const AdminDashboardView: React.FC = () => {
             { id: 'admin-tab-portfolio', tab: 'portfolio' as const, label: 'Edit Portfolio', icon: ImageIcon, count: portfolio.length },
             { id: 'admin-tab-services', tab: 'services' as const, label: 'Services & Pricing', icon: Layers, count: services.length },
             { id: 'admin-tab-website-info', tab: 'website-info' as const, label: 'Edit Website Info', icon: Settings, count: undefined },
+            { id: 'admin-tab-account', tab: 'admin-account' as const, label: 'Admin Account & Profile', icon: UserCheck, count: undefined },
             { id: 'admin-tab-proofs', tab: 'proof-uploader' as const, label: 'Upload Proofs', icon: UploadCloud, count: undefined },
             { id: 'admin-tab-chat', tab: 'chat' as const, label: 'Client Chat', icon: MessageSquare, count: undefined },
             { id: 'admin-tab-typography', tab: 'typography' as const, label: 'Typography (Primeform Pro)', icon: Type, count: undefined },
@@ -1645,28 +1666,17 @@ export const AdminDashboardView: React.FC = () => {
 
             <form onSubmit={handleSaveProfile} className="space-y-6">
               
-              {/* Designer Avatar & Name row */}
-              <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-zinc-50 border border-zinc-200">
-                <img
-                  src={profileForm.avatar}
-                  alt={profileForm.designerName}
-                  className="w-20 h-20 rounded-full object-cover ring-4 ring-orange-500/20 shrink-0"
+              {/* Designer Studio Photo row (System 1: Studio / Website Photo) */}
+              <div className="p-1">
+                <StudioPhotoUploader
+                  adminUserId={currentUser?.id || 'usr-admin-1'}
+                  currentPhoto={profileForm.avatar || studioProfile.avatar}
+                  onPhotoUpdated={(newUrl) => {
+                    setProfileForm(prev => ({ ...prev, avatar: newUrl }));
+                  }}
+                  label="Brewster A. Cabando — Studio / Website Brand Photo"
+                  description="Professional portrait representing the designer on the public homepage 'Meet The Designer' section. Changing this photo updates the public website and does NOT change your personal account avatar."
                 />
-                <div className="w-full space-y-2">
-                  <label className="block text-xs font-bold text-zinc-700">
-                    Artist Avatar Photo URL
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={profileForm.avatar}
-                    onChange={(e) => setProfileForm({ ...profileForm, avatar: e.target.value })}
-                    className="w-full bg-white border border-zinc-200 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:outline-none focus:border-orange-500"
-                  />
-                  <span className="text-[11px] text-zinc-400 font-mono-code block">
-                    Shown on the artist profile card, navbar, and chat avatar.
-                  </span>
-                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -1804,6 +1814,88 @@ export const AdminDashboardView: React.FC = () => {
             </form>
           </div>
 
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB: ADMIN PERSONAL ACCOUNT PROFILE (SYSTEM 2) */}
+      {/* ======================================================== */}
+      {activeAdminTab === 'admin-account' && (
+        <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
+          <div className="p-5 rounded-2xl bg-orange-50/70 border border-orange-200 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-orange-950">
+              <UserCheck className="w-4 h-4 text-orange-600 shrink-0" />
+              <span>Administrator Personal Account Profile</span>
+            </div>
+            <p className="text-xs text-zinc-600 leading-relaxed font-medium">
+              This is your individual administrator account profile. Your profile photo is used for your personal login session, top navigation bar, and client chat conversations.
+            </p>
+          </div>
+
+          <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-10 space-y-8 shadow-xs">
+            <h3 className="font-display text-xl font-black text-zinc-900 pb-3 border-b border-zinc-100 flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-orange-500" />
+              My Administrator Account Profile
+            </h3>
+
+            {/* Account Profile Photo Uploader with Facebook-style crop */}
+            <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-200">
+              <ProfilePhotoUploader
+                userId={currentUser?.id || 'usr-admin-1'}
+                currentAvatar={currentUser?.avatar}
+                label="Administrator Account Profile Photo"
+                description="Upload and adjust your personal account portrait with the circular crop editor. Changing this will NOT modify the public Studio/Website photo on the homepage."
+                avatarSizeClass="w-20 h-20 sm:w-24 sm:h-24"
+              />
+            </div>
+
+            {/* Account Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+              <div>
+                <label className="block text-xs font-bold text-zinc-800 mb-1">
+                  Account Name
+                </label>
+                <div className="w-full bg-zinc-100 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium">
+                  {currentUser?.name || 'Brewster A. Cabando'}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-800 mb-1">
+                  Login Email
+                </label>
+                <div className="w-full bg-zinc-100 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-zinc-700 font-mono-code">
+                  {currentUser?.email || 'admin@brewstercreative.com'}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-800 mb-1">
+                  Account Role
+                </label>
+                <div className="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5 text-xs text-emerald-800 font-bold uppercase tracking-wider font-mono-code">
+                  Studio Owner / Administrator
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-800 mb-1">
+                  Storage Path Pattern
+                </label>
+                <div className="w-full bg-zinc-100 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-600 font-mono-code truncate">
+                  avatars/{currentUser?.id || 'usr-admin-1'}/profile-*.jpg
+                </div>
+              </div>
+            </div>
+
+            {/* Notice card explaining separation */}
+            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex items-start gap-3 text-xs text-zinc-600">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <p>
+                <strong>Two Independent Systems:</strong> This account profile photo is strictly your personal account picture (stored in <code className="text-zinc-800 font-mono-code">public.profiles.avatar</code>). The public homepage <em>Meet The Designer</em> studio photo is managed separately under <button type="button" onClick={() => setActiveAdminTab('website-info')} className="text-orange-600 font-bold underline cursor-pointer">Edit Website Info</button>.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

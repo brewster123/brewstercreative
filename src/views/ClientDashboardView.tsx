@@ -5,6 +5,7 @@ import { ProgressTimeline } from '../components/ProgressTimeline';
 import { ClientReviewSection } from '../components/ClientReviewSection';
 import { FinalDeliverySection } from '../components/FinalDeliverySection';
 import { ChatWindow } from '../components/ChatWindow';
+import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
 import { 
   Sparkles, 
   Clock, 
@@ -671,24 +672,17 @@ export const ClientDashboardView: React.FC = () => {
             </p>
 
             <form onSubmit={handleSaveProfile} className="space-y-5">
-              <div className="flex items-center gap-4 pb-4 border-b border-zinc-100">
-                <img
-                  src={profileAvatar || currentUser?.avatar}
-                  alt={profileName}
-                  className="w-16 h-16 rounded-full object-cover ring-2 ring-orange-500/30 shrink-0"
+              <div className="pb-5 border-b border-zinc-100">
+                <ProfilePhotoUploader
+                  userId={currentUser.id}
+                  currentAvatar={profileAvatar || currentUser.avatar}
+                  onAvatarUpdated={(newUrl) => {
+                    setProfileAvatar(newUrl);
+                  }}
+                  label="Client Profile Photo"
+                  description="Upload a photo from your computer. Updates will sync with your commission briefs and chat."
+                  avatarSizeClass="w-16 h-16 sm:w-20 sm:h-20"
                 />
-                <div className="flex-1 space-y-1.5">
-                  <label className="block text-xs font-bold text-zinc-700">
-                    Avatar Image URL
-                  </label>
-                  <input
-                    type="url"
-                    value={profileAvatar}
-                    onChange={(e) => setProfileAvatar(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

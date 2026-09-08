@@ -15,7 +15,8 @@ import {
   MessageSquare,
   Loader2,
   AlertCircle,
-  LogOut
+  LogOut,
+  X
 } from 'lucide-react';
 import { BrandLogo } from '../components/BrandLogo';
 
@@ -25,7 +26,10 @@ export const AuthView: React.FC = () => {
     loginUser, 
     signUpUser, 
     logout, 
-    setActiveView 
+    setActiveView,
+    emailVerificationStatus,
+    clearEmailVerificationStatus,
+    resendVerificationEmail,
   } = useApp();
 
   const [mode, setMode] = useState<'signin' | 'register'>('signin');
@@ -33,6 +37,23 @@ export const AuthView: React.FC = () => {
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
+
+  // Resend verification email form state (shown only in the expired/error banner)
+  const [resendEmail, setResendEmail] = useState('');
+  const [isResending, setIsResending] = useState(false);
+  const [resendResultMessage, setResendResultMessage] = useState('');
+
+  const handleResendVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resendEmail.trim()) return;
+    setIsResending(true);
+    setResendResultMessage('');
+    await resendVerificationEmail(resendEmail);
+    setIsResending(false);
+    // Deliberately generic wording — never confirms/denies whether an
+    // account exists for the entered email.
+    setResendResultMessage('If an account exists for that email, a new verification link has been sent.');
+  };
 
   // Sign In Form State
   const [signInEmail, setSignInEmail] = useState('');
@@ -170,6 +191,89 @@ export const AuthView: React.FC = () => {
             : 'Register your client account to collaborate with Brewster, track design milestones, and access deliverables.'}
         </p>
       </div>
+
+      {/* Email Verification Callback Banner */}
+      {emailVerificationStatus && (
+        <div
+          className={`rounded-2xl p-4 border shadow-xs ${
+            emailVerificationStatus === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-amber-50 border-amber-200 text-amber-900'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                emailVerificationStatus === 'success'
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-amber-100 text-amber-700'
+              }`}
+            >
+              {emailVerificationStatus === 'success' ? (
+                <CheckCircle2 className="w-4.5 h-4.5" />
+              ) : (
+                <AlertCircle className="w-4.5 h-4.5" />
+              )}
+            </div>
+            <div className="flex-1 space-y-2 min-w-0">
+              <div>
+                <p className="text-sm font-bold">
+                  {emailVerificationStatus === 'success' && 'Your email has been verified!'}
+                  {emailVerificationStatus === 'expired' && 'This verification link has expired.'}
+                  {emailVerificationStatus === 'error' && 'This verification link is invalid.'}
+                </p>
+                <p className="text-xs font-medium opacity-90 mt-0.5">
+                  {emailVerificationStatus === 'success' &&
+                    'Thanks for confirming your address — you can now sign in below.'}
+                  {emailVerificationStatus === 'expired' &&
+                    "Verification links only stay valid for a limited time. Enter your email below and we'll send you a new one."}
+                  {emailVerificationStatus === 'error' &&
+                    "This link may have already been used, or the URL may be incomplete. Enter your email below and we'll send you a new one."}
+                </p>
+              </div>
+
+              {(emailVerificationStatus === 'expired' || emailVerificationStatus === 'error') && (
+                <form onSubmit={handleResendVerification} className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <input
+                    id="input-resend-verification-email"
+                    type="email"
+                    required
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="flex-1 min-w-0 bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500"
+                  />
+                  <button
+                    id="btn-resend-verification"
+                    type="submit"
+                    disabled={isResending}
+                    className="shrink-0 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 disabled:opacity-60 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {isResending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                    <span>Resend Verification Email</span>
+                  </button>
+                </form>
+              )}
+
+              {resendResultMessage && (
+                <p className="text-xs font-semibold opacity-90">{resendResultMessage}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                clearEmailVerificationStatus();
+                setResendResultMessage('');
+                setResendEmail('');
+              }}
+              aria-label="Dismiss"
+              className="shrink-0 opacity-50 hover:opacity-100 transition-opacity"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Currently Authenticated Session Card */}
       {currentUser && (

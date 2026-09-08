@@ -66,6 +66,9 @@ interface AppContextType {
   users: User[];
   loginUser: (email: string, password?: string) => Promise<{ success: boolean; error?: string; user?: User }>;
   signUpUser: (name: string, email: string, password?: string, handle?: string, contactMethod?: string, phone?: string) => Promise<{ success: boolean; error?: string; user?: User; confirmationRequired?: boolean }>;
+  emailVerificationStatus: 'success' | 'expired' | 'error' | null;
+  clearEmailVerificationStatus: () => void;
+  resendVerificationEmail: (email: string) => Promise<{ success: boolean; error?: string }>;
   registerClient: (name: string, email: string, handle?: string, contactMethod?: string, phone?: string) => User;
   updateUserProfile: (userId: string, updates: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
@@ -145,7 +148,7 @@ const STORAGE_KEYS = {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeView, setActiveView] = useState<AppView>('home');
-  const [selectedCommissionId, setSelectedCommissionId] = useState<string>('comm-sample-alex');
+  const [selectedCommissionId, setSelectedCommissionId] = useState<string>('');
   const [selectedPortfolioProject, setSelectedPortfolioProject] = useState<PortfolioProject | null>(null);
   const [preselectedService, setPreselectedService] = useState<string | null>(null);
 
@@ -196,20 +199,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [databaseError, setDatabaseError] = useState<string | null>(null);
+  // Outcome of returning from an email-confirmation link, if any. Only ever
+  // set to one of these three clean, pre-written states — never a raw
+  // Supabase URL/error string, so no technical detail is ever surfaced.
+  const [emailVerificationStatus, setEmailVerificationStatus] = useState<
+    'success' | 'expired' | 'error' | null
+  >(null);
+  const clearEmailVerificationStatus = () => setEmailVerificationStatus(null);
 
   const clearDatabaseError = () => setDatabaseError(null);
+
+  // Legacy demo commission IDs that used to ship as seed data (Alex Rivera,
+  // Maya, Liam, Sophia). A browser that visited before this cleanup may
+  // still have them cached in localStorage — this strips them out on load
+  // so they can never resurface, even before any Supabase fetch runs.
+  const LEGACY_DEMO_COMMISSION_IDS = new Set([
+    'comm-sample-alex',
+    'comm-maya-poster',
+    'comm-liam-logo',
+    'comm-sophia-completed',
+  ]);
 
   const [commissions, setCommissions] = useState<Commission[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.COMMISSIONS);
     if (saved) {
       try {
         const parsed: Commission[] = JSON.parse(saved);
-        return parsed.map(c => {
-          if (c.clientEmail?.toLowerCase().includes('cabandobrewster')) {
-            return { ...c, clientEmail: 'brewstercreates@gmail.com' };
-          }
-          return c;
-        });
+        return parsed
+          .filter(c => !LEGACY_DEMO_COMMISSION_IDS.has(c.id))
+          .map(c => {
+            if (c.clientEmail?.toLowerCase().includes('cabandobrewster')) {
+              return { ...c, clientEmail: 'brewstercreates@gmail.com' };
+            }
+            return c;
+          });
       } catch (e) {
         return INITIAL_COMMISSIONS;
       }
@@ -219,22 +242,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.MESSAGES);
-    return saved ? JSON.parse(saved) : INITIAL_MESSAGES;
+    if (!saved) return INITIAL_MESSAGES;
+    try {
+      const parsed: Message[] = JSON.parse(saved);
+      return parsed.filter(m => !LEGACY_DEMO_COMMISSION_IDS.has(m.commissionId));
+    } catch (e) {
+      return INITIAL_MESSAGES;
+    }
   });
 
   const [timelineUpdates, setTimelineUpdates] = useState<ProgressUpdate[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.TIMELINE);
-    return saved ? JSON.parse(saved) : INITIAL_TIMELINE;
+    if (!saved) return INITIAL_TIMELINE;
+    try {
+      const parsed: ProgressUpdate[] = JSON.parse(saved);
+      return parsed.filter(t => !LEGACY_DEMO_COMMISSION_IDS.has(t.commissionId));
+    } catch (e) {
+      return INITIAL_TIMELINE;
+    }
   });
 
   const [projectFiles, setProjectFiles] = useState<ProjectFile[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.FILES);
-    return saved ? JSON.parse(saved) : INITIAL_FILES;
+    if (!saved) return INITIAL_FILES;
+    try {
+      const parsed: ProjectFile[] = JSON.parse(saved);
+      return parsed.filter(f => !LEGACY_DEMO_COMMISSION_IDS.has(f.commissionId));
+    } catch (e) {
+      return INITIAL_FILES;
+    }
   });
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-    return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
+    if (!saved) return INITIAL_NOTIFICATIONS;
+    try {
+      const parsed: AppNotification[] = JSON.parse(saved);
+      return parsed.filter(n => !n.commissionId || !LEGACY_DEMO_COMMISSION_IDS.has(n.commissionId));
+    } catch (e) {
+      return INITIAL_NOTIFICATIONS;
+    }
   });
 
   // Sync to LocalStorage
@@ -407,6 +454,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     let isMounted = true;
 
+    // Detect a return trip from a Supabase email-confirmation link. Supabase
+    // appends outcome info to the URL hash on redirect:
+    //   success: #access_token=...&type=signup&...
+    //   expired/invalid: #error=...&error_code=otp_expired&...
+    // We only ever branch on `type`/`error_code` to pick one of our own
+    // pre-written messages below — the raw `error_description` from the
+    // URL is intentionally never read into any user-facing text.
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const type = hashParams.get('type');
+      const errorCode = hashParams.get('error_code');
+      const hasError = hashParams.has('error');
+
+      if (hasError) {
+        setEmailVerificationStatus(errorCode === 'otp_expired' ? 'expired' : 'error');
+        setActiveView('auth');
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      } else if (type === 'signup') {
+        setEmailVerificationStatus('success');
+        setActiveView('auth');
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+
     if (!isSupabaseConfigured()) {
       setAuthLoading(false);
       return;
@@ -493,12 +564,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!currentUser || !isSupabaseConfigured()) return;
     try {
       const { success, data, error } = await fetchCommissionsFromSupabase(currentUser);
-      if (success && data && data.length > 0) {
-        setCommissions(prev => {
-          const dbIds = new Set(data.map(d => d.id));
-          const retained = prev.filter(p => !dbIds.has(p.id));
-          return [...data, ...retained];
-        });
+      if (success) {
+        // Supabase is the sole source of truth once a user is authenticated.
+        // Replace local state entirely rather than merging with whatever
+        // was previously cached — merging allowed local-only/demo records
+        // (whose IDs never exist in the database) to survive every refresh
+        // forever, and also meant a real empty result never actually
+        // cleared stale local data.
+        setCommissions(data || []);
       } else if (error) {
         console.warn('[Supabase Commissions] Notice fetching commissions:', error);
       }
@@ -624,6 +697,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         email: cleanEmail,
         password: cleanPassword,
         options: {
+          // Redirects back to whichever origin the signup actually happened
+          // on — the live production URL when signing up there, or
+          // localhost during local development — without hardcoding either
+          // one. Note: Supabase only honors this if the target origin is
+          // also listed in the project's Dashboard "Redirect URLs" allow
+          // list (see the deployment notes for exactly what to add there).
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
           data: {
             name: cleanName,
             full_name: cleanName,
@@ -688,6 +768,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: true, user: finalUser };
     } catch (err: any) {
       return { success: false, error: err?.message || 'An unexpected error occurred during registration.' };
+    }
+  };
+
+  const resendVerificationEmail = async (
+    email: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      return { success: false, error: 'Please enter your email address.' };
+    }
+    if (!isSupabaseConfigured()) {
+      return { success: false, error: 'Supabase authentication is not configured.' };
+    }
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: cleanEmail,
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        },
+      });
+
+      if (error) {
+        // Deliberately generic: never confirm/deny whether an account
+        // exists for this email, and never surface Supabase's raw message.
+        console.warn('[Supabase Auth] Resend verification notice:', error.message);
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('[Supabase Auth] Error resending verification email:', err);
+      return { success: true };
     }
   };
 
@@ -1489,7 +1602,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimelineUpdates(INITIAL_TIMELINE);
     setProjectFiles(INITIAL_FILES);
     setNotifications(INITIAL_NOTIFICATIONS);
-    setSelectedCommissionId('comm-sample-alex');
+    setSelectedCommissionId('');
     setActiveView('home');
   };
 
@@ -1528,6 +1641,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         users,
         loginUser,
         signUpUser,
+        emailVerificationStatus,
+        clearEmailVerificationStatus,
+        resendVerificationEmail,
         registerClient,
         updateUserProfile,
         logout,

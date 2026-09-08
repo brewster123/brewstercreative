@@ -1839,15 +1839,21 @@ export const AdminDashboardView: React.FC = () => {
             </h3>
 
             {/* Account Profile Photo Uploader with Facebook-style crop */}
-            <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-200">
-              <ProfilePhotoUploader
-                userId={currentUser?.id || 'usr-admin-1'}
-                currentAvatar={currentUser?.avatar}
-                label="Administrator Account Profile Photo"
-                description="Upload and adjust your personal account portrait with the circular crop editor. Changing this will NOT modify the public Studio/Website photo on the homepage."
-                avatarSizeClass="w-20 h-20 sm:w-24 sm:h-24"
-              />
-            </div>
+            {currentUser?.id ? (
+              <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-200">
+                <ProfilePhotoUploader
+                  userId={currentUser.id}
+                  currentAvatar={currentUser.avatar}
+                  label="Administrator Account Profile Photo"
+                  description="Upload and adjust your personal account portrait with the circular crop editor. Changing this will NOT modify the public Studio/Website photo on the homepage."
+                  avatarSizeClass="w-20 h-20 sm:w-24 sm:h-24"
+                />
+              </div>
+            ) : (
+              <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-200 text-center text-xs text-zinc-500 font-mono-code">
+                Loading administrator session...
+              </div>
+            )}
 
             {/* Account Details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">

@@ -35,7 +35,11 @@ export const Navbar: React.FC = () => {
     !n.readStatus && (currentUser?.role === 'admin' ? true : n.userId === currentUser?.id)
   ).length;
 
-  const clientCommission = commissions.find(c => c.clientId === currentUser?.id);
+  const clientCommission = commissions.find(
+    c => (c.clientId === currentUser?.id || (currentUser?.email && c.clientEmail?.toLowerCase() === currentUser.email.toLowerCase())) &&
+         (c.status || '').toLowerCase() !== 'cancelled' &&
+         (c.status || '').toLowerCase() !== 'rejected'
+  );
 
   const navLinks = [
     { label: 'Home', view: 'home' as const },
@@ -215,15 +219,15 @@ export const Navbar: React.FC = () => {
               </div>
             )}
 
-            {/* Direct Commission Portal Quick Button (if client logged in) */}
-            {currentUser?.role === 'client' && activeView !== 'client-dashboard' && (
+            {/* Direct Commission Portal Quick Button (only if client is logged in and has an active commission) */}
+            {currentUser?.role === 'client' && clientCommission && activeView !== 'client-dashboard' && (
               <button
                 type="button"
                 onClick={() => setActiveView('client-dashboard')}
                 className="hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 text-xs font-semibold transition-all"
               >
                 <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping"></span>
-                <span>Active Project ({clientCommission?.progress || 65}%)</span>
+                <span>Active Project ({clientCommission.progress ?? 0}%)</span>
               </button>
             )}
 

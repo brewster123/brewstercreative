@@ -109,11 +109,11 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
 
       const newPublicUrl = result.publicUrl;
 
-      // Update immediate local preview
-      setPreviewUrl(newPublicUrl);
+      // Persist to user's profile in Supabase & AppContext (must succeed before updating UI state)
+      await updateUserProfile(userId, { avatar: newPublicUrl });
 
-      // Persist to user's profile in Supabase & AppContext
-      updateUserProfile(userId, { avatar: newPublicUrl });
+      // Update immediate local preview only AFTER successful database update
+      setPreviewUrl(newPublicUrl);
 
       if (onAvatarUpdated) {
         onAvatarUpdated(newPublicUrl);

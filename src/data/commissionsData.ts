@@ -44,6 +44,46 @@ export const CANONICAL_COMMISSION_PRIORITIES: readonly CommissionPriority[] = [
 ] as const;
 
 /**
+ * Derives consistent currentStage (1-8) and progress percentage from status.
+ * Ensures header status, stage tracker, and progress bar are always aligned.
+ */
+export function getStageAndProgressFromStatus(statusString?: string | null): { stage: number; progress: number } {
+  const s = (statusString || 'pending').toLowerCase().trim();
+  switch (s) {
+    case 'reviewing':
+      return { stage: 2, progress: 25 };
+    case 'accepted':
+      return { stage: 2, progress: 25 };
+    case 'concept_development':
+    case 'concept development':
+      return { stage: 3, progress: 40 };
+    case 'in_progress':
+    case 'in progress':
+      return { stage: 4, progress: 55 };
+    case 'for_review':
+    case 'client review':
+    case 'review':
+      return { stage: 5, progress: 70 };
+    case 'revision':
+    case 'revision requested':
+    case 'revisions':
+      return { stage: 6, progress: 85 };
+    case 'final approval':
+    case 'final_approval':
+      return { stage: 7, progress: 95 };
+    case 'completed':
+      return { stage: 8, progress: 100 };
+    case 'cancelled':
+    case 'rejected':
+    case 'declined':
+      return { stage: 1, progress: 0 };
+    case 'pending':
+    default:
+      return { stage: 1, progress: 10 };
+  }
+}
+
+/**
  * Normalizes existing database priority values into the four canonical lowercase values.
  * Defaults missing or invalid priorities to 'normal'.
  */
@@ -65,43 +105,23 @@ export function mapDbCommissionToAppCommission(
   clientUser?: User | null
 ): Commission {
   const rawStatus = (row.status || 'pending').toLowerCase().trim();
-  let status: CommissionStatus = 'pending';
-  let progress = 10;
-  let currentStage = 1;
+  const canonicalValid = [
+    'pending',
+    'reviewing',
+    'accepted',
+    'in_progress',
+    'for_review',
+    'revision',
+    'completed',
+    'cancelled',
+  ];
+  const status: CommissionStatus = canonicalValid.includes(rawStatus)
+    ? (rawStatus as CommissionStatus)
+    : 'pending';
 
-  if (rawStatus === 'reviewing') {
-    status = 'reviewing';
-    progress = 25;
-    currentStage = 2;
-  } else if (rawStatus === 'accepted') {
-    status = 'accepted';
-    progress = 30;
-    currentStage = 2;
-  } else if (rawStatus === 'in_progress' || rawStatus === 'in progress') {
-    status = 'in_progress';
-    progress = 55;
-    currentStage = 4;
-  } else if (rawStatus === 'for_review' || rawStatus === 'client review' || rawStatus === 'review') {
-    status = 'for_review';
-    progress = 70;
-    currentStage = 5;
-  } else if (rawStatus === 'revision' || rawStatus === 'revision requested') {
-    status = 'revision';
-    progress = 85;
-    currentStage = 6;
-  } else if (rawStatus === 'completed') {
-    status = 'completed';
-    progress = 100;
-    currentStage = 8;
-  } else if (rawStatus === 'cancelled' || rawStatus === 'rejected' || rawStatus === 'declined') {
-    status = 'cancelled';
-    progress = 0;
-    currentStage = 1;
-  } else {
-    status = 'pending';
-    progress = 10;
-    currentStage = 1;
-  }
+  const derived = getStageAndProgressFromStatus(status);
+  const progress = derived.progress;
+  const currentStage = derived.stage;
 
   // Parse numeric budget
   let formattedBudget = '₱0';

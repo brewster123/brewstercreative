@@ -8,6 +8,12 @@ export interface CreateCommissionInput {
   description: string;
   budget: number | string;
   deadline: string;
+  purpose?: string;
+  targetAudience?: string;
+  preferredStyle?: string;
+  preferredColors?: string[];
+  requiredDimensions?: string;
+  referenceLinks?: string[];
   additionalNotes?: string;
 }
 
@@ -21,6 +27,13 @@ export interface CommissionDbRow {
   deadline: string | null;
   status: string | null;
   priority?: string | null;
+  purpose?: string | null;
+  target_audience?: string | null;
+  preferred_style?: string | null;
+  required_dimensions?: string | null;
+  preferred_colors?: string[] | null;
+  reference_links?: string[] | null;
+  additional_notes?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -158,12 +171,12 @@ export function mapDbCommissionToAppCommission(
     projectName: row.title,
     service: row.service_type,
     serviceType: row.service_type,
-    description: row.description,
-    purpose: 'Commercial brand & creative project',
-    targetAudience: 'Target market',
-    preferredStyle: 'Modern Minimalist',
-    preferredColors: ['#0F172A', '#F97316'],
-    requiredDimensions: 'Vector SVG + High-Res PNG',
+    description: row.description || '',
+    purpose: row.purpose || '',
+    targetAudience: row.target_audience || '',
+    preferredStyle: row.preferred_style || '',
+    preferredColors: Array.isArray(row.preferred_colors) ? row.preferred_colors : [],
+    requiredDimensions: row.required_dimensions || '',
 
     // Timeline & Financials
     budget: formattedBudget,
@@ -179,11 +192,11 @@ export function mapDbCommissionToAppCommission(
 
     // References & Notes
     referenceImages: [],
-    referenceLinks: [],
+    referenceLinks: Array.isArray(row.reference_links) ? row.reference_links : [],
     referenceDocs: [],
     communicationGoals: '',
     thingsToAvoid: '',
-    additionalNotes: '',
+    additionalNotes: row.additional_notes || '',
 
     // Metadata
     assignedDesigner: 'Brewster Creative',
@@ -259,20 +272,22 @@ export async function insertCommissionToSupabase(
     };
   }
 
-  // Format description with additional notes if provided
-  const fullDescription = input.additionalNotes?.trim()
-    ? `${input.description.trim()}\n\nAdditional Notes:\n${input.additionalNotes.trim()}`
-    : input.description.trim();
-
-  // Insert payload matching existing public.commissions table schema
-  // Notice: 'status' is omitted so database default ('pending') is applied
+  // The description field contains ONLY the project's main description (per Phase 3C.1).
+  // All structured creative brief fields are saved to their dedicated columns in public.commissions.
   const payload = {
     client_id: input.clientId,
     title: input.title.trim(),
     service_type: input.serviceType.trim(),
-    description: fullDescription,
+    description: input.description.trim(),
     budget: numericBudget,
     deadline: input.deadline.trim(),
+    purpose: input.purpose?.trim() || null,
+    target_audience: input.targetAudience?.trim() || null,
+    preferred_style: input.preferredStyle?.trim() || null,
+    required_dimensions: input.requiredDimensions?.trim() || null,
+    preferred_colors: input.preferredColors && input.preferredColors.length > 0 ? input.preferredColors : null,
+    reference_links: input.referenceLinks && input.referenceLinks.length > 0 ? input.referenceLinks : null,
+    additional_notes: input.additionalNotes?.trim() || null,
   };
 
   try {

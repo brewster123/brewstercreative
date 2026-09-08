@@ -108,11 +108,11 @@ export interface Commission {
   service: string;
   serviceType?: string;
   description: string;
-  purpose: string;
-  targetAudience: string;
-  preferredStyle: string;
-  preferredColors: string[];
-  requiredDimensions: string;
+  purpose?: string;
+  targetAudience?: string;
+  preferredStyle?: string;
+  preferredColors?: string[];
+  requiredDimensions?: string;
   
   // Timeline & Financials
   budget: string;
@@ -128,12 +128,12 @@ export interface Commission {
   currentStage: number; // 1 to 8
   
   // References & Notes
-  referenceImages: string[];
-  referenceLinks: string[];
-  referenceDocs: ReferenceDocument[];
-  communicationGoals: string;
-  thingsToAvoid: string;
-  additionalNotes: string;
+  referenceImages?: string[];
+  referenceLinks?: string[];
+  referenceDocs?: ReferenceDocument[];
+  communicationGoals?: string;
+  thingsToAvoid?: string;
+  additionalNotes?: string;
   
   // Metadata
   assignedDesigner: string;

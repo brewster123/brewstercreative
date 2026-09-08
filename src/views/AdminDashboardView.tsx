@@ -46,7 +46,8 @@ import {
   Users,
   Phone,
   Loader2,
-  ChevronDown
+  ChevronDown,
+  FileText
 } from 'lucide-react';
 import { loadCustomFontFile, isFontLoaded } from '../utils/fontLoader';
 import { formatCommissionDate } from '../utils/dateUtils';
@@ -951,6 +952,134 @@ export const AdminDashboardView: React.FC = () => {
                       </button>
                     </div>
                   )}
+
+                  {/* Structured Creative Brief (Phase 3C.1) */}
+                  <div className="mt-5 p-5 rounded-2xl bg-zinc-50/90 border border-zinc-200/80 space-y-4">
+                    <div className="flex items-center justify-between gap-2 border-b border-zinc-200/60 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+                          <FileText className="w-3.5 h-3.5" />
+                        </div>
+                        <h4 className="font-display text-sm font-bold text-zinc-900">
+                          Structured Creative Brief
+                        </h4>
+                      </div>
+                      <span className="text-[11px] font-mono-code text-zinc-400 font-bold uppercase tracking-wider">
+                        Project Specifications
+                      </span>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
+                        Project Description
+                      </span>
+                      <p className="text-zinc-800 text-xs sm:text-sm leading-relaxed bg-white p-3.5 rounded-xl border border-zinc-200 font-medium whitespace-pre-line">
+                        {comm.description || 'No description provided.'}
+                      </p>
+                    </div>
+
+                    {/* Purpose & Audience */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
+                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
+                          Purpose & Context
+                        </span>
+                        <p className="text-zinc-800 text-xs font-semibold">
+                          {comm.purpose || <span className="text-zinc-400 font-normal italic">Not specified</span>}
+                        </p>
+                      </div>
+
+                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
+                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
+                          Target Audience
+                        </span>
+                        <p className="text-zinc-800 text-xs font-semibold">
+                          {comm.targetAudience || <span className="text-zinc-400 font-normal italic">Not specified</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Style & Dimensions */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
+                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
+                          Aesthetic Style Direction
+                        </span>
+                        {comm.preferredStyle ? (
+                          <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs font-bold font-mono-code inline-block border border-orange-200">
+                            {comm.preferredStyle}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400 text-xs font-normal italic">Flexible / Designer discretion</span>
+                        )}
+                      </div>
+
+                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
+                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
+                          Required Dimensions / Format
+                        </span>
+                        <p className="text-zinc-800 text-xs font-mono-code font-semibold">
+                          {comm.requiredDimensions || <span className="text-zinc-400 font-normal italic">Not specified</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Preferred Colors */}
+                    {comm.preferredColors && comm.preferredColors.length > 0 && (
+                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
+                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1.5 font-bold">
+                          Brand / Color Palette
+                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {comm.preferredColors.map((hex, i) => (
+                            <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-50 border border-zinc-200 text-xs font-mono-code text-zinc-800 font-medium">
+                              {hex.startsWith('#') && (
+                                <span className="w-3.5 h-3.5 rounded-full border border-zinc-300 shadow-2xs shrink-0" style={{ backgroundColor: hex }}></span>
+                              )}
+                              <span>{hex}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reference Links */}
+                    {comm.referenceLinks && comm.referenceLinks.length > 0 && (
+                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
+                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1.5 font-bold">
+                          Reference & Inspiration Links
+                        </span>
+                        <ul className="space-y-1.5 text-xs">
+                          {comm.referenceLinks.map((link, i) => (
+                            <li key={i}>
+                              <a
+                                href={link.startsWith('http') ? link : `https://${link}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-orange-600 hover:underline inline-flex items-center gap-1.5 font-medium max-w-full"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">{link}</span>
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Additional Notes */}
+                    {comm.additionalNotes && (
+                      <div className="bg-white p-3.5 rounded-xl border border-zinc-200">
+                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
+                          Additional Requirements / Notes
+                        </span>
+                        <p className="text-zinc-700 text-xs whitespace-pre-line leading-relaxed">
+                          {comm.additionalNotes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Stage Controller Selector */}
                   <div className="mt-5 space-y-3">

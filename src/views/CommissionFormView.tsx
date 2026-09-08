@@ -29,13 +29,19 @@ export const CommissionFormView: React.FC = () => {
     setActiveView 
   } = useApp();
 
-  // Commission Form Fields (as specified by Phase 3A requirements)
+  // Commission Form Fields (as specified by Phase 3A & 3C.1 requirements)
   const [serviceType, setServiceType] = useState(preselectedService || 'Brand Identity Package');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
+  const [preferredStyle, setPreferredStyle] = useState('');
+  const [colorsInput, setColorsInput] = useState('');
+  const [referenceLinksInput, setReferenceLinksInput] = useState('');
+  const [requiredDimensions, setRequiredDimensions] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
   const [budget, setBudget] = useState('5000');
   const [deadline, setDeadline] = useState('');
-  const [additionalNotes, setAdditionalNotes] = useState('');
 
   // UI States
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,6 +82,12 @@ export const CommissionFormView: React.FC = () => {
   const resetForm = () => {
     setTitle('');
     setDescription('');
+    setPurpose('');
+    setTargetAudience('');
+    setPreferredStyle('');
+    setColorsInput('');
+    setReferenceLinksInput('');
+    setRequiredDimensions('');
     setAdditionalNotes('');
     setDeadline('');
     setFormError(null);
@@ -133,6 +145,18 @@ export const CommissionFormView: React.FC = () => {
       return;
     }
 
+    // Parse preferredColors array from input
+    const parsedColors = colorsInput
+      .split(/[\n,]+/)
+      .map(c => c.trim())
+      .filter(Boolean);
+
+    // Parse referenceLinks array from input
+    const parsedReferenceLinks = referenceLinksInput
+      .split(/[\n,]+/)
+      .map(l => l.trim())
+      .filter(Boolean);
+
     // Prevent accidental duplicate submissions
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -144,6 +168,12 @@ export const CommissionFormView: React.FC = () => {
         description: cleanDesc,
         budget: numericBudget,
         deadline,
+        purpose: purpose.trim() || undefined,
+        targetAudience: targetAudience.trim() || undefined,
+        preferredStyle: preferredStyle.trim() || undefined,
+        preferredColors: parsedColors.length > 0 ? parsedColors : undefined,
+        requiredDimensions: requiredDimensions.trim() || undefined,
+        referenceLinks: parsedReferenceLinks.length > 0 ? parsedReferenceLinks : undefined,
         additionalNotes: additionalNotes.trim() || undefined,
       });
 
@@ -234,10 +264,82 @@ export const CommissionFormView: React.FC = () => {
 
             {submittedCommission.description && (
               <div className="pt-3 border-t border-zinc-200/60">
-                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase mb-1">Brief Summary</span>
-                <p className="text-xs text-zinc-600 line-clamp-3 bg-white p-3 rounded-xl border border-zinc-200/60">
+                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase mb-1">Brief Description</span>
+                <p className="text-xs text-zinc-600 line-clamp-3 bg-white p-3 rounded-xl border border-zinc-200/60 whitespace-pre-line">
                   {submittedCommission.description}
                 </p>
+              </div>
+            )}
+
+            {/* Structured Creative Brief Summary if available */}
+            {(submittedCommission.purpose || submittedCommission.targetAudience || submittedCommission.preferredStyle || submittedCommission.requiredDimensions || (submittedCommission.preferredColors && submittedCommission.preferredColors.length > 0) || (submittedCommission.referenceLinks && submittedCommission.referenceLinks.length > 0) || submittedCommission.additionalNotes) && (
+              <div className="pt-3 border-t border-zinc-200/60 space-y-3">
+                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase font-bold">Creative Brief Specifications</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-xl border border-zinc-200/60">
+                  {submittedCommission.purpose && (
+                    <div>
+                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase">Purpose & Context</span>
+                      <span className="font-medium text-zinc-800">{submittedCommission.purpose}</span>
+                    </div>
+                  )}
+                  {submittedCommission.targetAudience && (
+                    <div>
+                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase">Target Audience</span>
+                      <span className="font-medium text-zinc-800">{submittedCommission.targetAudience}</span>
+                    </div>
+                  )}
+                  {submittedCommission.preferredStyle && (
+                    <div>
+                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase">Aesthetic Style</span>
+                      <span className="font-medium text-zinc-800">{submittedCommission.preferredStyle}</span>
+                    </div>
+                  )}
+                  {submittedCommission.requiredDimensions && (
+                    <div>
+                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase">Required Dimensions</span>
+                      <span className="font-medium text-zinc-800 font-mono-code">{submittedCommission.requiredDimensions}</span>
+                    </div>
+                  )}
+                  {submittedCommission.preferredColors && submittedCommission.preferredColors.length > 0 && (
+                    <div className="sm:col-span-2">
+                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase mb-1">Color Palette</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {submittedCommission.preferredColors.map((color: string, idx: number) => (
+                          <span key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 text-[11px] text-zinc-700 font-mono-code">
+                            {color.startsWith('#') && (
+                              <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: color }} />
+                            )}
+                            {color}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {submittedCommission.referenceLinks && submittedCommission.referenceLinks.length > 0 && (
+                    <div className="sm:col-span-2">
+                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase mb-1">References / Links</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {submittedCommission.referenceLinks.map((link: string, idx: number) => (
+                          <a
+                            key={idx}
+                            href={link.startsWith('http') ? link : `https://${link}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-[11px] text-orange-700 hover:underline break-all"
+                          >
+                            <span>{link}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {submittedCommission.additionalNotes && (
+                    <div className="sm:col-span-2">
+                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase">Additional Requirements</span>
+                      <span className="font-medium text-zinc-700 whitespace-pre-line">{submittedCommission.additionalNotes}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -341,7 +443,7 @@ export const CommissionFormView: React.FC = () => {
       {/* COMMISSION FORM */}
       <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
 
-        {/* FIELD 1: SERVICE SELECTION */}
+        {/* SECTION 1: PROJECT OVERVIEW */}
         <div className="bg-white border border-[#E5E5E5] rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-xs space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
             <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 font-mono-code font-bold flex items-center justify-center text-xs border border-orange-200">
@@ -349,59 +451,10 @@ export const CommissionFormView: React.FC = () => {
             </div>
             <div>
               <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
-                Select Service Package <span className="text-orange-500">*</span>
+                Project Overview
               </h3>
               <p className="text-xs text-zinc-500 font-medium">
-                Choose the design discipline or package for your project.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="select-commission-service" className="block text-xs font-bold text-zinc-800 mb-2">
-              Service <span className="text-orange-500">*</span>
-            </label>
-            <select
-              id="select-commission-service"
-              value={serviceType}
-              onChange={(e) => handleServiceChange(e.target.value)}
-              className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white font-medium cursor-pointer"
-            >
-              {services.map((srv) => (
-                <option key={srv.id} value={srv.name}>
-                  {srv.name} (from {studioProfile.currencySymbol}{srv.startingPrice.toLocaleString()} · {srv.turnaround})
-                </option>
-              ))}
-              <option value="Custom Creative Direction">Custom Creative Direction</option>
-            </select>
-          </div>
-
-          {/* Service quick info badge */}
-          {selectedServiceItem && (
-            <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
-              <span className="text-zinc-600 font-medium">
-                {selectedServiceItem.shortDesc}
-              </span>
-              <div className="flex items-center gap-3 shrink-0 text-zinc-500 font-mono-code">
-                <span>Turnaround: <strong className="text-zinc-800 font-bold">{selectedServiceItem.turnaround}</strong></span>
-                <span>Base: <strong className="text-orange-600 font-bold">{studioProfile.currencySymbol}{selectedServiceItem.startingPrice.toLocaleString()}</strong></span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* FIELD 2 & 3: PROJECT TITLE & PROJECT DESCRIPTION */}
-        <div className="bg-white border border-[#E5E5E5] rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-xs space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
-            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 font-mono-code font-bold flex items-center justify-center text-xs border border-orange-200">
-              02
-            </div>
-            <div>
-              <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
-                Project Scope & Requirements
-              </h3>
-              <p className="text-xs text-zinc-500 font-medium">
-                Provide a clear title and description for what you want designed.
+                Specify your project title, service package, core description, and overarching purpose.
               </p>
             </div>
           </div>
@@ -423,6 +476,37 @@ export const CommissionFormView: React.FC = () => {
             </div>
 
             <div>
+              <label htmlFor="select-commission-service" className="block text-xs font-bold text-zinc-800 mb-2">
+                Service Package <span className="text-orange-500">*</span>
+              </label>
+              <select
+                id="select-commission-service"
+                value={serviceType}
+                onChange={(e) => handleServiceChange(e.target.value)}
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white font-medium cursor-pointer"
+              >
+                {services.map((srv) => (
+                  <option key={srv.id} value={srv.name}>
+                    {srv.name} (from {studioProfile.currencySymbol}{srv.startingPrice.toLocaleString()} · {srv.turnaround})
+                  </option>
+                ))}
+                <option value="Custom Creative Direction">Custom Creative Direction</option>
+              </select>
+
+              {selectedServiceItem && (
+                <div className="mt-2 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                  <span className="text-zinc-600 font-medium">
+                    {selectedServiceItem.shortDesc}
+                  </span>
+                  <div className="flex items-center gap-3 shrink-0 text-zinc-500 font-mono-code">
+                    <span>Turnaround: <strong className="text-zinc-800 font-bold">{selectedServiceItem.turnaround}</strong></span>
+                    <span>Base: <strong className="text-orange-600 font-bold">{studioProfile.currencySymbol}{selectedServiceItem.startingPrice.toLocaleString()}</strong></span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
               <label htmlFor="textarea-project-description" className="block text-xs font-bold text-zinc-800 mb-1.5">
                 Project Description <span className="text-orange-500">*</span>
               </label>
@@ -430,16 +514,114 @@ export const CommissionFormView: React.FC = () => {
                 id="textarea-project-description"
                 rows={4}
                 required
-                placeholder="Describe your design needs, visual goals, context, desired mood, deliverables, and intended audience..."
+                placeholder="Describe your design needs, deliverables, key themes, and primary goals for this project..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white resize-none"
               />
             </div>
+
+            <div>
+              <label htmlFor="input-project-purpose" className="block text-xs font-bold text-zinc-800 mb-1.5">
+                Purpose & Context <span className="text-zinc-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                id="input-project-purpose"
+                type="text"
+                placeholder="e.g. Launching a new tech startup, rebranding an artisan bakery, Q4 marketing campaign..."
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+              />
+              <span className="text-[11px] text-zinc-400 mt-1 block">
+                Explain what problem this project solves or what event/launch it supports.
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* FIELD 4 & 5: BUDGET & DESIRED DEADLINE */}
+        {/* SECTION 2: AUDIENCE & CREATIVE DIRECTION */}
+        <div className="bg-white border border-[#E5E5E5] rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-xs space-y-5">
+          <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
+            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 font-mono-code font-bold flex items-center justify-center text-xs border border-orange-200">
+              02
+            </div>
+            <div>
+              <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
+                Audience & Creative Direction
+              </h3>
+              <p className="text-xs text-zinc-500 font-medium">
+                Define the intended demographic, desired aesthetic feel, color palette, and visual references.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="input-target-audience" className="block text-xs font-bold text-zinc-800 mb-1.5">
+                Target Audience <span className="text-zinc-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                id="input-target-audience"
+                type="text"
+                placeholder="e.g. Tech-savvy professionals aged 25-40, college students, luxury consumers..."
+                value={targetAudience}
+                onChange={(e) => setTargetAudience(e.target.value)}
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="input-preferred-style" className="block text-xs font-bold text-zinc-800 mb-1.5">
+                Aesthetic / Style Direction <span className="text-zinc-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                id="input-preferred-style"
+                type="text"
+                placeholder="e.g. Modern Minimalist, Swiss International, brutalist, warm editorial..."
+                value={preferredStyle}
+                onChange={(e) => setPreferredStyle(e.target.value)}
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label htmlFor="input-preferred-colors" className="block text-xs font-bold text-zinc-800 mb-1.5">
+                Brand / Color Palette <span className="text-zinc-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                id="input-preferred-colors"
+                type="text"
+                placeholder="e.g. #0F172A, #F97316, warm sand, navy blue (comma-separated)"
+                value={colorsInput}
+                onChange={(e) => setColorsInput(e.target.value)}
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+              />
+              <span className="text-[11px] text-zinc-400 mt-1 block">
+                Enter hex codes (e.g. #F97316) or color names separated by commas.
+              </span>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label htmlFor="textarea-reference-links" className="block text-xs font-bold text-zinc-800 mb-1.5">
+                References / Inspiration Links <span className="text-zinc-400 font-normal">(Optional)</span>
+              </label>
+              <textarea
+                id="textarea-reference-links"
+                rows={2}
+                placeholder="e.g. Pinterest moodboard link, Behance reference, Figma board URL, Instagram profile (comma or newline separated)..."
+                value={referenceLinksInput}
+                onChange={(e) => setReferenceLinksInput(e.target.value)}
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white resize-none"
+              />
+              <span className="text-[11px] text-zinc-400 mt-1 block">
+                Share URLs to moodboards, existing websites, or styles you admire.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 3: TECHNICAL REQUIREMENTS */}
         <div className="bg-white border border-[#E5E5E5] rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-xs space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
             <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 font-mono-code font-bold flex items-center justify-center text-xs border border-orange-200">
@@ -447,7 +629,54 @@ export const CommissionFormView: React.FC = () => {
             </div>
             <div>
               <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
-                Budget & Schedule
+                Technical Requirements
+              </h3>
+              <p className="text-xs text-zinc-500 font-medium">
+                Specify exact dimensions, required file formats, and any additional constraints.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="input-required-dimensions" className="block text-xs font-bold text-zinc-800 mb-1.5">
+                Required Dimensions / Format <span className="text-zinc-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                id="input-required-dimensions"
+                type="text"
+                placeholder="e.g. Vector SVG + High-Res PNG, 1080x1080px IG Square, A2 300DPI print poster, 1920x1080 horizontal..."
+                value={requiredDimensions}
+                onChange={(e) => setRequiredDimensions(e.target.value)}
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="textarea-additional-notes" className="block text-xs font-bold text-zinc-800 mb-1.5">
+                Additional Requirements / Notes <span className="text-zinc-400 font-normal">(Optional)</span>
+              </label>
+              <textarea
+                id="textarea-additional-notes"
+                rows={3}
+                placeholder="e.g. Special print considerations, existing brand assets to incorporate, specific copy/wording that must be included, or deadlines for preliminary milestones..."
+                value={additionalNotes}
+                onChange={(e) => setAdditionalNotes(e.target.value)}
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white resize-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 4: BUDGET & TIMELINE */}
+        <div className="bg-white border border-[#E5E5E5] rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-xs space-y-5">
+          <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
+            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 font-mono-code font-bold flex items-center justify-center text-xs border border-orange-200">
+              04
+            </div>
+            <div>
+              <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
+                Budget & Timeline
               </h3>
               <p className="text-xs text-zinc-500 font-medium">
                 Specify your proposed investment and target completion date.
@@ -458,7 +687,7 @@ export const CommissionFormView: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label htmlFor="input-commission-budget" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Budget ({studioProfile.currencySymbol}) <span className="text-orange-500">*</span>
+                Estimated Budget ({studioProfile.currencySymbol}) <span className="text-orange-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-mono-code text-sm font-bold">
@@ -483,7 +712,7 @@ export const CommissionFormView: React.FC = () => {
 
             <div>
               <label htmlFor="input-commission-deadline" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Desired Deadline <span className="text-orange-500">*</span>
+                Target Deadline <span className="text-orange-500">*</span>
               </label>
               <input
                 id="input-commission-deadline"
@@ -498,37 +727,6 @@ export const CommissionFormView: React.FC = () => {
                 Select your preferred project delivery target date.
               </span>
             </div>
-          </div>
-        </div>
-
-        {/* FIELD 6: ADDITIONAL NOTES */}
-        <div className="bg-white border border-[#E5E5E5] rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-xs space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
-            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 font-mono-code font-bold flex items-center justify-center text-xs border border-orange-200">
-              04
-            </div>
-            <div>
-              <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
-                Additional Notes
-              </h3>
-              <p className="text-xs text-zinc-500 font-medium">
-                Include any special requests, reference links, print considerations, or constraints.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="textarea-additional-notes" className="block text-xs font-bold text-zinc-800 mb-1.5">
-              Additional Notes (Optional)
-            </label>
-            <textarea
-              id="textarea-additional-notes"
-              rows={3}
-              placeholder="e.g. Reference links (Pinterest, Behance), preferred color preferences, dimensions (e.g. A2 300DPI), or special file format needs..."
-              value={additionalNotes}
-              onChange={(e) => setAdditionalNotes(e.target.value)}
-              className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white resize-none"
-            />
           </div>
         </div>
 

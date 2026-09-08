@@ -469,8 +469,8 @@ export const ClientDashboardView: React.FC = () => {
                       <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
                         Purpose & Context
                       </span>
-                      <p className="text-zinc-800 font-semibold">
-                        {commission.purpose || 'Commercial branding and digital release'}
+                      <p className="text-zinc-800 font-semibold text-xs sm:text-sm">
+                        {commission.purpose || 'Not specified'}
                       </p>
                     </div>
 
@@ -478,8 +478,8 @@ export const ClientDashboardView: React.FC = () => {
                       <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
                         Target Audience
                       </span>
-                      <p className="text-zinc-800 font-semibold">
-                        {commission.targetAudience || 'Modern tech founders & design enthusiasts'}
+                      <p className="text-zinc-800 font-semibold text-xs sm:text-sm">
+                        {commission.targetAudience || 'Not specified'}
                       </p>
                     </div>
                   </div>
@@ -489,9 +489,15 @@ export const ClientDashboardView: React.FC = () => {
                       <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
                         Aesthetic Style Direction
                       </span>
-                      <span className="px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-bold font-mono-code inline-block border border-orange-200">
-                        {commission.preferredStyle}
-                      </span>
+                      {commission.preferredStyle ? (
+                        <span className="px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-bold font-mono-code inline-block border border-orange-200">
+                          {commission.preferredStyle}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-500 text-xs font-medium italic">
+                          Flexible / Designer discretion
+                        </span>
+                      )}
                     </div>
 
                     <div>
@@ -499,7 +505,7 @@ export const ClientDashboardView: React.FC = () => {
                         Required Dimensions
                       </span>
                       <p className="text-zinc-800 text-xs font-mono-code font-semibold">
-                        {commission.requiredDimensions || 'Vector SVG/AI + 300DPI Print'}
+                        {commission.requiredDimensions || 'Not specified'}
                       </p>
                     </div>
                   </div>
@@ -513,7 +519,9 @@ export const ClientDashboardView: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         {commission.preferredColors.map((hex, i) => (
                           <div key={i} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-50 border border-zinc-200 text-xs font-mono-code text-zinc-800 font-medium shadow-2xs">
-                            <span className="w-3.5 h-3.5 rounded-full border border-zinc-300 shadow-2xs" style={{ backgroundColor: hex }}></span>
+                            {hex.startsWith('#') && (
+                              <span className="w-3.5 h-3.5 rounded-full border border-zinc-300 shadow-2xs shrink-0" style={{ backgroundColor: hex }}></span>
+                            )}
                             <span>{hex}</span>
                           </div>
                         ))}
@@ -522,6 +530,17 @@ export const ClientDashboardView: React.FC = () => {
                   )}
 
                   {/* Additional Notes */}
+                  {commission.additionalNotes && (
+                    <div className="pt-2">
+                      <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
+                        Additional Requirements / Notes
+                      </span>
+                      <p className="text-zinc-700 text-xs bg-zinc-50 p-3 rounded-xl border border-zinc-200 whitespace-pre-line leading-relaxed">
+                        {commission.additionalNotes}
+                      </p>
+                    </div>
+                  )}
+
                   {commission.communicationGoals && (
                     <div className="pt-2">
                       <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
@@ -544,7 +563,7 @@ export const ClientDashboardView: React.FC = () => {
               <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-6 space-y-4 shadow-xs">
                 <h4 className="font-display text-sm font-bold text-zinc-900 flex items-center gap-2">
                   <FolderArchive className="w-4 h-4 text-orange-500" />
-                  Attached References ({commission.referenceImages?.length || 0 + (commission.referenceDocs?.length || 0)})
+                  Attached References ({(commission.referenceImages?.length || 0) + (commission.referenceLinks?.length || 0) + (commission.referenceDocs?.length || 0)})
                 </h4>
 
                 {commission.referenceImages && commission.referenceImages.length > 0 && (
@@ -571,7 +590,7 @@ export const ClientDashboardView: React.FC = () => {
                       {commission.referenceLinks.map((link, i) => (
                         <li key={i}>
                           <a
-                            href={link}
+                            href={link.startsWith('http') ? link : `https://${link}`}
                             target="_blank"
                             rel="noreferrer"
                             className="text-orange-600 hover:underline flex items-center gap-1.5 truncate font-medium"

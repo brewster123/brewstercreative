@@ -93,6 +93,12 @@ interface AppContextType {
     description: string;
     budget: number | string;
     deadline: string;
+    purpose?: string;
+    targetAudience?: string;
+    preferredStyle?: string;
+    preferredColors?: string[];
+    requiredDimensions?: string;
+    referenceLinks?: string[];
     additionalNotes?: string;
   }) => Promise<{ success: boolean; commission?: Commission; error?: string }>;
   refreshCommissions: () => Promise<void>;
@@ -959,6 +965,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     description: string;
     budget: number | string;
     deadline: string;
+    purpose?: string;
+    targetAudience?: string;
+    preferredStyle?: string;
+    preferredColors?: string[];
+    requiredDimensions?: string;
+    referenceLinks?: string[];
     additionalNotes?: string;
   }): Promise<{ success: boolean; commission?: Commission; error?: string }> => {
     if (!currentUser) {
@@ -985,6 +997,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         description: data.description,
         budget: data.budget,
         deadline: data.deadline,
+        purpose: data.purpose,
+        targetAudience: data.targetAudience,
+        preferredStyle: data.preferredStyle,
+        preferredColors: data.preferredColors,
+        requiredDimensions: data.requiredDimensions,
+        referenceLinks: data.referenceLinks,
         additionalNotes: data.additionalNotes,
       },
       currentUser

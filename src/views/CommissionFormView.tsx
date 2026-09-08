@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { formatCommissionDate } from '../utils/dateUtils';
 import { 
   Sparkles, 
   Send, 
@@ -222,7 +223,7 @@ export const CommissionFormView: React.FC = () => {
 
               <div>
                 <span className="text-zinc-400 block text-[11px] font-mono-code uppercase">Target Deadline</span>
-                <span className="font-medium text-zinc-800">{submittedCommission.deadline}</span>
+                <span className="font-medium text-zinc-800">{formatCommissionDate(submittedCommission.deadline)}</span>
               </div>
 
               <div>

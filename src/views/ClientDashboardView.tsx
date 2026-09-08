@@ -6,6 +6,7 @@ import { ClientReviewSection } from '../components/ClientReviewSection';
 import { FinalDeliverySection } from '../components/FinalDeliverySection';
 import { ChatWindow } from '../components/ChatWindow';
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
+import { formatCommissionDate } from '../utils/dateUtils';
 import { 
   Sparkles, 
   Clock, 
@@ -373,10 +374,10 @@ export const ClientDashboardView: React.FC = () => {
               </span>
               <div className="flex items-center gap-2 text-zinc-900 font-black text-sm sm:text-base">
                 <Calendar className="w-4 h-4 text-orange-500 shrink-0" />
-                <span>{commission.deadline}</span>
+                <span>{formatCommissionDate(commission.deadline)}</span>
               </div>
               <span className="text-[11px] text-zinc-400 block font-medium">
-                Started on {commission.startDate}
+                {commission.startDate ? `Started on ${formatCommissionDate(commission.startDate)}` : ''}
               </span>
             </div>
 

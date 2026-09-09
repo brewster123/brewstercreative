@@ -7,6 +7,7 @@ import { FinalDeliverySection } from '../components/FinalDeliverySection';
 import { ChatWindow } from '../components/ChatWindow';
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
 import { formatCommissionDate } from '../utils/dateUtils';
+import { isValidReferenceUrl } from '../utils/urlUtils';
 import { 
   Sparkles, 
   Clock, 
@@ -587,19 +588,28 @@ export const ClientDashboardView: React.FC = () => {
                       External Reference URLs
                     </span>
                     <ul className="space-y-1.5 text-xs">
-                      {commission.referenceLinks.map((link, i) => (
-                        <li key={i}>
-                          <a
-                            href={link.startsWith('http') ? link : `https://${link}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-orange-600 hover:underline flex items-center gap-1.5 truncate font-medium"
-                          >
-                            <ExternalLink className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{link}</span>
-                          </a>
-                        </li>
-                      ))}
+                      {commission.referenceLinks.map((link, i) => {
+                        const isUrl = isValidReferenceUrl(link);
+                        return (
+                          <li key={i}>
+                            {isUrl ? (
+                              <a
+                                href={link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-orange-600 hover:underline flex items-center gap-1.5 truncate font-medium"
+                              >
+                                <ExternalLink className="w-3 h-3 shrink-0" />
+                                <span className="truncate">{link}</span>
+                              </a>
+                            ) : (
+                              <span className="text-zinc-600 flex items-center gap-1.5 truncate font-medium text-xs">
+                                <span className="truncate">{link}</span>
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 )}

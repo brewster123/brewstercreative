@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { formatCommissionDate } from '../utils/dateUtils';
+import { isValidReferenceUrl } from '../utils/urlUtils';
 import { 
   Sparkles, 
   Send, 
@@ -46,6 +47,7 @@ export const CommissionFormView: React.FC = () => {
   // UI States
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [referenceLinksError, setReferenceLinksError] = useState<string | null>(null);
   const [submittedCommission, setSubmittedCommission] = useState<any | null>(null);
 
   // Tomorrow's date string for input min attribute
@@ -91,6 +93,7 @@ export const CommissionFormView: React.FC = () => {
     setAdditionalNotes('');
     setDeadline('');
     setFormError(null);
+    setReferenceLinksError(null);
     setSubmittedCommission(null);
     if (services.length > 0) {
       setServiceType(services[0].name);
@@ -101,6 +104,7 @@ export const CommissionFormView: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setReferenceLinksError(null);
 
     // Authentication Guard
     if (!currentUser) {
@@ -156,6 +160,15 @@ export const CommissionFormView: React.FC = () => {
       .split(/[\n,]+/)
       .map(l => l.trim())
       .filter(Boolean);
+
+    // Validate reference links individually (must be authentic web URLs)
+    const invalidLinks = parsedReferenceLinks.filter(l => !isValidReferenceUrl(l));
+    if (invalidLinks.length > 0) {
+      const errorMsg = 'Please enter a valid URL beginning with https://';
+      setReferenceLinksError(errorMsg);
+      setFormError(errorMsg);
+      return;
+    }
 
     // Prevent accidental duplicate submissions
     if (isSubmitting) return;
@@ -319,17 +332,27 @@ export const CommissionFormView: React.FC = () => {
                     <div className="sm:col-span-2">
                       <span className="text-zinc-400 block text-[10px] font-mono-code uppercase mb-1">References / Links</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {submittedCommission.referenceLinks.map((link: string, idx: number) => (
-                          <a
-                            key={idx}
-                            href={link.startsWith('http') ? link : `https://${link}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-[11px] text-orange-700 hover:underline break-all"
-                          >
-                            <span>{link}</span>
-                          </a>
-                        ))}
+                        {submittedCommission.referenceLinks.map((link: string, idx: number) => {
+                          const isUrl = isValidReferenceUrl(link);
+                          return isUrl ? (
+                            <a
+                              key={idx}
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-[11px] text-orange-700 hover:underline break-all"
+                            >
+                              <span>{link}</span>
+                            </a>
+                          ) : (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 text-[11px] text-zinc-600 break-all"
+                            >
+                              <span>{link}</span>
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -609,14 +632,26 @@ export const CommissionFormView: React.FC = () => {
               <textarea
                 id="textarea-reference-links"
                 rows={2}
-                placeholder="e.g. Pinterest moodboard link, Behance reference, Figma board URL, Instagram profile (comma or newline separated)..."
+                placeholder="e.g. https://www.behance.net/example, https://dribbble.com/example, https://pinterest.com/example (comma or newline separated)..."
                 value={referenceLinksInput}
-                onChange={(e) => setReferenceLinksInput(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white resize-none"
+                onChange={(e) => {
+                  setReferenceLinksInput(e.target.value);
+                  if (referenceLinksError) setReferenceLinksError(null);
+                }}
+                className={`w-full bg-zinc-50 border ${
+                  referenceLinksError ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-200'
+                } rounded-2xl p-4 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white resize-none`}
               />
-              <span className="text-[11px] text-zinc-400 mt-1 block">
-                Share URLs to moodboards, existing websites, or styles you admire.
-              </span>
+              {referenceLinksError ? (
+                <span className="text-[11px] text-red-600 font-medium mt-1.5 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  {referenceLinksError}
+                </span>
+              ) : (
+                <span className="text-[11px] text-zinc-400 mt-1 block">
+                  Share URLs to moodboards, existing websites, or styles you admire (must begin with https://).
+                </span>
+              )}
             </div>
           </div>
         </div>

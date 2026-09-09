@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import { loadCustomFontFile, isFontLoaded } from '../utils/fontLoader';
 import { formatCommissionDate } from '../utils/dateUtils';
+import { isValidReferenceUrl } from '../utils/urlUtils';
 
 export const AdminDashboardView: React.FC = () => {
   const { 
@@ -1051,19 +1052,28 @@ export const AdminDashboardView: React.FC = () => {
                           Reference & Inspiration Links
                         </span>
                         <ul className="space-y-1.5 text-xs">
-                          {comm.referenceLinks.map((link, i) => (
-                            <li key={i}>
-                              <a
-                                href={link.startsWith('http') ? link : `https://${link}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-orange-600 hover:underline inline-flex items-center gap-1.5 font-medium max-w-full"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate">{link}</span>
-                              </a>
-                            </li>
-                          ))}
+                          {comm.referenceLinks.map((link, i) => {
+                            const isUrl = isValidReferenceUrl(link);
+                            return (
+                              <li key={i}>
+                                {isUrl ? (
+                                  <a
+                                    href={link}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-orange-600 hover:underline inline-flex items-center gap-1.5 font-medium max-w-full"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="truncate">{link}</span>
+                                  </a>
+                                ) : (
+                                  <span className="text-zinc-600 inline-flex items-center gap-1.5 font-medium max-w-full text-xs">
+                                    <span className="truncate">{link}</span>
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     )}

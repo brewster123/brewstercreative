@@ -52,6 +52,7 @@ import {
 import { loadCustomFontFile, isFontLoaded } from '../utils/fontLoader';
 import { formatCommissionDate } from '../utils/dateUtils';
 import { isValidReferenceUrl } from '../utils/urlUtils';
+import { AdminCreativeProofsSection } from '../components/AdminCreativeProofsSection';
 
 export const AdminDashboardView: React.FC = () => {
   const { 
@@ -86,6 +87,7 @@ export const AdminDashboardView: React.FC = () => {
   >('commissions');
 
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>(activeCommission?.id || commissions[0]?.id || '');
+  const [expandedProofsCommissionId, setExpandedProofsCommissionId] = useState<string | null>(null);
   const [commissionFilter, setCommissionFilter] = useState<string>('all');
   const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
 
@@ -266,10 +268,6 @@ export const AdminDashboardView: React.FC = () => {
 
     return Array.from(map.values());
   }, [users, commissions]);
-  
-  // Proof upload form state
-  const [proofNote, setProofNote] = useState('Version 2.1: Here are the refined brand identity icon marks, custom typography lockup, and dark/light collateral proofs.');
-  const [proofImageInput, setProofImageInput] = useState('https://images.unsplash.com/photo-1626785774573-4b799315345d?w=1200&auto=format&fit=crop&q=80');
 
   // Website Info Form State
   const [profileForm, setProfileForm] = useState<StudioProfile>(() => {
@@ -337,15 +335,6 @@ export const AdminDashboardView: React.FC = () => {
     if (!stageObj) return;
     const stageName = stageObj.name as CommissionStageName;
     updateCommissionStage(commissionId, newStage, stageName, `Stage updated to ${stageName} by Designer.`);
-  };
-
-  const handleUploadProof = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentCommission) return;
-
-    uploadDesignReviewDraft(currentCommission.id, [proofImageInput], proofNote);
-    alert(`Design proof submitted to Client Review stage for ${currentCommission.projectName}!`);
-    setActiveAdminTab('commissions');
   };
 
   // Website Profile Handler
@@ -602,7 +591,7 @@ export const AdminDashboardView: React.FC = () => {
             { id: 'admin-tab-services', tab: 'services' as const, label: 'Services & Pricing', icon: Layers, count: services.length },
             { id: 'admin-tab-website-info', tab: 'website-info' as const, label: 'Edit Website Info', icon: Settings, count: undefined },
             { id: 'admin-tab-account', tab: 'admin-account' as const, label: 'Admin Account & Profile', icon: UserCheck, count: undefined },
-            { id: 'admin-tab-proofs', tab: 'proof-uploader' as const, label: 'Upload Proofs', icon: UploadCloud, count: undefined },
+            { id: 'admin-tab-proofs', tab: 'proof-uploader' as const, label: 'Creative Proofs', icon: UploadCloud, count: undefined },
             { id: 'admin-tab-chat', tab: 'chat' as const, label: 'Client Chat', icon: MessageSquare, count: undefined },
             { id: 'admin-tab-typography', tab: 'typography' as const, label: 'Typography (Primeform Pro)', icon: Type, count: undefined },
           ]
@@ -884,6 +873,22 @@ export const AdminDashboardView: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
+                            setExpandedProofsCommissionId(prev => prev === comm.id ? null : comm.id);
+                          }}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                            expandedProofsCommissionId === comm.id 
+                              ? 'bg-zinc-900 text-white border-zinc-900 shadow-xs' 
+                              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border-zinc-200'
+                          }`}
+                          title="Toggle Creative Proofs section"
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                          <span>{expandedProofsCommissionId === comm.id ? 'Hide Proofs' : 'Proofs'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
                             setSelectedCommissionId(comm.id);
                             setActiveCommissionId(comm.id);
                             setActiveAdminTab('proof-uploader');
@@ -1090,6 +1095,16 @@ export const AdminDashboardView: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Creative Proofs Section (Phase 3C.2-B) */}
+                  {expandedProofsCommissionId === comm.id && (
+                    <div className="mt-6 pt-6 border-t border-zinc-200">
+                      <AdminCreativeProofsSection
+                        commission={comm}
+                        currentUser={currentUser}
+                      />
+                    </div>
+                  )}
 
                   {/* Stage Controller Selector */}
                   <div className="mt-5 space-y-3">
@@ -2045,100 +2060,50 @@ export const AdminDashboardView: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* TAB 5: UPLOAD PROOF DRAFTS */}
+      {/* TAB 5: CREATIVE PROOFS & UPLOAD (Phase 3C.2-B) */}
       {/* ======================================================== */}
       {activeAdminTab === 'proof-uploader' && (
-        <div className="max-w-2xl mx-auto bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-8 space-y-6 shadow-xs">
-          <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
-            <div className="w-10 h-10 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center">
-              <UploadCloud className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-black text-zinc-900">
-                Upload Proof Draft for Client Review (Stage 05)
-              </h3>
-              <p className="text-xs text-zinc-500 font-medium">
-                Target Project: <strong className="text-zinc-800 font-bold">{currentCommission?.projectName}</strong>
-              </p>
-            </div>
-          </div>
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Active Commission Selector */}
+          <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-7 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <label htmlFor="select-proof-commission" className="block text-xs font-bold text-zinc-800 mb-1">
+                  Active Commission
+                </label>
+                <p className="text-xs text-zinc-500 font-medium">
+                  Select a client project to view existing creative proofs or upload a new draft iteration.
+                </p>
+              </div>
 
-          <form onSubmit={handleUploadProof} className="space-y-5">
-            <div>
-              <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Select Active Commission
-              </label>
               <select
+                id="select-proof-commission"
                 value={selectedCommissionId}
-                onChange={(e) => setSelectedCommissionId(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
+                onChange={(e) => {
+                  setSelectedCommissionId(e.target.value);
+                  setActiveCommissionId(e.target.value);
+                }}
+                className="bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 font-bold focus:outline-none focus:border-orange-500 focus:bg-white min-w-[280px]"
               >
                 {commissions.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.projectName} ({c.clientName}) — Current: {formatCommissionStatus(c.status)}
+                    {c.projectName} ({c.clientName}) — {formatCommissionStatus(c.status)}
                   </option>
                 ))}
               </select>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                High-Resolution Proof Image URL
-              </label>
-              <input
-                type="url"
-                required
-                value={proofImageInput}
-                onChange={(e) => setProofImageInput(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:bg-white"
-              />
-              <p className="text-[11px] text-zinc-400 mt-1 font-medium">
-                Direct image link or rendered mockup preview to present for client feedback.
-              </p>
+          {currentCommission ? (
+            <AdminCreativeProofsSection
+              commission={currentCommission}
+              currentUser={currentUser}
+            />
+          ) : (
+            <div className="p-12 text-center bg-white border border-zinc-200 rounded-[32px] text-zinc-500 text-sm">
+              No commission found. Please create or select a commission.
             </div>
-
-            {/* Proof Preview Box */}
-            {proofImageInput && (
-              <div className="rounded-[24px] overflow-hidden border border-zinc-200 aspect-[16/9] bg-zinc-100 relative">
-                <img src={proofImageInput} alt="Proof preview" className="w-full h-full object-cover" />
-                <span className="absolute bottom-2 right-2 px-2.5 py-1 rounded-full bg-black/60 text-[10px] font-mono-code text-white font-bold">
-                  Live Preview
-                </span>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Designer Notes for Client
-              </label>
-              <textarea
-                rows={4}
-                required
-                value={proofNote}
-                onChange={(e) => setProofNote(e.target.value)}
-                placeholder="Explain the concepts, iterations made, color choices, and ask for client feedback..."
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-3.5 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:bg-white resize-none"
-              />
-            </div>
-
-            <div className="pt-2 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setActiveAdminTab('commissions')}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold text-zinc-500 hover:text-zinc-800"
-              >
-                Cancel
-              </button>
-              <button
-                id="btn-submit-proof-draft"
-                type="submit"
-                className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-bold shadow-xs flex items-center gap-2"
-              >
-                <UploadCloud className="w-4 h-4" />
-                <span>Publish to Client Review</span>
-              </button>
-            </div>
-          </form>
+          )}
         </div>
       )}
 

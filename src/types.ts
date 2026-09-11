@@ -146,7 +146,26 @@ export interface Commission {
   clientReviewData?: ClientReviewData;
   finalFiles?: FinalFilesPackage;
   timelineUpdates?: ProgressUpdate[];
+  proofs?: CommissionProof[];
   
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CommissionProofStatus = 'pending_review' | 'revision_requested' | 'approved';
+
+export interface CommissionProof {
+  id: string;
+  commissionId: string;
+  uploadedBy: string;
+  fileName: string;
+  filePath: string;
+  fileUrl?: string;
+  fileType?: string;
+  fileSize?: number;
+  version: number;
+  status: CommissionProofStatus;
+  revisionNote?: string;
   createdAt: string;
   updatedAt: string;
 }

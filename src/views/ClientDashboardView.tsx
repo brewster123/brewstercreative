@@ -273,17 +273,15 @@ export const ClientDashboardView: React.FC = () => {
               <span>Studio Chat</span>
             </button>
 
-            {commission.currentStage >= 5 && (
-              <button
-                id="tab-open-review"
-                type="button"
-                onClick={() => setActiveTab('review')}
-                className="px-4 py-2.5 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-bold shadow-sm shadow-orange-500/20 flex items-center gap-2 transition-all"
-              >
-                <Eye className="w-4 h-4" />
-                <span>Review Design Proofs</span>
-              </button>
-            )}
+            <button
+              id="tab-open-review"
+              type="button"
+              onClick={() => setActiveTab('review')}
+              className="px-4 py-2.5 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-bold shadow-sm shadow-orange-500/20 flex items-center gap-2 transition-all"
+            >
+              <Eye className="w-4 h-4" />
+              <span>Creative Proofs</span>
+            </button>
           </div>
         </div>
 
@@ -328,7 +326,7 @@ export const ClientDashboardView: React.FC = () => {
           }`}
         >
           <Eye className="w-4 h-4" />
-          <span>Design Proof & Revisions</span>
+          <span>Creative Proofs</span>
         </button>
 
         <button
@@ -613,6 +611,30 @@ export const ClientDashboardView: React.FC = () => {
                     </ul>
                   </div>
                 )}
+              </div>
+
+              {/* Creative Proofs Quick Review Card */}
+              <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-6 space-y-3 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
+                    <Eye className="w-4 h-4 text-orange-500" />
+                    <span>Creative Proofs</span>
+                  </div>
+                  <span className="text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200">
+                    Stage 05 Review
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 leading-relaxed font-medium">
+                  Review visual design iterations, inspect high-res proofs, and submit approvals or revision requests.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('review')}
+                  className="w-full py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-xs"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Open Creative Proofs</span>
+                </button>
               </div>
 
               {/* Designer Contact Card */}

@@ -273,3 +273,21 @@ export interface StudioProfile {
   commissionStatus: 'open' | 'waitlist' | 'closed';
   availableSlots: number;
 }
+
+export type ProofStatus = 'pending_review' | 'revision_requested' | 'approved';
+
+export interface CommissionProof {
+  id: string;
+  commission_id: string;
+  uploaded_by: string;
+  file_name: string;
+  file_path: string;
+  file_url?: string | null;
+  file_type: string;
+  file_size: number;
+  version: number;
+  status: ProofStatus;
+  revision_note?: string | null;
+  created_at: string;
+  updated_at: string;
+}

@@ -56,43 +56,94 @@ export const CANONICAL_COMMISSION_PRIORITIES: readonly CommissionPriority[] = [
   'urgent',
 ] as const;
 
+export interface CommissionLifecycleInfo {
+  status: CommissionStatus;
+  stage: number;
+  progress: number;
+}
+
 /**
- * Derives consistent currentStage (1-8) and progress percentage from status.
- * Ensures header status, stage tracker, and progress bar are always aligned.
+ * Canonical mapping for commission lifecycle:
+ * pending     → stage 1 → 10%
+ * reviewing   → stage 2 → 25%
+ * accepted    → stage 3 → 40%
+ * in_progress → stage 4 → 55%
+ * for_review  → stage 5 → 70%
+ * revision    → stage 6 → 85%
+ * completed   → stage 8 → 100%
+ * cancelled   → stage 1 → 0%
  */
-export function getStageAndProgressFromStatus(statusString?: string | null): { stage: number; progress: number } {
+export const CANONICAL_STAGE_TO_LIFECYCLE: Readonly<Record<number, CommissionLifecycleInfo>> = {
+  1: { status: 'pending', stage: 1, progress: 10 },
+  2: { status: 'reviewing', stage: 2, progress: 25 },
+  3: { status: 'accepted', stage: 3, progress: 40 },
+  4: { status: 'in_progress', stage: 4, progress: 55 },
+  5: { status: 'for_review', stage: 5, progress: 70 },
+  6: { status: 'revision', stage: 6, progress: 85 },
+  7: { status: 'for_review', stage: 7, progress: 95 },
+  8: { status: 'completed', stage: 8, progress: 100 },
+};
+
+/**
+ * Maps a stage number (1-8) to its canonical status, stage, and progress percentage.
+ */
+export function getLifecycleFromStage(stageNumber: number): CommissionLifecycleInfo {
+  const roundedStage = Math.round(stageNumber);
+  if (roundedStage in CANONICAL_STAGE_TO_LIFECYCLE) {
+    return CANONICAL_STAGE_TO_LIFECYCLE[roundedStage];
+  }
+  if (roundedStage <= 1) {
+    return CANONICAL_STAGE_TO_LIFECYCLE[1];
+  }
+  return CANONICAL_STAGE_TO_LIFECYCLE[8];
+}
+
+/**
+ * Derives consistent currentStage (1-8), progress percentage, and canonical status from status.
+ * Ensures header status, stage tracker, and progress bar are always aligned with the canonical lifecycle:
+ * pending     → stage 1 → 10%
+ * reviewing   → stage 2 → 25%
+ * accepted    → stage 3 → 40%
+ * in_progress → stage 4 → 55%
+ * for_review  → stage 5 → 70%
+ * revision    → stage 6 → 85%
+ * completed   → stage 8 → 100%
+ * cancelled   → stage 1 → 0%
+ */
+export function getStageAndProgressFromStatus(statusString?: string | null): CommissionLifecycleInfo {
   const s = (statusString || 'pending').toLowerCase().trim();
   switch (s) {
     case 'reviewing':
-      return { stage: 2, progress: 25 };
+      return { status: 'reviewing', stage: 2, progress: 25 };
     case 'accepted':
-      return { stage: 2, progress: 25 };
+      return { status: 'accepted', stage: 3, progress: 40 };
     case 'concept_development':
     case 'concept development':
-      return { stage: 3, progress: 40 };
+      return { status: 'accepted', stage: 3, progress: 40 };
     case 'in_progress':
     case 'in progress':
-      return { stage: 4, progress: 55 };
+      return { status: 'in_progress', stage: 4, progress: 55 };
     case 'for_review':
     case 'client review':
     case 'review':
-      return { stage: 5, progress: 70 };
+      return { status: 'for_review', stage: 5, progress: 70 };
     case 'revision':
     case 'revision requested':
     case 'revisions':
-      return { stage: 6, progress: 85 };
+      return { status: 'revision', stage: 6, progress: 85 };
     case 'final approval':
     case 'final_approval':
-      return { stage: 7, progress: 95 };
+      return { status: 'for_review', stage: 7, progress: 95 };
     case 'completed':
-      return { stage: 8, progress: 100 };
+      return { status: 'completed', stage: 8, progress: 100 };
     case 'cancelled':
     case 'rejected':
     case 'declined':
-      return { stage: 1, progress: 0 };
+      return { status: 'cancelled', stage: 1, progress: 0 };
     case 'pending':
+    case 'request submitted':
     default:
-      return { stage: 1, progress: 10 };
+      return { status: 'pending', stage: 1, progress: 10 };
   }
 }
 

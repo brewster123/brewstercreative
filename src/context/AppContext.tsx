@@ -33,6 +33,8 @@ import {
   fetchCommissionsFromSupabase,
   updateCommissionStatusInSupabase,
   updateCommissionPriorityInSupabase,
+  getStageAndProgressFromStatus,
+  getLifecycleFromStage,
 } from '../data/commissionsData';
 
 export type AppView = 
@@ -102,13 +104,13 @@ interface AppContextType {
     additionalNotes?: string;
   }) => Promise<{ success: boolean; commission?: Commission; error?: string }>;
   refreshCommissions: () => Promise<void>;
-  updateCommissionStage: (commissionId: string, newStageNumber: number, stageName?: string, stageNote?: string) => void;
+  updateCommissionStage: (commissionId: string, newStageNumber: number, stageName?: string, stageNote?: string) => Promise<{ success: boolean; error?: string }>;
   updateCommissionStatus: (commissionId: string, status: CommissionStatus) => Promise<{ success: boolean; error?: string }>;
   updateCommissionPriority: (commissionId: string, priority: CommissionPriority) => Promise<{ success: boolean; error?: string }>;
   updateCommissionDetails: (commissionId: string, updates: Partial<Commission>) => void;
   updatePaymentStatus: (commissionId: string, status: 'Unpaid' | 'Partial' | 'Paid') => void;
-  acceptCommission: (commissionId: string) => void;
-  declineCommission: (commissionId: string) => void;
+  acceptCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
+  declineCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
   submitClientReviewAction: (commissionId: string, action: 'approve' | 'revision', feedback?: string) => void;
   deliverFinalFiles: (commissionId: string, finalPackage: FinalFilesPackage) => void;
   uploadDesignForReview: (commissionId: string, previewImages: string[], reviewNotes: string) => void;
@@ -1066,26 +1068,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, commission: newCommission };
   };
 
-  const updateCommissionStage = (commissionId: string, newStageNumber: number, stageNameOrNote?: string, optionalNote?: string) => {
-    const stageInfo = COMMISSION_STAGES.find(s => s.number === newStageNumber) || COMMISSION_STAGES[0];
-    const todayStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    const noteText = optionalNote || stageNameOrNote || `Project moved to Stage ${newStageNumber}: ${stageInfo.name}.`;
+  const updateCommissionStage = async (
+    commissionId: string,
+    newStageNumber: number,
+    stageNameOrNote?: string,
+    optionalNote?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    // 1. Derive canonical status, stage, and progress from centralized lifecycle mapping
+    const lifecycle = getLifecycleFromStage(newStageNumber);
 
-    let calculatedStatus: CommissionStatus = 'In Progress';
-    if (newStageNumber === 1) calculatedStatus = 'Pending';
-    else if (newStageNumber === 5) calculatedStatus = 'Client Review';
-    else if (newStageNumber === 6) calculatedStatus = 'Revision Requested';
-    else if (newStageNumber === 7) calculatedStatus = 'Final Approval';
-    else if (newStageNumber === 8) calculatedStatus = 'Completed';
+    // 2. Persist canonical status through existing Supabase status-update helper
+    const res = await updateCommissionStatusInSupabase(commissionId, lifecycle.status);
+    if (!res.success) {
+      console.error('[AppContext] Failed to update commission stage in Supabase:', res.error);
+      return { success: false, error: res.error || 'Failed to update commission stage in database.' };
+    }
+
+    // 3. Only update local state after the Supabase update succeeds
+    const stageInfo = COMMISSION_STAGES.find(s => s.number === lifecycle.stage) || COMMISSION_STAGES[0];
+    const todayStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const noteText = optionalNote || stageNameOrNote || `Project moved to Stage ${lifecycle.stage}: ${stageInfo.name}.`;
 
     setCommissions(prev =>
       prev.map(c => {
         if (c.id === commissionId) {
           return {
             ...c,
-            currentStage: newStageNumber,
-            progress: stageInfo.defaultPercentage,
-            status: calculatedStatus,
+            currentStage: lifecycle.stage,
+            progress: lifecycle.progress,
+            status: lifecycle.status,
             updatedAt: todayStr,
           };
         }
@@ -1098,8 +1109,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `upd-${Date.now()}`,
       commissionId,
       stage: stageInfo.name,
-      stageNumber: newStageNumber,
-      percentage: stageInfo.defaultPercentage,
+      stageNumber: lifecycle.stage,
+      percentage: lifecycle.progress,
       note: noteText,
       timestamp: todayStr,
       updatedBy: studioProfile.designerName,
@@ -1114,13 +1125,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userId: targetComm.clientId,
         commissionId,
         message: `Your project "${targetComm.projectName}" has moved to ${stageInfo.name}.`,
-        type: newStageNumber === 5 ? 'review' : newStageNumber === 8 ? 'delivery' : 'status',
+        type: lifecycle.stage === 5 ? 'review' : lifecycle.stage === 8 ? 'delivery' : 'status',
         readStatus: false,
         timestamp: todayStr,
-        linkTab: newStageNumber === 5 ? 'review' : newStageNumber === 8 ? 'delivery' : 'timeline',
+        linkTab: lifecycle.stage === 5 ? 'review' : lifecycle.stage === 8 ? 'delivery' : 'timeline',
       };
       setNotifications(prev => [newNotif, ...prev]);
     }
+
+    return { success: true };
   };
 
   const updateCommissionStatus = async (
@@ -1134,7 +1147,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: res.error || 'Failed to update commission status in database.' };
     }
 
-    // 2. Only update local React state after Supabase successfully updates
+    // 2. Derive corresponding currentStage and progress from canonical status
+    const lifecycle = getStageAndProgressFromStatus(status);
+
+    // 3. Only update local React state after Supabase successfully updates
     const todayStr = new Date().toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
@@ -1146,7 +1162,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (c.id === commissionId) {
           return {
             ...c,
-            status,
+            status: lifecycle.status,
+            currentStage: lifecycle.stage,
+            progress: lifecycle.progress,
             updatedAt: todayStr,
           };
         }
@@ -1217,14 +1235,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const acceptCommission = (commissionId: string) => {
-    updateCommissionStage(commissionId, 2, 'Project Discussion', 'Commission brief accepted by designer. Moving to project scope and discussion.');
+  const acceptCommission = async (commissionId: string): Promise<{ success: boolean; error?: string }> => {
+    return await updateCommissionStage(
+      commissionId,
+      2,
+      'Project Discussion',
+      'Commission brief accepted by designer. Moving to project scope and discussion.'
+    );
   };
 
-  const declineCommission = (commissionId: string) => {
-    setCommissions(prev =>
-      prev.map(c => (c.id === commissionId ? { ...c, status: 'Rejected' as CommissionStatus } : c))
-    );
+  const declineCommission = async (commissionId: string): Promise<{ success: boolean; error?: string }> => {
+    return await updateCommissionStatus(commissionId, 'cancelled');
   };
 
   const submitClientReviewAction = (commissionId: string, action: 'approve' | 'revision', feedback?: string) => {

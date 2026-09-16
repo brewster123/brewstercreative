@@ -330,11 +330,17 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  const handleStageChange = (commissionId: string, newStage: number) => {
+  const handleStageChange = async (commissionId: string, newStage: number) => {
     const stageObj = COMMISSION_STAGES.find(s => s.number === newStage);
     if (!stageObj) return;
     const stageName = stageObj.name as CommissionStageName;
-    updateCommissionStage(commissionId, newStage, stageName, `Stage updated to ${stageName} by Designer.`);
+    const res = await updateCommissionStage(commissionId, newStage, stageName, `Stage updated to ${stageName} by Designer.`);
+    if (res && !res.success) {
+      setStatusErrorMap(prev => ({
+        ...prev,
+        [commissionId]: res.error || 'Failed to update commission stage in database.',
+      }));
+    }
   };
 
   // Website Profile Handler
@@ -849,7 +855,7 @@ export const AdminDashboardView: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap">
-                        {comm.status === 'Request Submitted' && (
+                        {(comm.status === 'Request Submitted' || comm.status === 'pending') && (
                           <>
                             <button
                               type="button"

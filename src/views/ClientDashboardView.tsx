@@ -171,10 +171,10 @@ export const ClientDashboardView: React.FC = () => {
           <FolderArchive className="w-8 h-8" />
         </div>
         <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
-          No Active Commissions Found
+          No Commissions Found
         </h2>
         <p className="text-sm text-zinc-500 max-w-md mx-auto">
-          You don't have any ongoing graphic design commissions. Submit a new brief to collaborate with {studioProfile.designerName}.
+          You don't have any commissions on record. Submit a new brief to collaborate with {studioProfile.designerName}.
         </p>
         <button
           type="button"
@@ -723,7 +723,7 @@ export const ClientDashboardView: React.FC = () => {
               Edit My Client Information
             </h3>
             <p className="text-xs text-zinc-500 mb-6 font-mono-code">
-              Updates will automatically sync with your active commission brief and chat identity.
+              Updates will automatically sync with your commission brief and chat identity.
             </p>
 
             <form onSubmit={handleSaveProfile} className="space-y-5">

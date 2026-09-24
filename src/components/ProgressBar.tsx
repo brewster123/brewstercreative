@@ -12,6 +12,10 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
   const { currentUser, updateCommissionStage } = useApp();
   const isAdmin = currentUser?.role === 'admin';
 
+  const isCommissionCompleted =
+    commission.currentStage === 8 ||
+    (commission.status || '').toLowerCase() === 'completed';
+
   const currentStageInfo = COMMISSION_STAGES.find(s => s.number === commission.currentStage) || COMMISSION_STAGES[0];
 
   return (
@@ -33,7 +37,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
           </div>
           <h3 className="font-display text-lg sm:text-xl font-bold text-zinc-900 mt-1 flex items-center gap-2">
             <span>{currentStageInfo.name}</span>
-            {(commission.status === 'Completed' || commission.status === 'completed') && (
+            {isCommissionCompleted && (
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-sans font-semibold border border-emerald-200">
                 ✓ Completed
               </span>
@@ -52,8 +56,12 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
               {commission.progress}%
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-orange-50 border-2 border-orange-500 flex items-center justify-center font-mono-code text-xs font-bold text-orange-600">
-            {commission.currentStage}/8
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono-code text-xs font-bold ${
+            isCommissionCompleted
+              ? 'bg-emerald-50 border-2 border-emerald-500 text-emerald-700'
+              : 'bg-orange-50 border-2 border-orange-500 text-orange-600'
+          }`}>
+            {isCommissionCompleted ? '8/8' : `${commission.currentStage}/8`}
           </div>
         </div>
       </div>
@@ -73,9 +81,11 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
       {/* 8-Stage Stepper Grid (Horizontal on Desktop, Responsive Wraps) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 sm:gap-2">
         {COMMISSION_STAGES.map((stage) => {
-          const isCompleted = stage.number < commission.currentStage;
-          const isCurrent = stage.number === commission.currentStage;
-          const isPending = stage.number > commission.currentStage;
+          const isCompleted = isCommissionCompleted
+            ? stage.number <= commission.currentStage
+            : stage.number < commission.currentStage;
+          const isCurrent = !isCommissionCompleted && stage.number === commission.currentStage;
+          const isPending = !isCommissionCompleted && stage.number > commission.currentStage;
 
           return (
             <div
@@ -88,6 +98,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
               className={`relative rounded-2xl p-3 flex flex-col justify-between transition-all text-left ${
                 isCurrent
                   ? 'bg-orange-50/80 border-2 border-orange-500 shadow-md shadow-orange-500/10'
+                  : isCommissionCompleted && stage.number === 8
+                  ? 'bg-emerald-50/70 border-2 border-emerald-400 shadow-sm shadow-emerald-500/10'
                   : isCompleted
                   ? 'bg-zinc-50 border border-zinc-200/80 hover:bg-zinc-100'
                   : 'bg-zinc-50/50 border border-zinc-200/50 opacity-60'
@@ -121,6 +133,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
                 className={`text-xs font-bold leading-tight line-clamp-2 ${
                   isCurrent
                     ? 'text-orange-700'
+                    : isCommissionCompleted && stage.number === 8
+                    ? 'text-emerald-800'
                     : isCompleted
                     ? 'text-zinc-800'
                     : 'text-zinc-500'
@@ -133,6 +147,13 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
               {isCurrent && (
                 <span className="mt-1.5 text-[9px] font-mono-code text-orange-600 uppercase tracking-wider font-bold">
                   Active
+                </span>
+              )}
+
+              {/* Completed Final Delivery Indicator */}
+              {isCommissionCompleted && stage.number === 8 && (
+                <span className="mt-1.5 text-[9px] font-mono-code text-emerald-600 uppercase tracking-wider font-bold">
+                  Delivered
                 </span>
               )}
             </div>

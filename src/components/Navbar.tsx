@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { Commission } from '../types';
 import { 
   Sparkles, 
   Layers, 
@@ -35,10 +36,19 @@ export const Navbar: React.FC = () => {
     !n.readStatus && (currentUser?.role === 'admin' ? true : n.userId === currentUser?.id)
   ).length;
 
+  const isCommissionActive = (c: Commission) => {
+    const s = (c.status || '').toLowerCase();
+    return (
+      s !== 'completed' &&
+      s !== 'cancelled' &&
+      s !== 'rejected' &&
+      c.currentStage !== 8
+    );
+  };
+
   const clientCommission = commissions.find(
     c => (c.clientId === currentUser?.id || (currentUser?.email && c.clientEmail?.toLowerCase() === currentUser.email.toLowerCase())) &&
-         (c.status || '').toLowerCase() !== 'cancelled' &&
-         (c.status || '').toLowerCase() !== 'rejected'
+         isCommissionActive(c)
   );
 
   const navLinks = [

@@ -1667,11 +1667,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const currentUserCommissions = currentUser?.role === 'admin' 
     ? commissions 
-    : commissions.filter(c => c.clientId === currentUser?.id);
+    : commissions.filter(c => c.clientId === currentUser?.id || (currentUser?.email && c.clientEmail?.toLowerCase() === currentUser.email.toLowerCase()));
+
+  const isCommissionActive = (c: Commission) => {
+    const s = (c.status || '').toLowerCase();
+    return s !== 'completed' && s !== 'cancelled' && s !== 'rejected' && c.currentStage !== 8;
+  };
 
   const activeCommission = commissions.find(c => c.id === selectedCommissionId) 
-    || (currentUser?.role === 'client' ? commissions.find(c => c.clientId === currentUser?.id) : commissions[0]) 
-    || commissions[0];
+    || (currentUser?.role === 'client' 
+      ? (currentUserCommissions.find(isCommissionActive) || currentUserCommissions[0]) 
+      : (commissions.find(isCommissionActive) || commissions[0]));
 
   const setActiveCommissionId = (id: string) => {
     setSelectedCommissionId(id);

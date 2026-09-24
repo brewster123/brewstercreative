@@ -1125,10 +1125,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userId: targetComm.clientId,
         commissionId,
         message: `Your project "${targetComm.projectName}" has moved to ${stageInfo.name}.`,
-        type: lifecycle.stage === 5 ? 'review' : lifecycle.stage === 8 ? 'delivery' : 'status',
+        type: lifecycle.stage === 5 || lifecycle.stage === 7 ? 'review' : lifecycle.stage === 8 ? 'delivery' : 'status',
         readStatus: false,
         timestamp: todayStr,
-        linkTab: lifecycle.stage === 5 ? 'review' : lifecycle.stage === 8 ? 'delivery' : 'timeline',
+        linkTab: lifecycle.stage === 5 || lifecycle.stage === 7 ? 'review' : lifecycle.stage === 8 ? 'delivery' : 'timeline',
       };
       setNotifications(prev => [newNotif, ...prev]);
     }
@@ -1254,7 +1254,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!comm) return;
 
     if (action === 'approve') {
-      // Move to Final Approval (Stage 7) or Final Delivery
+      // Move to Final Approval (Stage 7)
       setCommissions(prev =>
         prev.map(c => {
           if (c.id === commissionId) {
@@ -1262,7 +1262,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ...c,
               currentStage: 7,
               progress: 95,
-              status: 'Final Approval',
+              status: 'final_approval',
               clientReviewData: c.clientReviewData ? {
                 ...c.clientReviewData,
                 clientStatus: 'Approved',
@@ -1273,6 +1273,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return c;
         })
       );
+
+      // Persist canonical final_approval status to Supabase
+      updateCommissionStatusInSupabase(commissionId, 'final_approval').catch(err => {
+        console.error('[AppContext] Failed to persist final_approval to Supabase:', err);
+      });
 
       // Add timeline
       setTimelineUpdates(prev => [
@@ -1312,8 +1317,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return {
               ...c,
               currentStage: 6,
-              progress: 80,
-              status: 'Revision Requested',
+              progress: 85,
+              status: 'revision',
               revisionsUsed: (c.revisionsUsed || 0) + 1,
               clientReviewData: c.clientReviewData ? {
                 ...c.clientReviewData,
@@ -1327,6 +1332,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return c;
         })
       );
+
+      // Persist canonical revision status to Supabase
+      updateCommissionStatusInSupabase(commissionId, 'revision').catch(err => {
+        console.error('[AppContext] Failed to persist revision to Supabase:', err);
+      });
 
       // Add timeline
       setTimelineUpdates(prev => [
@@ -1370,7 +1380,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...c,
             currentStage: 5,
             progress: 70,
-            status: 'Client Review',
+            status: 'for_review',
             clientReviewData: {
               previewImages: previewImages.length ? previewImages : [
                 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=1200&auto=format&fit=crop&q=80',
@@ -1385,6 +1395,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return c;
       })
     );
+
+    // Persist canonical for_review status to Supabase
+    updateCommissionStatusInSupabase(commissionId, 'for_review').catch(err => {
+      console.error('[AppContext] Failed to persist for_review to Supabase:', err);
+    });
 
     // Timeline update
     setTimelineUpdates(prev => [
@@ -1427,7 +1442,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...c,
             currentStage: 8,
             progress: 100,
-            status: 'Completed',
+            status: 'completed',
             totalPaid: true,
             finalFiles: finalPackage,
             updatedAt: todayStr,
@@ -1436,6 +1451,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return c;
       })
     );
+
+    // Persist canonical completed status to Supabase
+    updateCommissionStatusInSupabase(commissionId, 'completed').catch(err => {
+      console.error('[AppContext] Failed to persist completed to Supabase:', err);
+    });
 
     // Timeline update
     setTimelineUpdates(prev => [

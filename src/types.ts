@@ -48,6 +48,7 @@ export type CommissionStatus =
   | 'in_progress'
   | 'for_review'
   | 'revision'
+  | 'final_approval'
   | 'completed'
   | 'cancelled'
   | 'Pending'

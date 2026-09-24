@@ -47,6 +47,9 @@ export const ClientDashboardView: React.FC = () => {
       case 'revision':
       case 'revision requested':
         return 'Revision';
+      case 'final_approval':
+      case 'final approval':
+        return 'Final Approval';
       case 'completed':
         return 'Completed';
       case 'cancelled':
@@ -237,7 +240,7 @@ export const ClientDashboardView: React.FC = () => {
                 {commission.serviceType}
               </span>
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono-code font-bold border ${
-                commission.status === 'Completed' || commission.status === 'completed'
+                commission.status === 'Completed' || commission.status === 'completed' || commission.status === 'Final Approval' || commission.status === 'final_approval'
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : commission.status === 'In Progress' || commission.status === 'in_progress' || commission.status === 'accepted'
                   ? 'bg-blue-50 text-blue-700 border-blue-200'

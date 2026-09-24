@@ -103,6 +103,7 @@ export const AdminDashboardView: React.FC = () => {
     { value: 'in_progress', label: 'In Progress' },
     { value: 'for_review', label: 'For Review' },
     { value: 'revision', label: 'Revision' },
+    { value: 'final_approval', label: 'Final Approval' },
     { value: 'completed', label: 'Completed' },
     { value: 'cancelled', label: 'Cancelled' },
   ];
@@ -125,6 +126,9 @@ export const AdminDashboardView: React.FC = () => {
       case 'revision':
       case 'revision requested':
         return 'Revision';
+      case 'final_approval':
+      case 'final approval':
+        return 'Final Approval';
       case 'completed':
         return 'Completed';
       case 'cancelled':
@@ -478,10 +482,10 @@ export const AdminDashboardView: React.FC = () => {
       return s === 'in_progress' || s === 'accepted';
     }
     if (commissionFilter === 'review') {
-      return s === 'for_review' || s === 'revision' || s === 'client_review' || s === 'revision_requested';
+      return s === 'for_review' || s === 'revision' || s === 'client_review' || s === 'revision_requested' || s === 'final_approval';
     }
     if (commissionFilter === 'completed') {
-      return s === 'completed' || s === 'final_approval';
+      return s === 'completed';
     }
     return true;
   });
@@ -693,7 +697,7 @@ export const AdminDashboardView: React.FC = () => {
                             ID: #{comm.id.length > 12 ? `${comm.id.slice(0, 8)}...` : comm.id}
                           </span>
                           <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono-code font-bold border ${
-                            comm.status === 'Completed' || comm.status === 'Final Approval' || comm.status === 'completed'
+                            comm.status === 'Completed' || comm.status === 'Final Approval' || comm.status === 'completed' || comm.status === 'final_approval'
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                               : comm.status === 'In Progress' || comm.status === 'in_progress' || comm.status === 'accepted'
                               ? 'bg-blue-50 text-blue-700 border-blue-200'
@@ -822,7 +826,7 @@ export const AdminDashboardView: React.FC = () => {
                               comm.status === 'In Progress' ? 'in_progress' :
                               comm.status === 'Client Review' ? 'for_review' :
                               comm.status === 'Revision Requested' ? 'revision' :
-                              comm.status === 'Final Approval' ? 'for_review' :
+                              comm.status === 'Final Approval' || comm.status === 'final_approval' ? 'final_approval' :
                               comm.status === 'Rejected' ? 'cancelled' :
                               comm.status === 'Completed' ? 'completed' :
                               comm.status === 'Pending' ? 'pending' :
@@ -1268,7 +1272,7 @@ export const AdminDashboardView: React.FC = () => {
                         <p className="text-xs text-zinc-600 mt-2">
                           Latest Project: <strong className="text-zinc-900">{client.latestProject}</strong>
                           {client.latestStatus && (
-                            <span className="text-zinc-400 font-normal"> ({client.latestStatus})</span>
+                            <span className="text-zinc-400 font-normal"> ({formatCommissionStatus(client.latestStatus)})</span>
                           )}
                         </p>
                       )}

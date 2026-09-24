@@ -45,6 +45,7 @@ export const CANONICAL_COMMISSION_STATUSES: readonly CommissionStatus[] = [
   'in_progress',
   'for_review',
   'revision',
+  'final_approval',
   'completed',
   'cancelled',
 ] as const;
@@ -64,14 +65,15 @@ export interface CommissionLifecycleInfo {
 
 /**
  * Canonical mapping for commission lifecycle:
- * pending     → stage 1 → 10%
- * reviewing   → stage 2 → 25%
- * accepted    → stage 3 → 40%
- * in_progress → stage 4 → 55%
- * for_review  → stage 5 → 70%
- * revision    → stage 6 → 85%
- * completed   → stage 8 → 100%
- * cancelled   → stage 1 → 0%
+ * pending        → stage 1 → 10%
+ * reviewing      → stage 2 → 25%
+ * accepted       → stage 3 → 40%
+ * in_progress    → stage 4 → 55%
+ * for_review     → stage 5 → 70%
+ * revision       → stage 6 → 85%
+ * final_approval → stage 7 → 95%
+ * completed      → stage 8 → 100%
+ * cancelled      → stage 1 → 0%
  */
 export const CANONICAL_STAGE_TO_LIFECYCLE: Readonly<Record<number, CommissionLifecycleInfo>> = {
   1: { status: 'pending', stage: 1, progress: 10 },
@@ -80,7 +82,7 @@ export const CANONICAL_STAGE_TO_LIFECYCLE: Readonly<Record<number, CommissionLif
   4: { status: 'in_progress', stage: 4, progress: 55 },
   5: { status: 'for_review', stage: 5, progress: 70 },
   6: { status: 'revision', stage: 6, progress: 85 },
-  7: { status: 'for_review', stage: 7, progress: 95 },
+  7: { status: 'final_approval', stage: 7, progress: 95 },
   8: { status: 'completed', stage: 8, progress: 100 },
 };
 
@@ -101,14 +103,15 @@ export function getLifecycleFromStage(stageNumber: number): CommissionLifecycleI
 /**
  * Derives consistent currentStage (1-8), progress percentage, and canonical status from status.
  * Ensures header status, stage tracker, and progress bar are always aligned with the canonical lifecycle:
- * pending     → stage 1 → 10%
- * reviewing   → stage 2 → 25%
- * accepted    → stage 3 → 40%
- * in_progress → stage 4 → 55%
- * for_review  → stage 5 → 70%
- * revision    → stage 6 → 85%
- * completed   → stage 8 → 100%
- * cancelled   → stage 1 → 0%
+ * pending        → stage 1 → 10%
+ * reviewing      → stage 2 → 25%
+ * accepted       → stage 3 → 40%
+ * in_progress    → stage 4 → 55%
+ * for_review     → stage 5 → 70%
+ * revision       → stage 6 → 85%
+ * final_approval → stage 7 → 95%
+ * completed      → stage 8 → 100%
+ * cancelled      → stage 1 → 0%
  */
 export function getStageAndProgressFromStatus(statusString?: string | null): CommissionLifecycleInfo {
   const s = (statusString || 'pending').toLowerCase().trim();
@@ -133,7 +136,7 @@ export function getStageAndProgressFromStatus(statusString?: string | null): Com
       return { status: 'revision', stage: 6, progress: 85 };
     case 'final approval':
     case 'final_approval':
-      return { status: 'for_review', stage: 7, progress: 95 };
+      return { status: 'final_approval', stage: 7, progress: 95 };
     case 'completed':
       return { status: 'completed', stage: 8, progress: 100 };
     case 'cancelled':
@@ -176,6 +179,7 @@ export function mapDbCommissionToAppCommission(
     'in_progress',
     'for_review',
     'revision',
+    'final_approval',
     'completed',
     'cancelled',
   ];
@@ -458,6 +462,7 @@ export async function updateCommissionStatusInSupabase(
     'in_progress',
     'for_review',
     'revision',
+    'final_approval',
     'completed',
     'cancelled',
   ];

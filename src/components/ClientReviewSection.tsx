@@ -8,6 +8,7 @@ import {
   formatProofFileType,
   getProofStatusMeta,
 } from '../lib/proofs';
+import { useApp } from '../context/AppContext';
 import {
   CheckCircle,
   RotateCcw,
@@ -30,6 +31,7 @@ interface ClientReviewSectionProps {
 }
 
 export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commission }) => {
+  const { submitClientReviewAction } = useApp();
   const [proofs, setProofs] = useState<CommissionProof[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -159,6 +161,8 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
       const versionNumber = approveModalProof.version;
       setApproveModalProof(null);
       setSuccessMsg(`Proof Version ${versionNumber} has been successfully approved!`);
+      // Update commission lifecycle to Stage 07 — Final Approval (95%) and persist to Supabase
+      submitClientReviewAction(commission.id, 'approve');
       // Refetch proofs to update status in UI
       loadProofs(true);
     }
@@ -194,6 +198,8 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
       setRevisionModalProof(null);
       setRevisionNote('');
       setSuccessMsg(`Revision request for Proof Version ${versionNumber} has been submitted.`);
+      // Update commission lifecycle to Stage 06 — Revisions (85%) and persist to Supabase
+      submitClientReviewAction(commission.id, 'revision', trimmed);
       // Refetch proofs to update status in UI
       loadProofs(true);
     }

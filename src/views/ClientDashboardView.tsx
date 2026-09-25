@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { ProgressBar } from '../components/ProgressBar';
 import { ProgressTimeline } from '../components/ProgressTimeline';
@@ -8,6 +8,8 @@ import { ChatWindow } from '../components/ChatWindow';
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
 import { formatCommissionDate } from '../utils/dateUtils';
 import { isValidReferenceUrl } from '../utils/urlUtils';
+import { fetchCommissionProofs, formatProofFileSize } from '../lib/proofs';
+import { CommissionProof } from '../types';
 import { 
   Sparkles, 
   Clock, 
@@ -73,7 +75,47 @@ export const ClientDashboardView: React.FC = () => {
     timelineUpdates = []
   } = useApp();
 
+  const commission = activeCommission || (currentUserCommissions && currentUserCommissions.length > 0 ? currentUserCommissions[0] : undefined);
+  const [proofs, setProofs] = useState<CommissionProof[]>([]);
+  const [loadingProofs, setLoadingProofs] = useState<boolean>(false);
+
   const [activeTab, setActiveTab] = useState<'overview' | 'chat' | 'review' | 'timeline' | 'profile'>('overview');
+
+  // Fetch creative proofs for active commission to support actionability status
+  const loadDashboardProofs = useCallback(async () => {
+    if (!commission?.id) {
+      setProofs([]);
+      return;
+    }
+    setLoadingProofs(true);
+    try {
+      const { data, error } = await fetchCommissionProofs(commission.id);
+      if (!error && data) {
+        setProofs(data);
+      } else if (error) {
+        console.warn('[ClientDashboardView] Notice fetching proofs:', error);
+      }
+    } catch (err) {
+      console.error('[ClientDashboardView] Exception fetching proofs:', err);
+    } finally {
+      setLoadingProofs(false);
+    }
+  }, [commission?.id]);
+
+  useEffect(() => {
+    if (commission?.id && !authLoading) {
+      loadDashboardProofs();
+    }
+  }, [
+    loadDashboardProofs,
+    commission?.id,
+    commission?.updatedAt,
+    commission?.status,
+    commission?.currentStage,
+    currentUser?.id,
+    authLoading,
+    activeTab,
+  ]);
 
   // Client profile editing state
   const [profileName, setProfileName] = useState(currentUser?.name || '');
@@ -162,8 +204,6 @@ export const ClientDashboardView: React.FC = () => {
     );
   }
 
-  const commission = activeCommission || (currentUserCommissions && currentUserCommissions.length > 0 ? currentUserCommissions[0] : undefined);
-
   if (!commission) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center space-y-6">
@@ -200,6 +240,272 @@ export const ClientDashboardView: React.FC = () => {
   };
 
   const isFinalDelivery = commission.currentStage === 8 || commission.status === 'Completed' || commission.status === 'completed';
+
+  const formatUploadDate = (isoString?: string) => {
+    if (!isoString) return 'Recently';
+    try {
+      return new Date(isoString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return isoString;
+    }
+  };
+
+  const renderProofActionBanner = () => {
+    // 4. Completed / Stage 08: Do not show the proof action banner
+    if (isFinalDelivery || commission.currentStage === 8 || (commission.status || '').toLowerCase() === 'completed') {
+      return null;
+    }
+
+    const stageNum = commission.currentStage;
+    const commStatus = (commission.status || '').toLowerCase();
+
+    // 5. Stages 01–04: Do not show an action banner
+    if (
+      stageNum < 5 &&
+      commStatus !== 'for_review' &&
+      commStatus !== 'client review' &&
+      commStatus !== 'revision' &&
+      commStatus !== 'revision requested' &&
+      commStatus !== 'final_approval' &&
+      commStatus !== 'final approval'
+    ) {
+      return null;
+    }
+
+    const effectiveProofs = proofs && proofs.length > 0 ? proofs : (commission.proofs || []);
+    const latestProof = effectiveProofs.length > 0 ? effectiveProofs[0] : null;
+
+    if (loadingProofs && !latestProof) {
+      return (
+        <div className="bg-orange-50/50 border border-orange-200/60 rounded-[28px] p-5 sm:p-6 shadow-xs animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600">
+              <Clock className="w-5 h-5 animate-spin" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-zinc-900">Loading creative proof status...</p>
+              <p className="text-xs text-zinc-500 font-mono-code">Checking for pending client actions</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 6. Stage 05 but no proof uploaded
+    if (!latestProof && (stageNum === 5 || commStatus === 'for_review' || commStatus === 'client review')) {
+      return (
+        <div className="bg-zinc-50 border border-zinc-200/90 rounded-[28px] p-5 sm:p-6 shadow-xs relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center text-zinc-500 shrink-0 shadow-2xs mt-0.5">
+                <Clock className="w-5 h-5 text-orange-500" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full bg-zinc-200/70 text-zinc-700 text-[10px] font-mono-code font-bold uppercase tracking-wider">
+                    Stage 05 Milestone
+                  </span>
+                  <span className="text-xs text-zinc-400 font-mono-code">In Preparation</span>
+                </div>
+                <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
+                  Creative proof is being prepared
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-500 max-w-2xl leading-relaxed font-medium">
+                  {commission.assignedDesigner || 'Your designer'} is currently preparing the first creative proof iteration for <strong className="text-zinc-700">{commission.projectName}</strong>. You will be prompted here to inspect and review the proof once it has been uploaded.
+                </p>
+              </div>
+            </div>
+            <div className="sm:self-center shrink-0">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-zinc-200 text-xs font-mono-code text-zinc-500 font-bold shadow-2xs">
+                <Clock className="w-3.5 h-3.5 text-orange-500" />
+                <span>Awaiting Upload</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!latestProof) {
+      return null;
+    }
+
+    const proofStatus = (latestProof.status || '').toLowerCase().trim();
+    const isPendingReview =
+      proofStatus === 'pending_review' ||
+      proofStatus === 'pending review' ||
+      proofStatus === 'pending' ||
+      (stageNum === 5 &&
+        !proofStatus.includes('revision') &&
+        proofStatus !== 'approved');
+
+    const isRevisionRequested =
+      proofStatus === 'revision_requested' ||
+      proofStatus === 'revision requested' ||
+      stageNum === 6 ||
+      commStatus === 'revision' ||
+      commStatus === 'revision requested';
+
+    const isApproved =
+      proofStatus === 'approved' ||
+      stageNum === 7 ||
+      commStatus === 'final_approval' ||
+      commStatus === 'final approval';
+
+    // 1. Pending proof review
+    if (isPendingReview) {
+      const fileName = latestProof.fileName || latestProof.file_name || 'Design Proof';
+      const fileSize = latestProof.fileSize ?? latestProof.file_size;
+      const createdAt = latestProof.createdAt || latestProof.created_at;
+      const versionNumber = latestProof.version || 1;
+
+      return (
+        <div className="bg-gradient-to-r from-orange-50/90 via-amber-50/70 to-orange-50/80 border-2 border-orange-300 rounded-[28px] p-5 sm:p-6 shadow-sm relative overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/30 mt-0.5">
+                <Eye className="w-5 h-5" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-3 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-200 text-[10px] font-mono-code font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                    Action Required
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-zinc-900 text-white text-[10px] font-mono-code font-bold">
+                    Iteration v{versionNumber}
+                  </span>
+                </div>
+                <h3 className="font-display text-lg sm:text-xl font-black text-zinc-900">
+                  Action Required: Creative Proof v{versionNumber} Ready for Review
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-600 max-w-2xl leading-relaxed">
+                  Inspect the latest design iteration for <strong className="text-zinc-800">{commission.projectName}</strong> and submit your approval or request adjustments.
+                </p>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 text-[11px] font-mono-code text-zinc-500 font-medium">
+                  <span className="flex items-center gap-1 truncate max-w-[240px] sm:max-w-xs">
+                    <FileText className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                    <span className="truncate">{fileName}</span>
+                  </span>
+                  {fileSize && (
+                    <span>• {formatProofFileSize(fileSize)}</span>
+                  )}
+                  <span>• Uploaded {formatUploadDate(createdAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:self-center shrink-0 pt-2 lg:pt-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab('review')}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-sm shadow-md shadow-orange-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer hover:translate-y-[-1px]"
+              >
+                <Eye className="w-4 h-4" />
+                <span>Review Proof v{versionNumber}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 2. Revision requested
+    if (isRevisionRequested) {
+      const revisionNote = latestProof.revisionNote || latestProof.revision_note || commission.clientReviewData?.revisionFeedback;
+      const versionNumber = latestProof.version || 1;
+
+      return (
+        <div className="bg-amber-50/60 border border-amber-200/90 rounded-[28px] p-5 sm:p-6 shadow-xs relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-white border border-amber-200 flex items-center justify-center text-amber-600 shrink-0 shadow-2xs mt-0.5">
+                <RotateCcw className="w-5 h-5 text-amber-500" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-mono-code font-bold uppercase tracking-wider">
+                    Stage 06 — Revision in Progress
+                  </span>
+                  <span className="text-xs text-zinc-400 font-mono-code">v{versionNumber} Iteration</span>
+                </div>
+                <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
+                  Revision in Progress for Proof v{versionNumber}
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-600 max-w-2xl leading-relaxed">
+                  Your revision requests have been received and are currently in progress. {commission.assignedDesigner || 'Brewster'} is implementing your requested adjustments. You do not need to take any action at this time.
+                </p>
+                {revisionNote && (
+                  <div className="mt-2 p-3 rounded-xl bg-white border border-amber-200/70 text-xs text-zinc-700 font-medium">
+                    <span className="font-bold text-amber-800 font-mono-code block text-[11px] mb-0.5">
+                      Your Feedback Note:
+                    </span>
+                    <p className="italic text-zinc-600 line-clamp-2">"{revisionNote}"</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="sm:self-center shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab('review')}
+                className="px-4 py-2 rounded-xl bg-white hover:bg-amber-100/60 text-amber-800 text-xs font-bold border border-amber-200 shadow-2xs transition-all flex items-center gap-1.5"
+              >
+                <Eye className="w-3.5 h-3.5 text-amber-600" />
+                <span>View Proof History</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. Approved / Final Approval
+    if (isApproved) {
+      const versionNumber = latestProof?.version || 1;
+      return (
+        <div className="bg-emerald-50/70 border border-emerald-200/90 rounded-[28px] p-5 sm:p-6 shadow-xs relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-white border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0 shadow-2xs mt-0.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-mono-code font-bold uppercase tracking-wider">
+                    Stage 07 — Direction Approved
+                  </span>
+                  <span className="text-xs text-zinc-400 font-mono-code">Milestone Locked</span>
+                </div>
+                <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
+                  Creative Proof v{versionNumber} Approved — Preparing Final Delivery
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-600 max-w-2xl leading-relaxed">
+                  Design proof v{versionNumber} has been approved. The design direction is locked and preparation is underway for final production deliverables (Stage 08).
+                </p>
+              </div>
+            </div>
+            <div className="sm:self-center shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab('review')}
+                className="px-4 py-2 rounded-xl bg-white hover:bg-emerald-100/60 text-emerald-800 text-xs font-bold border border-emerald-200 shadow-2xs transition-all flex items-center gap-1.5"
+              >
+                <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                <span>View Approved Proof</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -365,6 +671,9 @@ export const ClientDashboardView: React.FC = () => {
           {isFinalDelivery && (
             <FinalDeliverySection commission={commission} />
           )}
+
+          {/* Contextual Proof Action / Milestone Banner (Level 1 UX Improvement) */}
+          {renderProofActionBanner()}
 
           {/* Key Metrics Quick Stats Grid - Bento Style */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

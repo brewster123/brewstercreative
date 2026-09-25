@@ -240,6 +240,22 @@ export const ClientDashboardView: React.FC = () => {
   };
 
   const isFinalDelivery = commission.currentStage === 8 || commission.status === 'Completed' || commission.status === 'completed';
+  const effectiveProofs = proofs && proofs.length > 0 ? proofs : (commission.proofs || []);
+  const latestProof = effectiveProofs.length > 0 ? effectiveProofs[0] : null;
+
+  const stageNum = commission.currentStage;
+  const commStatus = (commission.status || '').toLowerCase();
+  const latestProofStatus = (latestProof?.status || '').toLowerCase().trim();
+
+  const isProofPendingReview =
+    !isFinalDelivery &&
+    Boolean(latestProof) &&
+    (latestProofStatus === 'pending_review' ||
+      latestProofStatus === 'pending review' ||
+      latestProofStatus === 'pending' ||
+      (stageNum === 5 &&
+        !latestProofStatus.includes('revision') &&
+        latestProofStatus !== 'approved'));
 
   const formatUploadDate = (isoString?: string) => {
     if (!isoString) return 'Recently';
@@ -590,6 +606,11 @@ export const ClientDashboardView: React.FC = () => {
             >
               <Eye className="w-4 h-4" />
               <span>Creative Proofs</span>
+              {isProofPendingReview && (
+                <span className="px-2 py-0.5 rounded-full bg-white text-orange-600 text-[10px] font-mono-code font-bold shadow-2xs leading-none">
+                  Review
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -636,6 +657,11 @@ export const ClientDashboardView: React.FC = () => {
         >
           <Eye className="w-4 h-4" />
           <span>Creative Proofs</span>
+          {isProofPendingReview && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono-code font-bold bg-orange-500 text-white leading-none">
+              Review
+            </span>
+          )}
         </button>
 
         <button

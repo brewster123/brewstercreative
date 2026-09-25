@@ -523,6 +523,218 @@ export const ClientDashboardView: React.FC = () => {
     return null;
   };
 
+  const renderCreativeProofsSidebarCard = () => {
+    const versionNumber = latestProof?.version || 1;
+
+    // 4. Completed / Final Delivery (Stage 08)
+    if (isFinalDelivery || stageNum === 8 || commStatus === 'completed') {
+      return (
+        <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-6 space-y-3 shadow-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
+              <Eye className="w-4 h-4 text-zinc-500" />
+              <span>Creative Proofs</span>
+            </div>
+            <span className="text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">
+              Proofs Complete
+            </span>
+          </div>
+          <div>
+            <h5 className="font-display font-bold text-sm text-zinc-900">
+              Proofs Complete
+            </h5>
+            <p className="text-xs text-zinc-500 leading-relaxed font-medium mt-1">
+              All design iterations are concluded and finalized deliverables have been handed off.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('review')}
+            className="w-full py-2.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-700 text-xs font-bold transition-colors flex items-center justify-center gap-2 border border-zinc-200 shadow-2xs cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5 text-zinc-500" />
+            <span>View Proof Archive</span>
+          </button>
+        </div>
+      );
+    }
+
+    // 1. Pending Review (Action Required)
+    if (isProofPendingReview) {
+      return (
+        <div className="bg-gradient-to-br from-orange-50/50 via-white to-amber-50/30 border-2 border-orange-300 rounded-[28px] p-6 space-y-3 shadow-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
+              <Eye className="w-4 h-4 text-orange-500" />
+              <span>Creative Proofs</span>
+            </div>
+            <span className="text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-200 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+              Review v{versionNumber}
+            </span>
+          </div>
+          <div>
+            <h5 className="font-display font-bold text-sm text-zinc-900">
+              Creative Proof v{versionNumber} Ready for Review
+            </h5>
+            <p className="text-xs text-zinc-600 leading-relaxed font-medium mt-1">
+              Review the latest design iteration and submit approval or revision feedback.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('review')}
+            className="w-full py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Open Creative Proofs</span>
+          </button>
+        </div>
+      );
+    }
+
+    // 2. Revision Requested (Stage 06)
+    if (
+      latestProofStatus === 'revision_requested' ||
+      latestProofStatus === 'revision requested' ||
+      stageNum === 6 ||
+      commStatus === 'revision' ||
+      commStatus === 'revision requested'
+    ) {
+      return (
+        <div className="bg-white border border-amber-200/80 rounded-[28px] p-6 space-y-3 shadow-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
+              <RotateCcw className="w-4 h-4 text-amber-500" />
+              <span>Creative Proofs</span>
+            </div>
+            <span className="text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+              v{versionNumber} in Revision
+            </span>
+          </div>
+          <div>
+            <h5 className="font-display font-bold text-sm text-zinc-900">
+              Revision in Progress
+            </h5>
+            <p className="text-xs text-zinc-500 leading-relaxed font-medium mt-1">
+              Your feedback has been received. Brewster Creative is working on the requested adjustments.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('review')}
+            className="w-full py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold transition-colors flex items-center justify-center gap-2 border border-zinc-200 shadow-2xs cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5 text-zinc-600" />
+            <span>View Proof History</span>
+          </button>
+        </div>
+      );
+    }
+
+    // 3. Approved / Final Approval (Stage 07)
+    if (
+      latestProofStatus === 'approved' ||
+      stageNum === 7 ||
+      commStatus === 'final_approval' ||
+      commStatus === 'final approval'
+    ) {
+      return (
+        <div className="bg-white border border-emerald-200/80 rounded-[28px] p-6 space-y-3 shadow-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Creative Proofs</span>
+            </div>
+            <span className="text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+              Direction Approved
+            </span>
+          </div>
+          <div>
+            <h5 className="font-display font-bold text-sm text-zinc-900">
+              Creative Direction Approved
+            </h5>
+            <p className="text-xs text-zinc-500 leading-relaxed font-medium mt-1">
+              Proof v{versionNumber} has been approved. Final delivery preparation is underway.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('review')}
+            className="w-full py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition-colors flex items-center justify-center gap-2 border border-emerald-200 shadow-2xs cursor-pointer"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>View Approved Proof</span>
+          </button>
+        </div>
+      );
+    }
+
+    // 5. Stage 05 — No Proof Yet
+    if (!latestProof && (stageNum === 5 || commStatus === 'for_review' || commStatus === 'client review')) {
+      return (
+        <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-6 space-y-3 shadow-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
+              <Clock className="w-4 h-4 text-orange-500" />
+              <span>Creative Proofs</span>
+            </div>
+            <span className="text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">
+              Preparing
+            </span>
+          </div>
+          <div>
+            <h5 className="font-display font-bold text-sm text-zinc-900">
+              Creative Proof Being Prepared
+            </h5>
+            <p className="text-xs text-zinc-500 leading-relaxed font-medium mt-1">
+              Your designer is preparing the first proof iteration. You will be prompted to review once uploaded.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('review')}
+            className="w-full py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold transition-colors flex items-center justify-center gap-2 border border-zinc-200 shadow-2xs cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Open Creative Proofs</span>
+          </button>
+        </div>
+      );
+    }
+
+    // 6. Stages 01–04: Pre-Review Stage
+    return (
+      <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-6 space-y-3 shadow-xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
+            <Eye className="w-4 h-4 text-orange-500" />
+            <span>Creative Proofs</span>
+          </div>
+          <span className="text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">
+            Stage 05 Milestone
+          </span>
+        </div>
+        <div>
+          <h5 className="font-display text-sm font-bold text-zinc-900">
+            Visual Drafting & Production
+          </h5>
+          <p className="text-xs text-zinc-500 leading-relaxed font-medium mt-1">
+            Design drafts and proofs will be uploaded here once active production reaches Stage 05 (Client Review).
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('review')}
+          className="w-full py-2.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-600 text-xs font-bold transition-colors flex items-center justify-center gap-2 border border-zinc-200 shadow-2xs cursor-pointer"
+        >
+          <Eye className="w-3.5 h-3.5 text-zinc-400" />
+          <span>Open Creative Proofs</span>
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
@@ -951,29 +1163,8 @@ export const ClientDashboardView: React.FC = () => {
                 )}
               </div>
 
-              {/* Creative Proofs Quick Review Card */}
-              <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-6 space-y-3 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
-                    <Eye className="w-4 h-4 text-orange-500" />
-                    <span>Creative Proofs</span>
-                  </div>
-                  <span className="text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200">
-                    Stage 05 Review
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-500 leading-relaxed font-medium">
-                  Review visual design iterations, inspect high-res proofs, and submit approvals or revision requests.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('review')}
-                  className="w-full py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-xs"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Open Creative Proofs</span>
-                </button>
-              </div>
+              {/* Creative Proofs Dynamic Status Card (Level 3 UX Improvement) */}
+              {renderCreativeProofsSidebarCard()}
 
               {/* Designer Contact Card */}
               <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-6 space-y-3 shadow-xs">

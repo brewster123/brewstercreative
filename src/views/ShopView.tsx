@@ -8,15 +8,14 @@ import {
   ShieldCheck, 
   Send, 
   ArrowRight, 
-  Package, 
   Palette, 
-  Tag,
-  Type,
-  Box,
-  RotateCcw
+  Type, 
+  Box, 
+  RotateCcw 
 } from 'lucide-react';
-import { ShopCategoryName } from '../types';
-import { SHOP_CATEGORIES, UPCOMING_SHOP_RELEASES } from '../data/shopData';
+import { ShopCategoryName, ShopProduct } from '../types';
+import { SHOP_CATEGORIES, SHOP_PRODUCTS } from '../data/shopData';
+import { ShopProductCard } from '../components/ShopProductCard';
 
 export const ShopView: React.FC = () => {
   const { setActiveView, studioProfile } = useApp();
@@ -24,10 +23,14 @@ export const ShopView: React.FC = () => {
 
   const currentCategory = SHOP_CATEGORIES.find(c => c.name === selectedCategory) || SHOP_CATEGORIES[0];
 
-  const filteredReleases = UPCOMING_SHOP_RELEASES.filter(release => {
+  const filteredProducts = SHOP_PRODUCTS.filter(product => {
     if (selectedCategory === 'All') return true;
-    return release.category === selectedCategory;
+    return product.category === selectedCategory;
   });
+
+  const handleProductSelect = (_product: ShopProduct) => {
+    // Scaffolded for Phase 4A.4: Product Detail Page
+  };
 
   const shopHighlights = [
     {
@@ -163,7 +166,7 @@ export const ShopView: React.FC = () => {
                 {selectedCategory === 'All' ? 'Upcoming Studio Releases' : `${selectedCategory} Releases`}
               </h3>
               <span className="text-[11px] font-mono-code font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">
-                {filteredReleases.length} {filteredReleases.length === 1 ? 'item' : 'items'}
+                {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}
               </span>
             </div>
             <p className="text-xs text-zinc-500 font-medium mt-0.5">
@@ -175,52 +178,14 @@ export const ShopView: React.FC = () => {
           </span>
         </div>
 
-        {filteredReleases.length > 0 ? (
+        {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {filteredReleases.map((release) => (
-              <div 
-                key={release.id}
-                className="bg-white border border-[#E5E5E5] rounded-[28px] p-5 space-y-4 shadow-xs relative overflow-hidden flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  <div className={`aspect-[4/3] rounded-2xl bg-gradient-to-br ${
-                    release.iconName === 'Tag'
-                      ? 'from-orange-100/60 via-amber-50/40 to-zinc-100'
-                      : release.iconName === 'Palette'
-                      ? 'from-zinc-100 via-stone-50 to-orange-50/50'
-                      : 'from-amber-50/60 via-orange-50/30 to-zinc-100'
-                  } border border-zinc-200 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden group`}>
-                    {release.iconName === 'Tag' && <Tag className="w-8 h-8 text-orange-500/80 mb-2" />}
-                    {release.iconName === 'Palette' && <Palette className="w-8 h-8 text-zinc-600 mb-2" />}
-                    {release.iconName === 'Package' && <Package className="w-8 h-8 text-orange-600 mb-2" />}
-                    
-                    <span className="text-xs font-mono-code text-zinc-600 font-bold">{release.badge}</span>
-                    <span className="text-[10px] text-zinc-400 font-mono-code uppercase mt-1">{release.typeLabel}</span>
-                    <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-white/90 text-orange-600 text-[10px] font-mono-code font-bold border border-orange-200 shadow-2xs">
-                      {release.status}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] font-mono-code uppercase tracking-wider text-orange-600 font-bold">
-                      {release.tagline}
-                    </span>
-                    <h4 className="font-display font-bold text-base text-zinc-900 mt-0.5">
-                      {release.title}
-                    </h4>
-                    <p className="text-xs text-zinc-500 leading-relaxed font-medium mt-1">
-                      {release.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs">
-                  <span className="font-mono-code font-bold text-zinc-800">{release.formats}</span>
-                  <span className="text-[11px] font-mono-code text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
-                    {release.phaseTag}
-                  </span>
-                </div>
-              </div>
+            {filteredProducts.map((product) => (
+              <ShopProductCard 
+                key={product.id}
+                product={product}
+                onSelect={handleProductSelect}
+              />
             ))}
           </div>
         ) : (

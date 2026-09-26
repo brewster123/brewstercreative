@@ -312,17 +312,30 @@ export interface ShopCategory {
   badge?: string;
 }
 
-export interface UpcomingShopRelease {
+export type ShopProductType = 'Digital' | 'Physical';
+
+export type ShopProductStatus = 'Coming Soon' | 'In Production' | 'Available' | 'Sold Out';
+
+export interface ShopProduct {
   id: string;
-  title: string;
+  name: string;
+  slug: string;
   category: ShopCategoryName;
   categoryId: ShopCategoryId;
-  badge: string;
-  typeLabel: string;
-  status: 'Coming Soon' | 'In Production';
   description: string;
-  formats: string;
-  phaseTag: string;
-  tagline: string;
-  iconName: 'Tag' | 'Palette' | 'Package' | 'Type' | 'Layers';
+  shortDescription: string;
+  productType: ShopProductType;
+  price: number;
+  priceLabel?: string;
+  image?: string;
+  visualGradient?: string;
+  status: ShopProductStatus;
+  featured?: boolean;
+  tags: string[];
+  formats?: string;
+  badge?: string;
+  phaseTag?: string;
+  iconName?: 'Tag' | 'Palette' | 'Package' | 'Type' | 'Layers';
 }
+
+export type UpcomingShopRelease = ShopProduct;

@@ -83,6 +83,15 @@ export const Footer: React.FC = () => {
               <li>
                 <button
                   type="button"
+                  onClick={() => { setActiveView('shop'); scrollToTop(); }}
+                  className="text-zinc-600 hover:text-orange-600 transition-colors"
+                >
+                  Studio Shop & Goods
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
                   onClick={() => { setActiveView('commission-form'); scrollToTop(); }}
                   className="text-zinc-600 hover:text-orange-600 transition-colors"
                 >

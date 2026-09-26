@@ -10,6 +10,7 @@ import { CommissionFormView } from './views/CommissionFormView';
 import { ClientDashboardView } from './views/ClientDashboardView';
 import { AdminDashboardView } from './views/AdminDashboardView';
 import { AuthView } from './views/AuthView';
+import { ShopView } from './views/ShopView';
 
 const DatabaseErrorBanner: React.FC = () => {
   const { databaseError, clearDatabaseError } = useApp();
@@ -155,6 +156,8 @@ const MainLayout: React.FC = () => {
         return <AdminDashboardView />;
       case 'auth':
         return <AuthView />;
+      case 'shop':
+        return <ShopView />;
       default:
         return <HomeView />;
     }

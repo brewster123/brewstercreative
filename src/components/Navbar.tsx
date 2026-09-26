@@ -55,6 +55,7 @@ export const Navbar: React.FC = () => {
     { label: 'Home', view: 'home' as const },
     { label: 'Portfolio', view: 'portfolio' as const },
     { label: 'Services & Pricing', view: 'services' as const },
+    { label: 'Shop', view: 'shop' as const },
     { label: 'Commission Request', view: 'commission-form' as const },
   ];
 

@@ -44,7 +44,8 @@ export type AppView =
   | 'commission-form'
   | 'client-dashboard'
   | 'admin-dashboard'
-  | 'auth';
+  | 'auth'
+  | 'shop';
 
 interface AppContextType {
   // Navigation & View

@@ -181,7 +181,7 @@ export const ShopView: React.FC = () => {
             </p>
           </div>
           <span className="text-xs font-mono-code text-zinc-400 bg-white px-3 py-1 rounded-full border border-zinc-200 font-bold self-start sm:self-auto">
-            Phase 4 Collection
+            Curated Collection
           </span>
         </div>
 

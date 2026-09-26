@@ -89,8 +89,8 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
           product.visualGradient || 'from-orange-100/60 via-amber-50/40 to-zinc-100'
         } border border-zinc-200/90 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden`}>
           
-          {/* Top Left: Product Type */}
-          <div className="absolute top-3 left-3 flex items-center gap-1.5">
+          {/* Top Left: Product Type & Template Indicator */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
             <span className="px-2 py-0.5 rounded-full bg-white/90 text-zinc-700 text-[10px] font-mono-code font-bold border border-zinc-200 shadow-2xs flex items-center gap-1">
               {product.productType === 'Digital' ? (
                 <Download className="w-3 h-3 text-orange-500" />
@@ -99,6 +99,11 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
               )}
               <span>{product.productType}</span>
             </span>
+            {product.isTemplate && (
+              <span className="px-2 py-0.5 rounded-full bg-white/95 text-orange-600 text-[10px] font-mono-code font-bold border border-orange-200 shadow-2xs">
+                Template
+              </span>
+            )}
           </div>
 
           {/* Top Right: Status Badge */}
@@ -156,7 +161,7 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
             {product.formats || 'Digital Assets'}
           </span>
           <span className="text-[10px] font-mono-code text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 shrink-0">
-            {product.phaseTag || 'Catalog Drop'}
+            {product.isTemplate ? 'Template' : (product.badge || 'Studio Asset')}
           </span>
         </div>
 

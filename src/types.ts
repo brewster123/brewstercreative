@@ -336,6 +336,12 @@ export interface ShopProduct {
   badge?: string;
   phaseTag?: string;
   iconName?: 'Tag' | 'Palette' | 'Package' | 'Type' | 'Layers';
+
+  // Template metadata (Phase 4B.1)
+  isTemplate?: boolean;
+  templateType?: string;
+  intendedUse?: string;
+  editableFormat?: string;
 }
 
 export type UpcomingShopRelease = ShopProduct;

@@ -154,14 +154,14 @@ export const ProductDetailView: React.FC = () => {
           } border border-zinc-200 shadow-sm flex flex-col items-center justify-center p-8 sm:p-12 text-center relative overflow-hidden group`}>
             
             {/* Top Left: Product Type Pill */}
-            <div className="absolute top-4 left-4 flex items-center gap-1.5">
+            <div className="absolute top-4 left-4 flex items-center gap-1.5 flex-wrap">
               <span className="px-3 py-1 rounded-full bg-white/95 text-zinc-800 text-xs font-mono-code font-bold border border-zinc-200 shadow-2xs flex items-center gap-1.5">
                 {product.productType === 'Digital' ? (
                   <Download className="w-3.5 h-3.5 text-orange-500" />
                 ) : (
                   <Box className="w-3.5 h-3.5 text-orange-500" />
                 )}
-                <span>{product.productType} Release</span>
+                <span>{product.isTemplate ? 'Digital Template' : `${product.productType} Release`}</span>
               </span>
             </div>
 
@@ -221,6 +221,11 @@ export const ProductDetailView: React.FC = () => {
               <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code uppercase font-bold tracking-wider border border-orange-200">
                 {product.category}
               </span>
+              {product.isTemplate && (
+                <span className="px-2.5 py-0.5 rounded-full bg-white text-orange-700 text-xs font-mono-code font-bold border border-orange-200 shadow-2xs">
+                  Template Product
+                </span>
+              )}
               {product.badge && (
                 <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-700 text-xs font-mono-code font-bold border border-zinc-200">
                   {product.badge}
@@ -272,10 +277,12 @@ export const ProductDetailView: React.FC = () => {
               </div>
               <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
                 <span className="text-zinc-400 font-mono-code text-[11px] block">Product Medium</span>
-                <span className="font-bold text-zinc-800">{product.productType} Asset</span>
+                <span className="font-bold text-zinc-800">
+                  {product.isTemplate ? 'Digital Template' : `${product.productType} Asset`}
+                </span>
               </div>
               <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                <span className="text-zinc-400 font-mono-code text-[11px] block">File Formats</span>
+                <span className="text-zinc-400 font-mono-code text-[11px] block">Available Formats</span>
                 <span className="font-bold text-zinc-800 font-mono-code">{product.formats || 'Vector & Source'}</span>
               </div>
               <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
@@ -284,6 +291,37 @@ export const ProductDetailView: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Template Details (Template Type, Intended Use, Editable Format) */}
+          {product.isTemplate && (
+            <div className="bg-white border border-[#E5E5E5] rounded-[24px] p-6 space-y-4 shadow-2xs">
+              <h3 className="font-display font-bold text-sm text-zinc-900 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-orange-500" />
+                <span>Template Details</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {product.templateType && (
+                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                    <span className="text-zinc-400 font-mono-code text-[11px] block">Template Type</span>
+                    <span className="font-bold text-zinc-800">{product.templateType}</span>
+                  </div>
+                )}
+                {product.editableFormat && (
+                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                    <span className="text-zinc-400 font-mono-code text-[11px] block">Editable Format</span>
+                    <span className="font-bold text-zinc-800 font-mono-code">{product.editableFormat}</span>
+                  </div>
+                )}
+                {product.intendedUse && (
+                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1 sm:col-span-2">
+                    <span className="text-zinc-400 font-mono-code text-[11px] block">Intended Use</span>
+                    <span className="font-bold text-zinc-800">{product.intendedUse}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Tags */}
           {product.tags && product.tags.length > 0 && (

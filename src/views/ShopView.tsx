@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   ShoppingBag, 
@@ -13,23 +13,30 @@ import {
   Box, 
   RotateCcw 
 } from 'lucide-react';
-import { ShopCategoryName, ShopProduct } from '../types';
+import { ShopProduct } from '../types';
 import { SHOP_CATEGORIES, SHOP_PRODUCTS } from '../data/shopData';
 import { ShopProductCard } from '../components/ShopProductCard';
 
 export const ShopView: React.FC = () => {
-  const { setActiveView, studioProfile } = useApp();
-  const [selectedCategory, setSelectedCategory] = useState<ShopCategoryName>('All');
+  const { 
+    setActiveView, 
+    studioProfile,
+    selectedShopCategory,
+    setSelectedShopCategory,
+    setSelectedShopProduct
+  } = useApp();
 
-  const currentCategory = SHOP_CATEGORIES.find(c => c.name === selectedCategory) || SHOP_CATEGORIES[0];
+  const currentCategory = SHOP_CATEGORIES.find(c => c.name === selectedShopCategory) || SHOP_CATEGORIES[0];
 
   const filteredProducts = SHOP_PRODUCTS.filter(product => {
-    if (selectedCategory === 'All') return true;
-    return product.category === selectedCategory;
+    if (selectedShopCategory === 'All') return true;
+    return product.category === selectedShopCategory;
   });
 
-  const handleProductSelect = (_product: ShopProduct) => {
-    // Scaffolded for Phase 4A.4: Product Detail Page
+  const handleProductSelect = (product: ShopProduct) => {
+    setSelectedShopProduct(product);
+    setActiveView('product-detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const shopHighlights = [
@@ -77,12 +84,12 @@ export const ShopView: React.FC = () => {
       {/* Category Navigation Pills (Phase 4A.2 Functional Categories) */}
       <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar pb-2">
         {SHOP_CATEGORIES.map((cat) => {
-          const isSelected = selectedCategory === cat.name;
+          const isSelected = selectedShopCategory === cat.name;
           return (
             <button
               key={cat.id}
               type="button"
-              onClick={() => setSelectedCategory(cat.name)}
+              onClick={() => setSelectedShopCategory(cat.name)}
               className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
                 isSelected
                   ? 'bg-zinc-900 text-white shadow-xs'
@@ -163,7 +170,7 @@ export const ShopView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2.5">
               <h3 className="font-display text-lg sm:text-xl font-bold text-zinc-900">
-                {selectedCategory === 'All' ? 'Upcoming Studio Releases' : `${selectedCategory} Releases`}
+                {selectedShopCategory === 'All' ? 'Upcoming Studio Releases' : `${selectedShopCategory} Releases`}
               </h3>
               <span className="text-[11px] font-mono-code font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">
                 {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}
@@ -192,9 +199,9 @@ export const ShopView: React.FC = () => {
           /* Empty State for Categories in Production (e.g. Typography, Digital Mockups) */
           <div className="bg-white border border-dashed border-zinc-300 rounded-[28px] p-8 sm:p-14 text-center space-y-5 max-w-xl mx-auto shadow-2xs">
             <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto shadow-2xs">
-              {selectedCategory === 'Typography' ? (
+              {selectedShopCategory === 'Typography' ? (
                 <Type className="w-7 h-7" />
-              ) : selectedCategory === 'Digital Mockups' ? (
+              ) : selectedShopCategory === 'Digital Mockups' ? (
                 <Layers className="w-7 h-7" />
               ) : (
                 <Box className="w-7 h-7" />
@@ -207,17 +214,17 @@ export const ShopView: React.FC = () => {
                 <span>In Studio Production</span>
               </div>
               <h4 className="font-display font-bold text-xl sm:text-2xl text-zinc-900">
-                New {selectedCategory} Products Coming Soon
+                New {selectedShopCategory} Products Coming Soon
               </h4>
               <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed font-medium">
-                New {selectedCategory} releases are currently in production. Check back soon for the official catalog release.
+                New {selectedShopCategory} releases are currently in production. Check back soon for the official catalog release.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setSelectedCategory('All')}
+                onClick={() => setSelectedShopCategory('All')}
                 className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -229,7 +236,7 @@ export const ShopView: React.FC = () => {
                 className="px-4 py-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>Request Custom {selectedCategory}</span>
+                <span>Request Custom {selectedShopCategory}</span>
               </button>
             </div>
           </div>

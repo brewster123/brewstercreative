@@ -15,6 +15,8 @@ import {
   COMMISSION_STAGES,
   FinalFilesPackage,
   MessageAttachment,
+  ShopProduct,
+  ShopCategoryName,
 } from '../types';
 import {
   INITIAL_STUDIO_PROFILE,
@@ -45,7 +47,8 @@ export type AppView =
   | 'client-dashboard'
   | 'admin-dashboard'
   | 'auth'
-  | 'shop';
+  | 'shop'
+  | 'product-detail';
 
 interface AppContextType {
   // Navigation & View
@@ -58,6 +61,10 @@ interface AppContextType {
   setSelectedPortfolioProject: (p: PortfolioProject | null) => void;
   preselectedService: string | null;
   setPreselectedService: (serviceName: string | null) => void;
+  selectedShopProduct: ShopProduct | null;
+  setSelectedShopProduct: (product: ShopProduct | null) => void;
+  selectedShopCategory: ShopCategoryName;
+  setSelectedShopCategory: (category: ShopCategoryName) => void;
   
   // Auth & Roles
   currentUser: User | null;
@@ -160,6 +167,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>('');
   const [selectedPortfolioProject, setSelectedPortfolioProject] = useState<PortfolioProject | null>(null);
   const [preselectedService, setPreselectedService] = useState<string | null>(null);
+  const [selectedShopProduct, setSelectedShopProduct] = useState<ShopProduct | null>(null);
+  const [selectedShopCategory, setSelectedShopCategory] = useState<ShopCategoryName>('All');
 
   // Initialize state with LocalStorage fallback
   const [studioProfile, setStudioProfile] = useState<StudioProfile>(() => {
@@ -1698,6 +1707,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedPortfolioProject,
         preselectedService,
         setPreselectedService,
+        selectedShopProduct,
+        setSelectedShopProduct,
+        selectedShopCategory,
+        setSelectedShopCategory,
         currentUser,
         setCurrentUser,
         authLoading,

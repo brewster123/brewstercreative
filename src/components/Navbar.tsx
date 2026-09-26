@@ -95,7 +95,7 @@ export const Navbar: React.FC = () => {
                   setMobileMenuOpen(false);
                 }}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                  activeView === link.view
+                  activeView === link.view || (link.view === 'shop' && activeView === 'product-detail')
                     ? 'text-zinc-950 bg-white shadow-sm font-bold'
                     : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60'
                 }`}
@@ -282,7 +282,7 @@ export const Navbar: React.FC = () => {
                   setMobileMenuOpen(false);
                 }}
                 className={`w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-between ${
-                  activeView === link.view
+                  activeView === link.view || (link.view === 'shop' && activeView === 'product-detail')
                     ? 'text-orange-600 bg-orange-50 font-bold'
                     : 'text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100'
                 }`}

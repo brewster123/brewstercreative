@@ -288,3 +288,41 @@ export interface StudioProfile {
 }
 
 export type ProofStatus = 'pending_review' | 'revision_requested' | 'approved';
+
+export type ShopCategoryName =
+  | 'All'
+  | 'Branding Kits'
+  | 'Vector Packs'
+  | 'Print & Posters'
+  | 'Typography'
+  | 'Digital Mockups';
+
+export type ShopCategoryId =
+  | 'all'
+  | 'branding-kits'
+  | 'vector-packs'
+  | 'print-posters'
+  | 'typography'
+  | 'digital-mockups';
+
+export interface ShopCategory {
+  id: ShopCategoryId;
+  name: ShopCategoryName;
+  description: string;
+  badge?: string;
+}
+
+export interface UpcomingShopRelease {
+  id: string;
+  title: string;
+  category: ShopCategoryName;
+  categoryId: ShopCategoryId;
+  badge: string;
+  typeLabel: string;
+  status: 'Coming Soon' | 'In Production';
+  description: string;
+  formats: string;
+  phaseTag: string;
+  tagline: string;
+  iconName: 'Tag' | 'Palette' | 'Package' | 'Type' | 'Layers';
+}

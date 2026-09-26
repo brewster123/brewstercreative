@@ -9,24 +9,25 @@ import {
   Send, 
   ArrowRight, 
   Package, 
-  Palette,
-  CheckCircle2,
-  Clock,
-  Tag
+  Palette, 
+  Tag,
+  Type,
+  Box,
+  RotateCcw
 } from 'lucide-react';
+import { ShopCategoryName } from '../types';
+import { SHOP_CATEGORIES, UPCOMING_SHOP_RELEASES } from '../data/shopData';
 
 export const ShopView: React.FC = () => {
   const { setActiveView, studioProfile } = useApp();
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<ShopCategoryName>('All');
 
-  const categories = [
-    'All',
-    'Branding Kits',
-    'Vector Packs',
-    'Print & Posters',
-    'Typography',
-    'Digital Mockups',
-  ];
+  const currentCategory = SHOP_CATEGORIES.find(c => c.name === selectedCategory) || SHOP_CATEGORIES[0];
+
+  const filteredReleases = UPCOMING_SHOP_RELEASES.filter(release => {
+    if (selectedCategory === 'All') return true;
+    return release.category === selectedCategory;
+  });
 
   const shopHighlights = [
     {
@@ -70,22 +71,25 @@ export const ShopView: React.FC = () => {
         </p>
       </div>
 
-      {/* Category Navigation Pills (Phase 4A.1 Foundation) */}
+      {/* Category Navigation Pills (Phase 4A.2 Functional Categories) */}
       <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar pb-2">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
-              selectedCategory === cat
-                ? 'bg-zinc-900 text-white shadow-xs'
-                : 'bg-white text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 border border-zinc-200'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+        {SHOP_CATEGORIES.map((cat) => {
+          const isSelected = selectedCategory === cat.name;
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedCategory(cat.name)}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
+                isSelected
+                  ? 'bg-zinc-900 text-white shadow-xs'
+                  : 'bg-white text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 border border-zinc-200'
+              }`}
+            >
+              {cat.name}
+            </button>
+          );
+        })}
       </div>
 
       {/* Primary Storefront Announcement & Feature Bento */}
@@ -150,122 +154,121 @@ export const ShopView: React.FC = () => {
         </div>
       </div>
 
-      {/* Catalog Preview Placeholders (Ready for Phase 4A.2 Products) */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      {/* Catalog Releases Grid with Category Filtering & Empty States */}
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="font-display text-lg sm:text-xl font-bold text-zinc-900">
-              Upcoming Studio Releases
-            </h3>
-            <p className="text-xs text-zinc-500 font-medium">
-              Preview the first collection of digital goods scheduled for the catalog drop.
+            <div className="flex items-center gap-2.5">
+              <h3 className="font-display text-lg sm:text-xl font-bold text-zinc-900">
+                {selectedCategory === 'All' ? 'Upcoming Studio Releases' : `${selectedCategory} Releases`}
+              </h3>
+              <span className="text-[11px] font-mono-code font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">
+                {filteredReleases.length} {filteredReleases.length === 1 ? 'item' : 'items'}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500 font-medium mt-0.5">
+              {currentCategory.description}
             </p>
           </div>
-          <span className="text-xs font-mono-code text-zinc-400 bg-white px-3 py-1 rounded-full border border-zinc-200 font-bold hidden sm:inline-block">
+          <span className="text-xs font-mono-code text-zinc-400 bg-white px-3 py-1 rounded-full border border-zinc-200 font-bold self-start sm:self-auto">
             Phase 4 Collection
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Preview Placeholder 1 */}
-          <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-5 space-y-4 shadow-xs relative overflow-hidden flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-orange-100/60 via-amber-50/40 to-zinc-100 border border-zinc-200 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden group">
-                <Tag className="w-8 h-8 text-orange-500/80 mb-2" />
-                <span className="text-xs font-mono-code text-zinc-600 font-bold">Vector Kit v1</span>
-                <span className="text-[10px] text-zinc-400 font-mono-code uppercase mt-1">Branding & Identity</span>
-                <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-white/90 text-orange-600 text-[10px] font-mono-code font-bold border border-orange-200 shadow-2xs">
-                  Coming Soon
+        {filteredReleases.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {filteredReleases.map((release) => (
+              <div 
+                key={release.id}
+                className="bg-white border border-[#E5E5E5] rounded-[28px] p-5 space-y-4 shadow-xs relative overflow-hidden flex flex-col justify-between"
+              >
+                <div className="space-y-3">
+                  <div className={`aspect-[4/3] rounded-2xl bg-gradient-to-br ${
+                    release.iconName === 'Tag'
+                      ? 'from-orange-100/60 via-amber-50/40 to-zinc-100'
+                      : release.iconName === 'Palette'
+                      ? 'from-zinc-100 via-stone-50 to-orange-50/50'
+                      : 'from-amber-50/60 via-orange-50/30 to-zinc-100'
+                  } border border-zinc-200 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden group`}>
+                    {release.iconName === 'Tag' && <Tag className="w-8 h-8 text-orange-500/80 mb-2" />}
+                    {release.iconName === 'Palette' && <Palette className="w-8 h-8 text-zinc-600 mb-2" />}
+                    {release.iconName === 'Package' && <Package className="w-8 h-8 text-orange-600 mb-2" />}
+                    
+                    <span className="text-xs font-mono-code text-zinc-600 font-bold">{release.badge}</span>
+                    <span className="text-[10px] text-zinc-400 font-mono-code uppercase mt-1">{release.typeLabel}</span>
+                    <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-white/90 text-orange-600 text-[10px] font-mono-code font-bold border border-orange-200 shadow-2xs">
+                      {release.status}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-mono-code uppercase tracking-wider text-orange-600 font-bold">
+                      {release.tagline}
+                    </span>
+                    <h4 className="font-display font-bold text-base text-zinc-900 mt-0.5">
+                      {release.title}
+                    </h4>
+                    <p className="text-xs text-zinc-500 leading-relaxed font-medium mt-1">
+                      {release.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs">
+                  <span className="font-mono-code font-bold text-zinc-800">{release.formats}</span>
+                  <span className="text-[11px] font-mono-code text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
+                    {release.phaseTag}
+                  </span>
                 </div>
               </div>
-
-              <div>
-                <span className="text-[10px] font-mono-code uppercase tracking-wider text-orange-600 font-bold">
-                  Branding Kit
-                </span>
-                <h4 className="font-display font-bold text-base text-zinc-900 mt-0.5">
-                  Apex Minimalist Brand Identity System
-                </h4>
-                <p className="text-xs text-zinc-500 leading-relaxed font-medium mt-1">
-                  Comprehensive brand starter with responsive logo marks, style guide layout, typography scale, and social headers.
-                </p>
-              </div>
+            ))}
+          </div>
+        ) : (
+          /* Empty State for Categories in Production (e.g. Typography, Digital Mockups) */
+          <div className="bg-white border border-dashed border-zinc-300 rounded-[28px] p-8 sm:p-14 text-center space-y-5 max-w-xl mx-auto shadow-2xs">
+            <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto shadow-2xs">
+              {selectedCategory === 'Typography' ? (
+                <Type className="w-7 h-7" />
+              ) : selectedCategory === 'Digital Mockups' ? (
+                <Layers className="w-7 h-7" />
+              ) : (
+                <Box className="w-7 h-7" />
+              )}
             </div>
 
-            <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs">
-              <span className="font-mono-code font-bold text-zinc-800">AI • EPS • SVG • PDF</span>
-              <span className="text-[11px] font-mono-code text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
-                Phase 4A.2
-              </span>
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 text-xs font-mono-code font-bold border border-zinc-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                <span>In Studio Production</span>
+              </div>
+              <h4 className="font-display font-bold text-xl sm:text-2xl text-zinc-900">
+                New {selectedCategory} Products Coming Soon
+              </h4>
+              <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed font-medium">
+                New {selectedCategory} releases are currently in production. Check back soon for the official catalog release.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('All')}
+                className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>View All Categories</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('commission-form')}
+                className="px-4 py-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Request Custom {selectedCategory}</span>
+              </button>
             </div>
           </div>
-
-          {/* Preview Placeholder 2 */}
-          <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-5 space-y-4 shadow-xs relative overflow-hidden flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-zinc-100 via-stone-50 to-orange-50/50 border border-zinc-200 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-                <Palette className="w-8 h-8 text-zinc-600 mb-2" />
-                <span className="text-xs font-mono-code text-zinc-600 font-bold">Print Series</span>
-                <span className="text-[10px] text-zinc-400 font-mono-code uppercase mt-1">Editorial & Poster</span>
-                <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-white/90 text-zinc-700 text-[10px] font-mono-code font-bold border border-zinc-200 shadow-2xs">
-                  In Production
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-mono-code uppercase tracking-wider text-orange-600 font-bold">
-                  Print & Posters
-                </span>
-                <h4 className="font-display font-bold text-base text-zinc-900 mt-0.5">
-                  Brutalist Swiss Poster Art Collection
-                </h4>
-                <p className="text-xs text-zinc-500 leading-relaxed font-medium mt-1">
-                  High-res 300 DPI vector poster templates exploring modernist typography, asymmetrical grids, and experimental forms.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs">
-              <span className="font-mono-code font-bold text-zinc-800">Vector & 300DPI Print</span>
-              <span className="text-[11px] font-mono-code text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
-                Phase 4A.2
-              </span>
-            </div>
-          </div>
-
-          {/* Preview Placeholder 3 */}
-          <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-5 space-y-4 shadow-xs relative overflow-hidden flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-amber-50/60 via-orange-50/30 to-zinc-100 border border-zinc-200 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-                <Package className="w-8 h-8 text-orange-600 mb-2" />
-                <span className="text-xs font-mono-code text-zinc-600 font-bold">Vector Pack</span>
-                <span className="text-[10px] text-zinc-400 font-mono-code uppercase mt-1">Icons & Badges</span>
-                <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-white/90 text-orange-600 text-[10px] font-mono-code font-bold border border-orange-200 shadow-2xs">
-                  Coming Soon
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-mono-code uppercase tracking-wider text-orange-600 font-bold">
-                  Vector Pack
-                </span>
-                <h4 className="font-display font-bold text-base text-zinc-900 mt-0.5">
-                  Retro Badges & Heritage Insignia Pack
-                </h4>
-                <p className="text-xs text-zinc-500 leading-relaxed font-medium mt-1">
-                  Over 40 customizable vintage geometric badges, crests, and emblems with editable typography layers.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs">
-              <span className="font-mono-code font-bold text-zinc-800">SVG • EPS • PNG</span>
-              <span className="text-[11px] font-mono-code text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
-                Phase 4A.2
-              </span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Commission Bridge Banner */}

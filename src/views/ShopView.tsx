@@ -76,7 +76,7 @@ export const ShopView: React.FC = () => {
         </h1>
 
         <p className="text-sm sm:text-base text-zinc-500 leading-relaxed font-medium">
-          Curated digital design assets, branding kits, typography, and original artwork crafted with obsessive detail by {studioProfile.designerName}.
+          Curated physical merchandise, digital design assets, branding kits, typography, and original artwork crafted with obsessive detail by {studioProfile.designerName}.
         </p>
       </div>
 
@@ -112,10 +112,10 @@ export const ShopView: React.FC = () => {
               </span>
             </div>
             <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
-              Curated Digital Products & Creative Assets
+              Curated Physical & Digital Creative Assets
             </h2>
             <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed font-medium">
-              We are assembling a curated catalog of premium vector packs, brand identity starters, and editorial design assets. Direct checkout and digital delivery will be enabled when individual products officially launch.
+              We are assembling a curated catalog of physical and digital creative assets. Direct ordering, checkout, and delivery will be enabled when individual products officially launch.
             </p>
           </div>
 

@@ -48,6 +48,7 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     ],
     popular: true,
     iconName: 'Sparkles',
+    relatedShopProductIds: ['prod-vector-badges'],
   },
   {
     id: 'srv-branding',
@@ -67,6 +68,7 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     ],
     popular: true,
     iconName: 'Layers',
+    relatedShopProductIds: ['prod-branding-apex', 'prod-template-pitchdeck'],
   },
   {
     id: 'srv-posters',
@@ -83,6 +85,7 @@ export const INITIAL_SERVICES: ServiceItem[] = [
       'Mockup presentation visuals',
     ],
     iconName: 'Image',
+    relatedShopProductIds: ['prod-template-poster', 'prod-print-swiss'],
   },
   {
     id: 'srv-social',
@@ -99,6 +102,7 @@ export const INITIAL_SERVICES: ServiceItem[] = [
       'Clean grid curation recommendations',
     ],
     iconName: 'Share2',
+    relatedShopProductIds: ['prod-template-social'],
   },
   {
     id: 'srv-illustration',

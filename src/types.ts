@@ -248,6 +248,9 @@ export interface ServiceItem {
   deliverables: string[];
   popular?: boolean;
   iconName: string;
+
+  // Cross-selling metadata (Phase 4D.3: Services -> Shop)
+  relatedShopProductIds?: string[];
 }
 
 export interface PortfolioProject {

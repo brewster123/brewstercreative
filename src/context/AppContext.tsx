@@ -188,12 +188,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [services, setServices] = useState<ServiceItem[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.SERVICES);
-    return saved ? JSON.parse(saved) : INITIAL_SERVICES;
+    if (saved) {
+      try {
+        const parsed: ServiceItem[] = JSON.parse(saved);
+        return parsed.map((s) => {
+          const init = INITIAL_SERVICES.find((is) => is.id === s.id);
+          if (init?.relatedShopProductIds && !s.relatedShopProductIds) {
+            return { ...s, relatedShopProductIds: init.relatedShopProductIds };
+          }
+          return s;
+        });
+      } catch (e) {
+        return INITIAL_SERVICES;
+      }
+    }
+    return INITIAL_SERVICES;
   });
 
   const [portfolio, setPortfolio] = useState<PortfolioProject[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.PORTFOLIO);
-    return saved ? JSON.parse(saved) : INITIAL_PORTFOLIO;
+    if (saved) {
+      try {
+        const parsed: PortfolioProject[] = JSON.parse(saved);
+        return parsed.map((p) => {
+          const init = INITIAL_PORTFOLIO.find((ip) => ip.id === p.id);
+          if (init?.relatedShopProductIds && !p.relatedShopProductIds) {
+            return { ...p, relatedShopProductIds: init.relatedShopProductIds };
+          }
+          return p;
+        });
+      } catch (e) {
+        return INITIAL_PORTFOLIO;
+      }
+    }
+    return INITIAL_PORTFOLIO;
   });
 
   const [users, setUsers] = useState<User[]>(() => {

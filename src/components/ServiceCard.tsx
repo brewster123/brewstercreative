@@ -1,6 +1,8 @@
 import React from 'react';
-import { ServiceItem } from '../types';
+import { ServiceItem, ShopProduct } from '../types';
 import { useApp } from '../context/AppContext';
+import { SHOP_PRODUCTS } from '../data/shopData';
+import { ShopProductCard } from './ShopProductCard';
 import { 
   Sparkles, 
   Layers, 
@@ -21,7 +23,18 @@ interface ServiceCardProps {
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({ service, featured = false }) => {
-  const { setActiveView, setPreselectedService, studioProfile } = useApp();
+  const { setActiveView, setPreselectedService, setSelectedShopProduct, studioProfile } = useApp();
+
+  // Cross-selling: Related Shop Products (Phase 4D.3: Services -> Shop)
+  const relatedShopProducts: ShopProduct[] = (service.relatedShopProductIds || [])
+    .map((id) => SHOP_PRODUCTS.find((p) => p.id === id))
+    .filter((p): p is ShopProduct => Boolean(p));
+
+  const handleSelectShopProduct = (shopProduct: ShopProduct) => {
+    setSelectedShopProduct(shopProduct);
+    setActiveView('product-detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -120,6 +133,47 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service, featured = fa
             ))}
           </ul>
         </div>
+
+        {/* Related Shop Products Section (Phase 4D.3: Services -> Shop) */}
+        {relatedShopProducts.length > 0 && (
+          <div className="pt-5 mb-6 border-t border-zinc-100 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-[10px] font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-0.5">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Studio Storefront</span>
+                </div>
+                <h4 className="font-display font-bold text-xs uppercase tracking-wider text-zinc-900">
+                  Related Shop Products
+                </h4>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedShopProduct(null);
+                  setActiveView('shop');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-[11px] font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>Browse All Goods</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {relatedShopProducts.map((prod) => (
+                <ShopProductCard
+                  key={prod.id}
+                  product={prod}
+                  actionLabel="View Product"
+                  onSelect={(p) => handleSelectShopProduct(p)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action CTA Button */}

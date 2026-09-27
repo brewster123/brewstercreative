@@ -350,6 +350,11 @@ export interface ShopProduct {
   fileSizeLabel?: string;
   downloadStatus?: 'Not Yet Available' | 'Coming Soon' | 'Available';
   downloadUrl?: string;
+
+  // External checkout metadata (Phase 4B.3)
+  externalCheckoutUrl?: string;
+  externalCheckoutLabel?: string;
+  externalCheckoutProvider?: string;
 }
 
 export type UpcomingShopRelease = ShopProduct;

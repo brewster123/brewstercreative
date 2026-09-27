@@ -115,7 +115,7 @@ export const ShopView: React.FC = () => {
               Curated Digital Products & Creative Assets
             </h2>
             <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed font-medium">
-              We are assembling a curated catalog of premium vector packs, brand identity starters, and editorial poster prints. The shop system is being connected directly to our client portal for seamless fulfillment and download management.
+              We are assembling a curated catalog of premium vector packs, brand identity starters, and editorial design assets. Direct checkout and digital delivery will be enabled when individual products officially launch.
             </p>
           </div>
 

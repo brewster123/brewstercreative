@@ -16,9 +16,11 @@ import {
   Send, 
   ArrowRight, 
   FileCheck2, 
-  Clock 
+  Clock,
+  ExternalLink 
 } from 'lucide-react';
 import { ShopProduct } from '../types';
+import { isProductCheckoutAvailable } from '../utils/urlUtils';
 
 export const ProductDetailView: React.FC = () => {
   const { 
@@ -36,6 +38,7 @@ export const ProductDetailView: React.FC = () => {
 
   // Resolve product or fallback to the first catalog item
   const product: ShopProduct = selectedShopProduct || SHOP_PRODUCTS[0];
+  const isCheckoutAvailable = isProductCheckoutAvailable(product);
 
   const handleBackToShop = () => {
     setActiveView('shop');
@@ -419,6 +422,18 @@ export const ProductDetailView: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 pt-1">
+              {isCheckoutAvailable && product.externalCheckoutUrl && (
+                <a
+                  href={product.externalCheckoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-3 rounded-2xl bg-zinc-900 hover:bg-black text-white font-bold text-xs sm:text-sm shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <ExternalLink className="w-4 h-4 text-orange-400" />
+                  <span>{product.externalCheckoutLabel || 'Purchase via External Store'}</span>
+                </a>
+              )}
+
               <button
                 type="button"
                 onClick={() => {

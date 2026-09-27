@@ -14,7 +14,8 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
-  ArrowRight
+  ArrowRight,
+  Tag
 } from 'lucide-react';
 
 interface PortfolioModalProps {
@@ -198,7 +199,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <div className="inline-flex items-center gap-1.5 text-[11px] font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-0.5">
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Tag className="w-3.5 h-3.5" />
                     <span>Studio Storefront</span>
                   </div>
                   <h3 className="font-display text-lg sm:text-xl font-bold text-zinc-900">
@@ -217,7 +218,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
                     setActiveView('shop');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                  className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer transition-colors"
                 >
                   <span>Browse All Goods</span>
                   <ArrowRight className="w-3.5 h-3.5" />

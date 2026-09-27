@@ -14,7 +14,8 @@ import {
   Check, 
   Clock, 
   RotateCcw, 
-  ArrowRight 
+  ArrowRight,
+  Tag 
 } from 'lucide-react';
 
 interface ServiceCardProps {
@@ -145,7 +146,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             <div className="flex items-center justify-between gap-2">
               <div>
                 <div className="inline-flex items-center gap-1.5 text-[10px] font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-0.5">
-                  <Sparkles className="w-3 h-3" />
+                  <Tag className="w-3 h-3" />
                   <span>Studio Storefront</span>
                 </div>
                 <h4 className="font-display font-bold text-xs uppercase tracking-wider text-zinc-900">

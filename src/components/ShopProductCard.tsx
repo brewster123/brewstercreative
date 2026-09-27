@@ -91,7 +91,7 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
   return (
     <div
       onClick={handleCardClick}
-      className={`bg-white border rounded-[28px] p-5 space-y-4 shadow-xs relative overflow-hidden flex flex-col justify-between transition-all duration-300 group hover:-translate-y-1 hover:shadow-md cursor-pointer ${
+      className={`bg-white border rounded-[28px] p-5 space-y-4 shadow-xs relative overflow-hidden flex flex-col justify-between h-full transition-all duration-300 group hover:-translate-y-1 hover:shadow-md cursor-pointer ${
         product.featured ? 'border-orange-200/90 hover:border-orange-300' : 'border-[#E5E5E5] hover:border-zinc-300'
       }`}
     >
@@ -198,7 +198,7 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
         >
           <Eye className="w-3.5 h-3.5" />
           <span>
-            {actionLabel || (product.status === 'Available' ? 'View Product' : 'Preview Details')}
+            {actionLabel || 'View Product'}
           </span>
           <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
         </button>

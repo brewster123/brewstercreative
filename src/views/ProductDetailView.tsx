@@ -649,7 +649,7 @@ export const ProductDetailView: React.FC = () => {
             <div>
               <div className="inline-flex items-center gap-1.5 text-xs font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-1">
                 <Wand2 className="w-3.5 h-3.5" />
-                <span>Custom Bespoke Work</span>
+                <span>Custom Creative Services</span>
               </div>
               <h3 className="font-display text-xl sm:text-2xl font-bold text-zinc-900">
                 Need Something Custom?
@@ -665,9 +665,9 @@ export const ProductDetailView: React.FC = () => {
                 setActiveView('services');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer transition-colors"
             >
-              <span>Explore All Services & Pricing</span>
+              <span>Explore All Services</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -691,7 +691,7 @@ export const ProductDetailView: React.FC = () => {
             <div>
               <div className="inline-flex items-center gap-1.5 text-xs font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-1">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Studio Archive</span>
+                <span>Studio Showcase</span>
               </div>
               <h3 className="font-display text-xl sm:text-2xl font-bold text-zinc-900">
                 Related Portfolio Work
@@ -706,7 +706,7 @@ export const ProductDetailView: React.FC = () => {
                 setActiveView('portfolio');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer transition-colors"
             >
               <span>Explore Full Portfolio</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -718,7 +718,7 @@ export const ProductDetailView: React.FC = () => {
               <div
                 key={proj.id}
                 onClick={() => handleSelectPortfolioProject(proj)}
-                className="group relative rounded-[28px] overflow-hidden bg-white border border-[#E5E5E5] hover:border-orange-500/60 transition-all duration-300 cursor-pointer shadow-xs hover:shadow-xl flex flex-col justify-between"
+                className="group relative rounded-[28px] overflow-hidden bg-white border border-[#E5E5E5] hover:border-orange-500/60 transition-all duration-300 cursor-pointer shadow-xs hover:shadow-xl flex flex-col justify-between h-full"
               >
                 {/* Project Image Container */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
@@ -739,7 +739,7 @@ export const ProductDetailView: React.FC = () => {
 
                   {/* Hover Inspect Icon */}
                   <div className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-zinc-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-md">
-                    <ArrowUpRight className="w-4 h-4 text-orange-400" />
+                    <ArrowRight className="w-4 h-4 text-orange-400" />
                   </div>
                 </div>
 
@@ -785,7 +785,7 @@ export const ProductDetailView: React.FC = () => {
                       className="text-xs text-orange-600 font-bold group-hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <span>View Project</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -800,6 +800,10 @@ export const ProductDetailView: React.FC = () => {
         <div className="pt-8 border-t border-zinc-200 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-1">
+                <Tag className="w-3.5 h-3.5" />
+                <span>Studio Storefront</span>
+              </div>
               <h3 className="font-display text-xl sm:text-2xl font-bold text-zinc-900">
                 More from the Studio Shop
               </h3>
@@ -810,9 +814,9 @@ export const ProductDetailView: React.FC = () => {
             <button
               type="button"
               onClick={handleBackToShop}
-              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer transition-colors"
             >
-              <span>View All Shop Items</span>
+              <span>Browse All Goods</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -822,6 +826,7 @@ export const ProductDetailView: React.FC = () => {
               <ShopProductCard
                 key={p.id}
                 product={p}
+                actionLabel="View Product"
                 onSelect={(prod) => {
                   setSelectedShopProduct(prod);
                   window.scrollTo({ top: 0, behavior: 'smooth' });

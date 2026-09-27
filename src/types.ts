@@ -370,6 +370,9 @@ export interface ShopProduct {
 
   // Sizes / Variants metadata (Phase 4C.3)
   variants?: ShopProductVariant[];
+
+  // Cross-selling metadata (Phase 4D.1: Shop -> Portfolio)
+  relatedPortfolioIds?: string[];
 }
 
 export interface ShopProductVariant {

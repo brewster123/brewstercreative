@@ -57,6 +57,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     downloadLabel: 'Digital Brand Identity Package',
     availableFormats: 'AI • EPS • SVG • PDF',
     downloadStatus: 'Not Yet Available',
+    relatedPortfolioIds: ['proj-1', 'proj-3'],
   },
   {
     id: 'prod-print-swiss',
@@ -79,6 +80,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     iconName: 'Palette',
     visualGradient: 'from-zinc-100 via-stone-50 to-orange-50/50',
     isDownloadable: false,
+    relatedPortfolioIds: ['proj-2'],
   },
   {
     id: 'prod-vector-badges',
@@ -103,6 +105,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     downloadLabel: 'Vector Insignia Asset Archive',
     availableFormats: 'SVG • EPS • PNG',
     downloadStatus: 'Not Yet Available',
+    relatedPortfolioIds: ['proj-3'],
   },
   {
     id: 'prod-grain-textures',
@@ -127,6 +130,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     downloadLabel: 'High-Res Texture Archive',
     availableFormats: '4K TIFF • Transparent PNG • Vector Swatches',
     downloadStatus: 'Not Yet Available',
+    relatedPortfolioIds: ['proj-2'],
   },
   {
     id: 'prod-template-social',
@@ -155,6 +159,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     downloadLabel: 'Social Media Component Kit',
     availableFormats: 'Figma • PSD • AI',
     downloadStatus: 'Not Yet Available',
+    relatedPortfolioIds: ['proj-6'],
   },
   {
     id: 'prod-template-pitchdeck',
@@ -183,6 +188,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     downloadLabel: 'Presentation Slide Master Deck',
     availableFormats: 'Figma • Keynote • PPTX',
     downloadStatus: 'Not Yet Available',
+    relatedPortfolioIds: ['proj-1'],
   },
   {
     id: 'prod-template-poster',
@@ -211,6 +217,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     downloadLabel: 'Modular Poster Grid System',
     availableFormats: 'InDesign • Illustrator • PDF',
     downloadStatus: 'Not Yet Available',
+    relatedPortfolioIds: ['proj-2'],
   },
   {
     id: 'prod-merch-studio-poster',
@@ -232,6 +239,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     iconName: 'Palette',
     visualGradient: 'from-amber-100/60 via-orange-50/40 to-zinc-100',
     isDownloadable: false,
+    relatedPortfolioIds: ['proj-2'],
   },
   {
     id: 'prod-merch-art-print',

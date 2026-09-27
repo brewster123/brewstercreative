@@ -17,9 +17,10 @@ import {
   ArrowRight, 
   FileCheck2, 
   Clock,
-  ExternalLink 
+  ExternalLink,
+  ArrowUpRight 
 } from 'lucide-react';
-import { ShopProduct } from '../types';
+import { ShopProduct, PortfolioProject } from '../types';
 import { isProductCheckoutAvailable } from '../utils/urlUtils';
 
 export const ProductDetailView: React.FC = () => {
@@ -28,7 +29,9 @@ export const ProductDetailView: React.FC = () => {
     setSelectedShopProduct, 
     setSelectedShopCategory, 
     setActiveView, 
-    studioProfile 
+    studioProfile,
+    portfolio,
+    setSelectedPortfolioProject
   } = useApp();
 
   // Scroll to top upon entering view
@@ -126,6 +129,17 @@ export const ProductDetailView: React.FC = () => {
 
   // Other products for "More from the Studio Shop" section
   const relatedProducts = SHOP_PRODUCTS.filter(p => p.id !== product.id);
+
+  // Cross-selling: Related Portfolio Projects (Phase 4D.1)
+  const relatedPortfolioProjects: PortfolioProject[] = (product.relatedPortfolioIds || [])
+    .map((id) => portfolio.find((p) => p.id === id))
+    .filter((p): p is PortfolioProject => Boolean(p));
+
+  const handleSelectPortfolioProject = (proj: PortfolioProject) => {
+    setSelectedPortfolioProject(proj);
+    setActiveView('portfolio');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
@@ -611,6 +625,117 @@ export const ProductDetailView: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Related Portfolio Work Section (Phase 4D.1: Cross-selling Shop -> Portfolio) */}
+      {relatedPortfolioProjects.length > 0 && (
+        <div className="pt-8 border-t border-zinc-200 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Studio Archive</span>
+              </div>
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-zinc-900">
+                Related Portfolio Work
+              </h3>
+              <p className="text-xs text-zinc-500 font-medium mt-0.5">
+                Explore real client commissions, visual systems, and artwork connected to this release.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView('portfolio');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+            >
+              <span>Explore Full Portfolio</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {relatedPortfolioProjects.map((proj) => (
+              <div
+                key={proj.id}
+                onClick={() => handleSelectPortfolioProject(proj)}
+                className="group relative rounded-[28px] overflow-hidden bg-white border border-[#E5E5E5] hover:border-orange-500/60 transition-all duration-300 cursor-pointer shadow-xs hover:shadow-xl flex flex-col justify-between"
+              >
+                {/* Project Image Container */}
+                <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+                  <img
+                    src={proj.image}
+                    alt={proj.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+
+                  {/* Category Pill Tag */}
+                  <div className="absolute top-3.5 left-3.5">
+                    <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-zinc-900 text-xs font-mono-code font-bold border border-zinc-200/80 shadow-xs">
+                      {proj.category}
+                    </span>
+                  </div>
+
+                  {/* Hover Inspect Icon */}
+                  <div className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-zinc-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-md">
+                    <ArrowUpRight className="w-4 h-4 text-orange-400" />
+                  </div>
+                </div>
+
+                {/* Card Body */}
+                <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-mono-code mb-1.5 font-medium">
+                      <span>{proj.client}</span>
+                      <span>•</span>
+                      <span>{proj.date}</span>
+                    </div>
+
+                    <h4 className="font-display text-lg font-bold text-zinc-900 group-hover:text-orange-600 transition-colors line-clamp-1 mb-2">
+                      {proj.title}
+                    </h4>
+
+                    <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed mb-4">
+                      {proj.shortDesc}
+                    </p>
+                  </div>
+
+                  {/* Tools & CTA row */}
+                  <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {proj.tools.slice(0, 2).map((tool, i) => (
+                        <span key={i} className="text-[10px] px-2.5 py-0.5 rounded-md bg-zinc-100 text-zinc-700 font-mono-code font-medium">
+                          {tool}
+                        </span>
+                      ))}
+                      {proj.tools.length > 2 && (
+                        <span className="text-[10px] text-zinc-400 font-mono-code">
+                          +{proj.tools.length - 2}
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectPortfolioProject(proj);
+                      }}
+                      className="text-xs text-orange-600 font-bold group-hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>View Project</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Related Products Section ("More from the Studio Shop") */}
       {relatedProducts.length > 0 && (

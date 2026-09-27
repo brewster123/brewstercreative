@@ -118,6 +118,11 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
                 Downloadable
               </span>
             ) : null}
+            {product.variants && product.variants.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-white/95 text-zinc-700 text-[10px] font-mono-code font-bold border border-zinc-200 shadow-2xs">
+                Multiple Formats
+              </span>
+            )}
           </div>
 
           {/* Top Right: Status Badge */}

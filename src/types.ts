@@ -367,6 +367,18 @@ export interface ShopProduct {
   productImage?: string;
   productImageAlt?: string;
   productImageCredit?: string;
+
+  // Sizes / Variants metadata (Phase 4C.3)
+  variants?: ShopProductVariant[];
+}
+
+export interface ShopProductVariant {
+  id: string;
+  name: string;
+  label?: string;
+  description?: string;
+  price?: number;
+  priceLabel?: string;
 }
 
 export type UpcomingShopRelease = ShopProduct;

@@ -40,6 +40,20 @@ export const ProductDetailView: React.FC = () => {
   const product: ShopProduct = selectedShopProduct || SHOP_PRODUCTS[0];
   const isCheckoutAvailable = isProductCheckoutAvailable(product);
 
+  const hasVariants = Boolean(product.variants && product.variants.length > 0);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (product.variants && product.variants.length > 0) {
+      setSelectedVariantId(product.variants[0].id);
+    } else {
+      setSelectedVariantId(null);
+    }
+  }, [product.id, product.variants]);
+
+  const selectedVariant = product.variants?.find(v => v.id === selectedVariantId) || (product.variants?.[0] ?? null);
+  const displayPriceLabel = selectedVariant?.priceLabel || product.priceLabel || (product.price > 0 ? `$${product.price}` : 'Price TBA');
+
   const [imgError, setImgError] = useState(false);
   const rawImage = product.productImage || product.image;
 
@@ -272,7 +286,7 @@ export const ProductDetailView: React.FC = () => {
             {/* Pricing / Non-purchasable Indicator */}
             <div className="flex items-center gap-3 pt-1">
               <div className="px-3 py-1 rounded-xl bg-zinc-900 text-white font-mono-code font-bold text-sm sm:text-base shadow-2xs">
-                {product.priceLabel || 'Price TBA'}
+                {displayPriceLabel}
               </div>
               <span className="text-xs text-zinc-400 font-mono-code">
                 • Official catalog pricing announced upon release
@@ -284,6 +298,57 @@ export const ProductDetailView: React.FC = () => {
           <p className="text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
             {product.shortDescription}
           </p>
+
+          {/* Variant / Size Options Selector (Only rendered when real variants exist) */}
+          {hasVariants && product.variants && (
+            <div className="p-5 rounded-[24px] bg-white border border-[#E5E5E5] space-y-3 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <label className="font-display text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
+                  <Layers className="w-3.5 h-3.5 text-orange-500" />
+                  <span>{product.variantLabel || 'Available Formats / Options'}</span>
+                </label>
+                {selectedVariant && (
+                  <span className="text-xs font-mono-code text-zinc-500 font-semibold">
+                    {selectedVariant.name}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {product.variants.map((variant) => {
+                  const isSelected = selectedVariant?.id === variant.id;
+                  return (
+                    <button
+                      key={variant.id}
+                      type="button"
+                      onClick={() => setSelectedVariantId(variant.id)}
+                      className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                        isSelected
+                          ? 'border-orange-500 bg-orange-50/50 ring-1 ring-orange-500/30'
+                          : 'border-zinc-200 hover:border-zinc-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className={`text-xs font-bold font-mono-code ${isSelected ? 'text-orange-950' : 'text-zinc-800'}`}>
+                          {variant.name}
+                        </span>
+                        {variant.priceLabel && (
+                          <span className="text-[11px] font-mono-code font-bold text-zinc-600 bg-zinc-100 px-1.5 py-0.5 rounded">
+                            {variant.priceLabel}
+                          </span>
+                        )}
+                      </div>
+                      {variant.description && (
+                        <p className="text-[11px] text-zinc-500 line-clamp-1 leading-normal">
+                          {variant.description}
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Full Studio Description */}
           <div className="p-6 rounded-[24px] bg-white border border-[#E5E5E5] space-y-3 shadow-2xs">

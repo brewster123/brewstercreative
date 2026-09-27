@@ -58,6 +58,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     availableFormats: 'AI • EPS • SVG • PDF',
     downloadStatus: 'Not Yet Available',
     relatedPortfolioIds: ['proj-1', 'proj-3'],
+    relatedServiceIds: ['srv-branding', 'srv-logo'],
   },
   {
     id: 'prod-print-swiss',
@@ -81,6 +82,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     visualGradient: 'from-zinc-100 via-stone-50 to-orange-50/50',
     isDownloadable: false,
     relatedPortfolioIds: ['proj-2'],
+    relatedServiceIds: ['srv-posters'],
   },
   {
     id: 'prod-vector-badges',
@@ -106,6 +108,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     availableFormats: 'SVG • EPS • PNG',
     downloadStatus: 'Not Yet Available',
     relatedPortfolioIds: ['proj-3'],
+    relatedServiceIds: ['srv-logo'],
   },
   {
     id: 'prod-grain-textures',
@@ -131,6 +134,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     availableFormats: '4K TIFF • Transparent PNG • Vector Swatches',
     downloadStatus: 'Not Yet Available',
     relatedPortfolioIds: ['proj-2'],
+    relatedServiceIds: ['srv-posters'],
   },
   {
     id: 'prod-template-social',
@@ -160,6 +164,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     availableFormats: 'Figma • PSD • AI',
     downloadStatus: 'Not Yet Available',
     relatedPortfolioIds: ['proj-6'],
+    relatedServiceIds: ['srv-social'],
   },
   {
     id: 'prod-template-pitchdeck',
@@ -189,6 +194,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     availableFormats: 'Figma • Keynote • PPTX',
     downloadStatus: 'Not Yet Available',
     relatedPortfolioIds: ['proj-1'],
+    relatedServiceIds: ['srv-branding'],
   },
   {
     id: 'prod-template-poster',
@@ -218,6 +224,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     availableFormats: 'InDesign • Illustrator • PDF',
     downloadStatus: 'Not Yet Available',
     relatedPortfolioIds: ['proj-2'],
+    relatedServiceIds: ['srv-posters'],
   },
   {
     id: 'prod-merch-studio-poster',
@@ -240,6 +247,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     visualGradient: 'from-amber-100/60 via-orange-50/40 to-zinc-100',
     isDownloadable: false,
     relatedPortfolioIds: ['proj-2'],
+    relatedServiceIds: ['srv-posters'],
   },
   {
     id: 'prod-merch-art-print',

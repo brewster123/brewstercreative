@@ -20,9 +20,14 @@ import {
 interface ServiceCardProps {
   service: ServiceItem;
   featured?: boolean;
+  hideRelatedShopProducts?: boolean;
 }
 
-export const ServiceCard: React.FC<ServiceCardProps> = ({ service, featured = false }) => {
+export const ServiceCard: React.FC<ServiceCardProps> = ({ 
+  service, 
+  featured = false,
+  hideRelatedShopProducts = false 
+}) => {
   const { setActiveView, setPreselectedService, setSelectedShopProduct, studioProfile } = useApp();
 
   // Cross-selling: Related Shop Products (Phase 4D.3: Services -> Shop)
@@ -135,7 +140,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service, featured = fa
         </div>
 
         {/* Related Shop Products Section (Phase 4D.3: Services -> Shop) */}
-        {relatedShopProducts.length > 0 && (
+        {!hideRelatedShopProducts && relatedShopProducts.length > 0 && (
           <div className="pt-5 mb-6 border-t border-zinc-100 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div>

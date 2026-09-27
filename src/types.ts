@@ -379,6 +379,9 @@ export interface ShopProduct {
 
   // Cross-selling metadata (Phase 4D.1: Shop -> Portfolio)
   relatedPortfolioIds?: string[];
+
+  // Cross-selling metadata (Phase 4D.4: Shop -> Services / Commissions)
+  relatedServiceIds?: string[];
 }
 
 export interface ShopProductVariant {

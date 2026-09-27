@@ -18,9 +18,11 @@ import {
   FileCheck2, 
   Clock,
   ExternalLink,
-  ArrowUpRight 
+  ArrowUpRight,
+  Wand2 
 } from 'lucide-react';
-import { ShopProduct, PortfolioProject } from '../types';
+import { ShopProduct, PortfolioProject, ServiceItem } from '../types';
+import { ServiceCard } from '../components/ServiceCard';
 import { isProductCheckoutAvailable } from '../utils/urlUtils';
 
 export const ProductDetailView: React.FC = () => {
@@ -31,7 +33,9 @@ export const ProductDetailView: React.FC = () => {
     setActiveView, 
     studioProfile,
     portfolio,
-    setSelectedPortfolioProject
+    setSelectedPortfolioProject,
+    services,
+    setPreselectedService
   } = useApp();
 
   // Scroll to top upon entering view
@@ -134,6 +138,21 @@ export const ProductDetailView: React.FC = () => {
   const relatedPortfolioProjects: PortfolioProject[] = (product.relatedPortfolioIds || [])
     .map((id) => portfolio.find((p) => p.id === id))
     .filter((p): p is PortfolioProject => Boolean(p));
+
+  // Cross-selling: Related Services (Phase 4D.4: Shop -> Services / Commissions)
+  const relatedServices: ServiceItem[] = (product.relatedServiceIds || [])
+    .map((id) => services.find((s) => s.id === id))
+    .filter((s): s is ServiceItem => Boolean(s));
+
+  const handleCommissionCustomVariant = () => {
+    if (relatedServices.length > 0) {
+      setPreselectedService(relatedServices[0].name);
+    } else {
+      setPreselectedService(product.category);
+    }
+    setActiveView('commission-form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleSelectPortfolioProject = (proj: PortfolioProject) => {
     setSelectedPortfolioProject(proj);
@@ -602,10 +621,7 @@ export const ProductDetailView: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => {
-                  setActiveView('commission-form');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onClick={handleCommissionCustomVariant}
                 className="px-5 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-xs sm:text-sm shadow-sm shadow-orange-500/20 flex items-center gap-2 transition-all cursor-pointer"
               >
                 <Send className="w-4 h-4" />
@@ -625,6 +641,48 @@ export const ProductDetailView: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Related Services & Custom Commission Section (Phase 4D.4: Cross-selling Shop -> Services / Commissions) */}
+      {relatedServices.length > 0 && (
+        <div className="pt-8 border-t border-zinc-200 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-1">
+                <Wand2 className="w-3.5 h-3.5" />
+                <span>Custom Bespoke Work</span>
+              </div>
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-zinc-900">
+                Need Something Custom?
+              </h3>
+              <p className="text-xs text-zinc-500 font-medium mt-0.5">
+                Love the aesthetic of {product.name}? Commission our studio for a bespoke brand identity, tailored typography, or customized production assets.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView('services');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+            >
+              <span>Explore All Services & Pricing</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {relatedServices.map((srv) => (
+              <ServiceCard
+                key={srv.id}
+                service={srv}
+                hideRelatedShopProducts={true}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Related Portfolio Work Section (Phase 4D.1: Cross-selling Shop -> Portfolio) */}
       {relatedPortfolioProjects.length > 0 && (

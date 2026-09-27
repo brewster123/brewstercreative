@@ -161,7 +161,13 @@ export const ProductDetailView: React.FC = () => {
                 ) : (
                   <Box className="w-3.5 h-3.5 text-orange-500" />
                 )}
-                <span>{product.isTemplate ? 'Digital Template' : `${product.productType} Release`}</span>
+                <span>
+                  {product.isTemplate 
+                    ? 'Digital Template' 
+                    : product.isDownloadable 
+                    ? 'Digital Product' 
+                    : `${product.productType} Release`}
+                </span>
               </span>
             </div>
 
@@ -224,6 +230,11 @@ export const ProductDetailView: React.FC = () => {
               {product.isTemplate && (
                 <span className="px-2.5 py-0.5 rounded-full bg-white text-orange-700 text-xs font-mono-code font-bold border border-orange-200 shadow-2xs">
                   Template Product
+                </span>
+              )}
+              {product.isDownloadable && !product.isTemplate && (
+                <span className="px-2.5 py-0.5 rounded-full bg-white text-zinc-700 text-xs font-mono-code font-bold border border-zinc-200 shadow-2xs">
+                  Downloadable Product
                 </span>
               )}
               {product.badge && (
@@ -323,6 +334,55 @@ export const ProductDetailView: React.FC = () => {
             </div>
           )}
 
+          {/* Digital Product Details (Phase 4B.2) */}
+          {product.isDownloadable && (
+            <div className="bg-white border border-[#E5E5E5] rounded-[24px] p-6 space-y-4 shadow-2xs">
+              <h3 className="font-display font-bold text-sm text-zinc-900 flex items-center gap-2">
+                <Download className="w-4 h-4 text-orange-500" />
+                <span>Digital Product Details</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                  <span className="text-zinc-400 font-mono-code text-[11px] block">Product Type</span>
+                  <span className="font-bold text-zinc-800">
+                    {product.isTemplate ? 'Digital Template' : 'Digital Product'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                  <span className="text-zinc-400 font-mono-code text-[11px] block">Download Status</span>
+                  <span className="font-bold text-orange-600 font-mono-code flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                    Download Not Yet Available
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                  <span className="text-zinc-400 font-mono-code text-[11px] block">Available Formats</span>
+                  <span className="font-bold text-zinc-800 font-mono-code">
+                    {product.availableFormats || product.formats || 'Vector & Source'}
+                  </span>
+                </div>
+                {product.fileSizeLabel && (
+                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                    <span className="text-zinc-400 font-mono-code text-[11px] block">File Size</span>
+                    <span className="font-bold text-zinc-800 font-mono-code">{product.fileSizeLabel}</span>
+                  </div>
+                )}
+                <div className={`p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1 ${product.fileSizeLabel ? 'sm:col-span-2' : ''}`}>
+                  <span className="text-zinc-400 font-mono-code text-[11px] block">Delivery Method</span>
+                  <span className="font-bold text-zinc-800">Digital delivery upon official launch</span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-orange-50/70 border border-orange-200/70 text-xs text-zinc-600 flex items-start gap-2.5">
+                <Clock className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                <p className="font-medium leading-relaxed">
+                  Digital delivery will be enabled when this product officially launches.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Tags */}
           {product.tags && product.tags.length > 0 && (
             <div className="space-y-2">
@@ -348,11 +408,13 @@ export const ProductDetailView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-orange-600" />
                 <span className="text-xs font-mono-code font-bold text-orange-700 uppercase tracking-wider">
-                  Catalog Drop In Preparation
+                  {product.isDownloadable ? 'Download Not Yet Available' : 'Catalog Drop In Preparation'}
                 </span>
               </div>
               <p className="text-xs text-zinc-600 leading-relaxed font-medium">
-                This item is scheduled for the initial Brewster Creative catalog release. Direct checkout and file downloads will be enabled upon official storefront launch.
+                {product.isDownloadable
+                  ? 'Digital delivery will be enabled when this product officially launches. Direct checkout and file downloads are currently in preparation.'
+                  : 'This item is scheduled for the initial Brewster Creative catalog release. Direct checkout and file downloads will be enabled upon official storefront launch.'}
               </p>
             </div>
 

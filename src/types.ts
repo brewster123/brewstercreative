@@ -342,6 +342,14 @@ export interface ShopProduct {
   templateType?: string;
   intendedUse?: string;
   editableFormat?: string;
+
+  // Downloadable product metadata (Phase 4B.2)
+  isDownloadable?: boolean;
+  downloadLabel?: string;
+  availableFormats?: string;
+  fileSizeLabel?: string;
+  downloadStatus?: 'Not Yet Available' | 'Coming Soon' | 'Available';
+  downloadUrl?: string;
 }
 
 export type UpcomingShopRelease = ShopProduct;

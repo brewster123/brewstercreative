@@ -5,7 +5,6 @@ import {
   Sparkles, 
   Layers, 
   Download, 
-  ShieldCheck, 
   Send, 
   ArrowRight, 
   Palette, 
@@ -42,13 +41,13 @@ export const ShopView: React.FC = () => {
   const shopHighlights = [
     {
       icon: Download,
-      title: 'Instant Digital Delivery',
-      desc: 'Immediate access to high-resolution master assets, source files (AI, EPS, SVG), and print-ready formats upon purchase.',
+      title: 'Digital Asset Delivery',
+      desc: 'High-resolution master assets, source files (AI, EPS, SVG), and print-ready formats upon official launch.',
     },
     {
-      icon: ShieldCheck,
-      title: 'Commercial Use Ready',
-      desc: 'Clear, straightforward licensing permitting commercial client usage, merchandising, and unrestricted digital publishing.',
+      icon: Sparkles,
+      title: 'Curated Digital Assets',
+      desc: 'Carefully organized design kits, templates, and vector resources structured for professional creative workflows.',
     },
     {
       icon: Palette,
@@ -58,7 +57,7 @@ export const ShopView: React.FC = () => {
     {
       icon: Layers,
       title: 'Bespoke Customization',
-      desc: 'Need a shop template customized for your specific brand? Seamlessly transition any item into an active custom commission.',
+      desc: 'Need a shop asset customized for your specific brand? Seamlessly transition any item into an active custom commission.',
     },
   ];
 

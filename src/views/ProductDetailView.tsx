@@ -240,6 +240,11 @@ export const ProductDetailView: React.FC = () => {
                   Downloadable Product
                 </span>
               )}
+              {product.productType === 'Physical' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-white text-zinc-700 text-xs font-mono-code font-bold border border-zinc-200 shadow-2xs">
+                  Physical Release
+                </span>
+              )}
               {product.badge && (
                 <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-700 text-xs font-mono-code font-bold border border-zinc-200">
                   {product.badge}
@@ -386,6 +391,69 @@ export const ProductDetailView: React.FC = () => {
             </div>
           )}
 
+          {/* Physical Product Details (Phase 4C.1) */}
+          {product.productType === 'Physical' && (
+            <div className="bg-white border border-[#E5E5E5] rounded-[24px] p-6 space-y-4 shadow-2xs">
+              <h3 className="font-display font-bold text-sm text-zinc-900 flex items-center gap-2">
+                <Box className="w-4 h-4 text-orange-500" />
+                <span>Physical Product Details</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                  <span className="text-zinc-400 font-mono-code text-[11px] block">Product Type</span>
+                  <span className="font-bold text-zinc-800">Physical Merchandise</span>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                  <span className="text-zinc-400 font-mono-code text-[11px] block">Availability</span>
+                  <span className="font-bold text-orange-600 font-mono-code flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                    {product.status === 'In Production' ? 'In Studio Production' : 'Coming Soon'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                  <span className="text-zinc-400 font-mono-code text-[11px] block">Release Format</span>
+                  <span className="font-bold text-zinc-800 font-mono-code">{product.formats || 'Physical Release'}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                  <span className="text-zinc-400 font-mono-code text-[11px] block">Catalog Status</span>
+                  <span className="font-bold text-zinc-800">Physical Release In Preparation</span>
+                </div>
+                {product.material && (
+                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                    <span className="text-zinc-400 font-mono-code text-[11px] block">Material</span>
+                    <span className="font-bold text-zinc-800">{product.material}</span>
+                  </div>
+                )}
+                {product.dimensions && (
+                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                    <span className="text-zinc-400 font-mono-code text-[11px] block">Dimensions</span>
+                    <span className="font-bold text-zinc-800 font-mono-code">{product.dimensions}</span>
+                  </div>
+                )}
+                {product.variantLabel && (
+                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+                    <span className="text-zinc-400 font-mono-code text-[11px] block">Available Variants</span>
+                    <span className="font-bold text-zinc-800">{product.variantLabel}</span>
+                  </div>
+                )}
+                {product.careInstructions && (
+                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1 sm:col-span-2">
+                    <span className="text-zinc-400 font-mono-code text-[11px] block">Care Instructions</span>
+                    <span className="font-bold text-zinc-800">{product.careInstructions}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-orange-50/70 border border-orange-200/70 text-xs text-zinc-600 flex items-start gap-2.5">
+                <Clock className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                <p className="font-medium leading-relaxed">
+                  Product specifications will be announced when this physical release officially launches. Direct ordering and fulfillment will be enabled upon release.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Tags */}
           {product.tags && product.tags.length > 0 && (
             <div className="space-y-2">
@@ -411,13 +479,19 @@ export const ProductDetailView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-orange-600" />
                 <span className="text-xs font-mono-code font-bold text-orange-700 uppercase tracking-wider">
-                  {product.isDownloadable ? 'Download Not Yet Available' : 'Catalog Drop In Preparation'}
+                  {product.isDownloadable
+                    ? 'Download Not Yet Available'
+                    : product.productType === 'Physical'
+                    ? 'Physical Release In Preparation'
+                    : 'Catalog Drop In Preparation'}
                 </span>
               </div>
               <p className="text-xs text-zinc-600 leading-relaxed font-medium">
                 {product.isDownloadable
                   ? 'Digital delivery will be enabled when this product officially launches. Direct checkout and file downloads are currently in preparation.'
-                  : 'This item is scheduled for the initial Brewster Creative catalog release. Direct checkout and file downloads will be enabled upon official storefront launch.'}
+                  : product.productType === 'Physical'
+                  ? 'This physical merchandise item is scheduled for the studio catalog release. Direct ordering and physical fulfillment will be announced upon official launch.'
+                  : 'This item is scheduled for the initial Brewster Creative catalog release. Direct checkout and fulfillment will be enabled upon official storefront launch.'}
               </p>
             </div>
 

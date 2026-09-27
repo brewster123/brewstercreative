@@ -355,6 +355,13 @@ export interface ShopProduct {
   externalCheckoutUrl?: string;
   externalCheckoutLabel?: string;
   externalCheckoutProvider?: string;
+
+  // Physical merchandise metadata (Phase 4C.1)
+  isPhysical?: boolean;
+  material?: string;
+  dimensions?: string;
+  careInstructions?: string;
+  variantLabel?: string;
 }
 
 export type UpcomingShopRelease = ShopProduct;

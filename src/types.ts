@@ -264,6 +264,9 @@ export interface PortfolioProject {
   colorPalette?: string[];
   tags: string[];
   featured?: boolean;
+
+  // Cross-selling metadata (Phase 4D.2: Portfolio -> Shop)
+  relatedShopProductIds?: string[];
 }
 
 export interface StudioProfile {

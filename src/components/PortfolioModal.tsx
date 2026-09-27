@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { PortfolioProject } from '../types';
+import { PortfolioProject, ShopProduct } from '../types';
 import { useApp } from '../context/AppContext';
+import { SHOP_PRODUCTS } from '../data/shopData';
+import { ShopProductCard } from './ShopProductCard';
 import { 
   X, 
   Calendar, 
@@ -11,7 +13,8 @@ import {
   Send, 
   ExternalLink,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowRight
 } from 'lucide-react';
 
 interface PortfolioModalProps {
@@ -20,10 +23,22 @@ interface PortfolioModalProps {
 }
 
 export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose }) => {
-  const { setActiveView, setPreselectedService } = useApp();
+  const { setActiveView, setPreselectedService, setSelectedShopProduct } = useApp();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const images = project.gallery?.length ? project.gallery : [project.image];
+
+  // Cross-selling: Related Shop Products (Phase 4D.2)
+  const relatedShopProducts: ShopProduct[] = (project.relatedShopProductIds || [])
+    .map((id) => SHOP_PRODUCTS.find((p) => p.id === id))
+    .filter((p): p is ShopProduct => Boolean(p));
+
+  const handleSelectShopProduct = (shopProduct: ShopProduct) => {
+    onClose();
+    setSelectedShopProduct(shopProduct);
+    setActiveView('product-detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleCommissionThisType = () => {
     onClose();
@@ -176,6 +191,51 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
               </span>
             ))}
           </div>
+
+          {/* Related Shop Products Section (Phase 4D.2: Cross-selling Portfolio -> Shop) */}
+          {relatedShopProducts.length > 0 && (
+            <div className="pt-6 border-t border-zinc-100 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 text-[11px] font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-0.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Studio Storefront</span>
+                  </div>
+                  <h3 className="font-display text-lg sm:text-xl font-bold text-zinc-900">
+                    Related Shop Products
+                  </h3>
+                  <p className="text-xs text-zinc-500 font-medium">
+                    Ready-to-use digital assets, design templates, and physical prints connected to this project.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    setSelectedShopProduct(null);
+                    setActiveView('shop');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                >
+                  <span>Browse All Goods</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {relatedShopProducts.map((prod) => (
+                  <ShopProductCard
+                    key={prod.id}
+                    product={prod}
+                    actionLabel="View Product"
+                    onSelect={(p) => handleSelectShopProduct(p)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
 

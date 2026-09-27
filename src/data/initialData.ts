@@ -169,6 +169,7 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
     colorPalette: ['#1C1917', '#E7E5E4', '#C2410C', '#84CC16', '#78716C'],
     tags: ['Brand Identity', 'Packaging', 'Typography', 'Luxury Minimalist'],
     featured: true,
+    relatedShopProductIds: ['prod-branding-apex', 'prod-template-pitchdeck'],
   },
   {
     id: 'proj-2',
@@ -187,6 +188,7 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
     colorPalette: ['#09090B', '#F43F5E', '#06B6D4', '#E2E8F0', '#8B5CF6'],
     tags: ['Poster Design', 'Key Visual', 'Risograph', 'Typography'],
     featured: true,
+    relatedShopProductIds: ['prod-print-swiss', 'prod-template-poster', 'prod-grain-textures'],
   },
   {
     id: 'proj-3',
@@ -205,6 +207,7 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
     colorPalette: ['#0A0A0A', '#F97316', '#FAFAFA', '#52525B'],
     tags: ['Logo Design', 'Monogram', 'Audio', 'Vector'],
     featured: true,
+    relatedShopProductIds: ['prod-vector-badges', 'prod-branding-apex'],
   },
   {
     id: 'proj-4',
@@ -257,6 +260,7 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
     colorPalette: ['#000000', '#10B981', '#E11D48', '#FFFFFF'],
     tags: ['Social Media', 'Apparel', 'Marketing', 'Templates'],
     featured: false,
+    relatedShopProductIds: ['prod-template-social'],
   },
 ];
 

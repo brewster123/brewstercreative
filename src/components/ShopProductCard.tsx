@@ -15,11 +15,13 @@ import {
 interface ShopProductCardProps {
   product: ShopProduct;
   onSelect?: (product: ShopProduct) => void;
+  actionLabel?: string;
 }
 
 export const ShopProductCard: React.FC<ShopProductCardProps> = ({ 
   product, 
-  onSelect 
+  onSelect,
+  actionLabel 
 }) => {
   const [imgError, setImgError] = useState(false);
 
@@ -196,7 +198,7 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
         >
           <Eye className="w-3.5 h-3.5" />
           <span>
-            {product.status === 'Available' ? 'View Product' : 'Preview Details'}
+            {actionLabel || (product.status === 'Available' ? 'View Product' : 'Preview Details')}
           </span>
           <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
         </button>

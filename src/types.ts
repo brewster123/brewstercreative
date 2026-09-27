@@ -362,6 +362,11 @@ export interface ShopProduct {
   dimensions?: string;
   careInstructions?: string;
   variantLabel?: string;
+
+  // Product image metadata (Phase 4C.2)
+  productImage?: string;
+  productImageAlt?: string;
+  productImageCredit?: string;
 }
 
 export type UpcomingShopRelease = ShopProduct;

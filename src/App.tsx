@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Copy, Check, X } from 'lucide-react';
+import { AlertTriangle, Copy, Check, X, RotateCcw } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -14,11 +14,13 @@ import { ShopView } from './views/ShopView';
 import { ProductDetailView } from './views/ProductDetailView';
 
 const DatabaseErrorBanner: React.FC = () => {
-  const { databaseError, clearDatabaseError } = useApp();
+  const { databaseError, clearDatabaseError, refreshCurrentUserProfile } = useApp();
   const [copied, setCopied] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   if (!databaseError) return null;
 
+  const isNetworkError = databaseError.toLowerCase().includes('network') || databaseError.toLowerCase().includes('failed to fetch');
   const isPermissionDenied = databaseError.includes('42501') || databaseError.toLowerCase().includes('permission denied');
   const sqlFix = "GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;";
 
@@ -28,6 +30,13 @@ const DatabaseErrorBanner: React.FC = () => {
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const handleRetry = async () => {
+    setRetrying(true);
+    clearDatabaseError();
+    await refreshCurrentUserProfile();
+    setRetrying(false);
+  };
+
   return (
     <aside aria-label="Database Notice" className="bg-zinc-950 text-white border-b border-rose-900/60 px-4 py-3 text-xs z-50">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
@@ -35,7 +44,7 @@ const DatabaseErrorBanner: React.FC = () => {
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="font-bold text-zinc-100 flex items-center gap-2">
-              <span>Database Notice:</span>
+              <span>{isNetworkError ? 'Connection Notice:' : 'Database Notice:'}</span>
               <span className="font-normal text-rose-300 font-mono text-[11px] break-all">{databaseError}</span>
             </p>
             {isPermissionDenied && (
@@ -43,9 +52,25 @@ const DatabaseErrorBanner: React.FC = () => {
                 PostgreSQL denied access to <code className="bg-zinc-800 text-amber-300 px-1 py-0.5 rounded">public.profiles</code> for the <code className="bg-zinc-800 text-amber-300 px-1 py-0.5 rounded">authenticated</code> role. Run the fix in your Supabase SQL Editor.
               </p>
             )}
+            {isNetworkError && (
+              <p className="text-zinc-400 text-[11px]">
+                Connection to Supabase timed out or was interrupted. Check your network connection or ad-blocker and click Retry.
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+          {isNetworkError && (
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={retrying}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-mono text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 text-white ${retrying ? 'animate-spin' : ''}`} />
+              <span>{retrying ? 'Retrying...' : 'Retry Connection'}</span>
+            </button>
+          )}
           {isPermissionDenied && (
             <button
               type="button"

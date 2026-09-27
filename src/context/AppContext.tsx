@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   User,
   UserRole,
@@ -339,6 +339,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
   }, [notifications]);
 
+  // Keep track of pending profile fetches to deduplicate concurrent requests for the same user ID (e.g. on mount race conditions)
+  const pendingProfileFetches = useRef<Map<string, Promise<{ profile: User | null; error?: string; rawError?: any }>>>(new Map());
+
   // Securely query profile from Supabase profiles table using the authenticated user's UUID
   // Admin role is strictly derived from the database 'public.profiles.role' column
   const fetchUserProfileFromDb = async (
@@ -346,101 +349,156 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fallbackEmail: string, 
     metadataPhone?: string
   ): Promise<{ profile: User | null; error?: string; rawError?: any }> => {
-    // 1. Log authenticated user's ID and email
-    console.log('[Supabase Auth] Fetching profile for authenticated user:', {
-      userId,
-      email: fallbackEmail,
-    });
+    // Deduplicate in-flight requests for the exact same userId
+    const inFlight = pendingProfileFetches.current.get(userId);
+    if (inFlight) {
+      return inFlight;
+    }
 
-    // 2. Log the Supabase URL being used (DO NOT log or expose the API key)
-    console.log('[Supabase Config] Supabase project URL being used:', supabaseUrl);
-
-    try {
-      const { data, error, status, statusText } = await supabase
-        .from('profiles')
-        .select('id, name, email, role, avatar, handle, contact_method, bio')
-        .eq('id', userId)
-        .maybeSingle();
-
-      // 3. Log whether the profile query returns data, null, or an error
-      console.log('[Supabase Auth] Query response status:', {
-        returnsData: Boolean(data),
-        isNull: data === null,
-        hasError: Boolean(error),
-        httpStatus: status,
-        statusText,
-        roleFromDb: data?.role ?? null,
+    const executeFetch = async (): Promise<{ profile: User | null; error?: string; rawError?: any }> => {
+      // 1. Log authenticated user's ID and email
+      console.log('[Supabase Auth] Fetching profile for authenticated user:', {
+        userId,
+        email: fallbackEmail,
       });
 
-      // 4. Log the complete Supabase query error (message, code, details, hint)
-      if (error) {
-        console.error(`[Supabase Auth] Complete query error for UUID (${userId}):`, {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
+      // 2. Log the Supabase URL being used (DO NOT log or expose the API key)
+      console.log('[Supabase Config] Supabase project URL being used:', supabaseUrl);
 
-        // 5. Do not fall back silently to client when the database query fails. Return the real error.
-        const formattedErr = `[Code: ${error.code || 'UNKNOWN'}] ${error.message}${error.details ? ` (Details: ${error.details})` : ''}${error.hint ? ` (Hint: ${error.hint})` : ''}`;
-        setDatabaseError(formattedErr);
-        return {
-          profile: null,
-          error: formattedErr,
-          rawError: error,
-        };
+      const maxRetries = 2;
+      let attempt = 0;
+
+      while (attempt <= maxRetries) {
+        try {
+          const { data, error, status, statusText } = await supabase
+            .from('profiles')
+            .select('id, name, email, role, avatar, handle, contact_method, bio')
+            .eq('id', userId)
+            .maybeSingle();
+
+          const isNetworkFailure = Boolean(
+            error && (
+              error.message?.includes('Failed to fetch') ||
+              error.details?.includes('Failed to fetch') ||
+              status === 0
+            )
+          );
+
+          if (isNetworkFailure && attempt < maxRetries) {
+            attempt++;
+            console.warn(`[Supabase Auth] Network fetch failed for UUID (${userId}), retrying (attempt ${attempt}/${maxRetries})...`);
+            await new Promise(resolve => setTimeout(resolve, attempt * 600));
+            continue;
+          }
+
+          // 3. Log whether the profile query returns data, null, or an error
+          console.log('[Supabase Auth] Query response status:', {
+            returnsData: Boolean(data),
+            isNull: data === null,
+            hasError: Boolean(error),
+            httpStatus: status,
+            statusText,
+            roleFromDb: data?.role ?? null,
+          });
+
+          // 4. Log the complete Supabase query error (message, code, details, hint)
+          if (error) {
+            console.error(`[Supabase Auth] Complete query error for UUID (${userId}):`, {
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint,
+            });
+
+            // 5. Do not fall back silently to client when the database query fails. Return the real error.
+            const isNetworkErr = error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch');
+            const formattedErr = isNetworkErr
+              ? 'Unable to connect to Supabase network. Please check your internet connection or ad-blocker.'
+              : `[Code: ${error.code || 'UNKNOWN'}] ${error.message}${error.details ? ` (Details: ${error.details})` : ''}${error.hint ? ` (Hint: ${error.hint})` : ''}`;
+
+            setDatabaseError(formattedErr);
+            return {
+              profile: null,
+              error: formattedErr,
+              rawError: error,
+            };
+          }
+
+          if (!data) {
+            console.warn(`[Supabase Auth] No profile record found in public.profiles for UUID (${userId}). Query returned null.`);
+            return {
+              profile: null,
+              error: `No record found in public.profiles matching user UUID "${userId}".`,
+              rawError: null,
+            };
+          }
+
+          // Success: clear previous database errors
+          setDatabaseError(null);
+
+          // Determine role STRICTLY from public.profiles.role column in Supabase
+          const assignedRole: UserRole = data.role === 'admin' ? 'admin' : 'client';
+
+          const userProfile: User = {
+            id: data.id,
+            name: data.name || fallbackEmail.split('@')[0] || 'User',
+            // IMPORTANT: the authenticated Supabase Auth session email
+            // (`fallbackEmail`, passed in from `session.user.email` at every
+            // call site) is the source of truth for the user's email — never
+            // `public.profiles.email`, and never a hardcoded value keyed off
+            // role or user ID. Changing a user's email in Supabase Auth does
+            // not automatically update the `profiles.email` column (there is
+            // no trigger syncing it), so that column can silently go stale.
+            // `data.email` is only used as a last-resort fallback for the rare
+            // case where the session itself has no email on it. This must stay
+            // role-agnostic: hardcoding a specific email for "the admin" breaks
+            // the moment that account's email changes again, or a second admin
+            // is added.
+            email: fallbackEmail || data.email || '',
+            role: assignedRole,
+            avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+            handle: data.handle || `@${(fallbackEmail.split('@')[0] || 'user').toLowerCase()}`,
+            phone: metadataPhone || (data as any).phone || undefined,
+            contactMethod: data.contact_method || 'Platform Chat & Email',
+            bio: data.bio || '',
+          };
+
+          console.log(`[Supabase Auth] Profile loaded successfully from Supabase. Role from public.profiles: "${assignedRole}"`);
+
+          return { profile: userProfile, error: undefined, rawError: null };
+        } catch (err: any) {
+          const isNetworkFailure = Boolean(err?.message?.includes('Failed to fetch') || err?.name === 'TypeError');
+          if (isNetworkFailure && attempt < maxRetries) {
+            attempt++;
+            console.warn(`[Supabase Auth] Caught network exception for UUID (${userId}), retrying (attempt ${attempt}/${maxRetries})...`);
+            await new Promise(resolve => setTimeout(resolve, attempt * 600));
+            continue;
+          }
+
+          console.error('[Supabase Auth] Unexpected exception in fetchUserProfileFromDb:', err);
+          const formattedErr = isNetworkFailure
+            ? 'Unable to connect to Supabase network. Please check your internet connection or ad-blocker.'
+            : (err?.message || 'Unexpected exception during profile query.');
+          setDatabaseError(formattedErr);
+          return {
+            profile: null,
+            error: formattedErr,
+            rawError: err,
+          };
+        }
       }
 
-      if (!data) {
-        console.warn(`[Supabase Auth] No profile record found in public.profiles for UUID (${userId}). Query returned null.`);
-        return {
-          profile: null,
-          error: `No record found in public.profiles matching user UUID "${userId}".`,
-          rawError: null,
-        };
-      }
+      const finalErr = 'Unable to connect to Supabase network after multiple attempts. Please check your internet connection.';
+      setDatabaseError(finalErr);
+      return { profile: null, error: finalErr, rawError: null };
+    };
 
-      // Success: clear previous database errors
-      setDatabaseError(null);
+    const task = executeFetch().finally(() => {
+      pendingProfileFetches.current.delete(userId);
+    });
 
-      // Determine role STRICTLY from public.profiles.role column in Supabase
-      const assignedRole: UserRole = data.role === 'admin' ? 'admin' : 'client';
-
-      const userProfile: User = {
-        id: data.id,
-        name: data.name || fallbackEmail.split('@')[0] || 'User',
-        // IMPORTANT: the authenticated Supabase Auth session email
-        // (`fallbackEmail`, passed in from `session.user.email` at every
-        // call site) is the source of truth for the user's email — never
-        // `public.profiles.email`, and never a hardcoded value keyed off
-        // role or user ID. Changing a user's email in Supabase Auth does
-        // not automatically update the `profiles.email` column (there is
-        // no trigger syncing it), so that column can silently go stale.
-        // `data.email` is only used as a last-resort fallback for the rare
-        // case where the session itself has no email on it. This must stay
-        // role-agnostic: hardcoding a specific email for "the admin" breaks
-        // the moment that account's email changes again, or a second admin
-        // is added.
-        email: fallbackEmail || data.email || '',
-        role: assignedRole,
-        avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-        handle: data.handle || `@${(fallbackEmail.split('@')[0] || 'user').toLowerCase()}`,
-        phone: metadataPhone || (data as any).phone || undefined,
-        contactMethod: data.contact_method || 'Platform Chat & Email',
-        bio: data.bio || '',
-      };
-
-      console.log(`[Supabase Auth] Profile loaded successfully from Supabase. Role from public.profiles: "${assignedRole}"`);
-
-      return { profile: userProfile, error: undefined, rawError: null };
-    } catch (err: any) {
-      console.error('[Supabase Auth] Unexpected exception in fetchUserProfileFromDb:', err);
-      return {
-        profile: null,
-        error: err?.message || 'Unexpected exception during profile query.',
-        rawError: err,
-      };
-    }
+    pendingProfileFetches.current.set(userId, task);
+    return task;
   };
 
   // Explicit helper to refresh the current user's profile and latest role from Supabase

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { SHOP_PRODUCTS } from '../data/shopData';
 import { ShopProductCard } from '../components/ShopProductCard';
@@ -39,6 +39,16 @@ export const ProductDetailView: React.FC = () => {
   // Resolve product or fallback to the first catalog item
   const product: ShopProduct = selectedShopProduct || SHOP_PRODUCTS[0];
   const isCheckoutAvailable = isProductCheckoutAvailable(product);
+
+  const [imgError, setImgError] = useState(false);
+  const rawImage = product.productImage || product.image;
+
+  useEffect(() => {
+    setImgError(false);
+  }, [product.id, rawImage]);
+
+  const hasImage = Boolean(rawImage) && !imgError;
+  const imageAlt = product.productImageAlt || `${product.name} - ${product.category}`;
 
   const handleBackToShop = () => {
     setActiveView('shop');
@@ -157,7 +167,7 @@ export const ProductDetailView: React.FC = () => {
           } border border-zinc-200 shadow-sm flex flex-col items-center justify-center p-8 sm:p-12 text-center relative overflow-hidden group`}>
             
             {/* Top Left: Product Type Pill */}
-            <div className="absolute top-4 left-4 flex items-center gap-1.5 flex-wrap">
+            <div className="absolute top-4 left-4 flex items-center gap-1.5 flex-wrap z-10">
               <span className="px-3 py-1 rounded-full bg-white/95 text-zinc-800 text-xs font-mono-code font-bold border border-zinc-200 shadow-2xs flex items-center gap-1.5">
                 {product.productType === 'Digital' ? (
                   <Download className="w-3.5 h-3.5 text-orange-500" />
@@ -175,16 +185,17 @@ export const ProductDetailView: React.FC = () => {
             </div>
 
             {/* Top Right: Status Badge */}
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 z-10">
               {getStatusBadge()}
             </div>
 
-            {/* Center Visual Element */}
-            {product.image ? (
+            {/* Center Visual Element / Real Product Image */}
+            {hasImage && rawImage ? (
               <img 
-                src={product.image} 
-                alt={product.name} 
-                className="w-full h-full object-cover rounded-2xl"
+                src={rawImage} 
+                alt={imageAlt} 
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
+                onError={() => setImgError(true)}
               />
             ) : (
               <div className="flex flex-col items-center justify-center space-y-2">
@@ -201,9 +212,11 @@ export const ProductDetailView: React.FC = () => {
             )}
 
             {/* Bottom Meta Bar inside visual */}
-            <div className="absolute bottom-4 inset-x-4 px-4 py-2 rounded-xl bg-white/90 backdrop-blur-xs border border-zinc-200/80 flex items-center justify-between text-xs font-mono-code text-zinc-600">
-              <span className="font-bold">{product.formats || 'Vector & Master Formats'}</span>
-              <span className="text-zinc-500 font-semibold">{product.badge || product.category}</span>
+            <div className="absolute bottom-4 inset-x-4 px-4 py-2 rounded-xl bg-white/90 backdrop-blur-xs border border-zinc-200/80 flex items-center justify-between text-xs font-mono-code text-zinc-600 z-10">
+              <span className="font-bold truncate max-w-[55%]">{product.formats || 'Vector & Master Formats'}</span>
+              <span className="text-zinc-500 font-semibold truncate max-w-[42%] text-right">
+                {product.productImageCredit ? `Photo: ${product.productImageCredit}` : (product.badge || product.category)}
+              </span>
             </div>
           </div>
 

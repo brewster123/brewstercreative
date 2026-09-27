@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShopProduct } from '../types';
 import { 
   Tag, 
@@ -21,6 +21,16 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
   product, 
   onSelect 
 }) => {
+  const [imgError, setImgError] = useState(false);
+
+  const rawImage = product.productImage || product.image;
+
+  useEffect(() => {
+    setImgError(false);
+  }, [product.id, rawImage]);
+
+  const hasImage = Boolean(rawImage) && !imgError;
+
   const renderVisualIcon = () => {
     switch (product.iconName) {
       case 'Tag':
@@ -90,7 +100,7 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
         } border border-zinc-200/90 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden`}>
           
           {/* Top Left: Product Type & Template/Downloadable Indicator */}
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap z-10">
             <span className="px-2 py-0.5 rounded-full bg-white/90 text-zinc-700 text-[10px] font-mono-code font-bold border border-zinc-200 shadow-2xs flex items-center gap-1">
               {product.productType === 'Digital' ? (
                 <Download className="w-3 h-3 text-orange-500" />
@@ -111,16 +121,18 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
           </div>
 
           {/* Top Right: Status Badge */}
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-3 right-3 z-10">
             {getStatusBadge()}
           </div>
 
-          {/* Center Graphic */}
-          {product.image ? (
+          {/* Center Graphic / Real Product Image */}
+          {hasImage && rawImage ? (
             <img 
-              src={product.image} 
-              alt={product.name} 
-              className="w-full h-full object-cover rounded-xl"
+              src={rawImage} 
+              alt={product.productImageAlt || product.name} 
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+              onError={() => setImgError(true)}
             />
           ) : (
             <>

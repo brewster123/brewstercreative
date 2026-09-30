@@ -5,7 +5,7 @@ import { CommissionStatus } from '../../types';
  * Brewster Creative — Global Design System Tokens & Base Helper Components (UI-1A)
  * Establishes a cohesive visual language:
  * - Color foundations: Warm Alabaster Canvas, Surface White, Carbon Ink, Hairline Rules, Terracotta Accent.
- * - Restrained typography scale: Syne Display, Plus Jakarta Sans UI/Body, Space Mono Metadata.
+ * - Single typography standard: Plus Jakarta Sans across all headings, UI, body copy, and metadata.
  * - Standardized Radii & Borders: 6px/8px/12px, zero structural bubble pills.
  * - Standardized Badges & Canonical 8-Stage Status Nodes.
  */

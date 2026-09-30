@@ -331,7 +331,7 @@ export const AdminDashboardView: React.FC = () => {
     const success = await loadCustomFontFile(file);
     if (success) {
       setCustomFontUploaded(true);
-      setFontUploadMessage(`Successfully loaded & applied "${file.name}" as Primeform Pro Demo across the studio!`);
+      setFontUploadMessage(`Successfully loaded & applied "${file.name}" as custom font across the studio!`);
     } else {
       setFontUploadMessage('Could not load font file. Please provide a valid .otf, .ttf, or .woff2 file.');
     }
@@ -704,7 +704,7 @@ export const AdminDashboardView: React.FC = () => {
             { id: 'admin-tab-account', tab: 'admin-account' as const, label: 'Admin Account & Profile', icon: UserCheck, count: undefined },
             { id: 'admin-tab-proofs', tab: 'proof-uploader' as const, label: 'Creative Proofs', icon: UploadCloud, count: undefined },
             { id: 'admin-tab-chat', tab: 'chat' as const, label: 'Client Chat', icon: MessageSquare, count: undefined },
-            { id: 'admin-tab-typography', tab: 'typography' as const, label: 'Typography (Primeform Pro)', icon: Type, count: undefined },
+            { id: 'admin-tab-typography', tab: 'typography' as const, label: 'Typography (Plus Jakarta Sans)', icon: Type, count: undefined },
           ]
         ).map(({ id, tab, label, icon: TabIcon, count }) => (
           <button
@@ -2341,7 +2341,7 @@ export const AdminDashboardView: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* TAB 7: BRAND TYPOGRAPHY (PRIMEFORM PRO DEMO) */}
+      {/* TAB 7: BRAND TYPOGRAPHY (PLUS JAKARTA SANS) */}
       {/* ======================================================== */}
       {activeAdminTab === 'typography' && (
         <div className="max-w-2xl mx-auto space-y-8">
@@ -2352,18 +2352,18 @@ export const AdminDashboardView: React.FC = () => {
                 Typography & Brand Typeface
               </h3>
               <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-mono-code font-bold">
-                Active: Primeform Pro Demo
+                Active: Plus Jakarta Sans
               </span>
             </div>
 
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-zinc-800">Primary Font Family:</span>
-                  <span className="font-mono-code font-bold text-orange-600">Primeform Pro Demo</span>
+                  <span className="font-bold text-zinc-800">Permanent Typography Standard:</span>
+                  <span className="font-mono-code font-bold text-orange-600">Plus Jakarta Sans</span>
                 </div>
                 <p className="text-xs text-zinc-500 font-medium leading-relaxed">
-                  The application is configured to use <strong className="text-zinc-900">Primeform Pro Demo</strong> for all headings, display titles, navigation, and body copy. If you have the font installed on your computer, the browser renders it automatically.
+                  Brewster Creative utilizes a single cohesive typeface standard: <strong className="text-zinc-900">Plus Jakarta Sans</strong> across hero headings, section titles, navigation, button controls, body text, form elements, metadata, and studio dashboards.
                 </p>
               </div>
 
@@ -2374,14 +2374,14 @@ export const AdminDashboardView: React.FC = () => {
                   <span>GEOMETRIC SANS-SERIF</span>
                 </div>
                 <div className="font-display text-2xl sm:text-3xl font-black text-white tracking-tight">
-                  Primeform Pro Demo
+                  Plus Jakarta Sans
                 </div>
                 <div className="text-xs text-zinc-300 font-normal leading-relaxed">
                   The quick brown fox jumps over the lazy dog. 0123456789 & @ $ ₱ ! ?
                 </div>
                 <div className="text-[11px] text-zinc-500 font-mono-code pt-2 border-t border-zinc-800 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  CSS font-family: 'Primeform Pro Demo', 'Primeform Pro', 'Plus Jakarta Sans', sans-serif
+                  CSS font-family: 'Plus Jakarta Sans', system-ui, sans-serif
                 </div>
               </div>
 
@@ -2403,7 +2403,7 @@ export const AdminDashboardView: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-xs font-bold text-zinc-900 hover:text-orange-600">
-                      Upload Primeform Pro Demo Font File
+                      Upload Custom Brand Font File
                     </span>
                     <p className="text-[11px] text-zinc-400 mt-0.5 font-medium">
                       Optional: Load a local .otf, .ttf, or .woff2 file directly into this browser session

@@ -79,7 +79,15 @@ export type AppView =
   | 'shop'
   | 'product-detail';
 
+export type AppTheme = 'light' | 'dark' | 'system';
+export type ResolvedTheme = 'light' | 'dark';
+
 interface AppContextType {
+  // Theme System
+  theme: AppTheme;
+  setTheme: (theme: AppTheme) => void;
+  resolvedTheme: ResolvedTheme;
+
   // Navigation & View
   activeView: AppView;
   setActiveView: (view: AppView) => void;
@@ -191,6 +199,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
+  THEME: 'brewster_theme',
   PROFILE: 'cabando_studio_profile_v3',
   SERVICES: 'cabando_services_v3',
   PORTFOLIO: 'cabando_portfolio_v3',
@@ -204,6 +213,62 @@ const STORAGE_KEYS = {
 
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Theme state
+  const [theme, setThemeState] = useState<AppTheme>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.THEME) as AppTheme;
+      if (saved === 'light' || saved === 'dark' || saved === 'system') {
+        return saved;
+      }
+    } catch (e) {}
+    return 'system';
+  });
+
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.THEME);
+      if (saved === 'dark') return 'dark';
+      if (saved === 'light') return 'light';
+      return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch (e) {
+      return 'light';
+    }
+  });
+
+  const setTheme = useCallback((newTheme: AppTheme) => {
+    setThemeState(newTheme);
+    try {
+      localStorage.setItem(STORAGE_KEYS.THEME, newTheme);
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const applyTheme = () => {
+      const isDark = theme === 'dark' || (theme === 'system' && mediaQuery.matches);
+      const activeResolved: ResolvedTheme = isDark ? 'dark' : 'light';
+      setResolvedTheme(activeResolved);
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    applyTheme();
+
+    const listener = () => {
+      if (theme === 'system') {
+        applyTheme();
+      }
+    };
+
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
+  }, [theme]);
+
   const [activeView, setActiveView] = useState<AppView>('home');
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>('');
   const [selectedPortfolioProject, setSelectedPortfolioProject] = useState<PortfolioProject | null>(null);
@@ -2262,6 +2327,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider
       value={{
+        theme,
+        setTheme,
+        resolvedTheme,
         activeView,
         setActiveView,
         selectedCommissionId,

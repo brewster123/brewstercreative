@@ -12,7 +12,10 @@ import {
   X, 
   ShieldCheck, 
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
 import { NotificationPanel } from './NotificationPanel';
 import { BrandLogo } from './BrandLogo';
@@ -25,7 +28,9 @@ export const Navbar: React.FC = () => {
     currentUser, 
     logout, 
     notifications,
-    commissions 
+    commissions,
+    theme,
+    setTheme 
   } = useApp();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -108,6 +113,53 @@ export const Navbar: React.FC = () => {
           {/* Right Action Icons & Dashboard Button */}
           <div className="flex items-center gap-2 sm:gap-3">
             
+            {/* Theme Toggle (Light / Dark / System) */}
+            <div 
+              className="flex items-center p-0.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400"
+              role="group"
+              aria-label="Color theme selector"
+            >
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  theme === 'light'
+                    ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs'
+                    : 'hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+                title="Light mode"
+                aria-label="Light mode"
+              >
+                <Sun className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  theme === 'dark'
+                    ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs'
+                    : 'hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+                title="Dark mode"
+                aria-label="Dark mode"
+              >
+                <Moon className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('system')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  theme === 'system'
+                    ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs'
+                    : 'hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+                title="System preference"
+                aria-label="System preference"
+              >
+                <Monitor className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             {/* Notification Bell */}
             <div className="relative">
               <button
@@ -290,6 +342,56 @@ export const Navbar: React.FC = () => {
                 <span>{link.label}</span>
               </button>
             ))}
+          </div>
+
+          {/* Mobile Theme Selector */}
+          <div className="pt-2 flex items-center justify-between px-3.5 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80">
+            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Theme</span>
+            <div 
+              className="flex items-center p-0.5 rounded-lg bg-zinc-200/60 dark:bg-zinc-900 border border-zinc-300/60 dark:border-zinc-700 text-zinc-500"
+              role="group"
+              aria-label="Mobile theme selector"
+            >
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  theme === 'light'
+                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-2xs'
+                    : 'hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+                title="Light mode"
+                aria-label="Light mode"
+              >
+                <Sun className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  theme === 'dark'
+                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-2xs'
+                    : 'hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+                title="Dark mode"
+                aria-label="Dark mode"
+              >
+                <Moon className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('system')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  theme === 'system'
+                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-2xs'
+                    : 'hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+                title="System preference"
+                aria-label="System preference"
+              >
+                <Monitor className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           <div className="pt-3 border-t border-zinc-100 flex flex-col gap-2">

@@ -19,7 +19,7 @@ export const initCustomFont = async () => {
       await font.load();
       document.fonts.add(font);
       document.documentElement.style.setProperty('--font-sans', `"${FONT_FAMILY_NAME}", "Plus Jakarta Sans", sans-serif`);
-      document.documentElement.style.setProperty('--font-display', `"${FONT_FAMILY_NAME}", "Syne", sans-serif`);
+      document.documentElement.style.setProperty('--font-display', `"${FONT_FAMILY_NAME}", "Plus Jakarta Sans", sans-serif`);
     }
   } catch (err) {
     console.warn('Could not rehydrate custom font from storage', err);
@@ -45,7 +45,7 @@ export const loadCustomFontFile = async (file: File): Promise<boolean> => {
     }
     
     document.documentElement.style.setProperty('--font-sans', `"${FONT_FAMILY_NAME}", "Plus Jakarta Sans", sans-serif`);
-    document.documentElement.style.setProperty('--font-display', `"${FONT_FAMILY_NAME}", "Syne", sans-serif`);
+    document.documentElement.style.setProperty('--font-display', `"${FONT_FAMILY_NAME}", "Plus Jakarta Sans", sans-serif`);
     return true;
   } catch (err) {
     console.error('Failed to load custom font file', err);

@@ -1,88 +1,281 @@
 @import "tailwindcss";
 
-/* Dedicated Metric Spacer: Guarantees balanced space & dash metrics even if a demo font has broken/zero advance widths */
-@font-face {
-  font-family: 'PrimeformSpacer';
-  src: local('Outfit'), local('Plus Jakarta Sans'), local('Inter'), local('Arial');
-  unicode-range: U+0020, U+00A0, U+2000-U+200B, U+2010-U+2015;
+:root {
+  /* Brewster Creative Theme Tokens — Light Mode */
+  --bg-canvas: #FAF9F6;
+  --bg-surface: #FFFFFF;
+  --bg-surface-secondary: #F4F2ED;
+  --text-primary: #18181B;
+  --text-muted: #71717A;
+  --border-subtle: #E4E2DC;
+  --accent: #EA580C;
+  --accent-hover: #D94814;
+
+  /* Semantic - Light */
+  --color-success-text: #047857;
+  --color-success-bg: #ECFDF5;
+  --color-success-border: #A7F3D0;
+
+  --color-warning-text: #B45309;
+  --color-warning-bg: #FFFBEB;
+  --color-warning-border: #FDE68A;
+
+  --color-error-text: #B91C1C;
+  --color-error-bg: #FFF1F2;
+  --color-error-border: #FECDD3;
 }
 
-@font-face {
-  font-family: 'Primeform Pro Demo';
-  src: local('Primeform Pro Demo'),
-       local('Primeform Pro Demo Regular'),
-       local('Primeform Pro'),
-       local('PrimeformProDemo-Regular'),
-       local('PrimeformPro-Regular'),
-       local('PrimeformProDemo'),
-       local('PrimeformPro'),
-       url('/fonts/PrimeformProDemo-Regular.woff2') format('woff2'),
-       url('/fonts/PrimeformProDemo-Regular.woff') format('woff'),
-       url('/fonts/PrimeformProDemo-Regular.otf') format('opentype'),
-       url('/fonts/PrimeformProDemo-Regular.ttf') format('truetype'),
-       url('/fonts/PrimeformProDemo.otf') format('opentype'),
-       url('/fonts/PrimeformProDemo.ttf') format('truetype');
-  font-weight: 300 500;
-  font-style: normal;
-  font-display: swap;
-}
+.dark {
+  color-scheme: dark;
 
-@font-face {
-  font-family: 'Primeform Pro Demo';
-  src: local('Primeform Pro Demo Bold'),
-       local('Primeform Pro Demo Heavy'),
-       local('Primeform Pro Bold'),
-       local('PrimeformProDemo-Bold'),
-       local('PrimeformProDemo-Heavy'),
-       local('PrimeformPro-Bold'),
-       url('/fonts/PrimeformProDemo-Bold.woff2') format('woff2'),
-       url('/fonts/PrimeformProDemo-Bold.woff') format('woff'),
-       url('/fonts/PrimeformProDemo-Bold.otf') format('opentype'),
-       url('/fonts/PrimeformProDemo-Bold.ttf') format('truetype');
-  font-weight: 600 900;
-  font-style: normal;
-  font-display: swap;
+  /* Brewster Creative Theme Tokens — Dark Mode */
+  --bg-canvas: #111111;
+  --bg-surface: #181818;
+  --bg-surface-secondary: #222222;
+  --text-primary: #F5F5F0;
+  --text-muted: #A1A1AA;
+  --border-subtle: #2F2F2F;
+  --accent: #EA580C;
+  --accent-hover: #D94814;
+
+  /* Semantic - Dark */
+  --color-success-text: #34D399;
+  --color-success-bg: #064E3B;
+  --color-success-border: #065F46;
+
+  --color-warning-text: #FBBF24;
+  --color-warning-bg: #78350F;
+  --color-warning-border: #92400E;
+
+  --color-error-text: #F87171;
+  --color-error-bg: #4C0519;
+  --color-error-border: #9F1239;
 }
 
 @theme {
-  --font-sans: 'PrimeformSpacer', 'Primeform Pro Demo', 'Primeform Pro', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-display: 'PrimeformSpacer', 'Primeform Pro Demo', 'Primeform Pro', 'Syne', 'Plus Jakarta Sans', sans-serif;
-  --font-mono: 'Space Mono', monospace;
+  /* Permanent Single Typography Standard: Plus Jakarta Sans */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* UI-1A Editorial Palette Tokens */
-  --color-canvas: #FAF9F6;
-  --color-surface: #FFFFFF;
-  --color-surface-muted: #F4F2ED;
-  --color-carbon: #18181B;
-  --color-graphite: #71717A;
-  --color-hairline: #E4E2DC;
+  /* Centralized Theme Palette Tokens */
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-surface-muted: var(--bg-surface-secondary);
+  --color-carbon: var(--text-primary);
+  --color-graphite: var(--text-muted);
+  --color-hairline: var(--border-subtle);
   --color-terracotta: #EA580C;
   --color-terracotta-dark: #D94814;
 }
 
 @layer base {
   body {
-    font-family: 'PrimeformSpacer', 'Primeform Pro Demo', 'Primeform Pro', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background-color: #FAF9F6;
-    color: #18181B;
-    word-spacing: 0.08em;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   h1, h2, h3, h4, h5, h6, .font-display {
-    font-family: 'PrimeformSpacer', 'Primeform Pro Demo', 'Primeform Pro', 'Syne', 'Plus Jakarta Sans', sans-serif;
-    word-spacing: 0.12em;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    word-spacing: normal;
     letter-spacing: -0.02em;
   }
 
-  .font-mono-code {
-    font-family: 'Space Mono', monospace;
+  .font-mono, .font-mono-code {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: 0.02em;
+  }
+
+  /* Form controls theme integration */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="submit"]):not([type="button"]),
+  textarea,
+  select {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
 }
 
-/* Subtle studio noise texture for light & dark bento elements */
+/* ==========================================================================
+   Dark Mode Surface & UI Overrides
+   Surrounding UI adapts cleanly; artwork remains 100% natural and unfiltered.
+   ========================================================================== */
+
+.dark body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+}
+
+/* Surfaces */
+.dark .bg-white,
+.dark .bg-\[\#ffffff\],
+.dark .bg-\[\#FFFFFF\] {
+  background-color: var(--bg-surface) !important;
+}
+
+.dark .bg-\[\#FAF9F6\],
+.dark .bg-\[\#faf9f6\] {
+  background-color: var(--bg-canvas) !important;
+}
+
+.dark .bg-\[\#FAF9F6\]\/90,
+.dark .bg-\[\#faf9f6\]\/90 {
+  background-color: rgba(17, 17, 17, 0.9) !important;
+}
+
+.dark .bg-\[\#F4F2ED\],
+.dark .bg-\[\#f4f2ed\] {
+  background-color: var(--bg-surface-secondary) !important;
+}
+
+.dark .bg-zinc-50,
+.dark .bg-zinc-50\/70,
+.dark .bg-zinc-50\/80 {
+  background-color: var(--bg-surface-secondary) !important;
+}
+
+.dark .bg-zinc-100 {
+  background-color: #222222 !important;
+}
+
+.dark .bg-zinc-100\/90 {
+  background-color: rgba(34, 34, 34, 0.9) !important;
+}
+
+.dark .bg-zinc-200 {
+  background-color: #2A2A2A !important;
+}
+
+/* Borders */
+.dark .border-\[\#E4E2DC\],
+.dark .border-\[\#e4e2dc\],
+.dark .border-\[\#E5E5E5\],
+.dark .border-\[\#e5e5e5\],
+.dark .border-zinc-200,
+.dark .border-zinc-200\/90,
+.dark .border-zinc-200\/80,
+.dark .border-zinc-200\/70,
+.dark .border-zinc-200\/60,
+.dark .border-zinc-100 {
+  border-color: var(--border-subtle) !important;
+}
+
+/* Text Colors */
+.dark .text-\[\#18181B\],
+.dark .text-\[\#18181b\],
+.dark .text-zinc-900,
+.dark .text-zinc-800 {
+  color: var(--text-primary) !important;
+}
+
+.dark .text-\[\#71717A\],
+.dark .text-\[\#71717a\],
+.dark .text-zinc-700,
+.dark .text-zinc-600,
+.dark .text-zinc-500 {
+  color: var(--text-muted) !important;
+}
+
+.dark .text-zinc-400 {
+  color: #71717A !important;
+}
+
+/* Dark mode inputs, textareas, selects */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="submit"]):not([type="button"]):not(.bg-orange-500),
+.dark textarea,
+.dark select {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #71717A !important;
+}
+
+/* Dark buttons in dark mode */
+.dark .bg-zinc-900:not(.bg-orange-500):not(.bg-emerald-600):not(.bg-rose-600),
+.dark .bg-zinc-950:not(.bg-orange-500):not(.bg-emerald-600):not(.bg-rose-600),
+.dark .bg-\[\#18181B\]:not(.bg-orange-500) {
+  background-color: #27272A !important;
+  color: #F5F5F0 !important;
+}
+
+.dark .bg-zinc-900:hover,
+.dark .bg-zinc-950:hover,
+.dark .bg-\[\#18181B\]:hover {
+  background-color: #3F3F46 !important;
+}
+
+/* Brand logo fill in dark mode */
+.dark #brand-official-logo g {
+  fill: #F5F5F0 !important;
+}
+
+/* Semantic Badges & Notifications in Dark Mode */
+.dark .bg-emerald-50,
+.dark .bg-emerald-50\/80,
+.dark .bg-emerald-50\/70 {
+  background-color: rgba(6, 78, 59, 0.4) !important;
+  border-color: #065F46 !important;
+}
+.dark .text-emerald-700,
+.dark .text-emerald-800,
+.dark .text-emerald-900 {
+  color: #34D399 !important;
+}
+
+.dark .bg-amber-50,
+.dark .bg-amber-50\/80,
+.dark .bg-amber-50\/70 {
+  background-color: rgba(120, 53, 15, 0.4) !important;
+  border-color: #92400E !important;
+}
+.dark .text-amber-700,
+.dark .text-amber-800,
+.dark .text-amber-900 {
+  color: #FBBF24 !important;
+}
+
+.dark .bg-rose-50,
+.dark .bg-rose-50\/80,
+.dark .bg-rose-50\/60 {
+  background-color: rgba(76, 5, 25, 0.4) !important;
+  border-color: #9F1239 !important;
+}
+.dark .text-rose-700,
+.dark .text-rose-800,
+.dark .text-rose-900 {
+  color: #F87171 !important;
+}
+
+.dark .bg-orange-50,
+.dark .bg-orange-50\/70 {
+  background-color: rgba(234, 88, 12, 0.15) !important;
+  border-color: rgba(234, 88, 12, 0.3) !important;
+}
+.dark .text-orange-700,
+.dark .text-orange-800 {
+  color: #FB923C !important;
+}
+
+.dark .bg-blue-50 {
+  background-color: rgba(30, 58, 138, 0.4) !important;
+  border-color: #1E40AF !important;
+}
+.dark .text-blue-700 {
+  color: #60A5FA !important;
+}
+
+/* Noise & Grid textures */
 .bg-noise {
   background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0);
   background-size: 24px 24px;
+}
+
+.dark .bg-noise {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0);
 }
 
 .bg-grid-pattern {
@@ -92,6 +285,12 @@
   background-size: 36px 36px;
 }
 
+.dark .bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
@@ -99,14 +298,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f4f4f5;
+  background: var(--bg-surface-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d4d4d8;
+  background: var(--border-subtle);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1aa;
+  background: var(--text-muted);
 }

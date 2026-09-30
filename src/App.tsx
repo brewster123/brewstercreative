@@ -192,7 +192,7 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F8F8] text-zinc-900 selection:bg-orange-500 selection:text-white font-sans antialiased relative">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative">
       {/* Database Notice Banner */}
       <DatabaseErrorBanner />
 

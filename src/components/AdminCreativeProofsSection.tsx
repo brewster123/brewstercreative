@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useApp } from '../context/AppContext';
 import { 
   Commission, 
   CommissionProof, 
@@ -40,6 +41,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
   currentUser,
   onProofUploaded,
 }) => {
+  const { dispatchNotification } = useApp();
   const [proofs, setProofs] = useState<CommissionProof[]>([]);
   const [isLoadingProofs, setIsLoadingProofs] = useState<boolean>(true);
   const [proofsError, setProofsError] = useState<string | null>(null);
@@ -204,6 +206,18 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
 
         if (onProofUploaded) {
           onProofUploaded(newProof);
+        }
+
+        // Notify client that a new creative proof is ready for review
+        if (commission.clientId) {
+          dispatchNotification({
+            recipientId: commission.clientId,
+            type: 'proof_review',
+            title: 'Creative Proof Ready',
+            message: `Creative proof (Version ${newProof.version}) for "${commission.projectName}" is ready for your review.`,
+            commissionId: commission.id,
+            linkTab: 'review',
+          });
         }
       }
     } catch (err: any) {

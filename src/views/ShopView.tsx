@@ -62,9 +62,9 @@ export const ShopView: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-14">
       
-      {/* Shop Header */}
+      {/* Shop Header & Introduction */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code uppercase tracking-wider font-bold border border-orange-200 shadow-2xs">
           <ShoppingBag className="w-3.5 h-3.5" />
@@ -76,103 +76,83 @@ export const ShopView: React.FC = () => {
         </h1>
 
         <p className="text-sm sm:text-base text-zinc-500 leading-relaxed font-medium">
-          Curated physical merchandise, digital design assets, branding kits, typography, and original artwork crafted with obsessive detail by {studioProfile.designerName}.
+          A curated collection of digital design assets, branding kits, typography, prints, and studio goods crafted with obsessive detail by {studioProfile.designerName}.
         </p>
-      </div>
 
-      {/* Category Navigation Pills (Phase 4A.2 Functional Categories) */}
-      <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar pb-2">
-        {SHOP_CATEGORIES.map((cat) => {
-          const isSelected = selectedShopCategory === cat.name;
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setSelectedShopCategory(cat.name)}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
-                isSelected
-                  ? 'bg-zinc-900 text-white shadow-xs'
-                  : 'bg-white text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 border border-zinc-200'
-              }`}
-            >
-              {cat.name}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Primary Storefront Announcement & Feature Bento */}
-      <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-10 shadow-xs relative overflow-hidden space-y-8">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-zinc-200/80">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
-              <span className="text-xs font-mono-code text-orange-600 font-bold uppercase tracking-wider">
-                Store Catalog In Preparation
+        {/* Storefront Preparation Notice Strip */}
+        <div className="mt-4 p-4 rounded-2xl bg-zinc-50 border border-zinc-200/90 text-left flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0 mt-1 sm:mt-0" />
+            <p className="text-zinc-600 leading-relaxed font-medium">
+              <span className="font-bold text-zinc-900 font-mono-code uppercase tracking-wider text-[11px] block sm:inline sm:mr-1.5">
+                Catalog In Preparation:
               </span>
-            </div>
-            <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
-              Curated Physical & Digital Creative Assets
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed font-medium">
-              We are assembling a curated catalog of physical and digital creative assets. Direct ordering, checkout, and delivery will be enabled when individual products officially launch.
+              Direct purchasing will be enabled upon official storefront launch. In the meantime, all assets can be commissioned as custom variants.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
             <button
               type="button"
               onClick={() => setActiveView('commission-form')}
-              className="px-5 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-xs sm:text-sm shadow-sm shadow-orange-500/20 flex items-center gap-2 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Send className="w-4 h-4" />
-              <span>Request Custom Commission</span>
+              <Send className="w-3.5 h-3.5" />
+              <span>Custom Work</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveView('portfolio')}
-              className="px-5 py-3 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold text-xs sm:text-sm border border-zinc-200 flex items-center gap-2 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-bold text-xs border border-zinc-200 shadow-2xs flex items-center gap-1 transition-colors cursor-pointer"
             >
-              <span>Explore Portfolio</span>
-              <ArrowRight className="w-4 h-4 text-zinc-500" />
+              <span>Portfolio</span>
+              <ArrowRight className="w-3 h-3 text-zinc-400" />
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Studio Shop Quality Highlights Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {shopHighlights.map((highlight, idx) => {
-            const Icon = highlight.icon;
+      {/* Catalog Section with Category Navigation Directly Above Products */}
+      <div className="space-y-6">
+        {/* Category Navigation Bar */}
+        <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          {SHOP_CATEGORIES.map((cat) => {
+            const isSelected = selectedShopCategory === cat.name;
+            const count = cat.name === 'All' 
+              ? SHOP_PRODUCTS.length 
+              : SHOP_PRODUCTS.filter(p => p.category === cat.name).length;
+
             return (
-              <div 
-                key={idx}
-                className="p-5 rounded-2xl bg-zinc-50/80 border border-zinc-200/80 space-y-2.5 transition-all hover:bg-zinc-50 hover:border-zinc-300"
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedShopCategory(cat.name)}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
+                  isSelected
+                    ? 'bg-zinc-900 text-white shadow-xs'
+                    : 'bg-white text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 border border-zinc-200'
+                }`}
               >
-                <div className="w-10 h-10 rounded-xl bg-white border border-zinc-200 flex items-center justify-center text-orange-500 shadow-2xs">
-                  <Icon className="w-5 h-5" />
-                </div>
-                <h3 className="font-display text-sm font-bold text-zinc-900">
-                  {highlight.title}
-                </h3>
-                <p className="text-xs text-zinc-500 leading-relaxed font-medium">
-                  {highlight.desc}
-                </p>
-              </div>
+                <span>{cat.name}</span>
+                <span className={`text-[10px] font-mono-code font-bold px-1.5 py-0.2 rounded-md ${
+                  isSelected ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-100 text-zinc-500'
+                }`}>
+                  {count}
+                </span>
+              </button>
             );
           })}
         </div>
-      </div>
 
-      {/* Catalog Releases Grid with Category Filtering & Empty States */}
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        {/* Category Header Info */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2">
           <div>
             <div className="flex items-center gap-2.5">
-              <h3 className="font-display text-lg sm:text-xl font-bold text-zinc-900">
-                {selectedShopCategory === 'All' ? 'Upcoming Studio Releases' : `${selectedShopCategory} Releases`}
-              </h3>
+              <h2 className="font-display text-lg sm:text-xl font-bold text-zinc-900">
+                {selectedShopCategory === 'All' ? 'Curated Studio Releases' : `${selectedShopCategory} Releases`}
+              </h2>
               <span className="text-[11px] font-mono-code font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">
-                {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}
+                {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
               </span>
             </div>
             <p className="text-xs text-zinc-500 font-medium mt-0.5">
@@ -180,12 +160,13 @@ export const ShopView: React.FC = () => {
             </p>
           </div>
           <span className="text-xs font-mono-code text-zinc-400 bg-white px-3 py-1 rounded-full border border-zinc-200 font-bold self-start sm:self-auto">
-            Curated Collection
+            Studio Collection
           </span>
         </div>
 
+        {/* Product Cards Grid or Empty State */}
         {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProducts.map((product) => (
               <ShopProductCard 
                 key={product.id}
@@ -195,7 +176,7 @@ export const ShopView: React.FC = () => {
             ))}
           </div>
         ) : (
-          /* Empty State for Categories in Production (e.g. Typography, Digital Mockups) */
+          /* Empty State for In-Production Categories (e.g. Typography, Digital Mockups) */
           <div className="bg-white border border-dashed border-zinc-300 rounded-[28px] p-8 sm:p-14 text-center space-y-5 max-w-xl mx-auto shadow-2xs">
             <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto shadow-2xs">
               {selectedShopCategory === 'Typography' ? (
@@ -212,11 +193,11 @@ export const ShopView: React.FC = () => {
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
                 <span>In Studio Production</span>
               </div>
-              <h4 className="font-display font-bold text-xl sm:text-2xl text-zinc-900">
-                New {selectedShopCategory} Products Coming Soon
-              </h4>
+              <h3 className="font-display font-bold text-xl sm:text-2xl text-zinc-900">
+                New {selectedShopCategory} Releases Coming Soon
+              </h3>
               <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed font-medium">
-                New {selectedShopCategory} releases are currently in production. Check back soon for the official catalog release.
+                New {selectedShopCategory} assets are currently being crafted in the studio. Direct ordering and downloads will activate upon catalog release.
               </p>
             </div>
 
@@ -242,19 +223,56 @@ export const ShopView: React.FC = () => {
         )}
       </div>
 
+      {/* Studio Production Standards & Quality Highlights */}
+      <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-10 shadow-xs space-y-6">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <span className="text-xs font-mono-code text-orange-600 uppercase tracking-wider font-bold">
+            Studio Production Standards
+          </span>
+          <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
+            Crafted for Professional Workflows
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed font-medium">
+            Every digital asset and physical print release is calibrated to the rigorous aesthetic and technical standards of Brewster Creative.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-2">
+          {shopHighlights.map((highlight, idx) => {
+            const Icon = highlight.icon;
+            return (
+              <div 
+                key={idx}
+                className="p-5 rounded-2xl bg-zinc-50/80 border border-zinc-200/80 space-y-2.5 transition-all hover:bg-zinc-50 hover:border-zinc-300"
+              >
+                <div className="w-10 h-10 rounded-xl bg-white border border-zinc-200 flex items-center justify-center text-orange-500 shadow-2xs">
+                  <Icon className="w-5 h-5" />
+                </div>
+                <h3 className="font-display text-sm font-bold text-zinc-900">
+                  {highlight.title}
+                </h3>
+                <p className="text-xs text-zinc-500 leading-relaxed font-medium">
+                  {highlight.desc}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Commission Bridge Banner */}
       <div className="bg-zinc-950 text-white rounded-[32px] p-8 sm:p-12 relative overflow-hidden shadow-md">
         <div className="absolute -right-10 -bottom-10 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="max-w-2xl space-y-4 relative z-10">
           <span className="px-3 py-1 rounded-full bg-zinc-800 text-orange-400 text-xs font-mono-code font-bold uppercase tracking-wider inline-flex items-center gap-1.5 border border-zinc-700">
             <Sparkles className="w-3.5 h-3.5" />
-            Custom Commission Service
+            Bespoke Creative Commissions
           </span>
-          <h3 className="font-display text-2xl sm:text-3xl font-black tracking-tight">
+          <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight">
             Need a custom design crafted exclusively for your brand?
-          </h3>
+          </h2>
           <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed font-medium">
-            While standard templates are ideal for quick turnarounds, Brewster Creative specializes in one-of-a-kind bespoke visual identities, logo marks, and multimedia campaigns with interactive client proof review.
+            While studio templates offer immediate inspiration and structure, Brewster Creative specializes in one-of-a-kind bespoke visual identities, logo marks, and multimedia campaigns with interactive milestone reviews.
           </p>
           <div className="pt-2">
             <button

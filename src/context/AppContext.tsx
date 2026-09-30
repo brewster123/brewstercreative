@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import {
   User,
   UserRole,
@@ -35,9 +35,38 @@ import {
   fetchCommissionsFromSupabase,
   updateCommissionStatusInSupabase,
   updateCommissionPriorityInSupabase,
+  updateCommissionPaymentInSupabase,
+  requestCommissionRevisionInSupabase,
+  subscribeToCommissionsChange,
+  mapDbCommissionToAppCommission,
   getStageAndProgressFromStatus,
   getLifecycleFromStage,
 } from '../data/commissionsData';
+import {
+  fetchCommissionMessages,
+  sendCommissionMessageToSupabase,
+  subscribeToCommissionMessages,
+} from '../lib/messages';
+import {
+  fetchUserNotifications,
+  createNotificationInDb,
+  markNotificationReadInDb,
+  markAllNotificationsReadInDb,
+  subscribeToUserNotifications,
+  resolveAdminUserId,
+} from '../lib/notifications';
+import { NotificationType } from '../types';
+import {
+  fetchStudioProfileFromDb,
+  upsertStudioProfileInDb,
+  fetchServicesFromDb,
+  upsertServiceInDb,
+  deleteServiceFromDb,
+  fetchPortfolioProjectsFromDb,
+  upsertPortfolioProjectInDb,
+  deletePortfolioProjectFromDb,
+  subscribeToPublicContentChanges,
+} from '../lib/studioContent';
 
 export type AppView = 
   | 'home'
@@ -116,34 +145,46 @@ interface AppContextType {
   updateCommissionStatus: (commissionId: string, status: CommissionStatus) => Promise<{ success: boolean; error?: string }>;
   updateCommissionPriority: (commissionId: string, priority: CommissionPriority) => Promise<{ success: boolean; error?: string }>;
   updateCommissionDetails: (commissionId: string, updates: Partial<Commission>) => void;
-  updatePaymentStatus: (commissionId: string, status: 'Unpaid' | 'Partial' | 'Paid') => void;
+  updatePaymentStatus: (commissionId: string, status: 'Unpaid' | 'Partial' | 'Paid') => Promise<{ success: boolean; error?: string }> | void;
   acceptCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
   declineCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
-  submitClientReviewAction: (commissionId: string, action: 'approve' | 'revision', feedback?: string) => void;
+  submitClientReviewAction: (commissionId: string, action: 'approve' | 'revision', feedback?: string) => Promise<{ success: boolean; error?: string }> | void;
   deliverFinalFiles: (commissionId: string, finalPackage: FinalFilesPackage) => void;
   uploadDesignForReview: (commissionId: string, previewImages: string[], reviewNotes: string) => void;
   uploadDesignReviewDraft: (commissionId: string, previewImages: string[], reviewNotes: string) => void;
   
   // Messaging
-  sendMessage: (commissionId: string, text: string, attachment?: MessageAttachment) => void;
+  sendMessage: (commissionId: string, text: string, attachment?: MessageAttachment) => Promise<{ success: boolean; error?: string; message?: Message }>;
+  fetchMessagesForCommission: (commissionId: string) => Promise<{ data: Message[] | null; error: string | null }>;
   markMessagesAsRead: (commissionId: string) => void;
   
   // Files
   uploadProjectFile: (file: Omit<ProjectFile, 'id' | 'timestamp'>) => void;
   
   // Notifications
-  markNotificationAsRead: (id: string) => void;
-  markAllNotificationsAsRead: () => void;
+  markNotificationAsRead: (id: string) => Promise<void>;
+  markAllNotificationsAsRead: () => Promise<void>;
+  fetchNotifications: () => Promise<void>;
+  dispatchNotification: (params: {
+    recipientId: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    commissionId?: string;
+    linkTab?: string;
+  }) => Promise<void>;
+  activeDashboardTab: string;
+  setActiveDashboardTab: (tab: string) => void;
   
-  // Studio & Settings
-  updateStudioProfile: (updates: Partial<StudioProfile>) => void;
-  updateServicePrice: (serviceId: string, newPrice: number) => void;
-  addServiceItem: (service: ServiceItem) => void;
-  updateServiceItem: (serviceId: string, updates: Partial<ServiceItem>) => void;
-  deleteServiceItem: (serviceId: string) => void;
-  addPortfolioProject: (project: PortfolioProject) => void;
-  updatePortfolioProject: (projectId: string, updates: Partial<PortfolioProject>) => void;
-  deletePortfolioProject: (projectId: string) => void;
+  // Studio & Settings (Phase 5D Persistent Studio Content)
+  updateStudioProfile: (updates: Partial<StudioProfile>) => Promise<{ success: boolean; error?: string }>;
+  updateServicePrice: (serviceId: string, newPrice: number) => Promise<{ success: boolean; error?: string }>;
+  addServiceItem: (service: ServiceItem) => Promise<{ success: boolean; error?: string }>;
+  updateServiceItem: (serviceId: string, updates: Partial<ServiceItem>) => Promise<{ success: boolean; error?: string }>;
+  deleteServiceItem: (serviceId: string) => Promise<{ success: boolean; error?: string }>;
+  addPortfolioProject: (project: PortfolioProject) => Promise<{ success: boolean; error?: string }>;
+  updatePortfolioProject: (projectId: string, updates: Partial<PortfolioProject>) => Promise<{ success: boolean; error?: string }>;
+  deletePortfolioProject: (projectId: string) => Promise<{ success: boolean; error?: string }>;
   resetAllData: () => void;
 }
 
@@ -193,10 +234,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const parsed: ServiceItem[] = JSON.parse(saved);
         return parsed.map((s) => {
           const init = INITIAL_SERVICES.find((is) => is.id === s.id);
+          const sanitizedDeliverables = (s.deliverables || []).map((d) =>
+            typeof d === 'string' && /commercial.*license/i.test(d) ? 'Presentation-ready files' : d
+          );
+          const item = { ...s, deliverables: sanitizedDeliverables };
           if (init?.relatedShopProductIds && !s.relatedShopProductIds) {
-            return { ...s, relatedShopProductIds: init.relatedShopProductIds };
+            item.relatedShopProductIds = init.relatedShopProductIds;
           }
-          return s;
+          return item;
         });
       } catch (e) {
         return INITIAL_SERVICES;
@@ -319,18 +364,99 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-    if (!saved) return INITIAL_NOTIFICATIONS;
-    try {
-      const parsed: AppNotification[] = JSON.parse(saved);
-      return parsed.filter(n => !n.commissionId || !LEGACY_DEMO_COMMISSION_IDS.has(n.commissionId));
-    } catch (e) {
-      return INITIAL_NOTIFICATIONS;
-    }
-  });
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [activeDashboardTab, setActiveDashboardTab] = useState<string>('overview');
 
-  // Sync to LocalStorage
+  // Supabase Notification Persistence & Realtime Subscription
+  const fetchNotifications = useCallback(async () => {
+    if (!currentUser?.id || !isSupabaseConfigured()) return;
+    const { data, error } = await fetchUserNotifications(currentUser.id);
+    if (!error && data) {
+      setNotifications(data);
+    }
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!currentUser?.id || !isSupabaseConfigured()) {
+      // Clear notifications if logged out
+      if (!currentUser) setNotifications([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    fetchUserNotifications(currentUser.id).then(({ data, error }) => {
+      if (!error && data && isMounted) {
+        setNotifications(data);
+      }
+    });
+
+    const unsubscribe = subscribeToUserNotifications(currentUser.id, (newNotif) => {
+      if (!isMounted) return;
+      setNotifications(prev => {
+        if (prev.some(n => n.id === newNotif.id)) return prev;
+        return [newNotif, ...prev];
+      });
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [currentUser?.id]);
+
+  // Phase 5D: Mount query to hydrate Studio Profile, Services, and Portfolio from Supabase
+  useEffect(() => {
+    let isMounted = true;
+    if (!isSupabaseConfigured()) return;
+
+    // 1. Fetch Studio Profile
+    fetchStudioProfileFromDb().then(({ data, error }) => {
+      if (!error && data && isMounted) {
+        setStudioProfile(data);
+      }
+    });
+
+    // 2. Fetch Services
+    fetchServicesFromDb().then(({ data, error }) => {
+      if (!error && data && data.length > 0 && isMounted) {
+        setServices(data);
+      }
+    });
+
+    // 3. Fetch Portfolio Projects
+    fetchPortfolioProjectsFromDb().then(({ data, error }) => {
+      if (!error && data && data.length > 0 && isMounted) {
+        setPortfolio(data);
+      }
+    });
+
+    // Realtime changes listener for public content
+    const unsubscribe = subscribeToPublicContentChanges({
+      onProfileChanged: () => {
+        fetchStudioProfileFromDb().then(({ data }) => {
+          if (data && isMounted) setStudioProfile(data);
+        });
+      },
+      onServicesChanged: () => {
+        fetchServicesFromDb().then(({ data }) => {
+          if (data && isMounted) setServices(data);
+        });
+      },
+      onPortfolioChanged: () => {
+        fetchPortfolioProjectsFromDb().then(({ data }) => {
+          if (data && isMounted) setPortfolio(data);
+        });
+      },
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  // Sync to LocalStorage (acting as offline cache fallback)
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(studioProfile));
   }, [studioProfile]);
@@ -362,10 +488,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.FILES, JSON.stringify(projectFiles));
   }, [projectFiles]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
-  }, [notifications]);
 
   // Keep track of pending profile fetches to deduplicate concurrent requests for the same user ID (e.g. on mount race conditions)
   const pendingProfileFetches = useRef<Map<string, Promise<{ profile: User | null; error?: string; rawError?: any }>>>(new Map());
@@ -687,6 +809,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (currentUser && isSupabaseConfigured()) {
       refreshCommissions();
+
+      // Phase 5E-1: Centralized Realtime subscription for public.commissions
+      const unsubscribe = subscribeToCommissionsChange({
+        onInsert: (row) => {
+          // If admin, or if the inserted commission belongs to current authenticated client
+          if (currentUser.role === 'admin' || row.client_id === currentUser.id) {
+            const mapped = mapDbCommissionToAppCommission(row, currentUser);
+            setCommissions(prev => {
+              if (prev.some(c => c.id === mapped.id)) return prev;
+              return [mapped, ...prev];
+            });
+          }
+        },
+        onUpdate: (row) => {
+          if (currentUser.role === 'admin' || row.client_id === currentUser.id) {
+            setCommissions(prev => {
+              const existing = prev.find(c => c.id === row.id);
+              const mapped = mapDbCommissionToAppCommission(row, existing ? {
+                id: existing.clientId,
+                name: existing.clientName,
+                email: existing.clientEmail,
+                avatar: existing.clientAvatar,
+                handle: existing.clientHandle,
+                contactMethod: existing.contactMethod,
+                role: 'client',
+              } : currentUser);
+
+              // Preserve clientReviewData, timelineUpdates, and proofs from existing state if present
+              const merged: Commission = {
+                ...mapped,
+                clientReviewData: existing?.clientReviewData,
+                timelineUpdates: existing?.timelineUpdates,
+                proofs: existing?.proofs,
+                finalFiles: existing?.finalFiles,
+              };
+
+              if (!existing) {
+                return [merged, ...prev];
+              }
+              return prev.map(c => (c.id === row.id ? merged : c));
+            });
+          }
+        },
+        onDelete: (id) => {
+          setCommissions(prev => prev.filter(c => c.id !== id));
+        },
+      });
+
+      return () => {
+        unsubscribe();
+      };
     }
   }, [currentUser?.id, currentUser?.role]);
 
@@ -1148,18 +1321,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setMessages(prev => [...prev, welcomeMsg]);
 
-    // Notification for client
-    const newNotif: AppNotification = {
-      id: `notif-${Date.now()}`,
-      userId: currentUser.id,
-      commissionId: newCommission.id,
+    // Dispatch persistent notifications for both Client confirmation and Admin intake
+    dispatchNotification({
+      recipientId: currentUser.id,
+      type: 'commission_update',
+      title: 'Commission Request Submitted',
       message: `Your commission request for "${newCommission.projectName}" was successfully submitted!`,
-      type: 'status',
-      readStatus: false,
-      timestamp: todayStr,
+      commissionId: newCommission.id,
       linkTab: 'overview',
-    };
-    setNotifications(prev => [newNotif, ...prev]);
+    });
+
+    resolveAdminUserId().then(adminId => {
+      dispatchNotification({
+        recipientId: adminId,
+        type: 'commission_update',
+        title: 'New Commission Intake',
+        message: `New commission requested: "${newCommission.projectName}" by ${currentUser.name}.`,
+        commissionId: newCommission.id,
+        linkTab: 'overview',
+      });
+    });
 
     return { success: true, commission: newCommission };
   };
@@ -1216,17 +1397,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Notify client
     const targetComm = commissions.find(c => c.id === commissionId);
     if (targetComm) {
-      const newNotif: AppNotification = {
-        id: `notif-${Date.now()}`,
-        userId: targetComm.clientId,
+      const isCompleted = lifecycle.stage === 8;
+      dispatchNotification({
+        recipientId: targetComm.clientId,
+        type: isCompleted ? 'commission_completed' : 'commission_update',
+        title: isCompleted ? 'Commission Completed' : 'Commission Update',
+        message: isCompleted
+          ? `Your project "${targetComm.projectName}" has been completed and final deliverables are ready!`
+          : `Your project "${targetComm.projectName}" has moved to ${stageInfo.name}.`,
         commissionId,
-        message: `Your project "${targetComm.projectName}" has moved to ${stageInfo.name}.`,
-        type: lifecycle.stage === 5 || lifecycle.stage === 7 ? 'review' : lifecycle.stage === 8 ? 'delivery' : 'status',
-        readStatus: false,
-        timestamp: todayStr,
-        linkTab: lifecycle.stage === 5 || lifecycle.stage === 7 ? 'review' : lifecycle.stage === 8 ? 'delivery' : 'timeline',
-      };
-      setNotifications(prev => [newNotif, ...prev]);
+        linkTab: (lifecycle.stage === 5 || lifecycle.stage === 7) ? 'review' : (lifecycle.stage === 8 ? 'delivery' : 'timeline'),
+      });
     }
 
     return { success: true };
@@ -1311,13 +1492,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const updatePaymentStatus = (commissionId: string, status: 'Unpaid' | 'Partial' | 'Paid') => {
+  const updatePaymentStatus = async (
+    commissionId: string, 
+    status: 'Unpaid' | 'Partial' | 'Paid'
+  ): Promise<{ success: boolean; error?: string }> => {
+    // 1. Persist payment status update to Supabase public.commissions
+    if (isSupabaseConfigured()) {
+      const res = await updateCommissionPaymentInSupabase(commissionId, status);
+      if (!res.success) {
+        console.error('[AppContext] Failed to update payment status in Supabase:', res.error);
+        return { success: false, error: res.error || 'Failed to update payment status in database.' };
+      }
+    }
+
+    // 2. Update React state and local cache
     const todayStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const depositPaid = status === 'Partial' || status === 'Paid';
+    const totalPaid = status === 'Paid';
+
     setCommissions(prev =>
       prev.map(c => {
         if (c.id === commissionId) {
-          const depositPaid = status === 'Partial' || status === 'Paid';
-          const totalPaid = status === 'Paid';
           return {
             ...c,
             paymentStatus: status,
@@ -1329,6 +1524,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return c;
       })
     );
+
+    return { success: true };
   };
 
   const acceptCommission = async (commissionId: string): Promise<{ success: boolean; error?: string }> => {
@@ -1344,10 +1541,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return await updateCommissionStatus(commissionId, 'cancelled');
   };
 
-  const submitClientReviewAction = (commissionId: string, action: 'approve' | 'revision', feedback?: string) => {
+  const submitClientReviewAction = async (
+    commissionId: string, 
+    action: 'approve' | 'revision', 
+    feedback?: string
+  ): Promise<{ success: boolean; error?: string }> => {
     const todayStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     const comm = commissions.find(c => c.id === commissionId);
-    if (!comm) return;
+    if (!comm) return { success: false, error: 'Commission not found.' };
 
     if (action === 'approve') {
       // Move to Final Approval (Stage 7)
@@ -1405,8 +1606,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           readStatus: false,
         },
       ]);
+
+      // Notify Studio Director of approval
+      resolveAdminUserId().then(adminId => {
+        dispatchNotification({
+          recipientId: adminId,
+          type: 'proof_approved',
+          title: 'Creative Proof Approved',
+          message: `${comm.clientName} approved Creative Proof for "${comm.projectName}". Moving to Final Approval.`,
+          commissionId,
+          linkTab: 'proofs',
+        });
+      });
+
+      return { success: true };
     } else {
-      // Request Revision -> Move to Stage 6 (Revisions)
+      // Phase 5E-1: Request Revision -> Authoritative Supabase RPC FIRST
+      let updatedRevisionsUsed = (comm.revisionsUsed || 0) + 1;
+
+      if (isSupabaseConfigured()) {
+        const rpcRes = await requestCommissionRevisionInSupabase(commissionId, feedback);
+        if (!rpcRes.success) {
+          console.error('[AppContext] Supabase revision request RPC rejected:', rpcRes.error);
+          return {
+            success: false,
+            error: rpcRes.error || 'Failed to request revision in database.',
+          };
+        }
+
+        // Use the atomic revision count returned by the database if present
+        if (rpcRes.data && typeof rpcRes.data.revisions_used === 'number') {
+          updatedRevisionsUsed = rpcRes.data.revisions_used;
+        }
+      }
+
+      // Supabase RPC succeeded -> commit state update locally
       setCommissions(prev =>
         prev.map(c => {
           if (c.id === commissionId) {
@@ -1415,7 +1649,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               currentStage: 6,
               progress: 85,
               status: 'revision',
-              revisionsUsed: (c.revisionsUsed || 0) + 1,
+              revisionsUsed: updatedRevisionsUsed,
               clientReviewData: c.clientReviewData ? {
                 ...c.clientReviewData,
                 clientStatus: 'Revision Requested',
@@ -1429,11 +1663,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })
       );
 
-      // Persist canonical revision status to Supabase
-      updateCommissionStatusInSupabase(commissionId, 'revision').catch(err => {
-        console.error('[AppContext] Failed to persist revision to Supabase:', err);
-      });
-
       // Add timeline
       setTimelineUpdates(prev => [
         ...prev,
@@ -1443,7 +1672,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           stage: 'Revisions',
           stageNumber: 6,
           percentage: 80,
-          note: `Revision #${(comm.revisionsUsed || 0) + 1} requested: ${feedback ? feedback.substring(0, 80) + '...' : 'Client requested adjustments'}`,
+          note: `Revision #${updatedRevisionsUsed} requested: ${feedback ? feedback.substring(0, 80) + '...' : 'Client requested adjustments'}`,
           timestamp: todayStr,
           updatedBy: comm.clientName,
         },
@@ -1464,6 +1693,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           readStatus: false,
         },
       ]);
+
+      // Notify Studio Director of revision request
+      resolveAdminUserId().then(adminId => {
+        dispatchNotification({
+          recipientId: adminId,
+          type: 'proof_revision',
+          title: 'Proof Revision Requested',
+          message: `${comm.clientName} requested revisions on "${comm.projectName}": "${(feedback || 'Client requested adjustments').slice(0, 50)}..."`,
+          commissionId,
+          linkTab: 'proofs',
+        });
+      });
+
+      return { success: true };
     }
   };
 
@@ -1568,6 +1811,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       },
     ]);
 
+    // Notify client of final completion & deliverables
+    const comm = commissions.find(c => c.id === commissionId);
+    if (comm) {
+      dispatchNotification({
+        recipientId: comm.clientId,
+        type: 'commission_completed',
+        title: 'Commission Completed — Final Delivery',
+        message: `All final production files for "${comm.projectName}" have been delivered! Download your deliverables from the Final Delivery tab.`,
+        commissionId,
+        linkTab: 'delivery',
+      });
+    }
+
     // Chat message
     setMessages(prev => [
       ...prev,
@@ -1585,9 +1841,87 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ]);
   };
 
-  const sendMessage = (commissionId: string, text: string, attachment?: MessageAttachment) => {
-    if (!text.trim() && !attachment) return;
+  const fetchMessagesForCommission = async (
+    commissionId: string
+  ): Promise<{ data: Message[] | null; error: string | null }> => {
+    if (!commissionId?.trim()) return { data: [], error: null };
+
+    // If Supabase is configured and a user is signed in, load from Supabase database
+    if (isSupabaseConfigured() && currentUser) {
+      const { data, error } = await fetchCommissionMessages(commissionId, currentUser);
+      if (error) {
+        console.warn('[Supabase Messages] Fetch notice:', error);
+        return { data: null, error };
+      }
+      if (data) {
+        setMessages(prev => {
+          const other = prev.filter(m => m.commissionId !== commissionId);
+          return [...other, ...data];
+        });
+      }
+      return { data, error: null };
+    }
+
+    // Local fallback for offline/development
+    const local = messages.filter(m => m.commissionId === commissionId);
+    return { data: local, error: null };
+  };
+
+  const sendMessage = async (
+    commissionId: string,
+    text: string,
+    attachment?: MessageAttachment
+  ): Promise<{ success: boolean; error?: string; message?: Message }> => {
+    const cleanText = text.trim();
+    if (!cleanText && !attachment) {
+      return { success: false, error: 'Message cannot be empty.' };
+    }
+
     const sender = currentUser || INITIAL_USERS[1];
+    if (!sender) {
+      return { success: false, error: 'You must be signed in to send messages.' };
+    }
+
+    // Real Supabase persistence when user has an active session
+    if (isSupabaseConfigured() && currentUser) {
+      const { data, error } = await sendCommissionMessageToSupabase(commissionId, currentUser, cleanText);
+      if (error || !data) {
+        console.error('[Supabase Messages] Send error:', error);
+        return { success: false, error: error || 'Failed to deliver message to database.' };
+      }
+
+      setMessages(prev => {
+        // Prevent duplicate if realtime also delivered it
+        if (prev.some(m => m.id === data.id)) return prev;
+        return [...prev, data];
+      });
+
+      // Generate persistent in-app notification for recipient
+      const comm = commissions.find(c => c.id === commissionId);
+      if (comm) {
+        const isSenderAdmin = sender.role === 'admin';
+        resolveAdminUserId().then(adminId => {
+          const recipientId = isSenderAdmin ? comm.clientId : adminId;
+          const notifTitle = isSenderAdmin ? 'Message from Brewster Creative' : `New message from ${sender.name}`;
+          const notifMsg = isSenderAdmin
+            ? `${sender.name} sent you a message: "${cleanText.slice(0, 45)}..."`
+            : `New message on "${comm.projectName}": "${cleanText.slice(0, 45)}..."`;
+
+          dispatchNotification({
+            recipientId,
+            type: 'message',
+            title: notifTitle,
+            message: notifMsg,
+            commissionId,
+            linkTab: 'chat',
+          });
+        });
+      }
+
+      return { success: true, message: data };
+    }
+
+    // Local fallback for offline/demo preview
     const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
@@ -1598,36 +1932,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       senderName: sender.name,
       senderRole: sender.role,
       senderAvatar: sender.avatar,
-      message: text,
+      message: cleanText,
+      body: cleanText,
       attachment,
       timestamp: `${todayStr} · ${timeStr}`,
       readStatus: false,
+      createdAt: new Date().toISOString(),
     };
 
     setMessages(prev => [...prev, newMsg]);
 
-    // Generate responsive notification
     const comm = commissions.find(c => c.id === commissionId);
     if (comm) {
-      const recipientId = sender.role === 'admin' ? comm.clientId : 'usr-admin-1';
-      const notifMsg = sender.role === 'admin' 
-        ? `${sender.name} sent you a message: "${text.slice(0, 45)}..."` 
+      const isSenderAdmin = sender.role === 'admin';
+      const recipientId = isSenderAdmin ? comm.clientId : 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69';
+      const notifTitle = isSenderAdmin ? 'Message from Brewster Creative' : `New message from ${sender.name}`;
+      const notifMsg = isSenderAdmin 
+        ? `${sender.name} sent you a message: "${cleanText.slice(0, 45)}..."` 
         : `New message from ${sender.name} on "${comm.projectName}"`;
       
-      setNotifications(prev => [
-        {
-          id: `notif-${Date.now()}`,
-          userId: recipientId,
-          commissionId,
-          message: notifMsg,
-          type: 'message',
-          readStatus: false,
-          timestamp: 'Just now',
-          linkTab: 'chat',
-        },
-        ...prev,
-      ]);
+      dispatchNotification({
+        recipientId,
+        type: 'message',
+        title: notifTitle,
+        message: notifMsg,
+        commissionId,
+        linkTab: 'chat',
+      });
     }
+
+    return { success: true, message: newMsg };
   };
 
   const markMessagesAsRead = (commissionId: string) => {
@@ -1646,12 +1980,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProjectFiles(prev => [newFile, ...prev]);
   };
 
-  const markNotificationAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, readStatus: true } : n)));
+  const markNotificationAsRead = async (id: string) => {
+    setNotifications(prev =>
+      prev.map(n => (n.id === id ? { ...n, readStatus: true, is_read: true } : n))
+    );
+    if (isSupabaseConfigured() && currentUser) {
+      await markNotificationReadInDb(id);
+    }
   };
 
-  const markAllNotificationsAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, readStatus: true })));
+  const markAllNotificationsAsRead = async () => {
+    setNotifications(prev =>
+      prev.map(n => ({ ...n, readStatus: true, is_read: true }))
+    );
+    if (isSupabaseConfigured() && currentUser) {
+      await markAllNotificationsReadInDb(currentUser.id);
+    }
+  };
+
+  const dispatchNotification = async (params: {
+    recipientId: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    commissionId?: string;
+    linkTab?: string;
+  }) => {
+    if (isSupabaseConfigured() && currentUser) {
+      const { data, error } = await createNotificationInDb({
+        recipientId: params.recipientId,
+        type: params.type,
+        title: params.title,
+        message: params.message,
+        commissionId: params.commissionId || null,
+        linkTab: params.linkTab || null,
+      });
+      if (data) {
+        if (params.recipientId === currentUser.id) {
+          setNotifications(prev => {
+            if (prev.some(n => n.id === data.id)) return prev;
+            return [data, ...prev];
+          });
+        }
+        return;
+      }
+      if (error) {
+        console.warn('[Supabase Notifications] Dispatch notice:', error);
+      }
+    }
+
+    // Local fallback for offline/demo preview
+    const newNotif: AppNotification = {
+      id: `notif-${Date.now()}`,
+      userId: params.recipientId,
+      user_id: params.recipientId,
+      recipientId: params.recipientId,
+      recipient_id: params.recipientId,
+      commissionId: params.commissionId,
+      commission_id: params.commissionId,
+      title: params.title,
+      message: params.message,
+      type: params.type,
+      readStatus: false,
+      is_read: false,
+      timestamp: 'Just now',
+      created_at: new Date().toISOString(),
+      linkTab: params.linkTab || 'overview',
+    };
+    setNotifications(prev => [newNotif, ...prev]);
   };
 
   const updateUserProfile = async (userId: string, updates: Partial<User>) => {
@@ -1711,45 +2107,127 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateStudioProfile = (updates: Partial<StudioProfile>) => {
-    setStudioProfile(prev => ({ ...prev, ...updates }));
+  const updateStudioProfile = async (updates: Partial<StudioProfile>): Promise<{ success: boolean; error?: string }> => {
+    const updated = { ...studioProfile, ...updates };
+    setStudioProfile(updated);
+
+    if (isSupabaseConfigured()) {
+      const { error } = await upsertStudioProfileInDb(updated);
+      if (error) {
+        return { success: false, error };
+      }
+    }
+    return { success: true };
   };
 
-  const updateServicePrice = (serviceId: string, newPrice: number) => {
-    setServices(prev =>
-      prev.map(s => (s.id === serviceId ? { ...s, startingPrice: newPrice } : s))
-    );
+  const updateServicePrice = async (serviceId: string, newPrice: number): Promise<{ success: boolean; error?: string }> => {
+    const targetService = services.find(s => s.id === serviceId);
+    if (!targetService) return { success: false, error: 'Service not found.' };
+
+    const updated = { ...targetService, startingPrice: newPrice };
+    setServices(prev => prev.map(s => (s.id === serviceId ? updated : s)));
+
+    if (isSupabaseConfigured()) {
+      const { error } = await upsertServiceInDb(updated);
+      if (error) {
+        return { success: false, error };
+      }
+    }
+    return { success: true };
   };
 
-  const addServiceItem = (service: ServiceItem) => {
+  const addServiceItem = async (service: ServiceItem): Promise<{ success: boolean; error?: string }> => {
     setServices(prev => [...prev, service]);
+
+    if (isSupabaseConfigured()) {
+      const { error } = await upsertServiceInDb(service, services.length + 1);
+      if (error) {
+        return { success: false, error };
+      }
+    }
+    return { success: true };
   };
 
-  const updateServiceItem = (serviceId: string, updates: Partial<ServiceItem>) => {
-    setServices(prev => prev.map(s => (s.id === serviceId ? { ...s, ...updates } : s)));
+  const updateServiceItem = async (serviceId: string, updates: Partial<ServiceItem>): Promise<{ success: boolean; error?: string }> => {
+    const target = services.find(s => s.id === serviceId);
+    if (!target) return { success: false, error: 'Service not found.' };
+
+    const updated = { ...target, ...updates };
+    setServices(prev => prev.map(s => (s.id === serviceId ? updated : s)));
+
+    if (isSupabaseConfigured()) {
+      const { error } = await upsertServiceInDb(updated);
+      if (error) {
+        return { success: false, error };
+      }
+    }
+    return { success: true };
   };
 
-  const deleteServiceItem = (serviceId: string) => {
+  const deleteServiceItem = async (serviceId: string): Promise<{ success: boolean; error?: string }> => {
     setServices(prev => prev.filter(s => s.id !== serviceId));
+
+    if (isSupabaseConfigured()) {
+      const { success, error } = await deleteServiceFromDb(serviceId);
+      if (!success) {
+        return { success: false, error: error || 'Failed to delete service.' };
+      }
+    }
+    return { success: true };
   };
 
-  const addPortfolioProject = (project: PortfolioProject) => {
+  const addPortfolioProject = async (project: PortfolioProject): Promise<{ success: boolean; error?: string }> => {
     setPortfolio(prev => [project, ...prev]);
+
+    if (isSupabaseConfigured()) {
+      const { error } = await upsertPortfolioProjectInDb(project, 0);
+      if (error) {
+        return { success: false, error };
+      }
+    }
+    return { success: true };
   };
 
-  const updatePortfolioProject = (projectId: string, updates: Partial<PortfolioProject>) => {
-    setPortfolio(prev => prev.map(p => (p.id === projectId ? { ...p, ...updates } : p)));
+  const updatePortfolioProject = async (projectId: string, updates: Partial<PortfolioProject>): Promise<{ success: boolean; error?: string }> => {
+    const target = portfolio.find(p => p.id === projectId);
+    if (!target) return { success: false, error: 'Project not found.' };
+
+    const updated = { ...target, ...updates };
+    setPortfolio(prev => prev.map(p => (p.id === projectId ? updated : p)));
+
+    if (isSupabaseConfigured()) {
+      const { error } = await upsertPortfolioProjectInDb(updated);
+      if (error) {
+        return { success: false, error };
+      }
+    }
+    return { success: true };
   };
 
-  const deletePortfolioProject = (projectId: string) => {
+  const deletePortfolioProject = async (projectId: string): Promise<{ success: boolean; error?: string }> => {
     setPortfolio(prev => prev.filter(p => p.id !== projectId));
+
+    if (isSupabaseConfigured()) {
+      const { success, error } = await deletePortfolioProjectFromDb(projectId);
+      if (!success) {
+        return { success: false, error: error || 'Failed to delete project.' };
+      }
+    }
+    return { success: true };
   };
 
   const resetAllData = () => {
     localStorage.clear();
-    setStudioProfile(INITIAL_STUDIO_PROFILE);
-    setServices(INITIAL_SERVICES);
-    setPortfolio(INITIAL_PORTFOLIO);
+    // Re-hydrate from Supabase if configured, otherwise reset to fallback
+    if (isSupabaseConfigured()) {
+      fetchStudioProfileFromDb().then(({ data }) => data && setStudioProfile(data));
+      fetchServicesFromDb().then(({ data }) => data && setServices(data));
+      fetchPortfolioProjectsFromDb().then(({ data }) => data && setPortfolio(data));
+    } else {
+      setStudioProfile(INITIAL_STUDIO_PROFILE);
+      setServices(INITIAL_SERVICES);
+      setPortfolio(INITIAL_PORTFOLIO);
+    }
     setUsers([]);
     setCurrentUser(null);
     setCommissions(INITIAL_COMMISSIONS);
@@ -1837,10 +2315,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         uploadDesignForReview,
         uploadDesignReviewDraft,
         sendMessage,
+        fetchMessagesForCommission,
         markMessagesAsRead,
         uploadProjectFile,
         markNotificationAsRead,
         markAllNotificationsAsRead,
+        fetchNotifications,
+        dispatchNotification,
+        activeDashboardTab,
+        setActiveDashboardTab,
         updateStudioProfile,
         updateServicePrice,
         addServiceItem,

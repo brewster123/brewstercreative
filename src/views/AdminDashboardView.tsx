@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Commission, 
@@ -53,6 +53,8 @@ import { loadCustomFontFile, isFontLoaded } from '../utils/fontLoader';
 import { formatCommissionDate } from '../utils/dateUtils';
 import { isValidReferenceUrl } from '../utils/urlUtils';
 import { AdminCreativeProofsSection } from '../components/AdminCreativeProofsSection';
+import { AdminDeliverablesSection } from '../components/AdminDeliverablesSection';
+import { uploadPortfolioMedia } from '../lib/portfolio';
 
 export const AdminDashboardView: React.FC = () => {
   const { 
@@ -88,6 +90,7 @@ export const AdminDashboardView: React.FC = () => {
 
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>(activeCommission?.id || commissions[0]?.id || '');
   const [expandedProofsCommissionId, setExpandedProofsCommissionId] = useState<string | null>(null);
+  const [expandedDeliverablesCommissionId, setExpandedDeliverablesCommissionId] = useState<string | null>(null);
   const [commissionFilter, setCommissionFilter] = useState<string>('all');
   const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
 
@@ -309,11 +312,11 @@ export const AdminDashboardView: React.FC = () => {
     startingPrice: 3500,
     turnaround: '3–7 days',
     revisionsCount: 2,
-    deliverables: ['Primary logo mark', 'Vector source SVG/EPS', 'Commercial license'],
+    deliverables: ['Primary logo mark', 'Vector source SVG/EPS', 'Presentation-ready files'],
     popular: false,
     iconName: 'Sparkles',
   });
-  const [deliverablesText, setDeliverablesText] = useState('Primary logo mark\nVector source SVG/EPS\nCommercial license');
+  const [deliverablesText, setDeliverablesText] = useState('Primary logo mark\nVector source SVG/EPS\nPresentation-ready files');
 
   // Font customization state
   const [customFontUploaded, setCustomFontUploaded] = useState<boolean>(false);
@@ -347,17 +350,53 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  // Website Profile Handler
-  const handleSaveProfile = (e: React.FormEvent) => {
+  // Async saving & feedback states (Phase 5D)
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
+
+  const [isSavingProject, setIsSavingProject] = useState(false);
+  const [projectSaveError, setProjectSaveError] = useState<string | null>(null);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+
+  const [isSavingService, setIsSavingService] = useState(false);
+  const [serviceSaveError, setServiceSaveError] = useState<string | null>(null);
+
+  // Synchronize form when studioProfile is fetched or updated from Supabase / realtime
+  useEffect(() => {
+    if (isSavingProfile) return;
+    setProfileForm(prev => {
+      const p = { ...studioProfile };
+      if (p.email?.toLowerCase().includes('cabandobrewster') || !p.email) {
+        p.email = 'brewstercreates@gmail.com';
+      }
+      return p;
+    });
+  }, [studioProfile, isSavingProfile]);
+
+  // Website Profile Handler (Phase 5D async Supabase persistence)
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateStudioProfile(profileForm);
-    setProfileSaveSuccess(true);
-    setTimeout(() => setProfileSaveSuccess(false), 3500);
+    setIsSavingProfile(true);
+    setProfileSaveError(null);
+    try {
+      const res = await updateStudioProfile(profileForm);
+      if (res && !res.success) {
+        setProfileSaveError(res.error || 'Failed to save website information to database.');
+      } else {
+        setProfileSaveSuccess(true);
+        setTimeout(() => setProfileSaveSuccess(false), 3500);
+      }
+    } catch (err: any) {
+      setProfileSaveError(err?.message || 'Unexpected error saving profile.');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
-  // Portfolio Handlers
+  // Portfolio Handlers (Phase 5D async Supabase persistence)
   const handleOpenAddProject = () => {
     setEditingProject(null);
+    setProjectSaveError(null);
     setProjectForm({
       title: '',
       category: 'Branding',
@@ -375,44 +414,86 @@ export const AdminDashboardView: React.FC = () => {
 
   const handleOpenEditProject = (proj: PortfolioProject) => {
     setEditingProject(proj);
+    setProjectSaveError(null);
     setProjectForm({ ...proj });
     setIsAddingProject(true);
   };
 
-  const handleSaveProject = (e: React.FormEvent) => {
+  const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingProject) {
-      updatePortfolioProject(editingProject.id, projectForm as Partial<PortfolioProject>);
-    } else {
-      const newProj: PortfolioProject = {
-        id: `proj-${Date.now()}`,
-        title: projectForm.title || 'Untitled Showcase Work',
-        category: (projectForm.category as any) || 'Branding',
-        shortDesc: projectForm.shortDesc || '',
-        fullDesc: projectForm.fullDesc || projectForm.shortDesc || '',
-        image: projectForm.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80',
-        gallery: [projectForm.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80'],
-        tools: Array.isArray(projectForm.tools) ? projectForm.tools : ['Adobe Illustrator'],
-        date: projectForm.date || '2026',
-        client: projectForm.client || 'Commission Client',
-        tags: Array.isArray(projectForm.tags) ? projectForm.tags : ['Design'],
-        featured: !!projectForm.featured,
-      };
-      addPortfolioProject(newProj);
+    setIsSavingProject(true);
+    setProjectSaveError(null);
+
+    try {
+      if (editingProject) {
+        const res = await updatePortfolioProject(editingProject.id, projectForm as Partial<PortfolioProject>);
+        if (res && !res.success) {
+          setProjectSaveError(res.error || 'Failed to update portfolio project.');
+          setIsSavingProject(false);
+          return;
+        }
+      } else {
+        const newProj: PortfolioProject = {
+          id: `proj-${Date.now()}`,
+          title: projectForm.title || 'Untitled Showcase Work',
+          category: (projectForm.category as any) || 'Branding',
+          shortDesc: projectForm.shortDesc || '',
+          fullDesc: projectForm.fullDesc || projectForm.shortDesc || '',
+          image: projectForm.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80',
+          gallery: [projectForm.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80'],
+          tools: Array.isArray(projectForm.tools) ? projectForm.tools : ['Adobe Illustrator'],
+          date: projectForm.date || '2026',
+          client: projectForm.client || 'Commission Client',
+          tags: Array.isArray(projectForm.tags) ? projectForm.tags : ['Design'],
+          featured: !!projectForm.featured,
+        };
+        const res = await addPortfolioProject(newProj);
+        if (res && !res.success) {
+          setProjectSaveError(res.error || 'Failed to create portfolio project.');
+          setIsSavingProject(false);
+          return;
+        }
+      }
+      setIsAddingProject(false);
+      setEditingProject(null);
+    } catch (err: any) {
+      setProjectSaveError(err?.message || 'Error occurred while saving project.');
+    } finally {
+      setIsSavingProject(false);
     }
-    setIsAddingProject(false);
-    setEditingProject(null);
   };
 
-  const handleDeleteProject = (id: string, title: string) => {
+  const handleDeleteProject = async (id: string, title: string) => {
     if (window.confirm(`Delete portfolio project "${title}" from the website?`)) {
-      deletePortfolioProject(id);
+      await deletePortfolioProject(id);
     }
   };
 
-  // Services Handlers
+  // Portfolio Media Upload Handler (Phase 5D dedicated portfolio-media bucket)
+  const handlePortfolioMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingMedia(true);
+    setProjectSaveError(null);
+    try {
+      const { publicUrl, error } = await uploadPortfolioMedia(file, file.name);
+      if (error || !publicUrl) {
+        setProjectSaveError(error || 'Failed to upload image to portfolio-media bucket.');
+      } else {
+        setProjectForm(prev => ({ ...prev, image: publicUrl }));
+      }
+    } catch (err: any) {
+      setProjectSaveError(err?.message || 'Unexpected error uploading artwork.');
+    } finally {
+      setIsUploadingMedia(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  // Services Handlers (Phase 5D async Supabase persistence)
   const handleOpenAddService = () => {
     setEditingService(null);
+    setServiceSaveError(null);
     setServiceForm({
       name: '',
       category: 'Branding',
@@ -420,55 +501,75 @@ export const AdminDashboardView: React.FC = () => {
       startingPrice: 3500,
       turnaround: '3–7 days',
       revisionsCount: 2,
-      deliverables: ['Primary logo mark', 'Vector source SVG/EPS', 'Commercial license'],
+      deliverables: ['Primary logo mark', 'Vector source SVG/EPS', 'Presentation-ready files'],
       popular: false,
       iconName: 'Sparkles',
     });
-    setDeliverablesText('Primary logo mark\nVector source SVG/EPS\nCommercial license');
+    setDeliverablesText('Primary logo mark\nVector source SVG/EPS\nPresentation-ready files');
     setIsAddingService(true);
   };
 
   const handleOpenEditService = (srv: ServiceItem) => {
     setEditingService(srv);
+    setServiceSaveError(null);
     setServiceForm({ ...srv });
     setDeliverablesText(srv.deliverables.join('\n'));
     setIsAddingService(true);
   };
 
-  const handleSaveService = (e: React.FormEvent) => {
+  const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSavingService(true);
+    setServiceSaveError(null);
+
     const deliverablesList = deliverablesText
       .split('\n')
       .map(d => d.trim())
       .filter(d => d.length > 0);
 
-    if (editingService) {
-      updateServiceItem(editingService.id, {
-        ...serviceForm,
-        deliverables: deliverablesList,
-      });
-    } else {
-      const newSrv: ServiceItem = {
-        id: `srv-${Date.now()}`,
-        name: serviceForm.name || 'New Design Service',
-        category: serviceForm.category || 'Branding',
-        shortDesc: serviceForm.shortDesc || '',
-        startingPrice: Number(serviceForm.startingPrice) || 3000,
-        turnaround: serviceForm.turnaround || '3–7 days',
-        revisionsCount: Number(serviceForm.revisionsCount) || 2,
-        deliverables: deliverablesList,
-        popular: !!serviceForm.popular,
-        iconName: serviceForm.iconName || 'Sparkles',
-      };
-      addServiceItem(newSrv);
+    try {
+      if (editingService) {
+        const res = await updateServiceItem(editingService.id, {
+          ...serviceForm,
+          deliverables: deliverablesList,
+        });
+        if (res && !res.success) {
+          setServiceSaveError(res.error || 'Failed to update service.');
+          setIsSavingService(false);
+          return;
+        }
+      } else {
+        const newSrv: ServiceItem = {
+          id: `srv-${Date.now()}`,
+          name: serviceForm.name || 'New Design Service',
+          category: serviceForm.category || 'Branding',
+          shortDesc: serviceForm.shortDesc || '',
+          startingPrice: Number(serviceForm.startingPrice) || 3000,
+          turnaround: serviceForm.turnaround || '3–7 days',
+          revisionsCount: Number(serviceForm.revisionsCount) || 2,
+          deliverables: deliverablesList,
+          popular: !!serviceForm.popular,
+          iconName: serviceForm.iconName || 'Sparkles',
+        };
+        const res = await addServiceItem(newSrv);
+        if (res && !res.success) {
+          setServiceSaveError(res.error || 'Failed to create service.');
+          setIsSavingService(false);
+          return;
+        }
+      }
+      setIsAddingService(false);
+      setEditingService(null);
+    } catch (err: any) {
+      setServiceSaveError(err?.message || 'Error occurred while saving service.');
+    } finally {
+      setIsSavingService(false);
     }
-    setIsAddingService(false);
-    setEditingService(null);
   };
 
-  const handleDeleteService = (id: string, name: string) => {
+  const handleDeleteService = async (id: string, name: string) => {
     if (window.confirm(`Delete service package "${name}" from the website?`)) {
-      deleteServiceItem(id);
+      await deleteServiceItem(id);
     }
   };
 
@@ -899,6 +1000,22 @@ export const AdminDashboardView: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
+                            setExpandedDeliverablesCommissionId(prev => prev === comm.id ? null : comm.id);
+                          }}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                            expandedDeliverablesCommissionId === comm.id 
+                              ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' 
+                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                          }`}
+                          title="Toggle Final Deliverables section"
+                        >
+                          <FolderArchive className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{expandedDeliverablesCommissionId === comm.id ? 'Hide Deliverables' : 'Final Deliverables'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
                             setSelectedCommissionId(comm.id);
                             setActiveCommissionId(comm.id);
                             setActiveAdminTab('proof-uploader');
@@ -1110,6 +1227,16 @@ export const AdminDashboardView: React.FC = () => {
                   {expandedProofsCommissionId === comm.id && (
                     <div className="mt-6 pt-6 border-t border-zinc-200">
                       <AdminCreativeProofsSection
+                        commission={comm}
+                        currentUser={currentUser}
+                      />
+                    </div>
+                  )}
+
+                  {/* Final Deliverables Section (Phase 5C) */}
+                  {expandedDeliverablesCommissionId === comm.id && (
+                    <div className="mt-6 pt-6 border-t border-zinc-200">
+                      <AdminDeliverablesSection
                         commission={comm}
                         currentUser={currentUser}
                       />
@@ -1423,16 +1550,36 @@ export const AdminDashboardView: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Cover Image URL *
+                      Cover Image (URL or Direct Upload) *
                     </label>
-                    <input
-                      type="url"
-                      required
-                      value={projectForm.image || ''}
-                      onChange={(e) => setProjectForm({ ...projectForm, image: e.target.value })}
-                      placeholder="https://images.unsplash.com/..."
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                    />
+                    <div className="space-y-2">
+                      <input
+                        type="url"
+                        required
+                        value={projectForm.image || ''}
+                        onChange={(e) => setProjectForm({ ...projectForm, image: e.target.value })}
+                        placeholder="https://images.unsplash.com/... or upload below"
+                        className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
+                      />
+                      <div className="flex items-center gap-2">
+                        <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[11px] font-bold transition-colors inline-flex items-center gap-1.5 border border-zinc-200">
+                          <UploadCloud className="w-3.5 h-3.5 text-orange-500" />
+                          <span>{isUploadingMedia ? 'Uploading Image...' : 'Upload to Portfolio Media'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingMedia}
+                            onChange={handlePortfolioMediaUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {projectForm.image && (
+                          <span className="text-[10px] font-mono-code text-zinc-400 truncate max-w-xs">
+                            Active: {projectForm.image.substring(0, 40)}...
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1463,6 +1610,13 @@ export const AdminDashboardView: React.FC = () => {
                   />
                 </div>
 
+                {projectSaveError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium">
+                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                    <span>{projectSaveError}</span>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 pt-2">
                   <input
                     type="checkbox"
@@ -1480,15 +1634,24 @@ export const AdminDashboardView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsAddingProject(false)}
+                    disabled={isSavingProject}
                     className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-500 hover:text-zinc-800"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs"
+                    disabled={isSavingProject}
+                    className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5"
                   >
-                    {editingProject ? 'Save Project Changes' : 'Publish Project'}
+                    {isSavingProject ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Saving to Database...</span>
+                      </>
+                    ) : (
+                      <span>{editingProject ? 'Save Project Changes' : 'Publish Project'}</span>
+                    )}
                   </button>
                 </div>
               </form>
@@ -1720,19 +1883,35 @@ export const AdminDashboardView: React.FC = () => {
                   </label>
                 </div>
 
+                {serviceSaveError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium">
+                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                    <span>{serviceSaveError}</span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100">
                   <button
                     type="button"
                     onClick={() => setIsAddingService(false)}
+                    disabled={isSavingService}
                     className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-500 hover:text-zinc-800"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs"
+                    disabled={isSavingService}
+                    className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5"
                   >
-                    {editingService ? 'Save Package Changes' : 'Create Package'}
+                    {isSavingService ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Saving to Database...</span>
+                      </>
+                    ) : (
+                      <span>{editingService ? 'Save Package Changes' : 'Create Package'}</span>
+                    )}
                   </button>
                 </div>
               </form>
@@ -1964,14 +2143,31 @@ export const AdminDashboardView: React.FC = () => {
                 </div>
               </div>
 
+              {profileSaveError && (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span>{profileSaveError}</span>
+                </div>
+              )}
+
               <div className="flex justify-end pt-2">
                 <button
                   id="btn-save-website-profile"
                   type="submit"
+                  disabled={isSavingProfile}
                   className="px-8 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center gap-2"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>Save Website Content</span>
+                  {isSavingProfile ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving to Database...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Save Website Content</span>
+                    </>
+                  )}
                 </button>
               </div>
 

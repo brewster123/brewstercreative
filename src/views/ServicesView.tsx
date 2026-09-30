@@ -29,8 +29,8 @@ export const ServicesView: React.FC = () => {
       a: 'When proofs are uploaded to Stage 05 (Client Review), you can inspect high-res visuals and click "Request Revision" with detailed notes. Your revision request updates the project timeline and notifies the designer immediately.',
     },
     {
-      q: 'Do I own full commercial rights to the final designs?',
-      a: 'Yes! All final commissioned work includes an unrestricted, exclusive worldwide commercial usage license for print, digital, merchandise, and trademark registration.',
+      q: 'How can I use the delivered design files?',
+      a: 'All completed commissions include full master source files and production exports ready for your digital media, print materials, marketing campaigns, and merchandise.',
     },
   ];
 
@@ -77,11 +77,11 @@ export const ServicesView: React.FC = () => {
         ))}
       </div>
 
-      {/* Commission Guarantees & Studio Standards */}
+      {/* Commission Standards & Studio Deliverables */}
       <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-8 sm:p-12 shadow-xs">
         <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
           <h3 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
-            The {studioProfile.studioName} Guarantee
+            The {studioProfile.studioName} Standards
           </h3>
           <p className="text-xs sm:text-sm text-zinc-500 font-medium">
             Standard perks included with every graphic design commission:
@@ -123,9 +123,9 @@ export const ServicesView: React.FC = () => {
             <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3 border border-purple-200">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h4 className="font-display font-black text-sm text-zinc-900">Full Commercial Rights</h4>
+            <h4 className="font-display font-black text-sm text-zinc-900">Presentation-Ready Files</h4>
             <p className="text-xs text-zinc-500 leading-relaxed font-medium">
-              Unconditional commercial IP transfer for marketing, packaging, merchandise, and broadcasts.
+              Optimized, high-resolution production assets prepared for web, social channels, packaging, and physical print.
             </p>
           </div>
         </div>

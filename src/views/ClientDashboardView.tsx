@@ -72,14 +72,32 @@ export const ClientDashboardView: React.FC = () => {
     authLoading,
     updateUserProfile,
     studioProfile,
-    timelineUpdates = []
+    timelineUpdates = [],
+    activeDashboardTab,
   } = useApp();
 
   const commission = activeCommission || (currentUserCommissions && currentUserCommissions.length > 0 ? currentUserCommissions[0] : undefined);
   const [proofs, setProofs] = useState<CommissionProof[]>([]);
   const [loadingProofs, setLoadingProofs] = useState<boolean>(false);
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'chat' | 'review' | 'timeline' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'chat' | 'review' | 'timeline' | 'delivery' | 'profile'>('overview');
+
+  // Sync activeTab when deep-linking from notifications
+  useEffect(() => {
+    if (activeDashboardTab) {
+      if (
+        activeDashboardTab === 'chat' || 
+        activeDashboardTab === 'review' || 
+        activeDashboardTab === 'timeline' || 
+        activeDashboardTab === 'delivery' || 
+        activeDashboardTab === 'profile'
+      ) {
+        setActiveTab(activeDashboardTab);
+      } else {
+        setActiveTab('overview');
+      }
+    }
+  }, [activeDashboardTab]);
 
   // Fetch creative proofs for active commission to support actionability status
   const loadDashboardProofs = useCallback(async () => {
@@ -889,6 +907,23 @@ export const ClientDashboardView: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab('delivery')}
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === 'delivery'
+              ? 'bg-white text-zinc-900 shadow-sm'
+              : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60'
+          }`}
+        >
+          <FolderArchive className="w-4 h-4" />
+          <span>Final Delivery</span>
+          {isFinalDelivery && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono-code font-bold bg-emerald-600 text-white leading-none">
+              Ready
+            </span>
+          )}
+        </button>
+
+        <button
           onClick={() => setActiveTab('profile')}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
             activeTab === 'profile'
@@ -1223,7 +1258,14 @@ export const ClientDashboardView: React.FC = () => {
         </div>
       )}
 
-      {/* TAB CONTENT 5: MY PROFILE & INFORMATION */}
+      {/* TAB CONTENT 5: FINAL DELIVERY */}
+      {activeTab === 'delivery' && (
+        <div className="space-y-6">
+          <FinalDeliverySection commission={commission} />
+        </div>
+      )}
+
+      {/* TAB CONTENT 6: MY PROFILE & INFORMATION */}
       {activeTab === 'profile' && (
         <div className="space-y-6 max-w-3xl">
           {/* Privilege explanation notice */}

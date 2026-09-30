@@ -159,7 +159,7 @@ export const HomeView: React.FC = () => {
               </div>
             </div>
 
-            {/* Turnaround & Commercial IP Bento Tile */}
+            {/* Turnaround & Delivery Bento Tile */}
             <div className="bg-zinc-900 text-white rounded-[32px] p-6 sm:p-7 shadow-sm flex flex-col justify-between flex-1 relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">⚡</span>
@@ -171,7 +171,7 @@ export const HomeView: React.FC = () => {
                   3–7 Days
                 </div>
                 <p className="text-xs text-zinc-400 mt-1">
-                  Average turnaround with 100% full commercial rights & vector masters.
+                  Average turnaround with complete presentation-ready assets & vector masters.
                 </p>
               </div>
 
@@ -349,11 +349,11 @@ export const HomeView: React.FC = () => {
             <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-zinc-700 font-medium">
               <div className="flex items-center gap-1.5 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200/60">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>6+ Years Freelance Mastery</span>
+                <span>Custom Visual Systems</span>
               </div>
               <div className="flex items-center gap-1.5 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200/60">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>120+ Completed Client Commissions</span>
+                <span>Production Master Delivery</span>
               </div>
               <div className="flex items-center gap-1.5 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200/60">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />

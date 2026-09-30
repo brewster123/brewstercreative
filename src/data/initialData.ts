@@ -44,7 +44,7 @@ export const INITIAL_SERVICES: ServiceItem[] = [
       'Primary logo + icon mark + monochrome variants',
       'High-res PNG, JPG, and scalable SVG/EPS vector formats',
       'Color breakdown & basic typography guidelines',
-      'Commercial usage license',
+      'Presentation-ready files',
     ],
     popular: true,
     iconName: 'Sparkles',

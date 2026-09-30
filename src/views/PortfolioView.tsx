@@ -2,15 +2,14 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PortfolioCard } from '../components/PortfolioCard';
 import { PortfolioModal } from '../components/PortfolioModal';
-import { Sparkles, Search, Filter, Layers, Send, ShieldCheck } from 'lucide-react';
+import { Sparkles, Search, Filter, Layers, Send } from 'lucide-react';
 
 export const PortfolioView: React.FC = () => {
   const { 
     portfolio, 
     selectedPortfolioProject, 
     setSelectedPortfolioProject,
-    setActiveView,
-    currentUser
+    setActiveView
   } = useApp();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -57,23 +56,6 @@ export const PortfolioView: React.FC = () => {
           Explore previous graphic design commissions, logo systems, poster artworks, book covers, and custom creative campaigns.
         </p>
       </div>
-
-      {/* Admin Notice & Quick Edit Button */}
-      {currentUser?.role === 'admin' && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-xs">
-          <div className="flex items-center gap-2.5 text-emerald-950 font-bold">
-            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span>Studio Director View: You can add new projects, update existing artwork, or manage showcase items.</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setActiveView('admin-dashboard')}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl whitespace-nowrap shadow-xs transition-colors"
-          >
-            Manage Portfolio in Admin Portal →
-          </button>
-        </div>
-      )}
 
       {/* Filter Bar & Search */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white border border-[#E5E5E5] p-4 rounded-[24px] shadow-xs">

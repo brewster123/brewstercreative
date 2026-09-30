@@ -84,6 +84,31 @@ export interface FinalDeliverableFile {
   url: string;
 }
 
+export interface CommissionDeliverable {
+  id: string;
+  commissionId: string;
+  uploadedBy: string;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  fileSize: number;
+  version: number;
+  title?: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+
+  // Snake_case database compatibility aliases
+  commission_id?: string;
+  uploaded_by?: string;
+  file_name?: string;
+  file_path?: string;
+  file_type?: string;
+  file_size?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface FinalFilesPackage {
   packageName: string;
   packageSize: string;
@@ -198,9 +223,16 @@ export interface Message {
   senderRole: UserRole;
   senderAvatar?: string;
   message: string;
+  body?: string;
   attachment?: MessageAttachment;
   timestamp: string;
   readStatus: boolean;
+  createdAt?: string;
+
+  // Supabase raw row snake_case compatibility properties
+  commission_id?: string;
+  sender_id?: string;
+  created_at?: string;
 }
 
 export interface ProgressUpdate {
@@ -226,15 +258,37 @@ export interface ProjectFile {
   stageTag?: string;
 }
 
+export type NotificationType = 
+  | 'message' 
+  | 'commission_update' 
+  | 'proof_review' 
+  | 'proof_revision' 
+  | 'proof_approved' 
+  | 'commission_completed' 
+  | 'system'
+  // Legacy alias compatibility
+  | 'status' 
+  | 'review' 
+  | 'delivery';
+
 export interface AppNotification {
   id: string;
   userId: string;
+  user_id?: string;
+  recipientId?: string;
+  recipient_id?: string;
   commissionId?: string;
+  commission_id?: string;
+  title?: string;
   message: string;
-  type: 'status' | 'message' | 'review' | 'delivery' | 'system';
+  type: NotificationType;
   readStatus: boolean;
+  is_read?: boolean;
   timestamp: string;
+  created_at?: string;
+  createdAt?: string;
   linkTab?: string;
+  link_tab?: string;
 }
 
 export interface ServiceItem {

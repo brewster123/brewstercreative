@@ -53,29 +53,29 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
     switch (product.status) {
       case 'Available':
         return (
-          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-mono-code font-bold border border-emerald-200 shadow-2xs flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className="px-2 py-0.5 rounded-md bg-white text-[#059669] text-[10px] font-mono font-medium border border-[#E4E2DC] shadow-2xs flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
             Available
           </span>
         );
       case 'In Production':
         return (
-          <span className="px-2.5 py-0.5 rounded-full bg-white/95 text-zinc-700 text-[10px] font-mono-code font-bold border border-zinc-200 shadow-2xs flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse" />
+          <span className="px-2 py-0.5 rounded-md bg-white text-[#71717A] text-[10px] font-mono font-medium border border-[#E4E2DC] shadow-2xs flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#71717A] animate-pulse" />
             In Production
           </span>
         );
       case 'Sold Out':
         return (
-          <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500 text-[10px] font-mono-code font-bold border border-zinc-200 shadow-2xs">
+          <span className="px-2 py-0.5 rounded-md bg-[#F4F2ED] text-[#71717A] text-[10px] font-mono font-medium border border-[#E4E2DC]">
             Sold Out
           </span>
         );
       case 'Coming Soon':
       default:
         return (
-          <span className="px-2.5 py-0.5 rounded-full bg-white/95 text-orange-600 text-[10px] font-mono-code font-bold border border-orange-200 shadow-2xs flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+          <span className="px-2 py-0.5 rounded-md bg-white text-[#EA580C] text-[10px] font-mono font-medium border border-[#E4E2DC] shadow-2xs flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C] animate-pulse" />
             Coming Soon
           </span>
         );
@@ -91,44 +91,37 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
   return (
     <div
       onClick={handleCardClick}
-      className={`bg-white border rounded-[28px] p-5 space-y-4 shadow-xs relative overflow-hidden flex flex-col justify-between h-full transition-all duration-300 group hover:-translate-y-1 hover:shadow-md cursor-pointer ${
-        product.featured ? 'border-orange-200/90 hover:border-orange-300' : 'border-[#E5E5E5] hover:border-zinc-300'
+      className={`bg-white border rounded-xl p-5 space-y-4 shadow-2xs relative overflow-hidden flex flex-col justify-between h-full transition-all duration-300 group hover:-translate-y-1 hover:shadow-xs cursor-pointer ${
+        product.featured ? 'border-[#EA580C]/40 hover:border-[#EA580C]' : 'border-[#E4E2DC] hover:border-[#D4D2CA]'
       }`}
     >
       <div className="space-y-3.5">
         {/* Visual / Image Area */}
-        <div className={`aspect-[4/3] rounded-2xl bg-gradient-to-br ${
-          product.visualGradient || 'from-orange-100/60 via-amber-50/40 to-zinc-100'
-        } border border-zinc-200/90 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden`}>
+        <div className={`aspect-[4/3] rounded-lg bg-[#FAF9F6] border border-[#E4E2DC] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden`}>
           
-          {/* Top Left: Product Type & Template/Downloadable Indicator */}
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap z-10">
-            <span className="px-2 py-0.5 rounded-full bg-white/90 text-zinc-700 text-[10px] font-mono-code font-bold border border-zinc-200 shadow-2xs flex items-center gap-1">
+          {/* Top Left: Clean Primary Product Type & Complementary Badge */}
+          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap z-10 max-w-[65%]">
+            <span className="px-2 py-0.5 rounded-md bg-white/95 text-[#18181B] text-[10px] font-mono font-semibold uppercase border border-[#E4E2DC] shadow-2xs flex items-center gap-1 backdrop-blur-xs">
               {product.productType === 'Digital' ? (
-                <Download className="w-3 h-3 text-orange-500" />
+                <Download className="w-3 h-3 text-[#EA580C]" />
               ) : (
-                <Box className="w-3 h-3 text-orange-500" />
+                <Box className="w-3 h-3 text-[#EA580C]" />
               )}
               <span>{product.productType}</span>
             </span>
             {product.isTemplate ? (
-              <span className="px-2 py-0.5 rounded-full bg-white/95 text-orange-600 text-[10px] font-mono-code font-bold border border-orange-200 shadow-2xs">
+              <span className="px-2 py-0.5 rounded-md bg-white/95 text-[#EA580C] text-[10px] font-mono font-semibold uppercase border border-[#E4E2DC] shadow-2xs backdrop-blur-xs">
                 Template
               </span>
-            ) : product.isDownloadable ? (
-              <span className="px-2 py-0.5 rounded-full bg-white/95 text-zinc-700 text-[10px] font-mono-code font-bold border border-zinc-200 shadow-2xs">
-                Downloadable
+            ) : product.variants && product.variants.length > 0 ? (
+              <span className="px-2 py-0.5 rounded-md bg-white/95 text-[#71717A] text-[10px] font-mono font-medium uppercase border border-[#E4E2DC] shadow-2xs backdrop-blur-xs">
+                Multi-Format
               </span>
             ) : null}
-            {product.variants && product.variants.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-white/95 text-zinc-700 text-[10px] font-mono-code font-bold border border-zinc-200 shadow-2xs">
-                Multiple Formats
-              </span>
-            )}
           </div>
 
           {/* Top Right: Status Badge */}
-          <div className="absolute top-3 right-3 z-10">
+          <div className="absolute top-2.5 right-2.5 z-10">
             {getStatusBadge()}
           </div>
 
@@ -142,17 +135,17 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
               onError={() => setImgError(true)}
             />
           ) : (
-            <>
+            <div className="flex flex-col items-center justify-center p-4">
               {renderVisualIcon()}
               {product.badge && (
-                <span className="text-xs font-mono-code text-zinc-700 font-bold">
+                <span className="text-xs font-mono-code text-zinc-800 font-bold mt-1">
                   {product.badge}
                 </span>
               )}
-              <span className="text-[10px] text-zinc-400 font-mono-code uppercase mt-0.5 font-medium">
+              <span className="text-[10px] text-zinc-400 font-mono-code uppercase tracking-wider mt-0.5 font-medium">
                 {product.category}
               </span>
-            </>
+            </div>
           )}
         </div>
 
@@ -167,23 +160,23 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
             </span>
           </div>
 
-          <h4 className="font-display font-bold text-base text-zinc-900 group-hover:text-orange-600 transition-colors line-clamp-1">
+          <h4 className="font-display font-bold text-base text-zinc-900 group-hover:text-orange-600 transition-colors line-clamp-2 min-h-[3rem] flex items-center">
             {product.name}
           </h4>
 
-          <p className="text-xs text-zinc-500 leading-relaxed font-medium line-clamp-2">
+          <p className="text-xs text-zinc-500 leading-relaxed font-medium line-clamp-2 min-h-[2rem]">
             {product.shortDescription || product.description}
           </p>
         </div>
       </div>
 
       {/* Footer & Primary Action */}
-      <div className="pt-3 border-t border-zinc-100 space-y-3">
+      <div className="pt-3 border-t border-[#E4E2DC] space-y-3">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-mono-code text-[11px] font-bold text-zinc-700 truncate max-w-[65%]">
+          <span className="font-mono text-[10px] font-semibold text-[#71717A] truncate max-w-[65%] uppercase tracking-wider">
             {product.formats || 'Digital Assets'}
           </span>
-          <span className="text-[10px] font-mono-code text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 shrink-0">
+          <span className="text-[10px] font-mono text-[#EA580C] font-semibold bg-[#FFF7ED] px-2 py-0.5 rounded border border-[#FFEDD5] shrink-0">
             {product.isTemplate ? 'Template' : (product.badge || 'Studio Asset')}
           </span>
         </div>
@@ -194,7 +187,7 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
             e.stopPropagation();
             handleCardClick();
           }}
-          className="w-full py-2.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 group-hover:bg-zinc-900 group-hover:text-white text-zinc-700 text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 border border-zinc-200 group-hover:border-zinc-900 shadow-2xs cursor-pointer"
+          className="w-full py-2 rounded-lg bg-[#FAF9F6] hover:bg-[#18181B] hover:text-white text-[#18181B] text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 border border-[#E4E2DC] hover:border-[#18181B] shadow-2xs cursor-pointer"
         >
           <Eye className="w-3.5 h-3.5" />
           <span>

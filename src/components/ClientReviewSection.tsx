@@ -194,12 +194,17 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
     if (error) {
       setActionError(error);
     } else {
+      // Update commission lifecycle to Stage 06 — Revisions (85%) via authoritative Supabase RPC
+      const reviewRes = await submitClientReviewAction(commission.id, 'revision', trimmed);
+      if (reviewRes && !reviewRes.success) {
+        setActionError(reviewRes.error || 'Failed to submit revision request.');
+        return;
+      }
+
       const versionNumber = revisionModalProof.version;
       setRevisionModalProof(null);
       setRevisionNote('');
       setSuccessMsg(`Revision request for Proof Version ${versionNumber} has been submitted.`);
-      // Update commission lifecycle to Stage 06 — Revisions (85%) and persist to Supabase
-      submitClientReviewAction(commission.id, 'revision', trimmed);
       // Refetch proofs to update status in UI
       loadProofs(true);
     }

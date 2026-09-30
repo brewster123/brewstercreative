@@ -70,48 +70,48 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
   return (
     <div
-      className={`relative rounded-[28px] p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 group hover:-translate-y-1.5 ${
+      className={`relative rounded-xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 group hover:-translate-y-1 ${
         service.popular
-          ? 'bg-white border-2 border-orange-500 shadow-xl shadow-orange-500/10 ring-4 ring-orange-500/5'
-          : 'bg-white border border-[#E5E5E5] hover:border-zinc-300 shadow-sm hover:shadow-xl'
+          ? 'bg-white border-2 border-[#EA580C] shadow-sm'
+          : 'bg-white border border-[#E4E2DC] hover:border-[#D4D2CA] shadow-2xs'
       }`}
     >
-      {/* Popular Badge */}
+      {/* Popular Badge — Refined Studio Node */}
       {service.popular && (
-        <div className="absolute -top-3.5 left-7 px-3.5 py-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[11px] font-bold font-mono-code uppercase tracking-wider shadow-md">
-          ⭐ Most Requested
+        <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-md bg-[#EA580C] text-white text-[10px] font-semibold font-mono uppercase tracking-wider shadow-xs">
+          Most Requested
         </div>
       )}
 
       <div>
         {/* Top Header */}
         <div className="flex items-center justify-between mb-4">
-          <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+          <div className="w-10 h-10 rounded-lg bg-[#FAF9F6] border border-[#E4E2DC] text-[#EA580C] flex items-center justify-center transition-transform shadow-2xs">
             {getIcon(service.iconName)}
           </div>
-          <span className="text-[11px] font-mono-code uppercase tracking-wider text-zinc-600 bg-zinc-100 px-3 py-1 rounded-full font-medium border border-zinc-200/60">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-[#71717A] bg-[#F4F2ED] px-2.5 py-0.5 rounded-md font-medium border border-[#E4E2DC]">
             {service.category}
           </span>
         </div>
 
         {/* Service Title & Desc */}
-        <h3 className="font-display text-xl font-bold text-zinc-900 mb-2 group-hover:text-orange-600 transition-colors">
+        <h3 className="font-display text-xl font-bold text-[#18181B] mb-2 group-hover:text-[#EA580C] transition-colors">
           {service.name}
         </h3>
-        <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed mb-6">
+        <p className="text-xs sm:text-sm text-[#71717A] leading-relaxed mb-6 font-normal">
           {service.shortDesc}
         </p>
 
-        {/* Price & Turnaround Specs Bento Box */}
-        <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/80 mb-6 space-y-2">
+        {/* Price & Turnaround Specs Panel */}
+        <div className="p-4 rounded-lg bg-[#FAF9F6] border border-[#E4E2DC] mb-6 space-y-2">
           <div className="flex items-baseline justify-between">
-            <span className="text-xs text-zinc-500 font-medium">Starting at</span>
-            <span className="text-xl sm:text-2xl font-black font-display text-zinc-900">
+            <span className="text-xs text-[#71717A] font-medium">Starting at</span>
+            <span className="text-xl sm:text-2xl font-bold font-display text-[#18181B]">
               {studioProfile.currencySymbol}{service.startingPrice.toLocaleString()}
             </span>
           </div>
 
-          <div className="pt-2 border-t border-zinc-200 grid grid-cols-2 gap-2 text-xs text-zinc-600 font-medium">
+          <div className="pt-2 border-t border-[#E4E2DC] grid grid-cols-2 gap-2 text-xs text-[#71717A] font-medium">
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-orange-500" />
               <span>{service.turnaround}</span>
@@ -187,14 +187,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         id={`btn-commission-service-${service.id}`}
         type="button"
         onClick={handleCommissionClick}
-        className={`w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-sm ${
+        className={`w-full py-2.5 px-4 rounded-lg font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer ${
           service.popular
-            ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20'
-            : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900'
+            ? 'bg-[#EA580C] hover:bg-[#D94814] text-white'
+            : 'bg-[#18181B] hover:bg-[#27272A] text-white border border-[#18181B]'
         }`}
       >
-        <span>Commission This</span>
-        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        <span>Commission This Service</span>
+        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
       </button>
     </div>
   );

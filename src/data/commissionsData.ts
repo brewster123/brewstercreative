@@ -24,9 +24,16 @@ export interface CommissionDbRow {
   service_type: string;
   description: string;
   budget: number | string | null;
+  currency?: string | null;
   deadline: string | null;
   status: string | null;
   priority?: string | null;
+  payment_status?: string | null;
+  deposit_paid?: boolean | null;
+  total_paid?: boolean | null;
+  revisions_allowed?: number | null;
+  revisions_used?: number | null;
+  assigned_designer?: string | null;
   purpose?: string | null;
   target_audience?: string | null;
   preferred_style?: string | null;
@@ -235,9 +242,11 @@ export function mapDbCommissionToAppCommission(
 
     // Timeline & Financials
     budget: formattedBudget,
-    currency: 'PHP',
+    currency: row.currency || 'PHP',
     deadline: row.deadline || 'Flexible',
-    paymentStatus: 'Unpaid',
+    paymentStatus: (row.payment_status === 'Paid' || row.payment_status === 'Partial' || row.payment_status === 'Unpaid')
+      ? row.payment_status
+      : 'Unpaid',
     priority: normalizeCommissionPriority(row.priority),
  
     // Progress & State
@@ -254,11 +263,11 @@ export function mapDbCommissionToAppCommission(
     additionalNotes: row.additional_notes || '',
 
     // Metadata
-    assignedDesigner: 'Brewster Creative',
-    depositPaid: false,
-    totalPaid: false,
-    revisionsAllowed: 2,
-    revisionsUsed: 0,
+    assignedDesigner: row.assigned_designer || 'Brewster A. Cabando',
+    depositPaid: Boolean(row.deposit_paid || row.payment_status === 'Partial' || row.payment_status === 'Paid'),
+    totalPaid: Boolean(row.total_paid || row.payment_status === 'Paid'),
+    revisionsAllowed: typeof row.revisions_allowed === 'number' ? row.revisions_allowed : 2,
+    revisionsUsed: typeof row.revisions_used === 'number' ? row.revisions_used : 0,
 
     createdAt: formattedCreatedDate,
     updatedAt: formattedCreatedDate,
@@ -574,4 +583,147 @@ export async function updateCommissionPriorityInSupabase(
     };
   }
 }
+
+/**
+ * Updates a commission's payment status, deposit_paid, and total_paid in Supabase public.commissions.
+ * Validates against allowed statuses: 'Unpaid' | 'Partial' | 'Paid'.
+ */
+export async function updateCommissionPaymentInSupabase(
+  commissionId: string,
+  paymentStatus: 'Unpaid' | 'Partial' | 'Paid'
+): Promise<{ success: boolean; error?: string; data?: CommissionDbRow }> {
+  if (!commissionId) {
+    return { success: false, error: 'Commission ID is required.' };
+  }
+
+  const validStatuses = ['Unpaid', 'Partial', 'Paid'] as const;
+  if (!validStatuses.includes(paymentStatus)) {
+    return {
+      success: false,
+      error: `Invalid payment status "${paymentStatus}". Allowed values: Unpaid, Partial, Paid.`,
+    };
+  }
+
+  const depositPaid = paymentStatus === 'Partial' || paymentStatus === 'Paid';
+  const totalPaid = paymentStatus === 'Paid';
+
+  try {
+    const { data, error } = await supabase
+      .from('commissions')
+      .update({
+        payment_status: paymentStatus,
+        deposit_paid: depositPaid,
+        total_paid: totalPaid,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', commissionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[Supabase Commissions] Update payment error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to update commission payment status in database.',
+      };
+    }
+
+    return {
+      success: true,
+      data: data as CommissionDbRow,
+    };
+  } catch (err: any) {
+    console.error('[Supabase Commissions] Unexpected exception during payment update:', err);
+    return {
+      success: false,
+      error: err?.message || 'An unexpected error occurred while updating payment status in Supabase.',
+    };
+  }
+}
+
+/**
+ * Invokes the secure database function public.request_commission_revision() to atomically
+ * enforce revision allowance, increment revisions_used, and set status to 'revision'.
+ * This RPC is the sole authoritative persistence path for client revision requests.
+ * Direct table updates are intentionally disallowed.
+ */
+export async function requestCommissionRevisionInSupabase(
+  commissionId: string,
+  feedback?: string
+): Promise<{ success: boolean; error?: string; data?: CommissionDbRow }> {
+  if (!commissionId) {
+    return { success: false, error: 'Commission ID is required.' };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('request_commission_revision', {
+      p_commission_id: commissionId,
+      p_feedback: feedback || null,
+    });
+
+    if (error) {
+      console.error('[Supabase Commissions] RPC request_commission_revision error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to request commission revision in database.',
+      };
+    }
+
+    if (!data) {
+      return {
+        success: false,
+        error: 'No commission record returned from revision request.',
+      };
+    }
+
+    return {
+      success: true,
+      data: data as CommissionDbRow,
+    };
+  } catch (err: any) {
+    console.error('[Supabase Commissions] Unexpected exception during revision request RPC:', err);
+    return {
+      success: false,
+      error: err?.message || 'An unexpected error occurred while requesting commission revision.',
+    };
+  }
+}
+
+/**
+ * Subscribes to real-time changes on public.commissions.
+ * Calls onInsert, onUpdate, and onDelete callbacks with mapped Commission models.
+ */
+export function subscribeToCommissionsChange(callbacks: {
+  onInsert: (row: CommissionDbRow) => void;
+  onUpdate: (row: CommissionDbRow) => void;
+  onDelete: (id: string) => void;
+}): () => void {
+  const channel = supabase
+    .channel('public:commissions_realtime')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'commissions',
+      },
+      (payload) => {
+        if (payload.eventType === 'INSERT') {
+          callbacks.onInsert(payload.new as CommissionDbRow);
+        } else if (payload.eventType === 'UPDATE') {
+          callbacks.onUpdate(payload.new as CommissionDbRow);
+        } else if (payload.eventType === 'DELETE') {
+          if (payload.old && payload.old.id) {
+            callbacks.onDelete(payload.old.id);
+          }
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
 

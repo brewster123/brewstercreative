@@ -11,8 +11,8 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-white border-t border-zinc-200/90 text-zinc-600 text-sm mt-20 relative overflow-hidden">
-      <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none"></div>
+    <footer className="bg-[#FAF9F6] border-t border-[#E4E2DC] text-[#71717A] text-sm mt-20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 mb-12">
@@ -22,26 +22,26 @@ export const Footer: React.FC = () => {
             <div className="flex items-center gap-3">
               <BrandLogo size="md" />
               <div>
-                <span className="font-display font-bold text-lg text-zinc-900 tracking-tight">
+                <span className="font-display font-bold text-lg text-[#18181B] tracking-tight">
                   {studioProfile.studioName}
                 </span>
-                <p className="text-xs text-orange-600 font-mono-code -mt-0.5 font-medium">
+                <p className="text-xs text-[#EA580C] font-mono -mt-0.5 font-medium">
                   by {studioProfile.designerName}
                 </p>
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed max-w-sm">
+            <p className="text-xs sm:text-sm text-[#71717A] leading-relaxed max-w-sm">
               {studioProfile.bio}
             </p>
 
-            <div className="flex items-center gap-4 pt-2 text-xs text-zinc-700">
-              <div className="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/70 text-emerald-700 font-medium">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div className="flex items-center gap-4 pt-2 text-xs text-[#18181B]">
+              <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-md border border-[#E4E2DC] text-[#059669] font-medium font-mono text-[11px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse"></span>
                 <span>{studioProfile.availableSlots} Commission Slots Open</span>
               </div>
-              <div className="flex items-center gap-1.5 text-zinc-500 font-medium">
-                <MapPin className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-1.5 text-[#71717A] font-medium">
+                <MapPin className="w-3.5 h-3.5 text-[#EA580C]" />
                 <span>{studioProfile.location}</span>
               </div>
             </div>

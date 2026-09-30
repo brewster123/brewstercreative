@@ -58,7 +58,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
               {project.category}
             </span>
             <span className="text-xs text-zinc-500 font-mono-code hidden sm:inline font-medium">
-              Client: {project.client}
+              Project: {project.client}
             </span>
           </div>
 
@@ -137,10 +137,10 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
           {/* Specifications Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-100">
             
-            {/* Client & Date */}
+            {/* Project / Brand & Date */}
             <div className="p-4 rounded-[20px] bg-zinc-50 border border-zinc-200/80">
               <span className="text-[11px] font-mono-code text-zinc-400 uppercase tracking-wider block mb-1 font-bold">
-                Client & Date
+                Project & Year
               </span>
               <p className="text-sm font-black text-zinc-900">{project.client}</p>
               <p className="text-xs text-zinc-500 mt-0.5 font-medium">{project.date}</p>

@@ -10,7 +10,6 @@ import {
   PortfolioProject,
   StudioProfile 
 } from '../types';
-import { ChatWindow } from '../components/ChatWindow';
 import { ProgressBar } from '../components/ProgressBar';
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
 import { StudioPhotoUploader } from '../components/StudioPhotoUploader';

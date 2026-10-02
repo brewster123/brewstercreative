@@ -4,7 +4,6 @@ import { ProgressBar } from '../components/ProgressBar';
 import { ProgressTimeline } from '../components/ProgressTimeline';
 import { ClientReviewSection } from '../components/ClientReviewSection';
 import { FinalDeliverySection } from '../components/FinalDeliverySection';
-import { ChatWindow } from '../components/ChatWindow';
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
 import { formatCommissionDate } from '../utils/dateUtils';
 import { fetchCommissionProofs } from '../lib/proofs';
@@ -13,7 +12,6 @@ import {
   Clock, 
   Calendar, 
   RotateCcw, 
-  MessageSquare, 
   FileText, 
   PlusCircle,
   Eye,
@@ -75,13 +73,16 @@ export const ClientDashboardView: React.FC = () => {
   const [proofs, setProofs] = useState<CommissionProof[]>([]);
   const [loadingProofs, setLoadingProofs] = useState<boolean>(false);
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'chat' | 'review' | 'timeline' | 'delivery' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'review' | 'timeline' | 'delivery' | 'profile'>('overview');
 
   // Sync activeTab when deep-linking from notifications
   useEffect(() => {
     if (activeDashboardTab) {
+      if (activeDashboardTab === 'chat') {
+        setActiveView('chat');
+        return;
+      }
       if (
-        activeDashboardTab === 'chat' || 
         activeDashboardTab === 'review' || 
         activeDashboardTab === 'timeline' || 
         activeDashboardTab === 'delivery' || 
@@ -92,7 +93,7 @@ export const ClientDashboardView: React.FC = () => {
         setActiveTab('overview');
       }
     }
-  }, [activeDashboardTab]);
+  }, [activeDashboardTab, setActiveView]);
 
   // Fetch creative proofs for active commission
   const loadDashboardProofs = useCallback(async () => {
@@ -401,7 +402,6 @@ export const ClientDashboardView: React.FC = () => {
         <nav className="flex items-center gap-2 border-b border-[#E4E2DC] dark:border-[#27272A] pb-1 overflow-x-auto no-scrollbar" aria-label="Project details navigation">
           {[
             { id: 'overview' as const, label: 'Specifications', icon: FileText },
-            { id: 'chat' as const, label: 'Conversation', icon: MessageSquare },
             { id: 'review' as const, label: 'Creative Proofs', icon: Eye, count: isProofPendingReview ? 'Action' : undefined },
             { id: 'timeline' as const, label: 'Milestone Log', icon: Clock },
             { id: 'delivery' as const, label: 'Final Delivery', icon: FolderArchive, count: isFinalDelivery ? 'Ready' : undefined },
@@ -630,14 +630,7 @@ export const ClientDashboardView: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 2: CONVERSATION */}
-        {activeTab === 'chat' && (
-          <div className="animate-in fade-in duration-200">
-            <ChatWindow commission={commission} />
-          </div>
-        )}
-
-        {/* TAB 3: PROOF REVIEW */}
+        {/* TAB 2: PROOF REVIEW */}
         {activeTab === 'review' && (
           <div className="animate-in fade-in duration-200">
             <ClientReviewSection commission={commission} />

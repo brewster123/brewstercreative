@@ -72,12 +72,7 @@ export const Navbar: React.FC = () => {
   ];
 
   const handleOpenChat = () => {
-    if (currentUser?.role === 'admin') {
-      setActiveView('chat');
-    } else {
-      setActiveDashboardTab('chat');
-      setActiveView('client-dashboard');
-    }
+    setActiveView('chat');
     setMobileMenuOpen(false);
   };
 

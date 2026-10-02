@@ -18,13 +18,24 @@ export const ChatView: React.FC = () => {
 
   const isAdmin = currentUser?.role === 'admin';
 
-  // For Admin: commission to chat with
-  const currentCommission = commissions.find(c => c.id === selectedCommissionId) || commissions[0];
+  const isCommissionActive = (c: any) => {
+    const s = (c?.status || '').toLowerCase();
+    return s !== 'completed' && s !== 'cancelled' && s !== 'rejected' && c?.currentStage !== 8;
+  };
 
-  // For Client: commission to chat with
-  const clientCommission = activeCommission || (currentUserCommissions && currentUserCommissions.length > 0 ? currentUserCommissions[0] : undefined);
+  // For Admin: any client commission
+  const currentAdminCommission = commissions.find(c => c.id === selectedCommissionId) || commissions[0];
 
-  const activeComm = isAdmin ? currentCommission : clientCommission;
+  // For Client: strictly authorized commissions belonging to the authenticated client
+  const clientCommissionsList = currentUserCommissions || [];
+
+  // Match selected commission if it strictly belongs to this client, or default to active/first commission
+  const currentClientCommission = 
+    clientCommissionsList.find(c => c.id === selectedCommissionId) ||
+    clientCommissionsList.find(isCommissionActive) ||
+    clientCommissionsList[0];
+
+  const activeComm = isAdmin ? currentAdminCommission : currentClientCommission;
 
   React.useEffect(() => {
     if (!selectedCommissionId && activeComm?.id) {
@@ -155,7 +166,7 @@ export const ChatView: React.FC = () => {
             </div>
           )}
 
-          {!isAdmin && currentUserCommissions.length > 1 && (
+          {!isAdmin && clientCommissionsList.length > 1 && (
             <div className="flex items-center gap-2 font-mono text-xs shrink-0">
               <label htmlFor="select-client-chat-comm" className="text-[#71717A] dark:text-[#A1A1AA]">
                 Select Project:
@@ -163,15 +174,27 @@ export const ChatView: React.FC = () => {
               <select
                 id="select-client-chat-comm"
                 value={activeComm?.id}
-                onChange={(e) => setActiveCommissionId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCommissionId(e.target.value);
+                  setActiveCommissionId(e.target.value);
+                }}
                 className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-1.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] cursor-pointer"
               >
-                {currentUserCommissions.map((c) => (
+                {clientCommissionsList.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.projectName}
+                    {c.projectName} ({formatCommissionStatus(c.status)})
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {!isAdmin && clientCommissionsList.length === 1 && (
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+              <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{clientCommissionsList[0].projectName}</span>
+              <span>·</span>
+              <span>{formatCommissionStatus(clientCommissionsList[0].status)}</span>
             </div>
           )}
         </div>
@@ -180,7 +203,15 @@ export const ChatView: React.FC = () => {
       {/* Main Messaging Interface */}
       {activeComm ? (
         <div className="animate-in fade-in duration-200">
-          <ChatWindow commission={activeComm} />
+          <ChatWindow 
+            commission={activeComm} 
+            availableCommissions={isAdmin ? commissions : clientCommissionsList}
+            onSelectCommission={(id) => {
+              setSelectedCommissionId(id);
+              setActiveCommissionId(id);
+            }}
+            isAdmin={isAdmin}
+          />
         </div>
       ) : (
         <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-12 text-center space-y-4">

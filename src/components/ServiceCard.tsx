@@ -4,34 +4,28 @@ import { useApp } from '../context/AppContext';
 import { SHOP_PRODUCTS } from '../data/shopData';
 import { ShopProductCard } from './ShopProductCard';
 import { 
-  Sparkles, 
-  Layers, 
-  Image as ImageIcon, 
-  Share2, 
-  Palette, 
-  BookOpen, 
-  Wand2, 
-  Check, 
-  Clock, 
-  RotateCcw, 
   ArrowRight,
-  Tag 
+  Sparkles,
+  Clock,
+  RotateCcw,
+  Tag
 } from 'lucide-react';
 
 interface ServiceCardProps {
   service: ServiceItem;
+  index?: number;
   featured?: boolean;
   hideRelatedShopProducts?: boolean;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({ 
   service, 
-  featured = false,
+  index = 0,
   hideRelatedShopProducts = false 
 }) => {
   const { setActiveView, setPreselectedService, setSelectedShopProduct, studioProfile } = useApp();
 
-  // Cross-selling: Related Shop Products (Phase 4D.3: Services -> Shop)
+  // Cross-selling: Related Shop Products
   const relatedShopProducts: ShopProduct[] = (service.relatedShopProductIds || [])
     .map((id) => SHOP_PRODUCTS.find((p) => p.id === id))
     .filter((p): p is ShopProduct => Boolean(p));
@@ -42,160 +36,122 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const getIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'Sparkles':
-        return <Sparkles className="w-5 h-5" />;
-      case 'Layers':
-        return <Layers className="w-5 h-5" />;
-      case 'Image':
-        return <ImageIcon className="w-5 h-5" />;
-      case 'Share2':
-        return <Share2 className="w-5 h-5" />;
-      case 'Palette':
-        return <Palette className="w-5 h-5" />;
-      case 'BookOpen':
-        return <BookOpen className="w-5 h-5" />;
-      case 'Wand2':
-      default:
-        return <Wand2 className="w-5 h-5" />;
-    }
-  };
-
   const handleCommissionClick = () => {
     setPreselectedService(service.name);
     setActiveView('commission-form');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  return (
-    <div
-      className={`relative rounded-xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 group hover:-translate-y-1 ${
-        service.popular
-          ? 'bg-white border-2 border-[#EA580C] shadow-sm'
-          : 'bg-white border border-[#E4E2DC] hover:border-[#D4D2CA] shadow-2xs'
-      }`}
-    >
-      {/* Popular Badge — Refined Studio Node */}
-      {service.popular && (
-        <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-md bg-[#EA580C] text-white text-[10px] font-semibold font-mono uppercase tracking-wider shadow-xs">
-          Most Requested
-        </div>
-      )}
+  const formattedIndex = String(index + 1).padStart(2, '0');
 
-      <div>
-        {/* Top Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="w-10 h-10 rounded-lg bg-[#FAF9F6] border border-[#E4E2DC] text-[#EA580C] flex items-center justify-center transition-transform shadow-2xs">
-            {getIcon(service.iconName)}
-          </div>
-          <span className="text-[10px] font-mono uppercase tracking-wider text-[#71717A] bg-[#F4F2ED] px-2.5 py-0.5 rounded-md font-medium border border-[#E4E2DC]">
+  return (
+    <article
+      onClick={handleCommissionClick}
+      className="group relative bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46] rounded-xl p-6 sm:p-8 transition-all duration-300 cursor-pointer shadow-2xs hover:shadow-xs space-y-6"
+    >
+      {/* Top Editorial Index & Meta Bar */}
+      <div className="flex items-center justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#27272A] pb-4">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+            SERVICE {formattedIndex}
+          </span>
+          <span className="text-[#A1A1AA]" aria-hidden="true">/</span>
+          <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider">
             {service.category}
           </span>
         </div>
 
-        {/* Service Title & Desc */}
-        <h3 className="font-display text-xl font-bold text-[#18181B] mb-2 group-hover:text-[#EA580C] transition-colors">
-          {service.name}
-        </h3>
-        <p className="text-xs sm:text-sm text-[#71717A] leading-relaxed mb-6 font-normal">
-          {service.shortDesc}
-        </p>
-
-        {/* Price & Turnaround Specs Panel */}
-        <div className="p-4 rounded-lg bg-[#FAF9F6] border border-[#E4E2DC] mb-6 space-y-2">
-          <div className="flex items-baseline justify-between">
-            <span className="text-xs text-[#71717A] font-medium">Starting at</span>
-            <span className="text-xl sm:text-2xl font-bold font-display text-[#18181B]">
-              {studioProfile.currencySymbol}{service.startingPrice.toLocaleString()}
-            </span>
-          </div>
-
-          <div className="pt-2 border-t border-[#E4E2DC] grid grid-cols-2 gap-2 text-xs text-[#71717A] font-medium">
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-orange-500" />
-              <span>{service.turnaround}</span>
-            </div>
-            <div className="flex items-center gap-1.5 justify-end">
-              <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
-              <span>{service.revisionsCount} revisions</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Deliverables Checklist */}
-        <div className="space-y-2 mb-6">
-          <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider font-bold block">
-            Included Deliverables:
+        {service.popular && (
+          <span className="font-mono text-[10px] uppercase tracking-wider font-semibold text-[#EA580C] dark:text-[#FBBF24] bg-[#FFF7ED] dark:bg-[#78350F]/30 px-2.5 py-0.5 rounded border border-[#FFEDD5] dark:border-[#92400E]">
+            Core Offering
           </span>
-          <ul className="space-y-2 text-xs text-zinc-700">
-            {service.deliverables.map((item, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <span className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0 mt-0.5">
-                  <Check className="w-2.5 h-2.5" />
-                </span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Related Shop Products Section (Phase 4D.3: Services -> Shop) */}
-        {!hideRelatedShopProducts && relatedShopProducts.length > 0 && (
-          <div className="pt-5 mb-6 border-t border-zinc-100 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="inline-flex items-center gap-1.5 text-[10px] font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-0.5">
-                  <Tag className="w-3 h-3" />
-                  <span>Studio Storefront</span>
-                </div>
-                <h4 className="font-display font-bold text-xs uppercase tracking-wider text-zinc-900">
-                  Related Shop Products
-                </h4>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedShopProduct(null);
-                  setActiveView('shop');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="text-[11px] font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <span>Browse All Goods</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {relatedShopProducts.map((prod) => (
-                <ShopProductCard
-                  key={prod.id}
-                  product={prod}
-                  actionLabel="View Product"
-                  onSelect={(p) => handleSelectShopProduct(p)}
-                />
-              ))}
-            </div>
-          </div>
         )}
       </div>
 
-      {/* Action CTA Button */}
-      <button
-        id={`btn-commission-service-${service.id}`}
-        type="button"
-        onClick={handleCommissionClick}
-        className={`w-full py-2.5 px-4 rounded-lg font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer ${
-          service.popular
-            ? 'bg-[#EA580C] hover:bg-[#D94814] text-white'
-            : 'bg-[#18181B] hover:bg-[#27272A] text-white border border-[#18181B]'
-        }`}
-      >
-        <span>Commission This Service</span>
-        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-      </button>
-    </div>
+      {/* Main Service Title & Description */}
+      <div className="space-y-3">
+        <div className="flex items-baseline justify-between gap-4 flex-wrap">
+          <h3 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC] group-hover:text-[#EA580C] group-hover:translate-x-1.5 transition-all duration-300 tracking-tight flex items-center gap-2">
+            <span>{service.name}</span>
+            <span className="text-sm font-mono font-normal opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 text-[#EA580C]">
+              →
+            </span>
+          </h3>
+
+          <div className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] self-baseline">
+            Starting from <span className="text-sm sm:text-base font-bold text-[#18181B] dark:text-[#EDEDEC] font-display">{studioProfile.currencySymbol}{service.startingPrice.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-3xl font-normal">
+          {service.shortDesc}
+        </p>
+      </div>
+
+      {/* Editorial Deliverables Ledger: "What I Can Create" */}
+      <div className="pt-2 space-y-3">
+        <span className="font-mono text-[11px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+          What I Can Create:
+        </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+          {service.deliverables.map((item, idx) => (
+            <div key={idx} className="flex items-start gap-2 text-xs text-[#18181B] dark:text-[#EDEDEC]">
+              <span className="text-[#EA580C] text-sm leading-none mt-0.5" aria-hidden="true">•</span>
+              <span className="font-medium leading-relaxed">{item}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer Specs & Action Link */}
+      <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4 text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-[#EA580C]" />
+            <span>Turnaround: <strong className="text-[#18181B] dark:text-[#EDEDEC]">{service.turnaround}</strong></span>
+          </div>
+          <span className="text-[#A1A1AA]" aria-hidden="true">·</span>
+          <div className="flex items-center gap-1.5">
+            <RotateCcw className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA]" />
+            <span>{service.revisionsCount} Revision Rounds</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCommissionClick();
+          }}
+          className="inline-flex items-center gap-2 text-xs font-semibold text-[#EA580C] group-hover:translate-x-1 transition-transform self-start sm:self-auto cursor-pointer"
+        >
+          <span>Initiate Commission</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Related Shop Goods if present */}
+      {!hideRelatedShopProducts && relatedShopProducts.length > 0 && (
+        <div 
+          onClick={(e) => e.stopPropagation()} 
+          className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-3"
+        >
+          <div className="flex items-center gap-2 text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider font-semibold">
+            <Tag className="w-3 h-3 text-[#EA580C]" />
+            <span>Available Studio Templates & Goods Connected to this Service</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {relatedShopProducts.map((prod) => (
+              <ShopProductCard
+                key={prod.id}
+                product={prod}
+                actionLabel="View Good"
+                onSelect={(p) => handleSelectShopProduct(p)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </article>
   );
 };

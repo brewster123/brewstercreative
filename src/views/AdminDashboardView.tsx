@@ -11,6 +11,7 @@ import {
   StudioProfile 
 } from '../types';
 import { ChatWindow } from '../components/ChatWindow';
+import { ProgressBar } from '../components/ProgressBar';
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
 import { StudioPhotoUploader } from '../components/StudioPhotoUploader';
 import { 
@@ -81,11 +82,13 @@ export const AdminDashboardView: React.FC = () => {
     updateStudioProfile,
     currentUser,
     authLoading,
-    setActiveView 
+    setActiveView,
+    activeDashboardTab,
+    setActiveDashboardTab
   } = useApp();
 
   const [activeAdminTab, setActiveAdminTab] = useState<
-    'commissions' | 'clients' | 'website-info' | 'portfolio' | 'services' | 'proof-uploader' | 'chat' | 'typography' | 'admin-account'
+    'commissions' | 'clients' | 'website-info' | 'portfolio' | 'services' | 'proof-uploader' | 'typography' | 'admin-account'
   >('commissions');
 
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>(activeCommission?.id || commissions[0]?.id || '');
@@ -94,7 +97,7 @@ export const AdminDashboardView: React.FC = () => {
   const [commissionFilter, setCommissionFilter] = useState<string>('all');
   const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
 
-  // Supabase Commission Status Management state (Phase 3B.2)
+  // Supabase Commission Status Management state
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
   const [statusSuccessId, setStatusSuccessId] = useState<string | null>(null);
   const [statusErrorMap, setStatusErrorMap] = useState<Record<string, string>>({});
@@ -160,7 +163,7 @@ export const AdminDashboardView: React.FC = () => {
       } else {
         setStatusErrorMap(prev => ({
           ...prev,
-          [commissionId]: res.error || 'Failed to update commission status in Supabase.',
+          [commissionId]: res.error || 'Failed to update commission status.',
         }));
       }
     } catch (err: any) {
@@ -173,7 +176,7 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  // Supabase Commission Priority Management state (Phase 3B.3)
+  // Supabase Commission Priority Management state
   const [priorityUpdatingId, setPriorityUpdatingId] = useState<string | null>(null);
   const [prioritySuccessId, setPrioritySuccessId] = useState<string | null>(null);
   const [priorityErrorMap, setPriorityErrorMap] = useState<Record<string, string>>({});
@@ -203,7 +206,7 @@ export const AdminDashboardView: React.FC = () => {
       } else {
         setPriorityErrorMap(prev => ({
           ...prev,
-          [commissionId]: res.error || 'Failed to update commission priority in Supabase.',
+          [commissionId]: res.error || 'Failed to update commission priority.',
         }));
       }
     } catch (err: any) {
@@ -212,7 +215,7 @@ export const AdminDashboardView: React.FC = () => {
         [commissionId]: err?.message || 'An unexpected error occurred while updating priority.',
       }));
     } finally {
-      setPriorityUpdatingId(null);
+      setStatusUpdatingId(null);
     }
   };
 
@@ -331,7 +334,7 @@ export const AdminDashboardView: React.FC = () => {
     const success = await loadCustomFontFile(file);
     if (success) {
       setCustomFontUploaded(true);
-      setFontUploadMessage(`Successfully loaded & applied "${file.name}" as custom font across the studio!`);
+      setFontUploadMessage(`Successfully loaded & applied "${file.name}" as custom font across the studio.`);
     } else {
       setFontUploadMessage('Could not load font file. Please provide a valid .otf, .ttf, or .woff2 file.');
     }
@@ -345,12 +348,12 @@ export const AdminDashboardView: React.FC = () => {
     if (res && !res.success) {
       setStatusErrorMap(prev => ({
         ...prev,
-        [commissionId]: res.error || 'Failed to update commission stage in database.',
+        [commissionId]: res.error || 'Failed to update commission stage.',
       }));
     }
   };
 
-  // Async saving & feedback states (Phase 5D)
+  // Async saving & feedback states
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
 
@@ -361,7 +364,7 @@ export const AdminDashboardView: React.FC = () => {
   const [isSavingService, setIsSavingService] = useState(false);
   const [serviceSaveError, setServiceSaveError] = useState<string | null>(null);
 
-  // Synchronize form when studioProfile is fetched or updated from Supabase / realtime
+  // Synchronize form when studioProfile is fetched or updated
   useEffect(() => {
     if (isSavingProfile) return;
     setProfileForm(prev => {
@@ -373,7 +376,7 @@ export const AdminDashboardView: React.FC = () => {
     });
   }, [studioProfile, isSavingProfile]);
 
-  // Website Profile Handler (Phase 5D async Supabase persistence)
+  // Website Profile Handler
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingProfile(true);
@@ -381,7 +384,7 @@ export const AdminDashboardView: React.FC = () => {
     try {
       const res = await updateStudioProfile(profileForm);
       if (res && !res.success) {
-        setProfileSaveError(res.error || 'Failed to save website information to database.');
+        setProfileSaveError(res.error || 'Failed to save website information.');
       } else {
         setProfileSaveSuccess(true);
         setTimeout(() => setProfileSaveSuccess(false), 3500);
@@ -393,7 +396,7 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  // Portfolio Handlers (Phase 5D async Supabase persistence)
+  // Portfolio Handlers
   const handleOpenAddProject = () => {
     setEditingProject(null);
     setProjectSaveError(null);
@@ -469,7 +472,7 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  // Portfolio Media Upload Handler (Phase 5D dedicated portfolio-media bucket)
+  // Portfolio Media Upload Handler
   const handlePortfolioMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -478,7 +481,7 @@ export const AdminDashboardView: React.FC = () => {
     try {
       const { publicUrl, error } = await uploadPortfolioMedia(file, file.name);
       if (error || !publicUrl) {
-        setProjectSaveError(error || 'Failed to upload image to portfolio-media bucket.');
+        setProjectSaveError(error || 'Failed to upload image.');
       } else {
         setProjectForm(prev => ({ ...prev, image: publicUrl }));
       }
@@ -490,7 +493,7 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  // Services Handlers (Phase 5D async Supabase persistence)
+  // Services Handlers
   const handleOpenAddService = () => {
     setEditingService(null);
     setServiceSaveError(null);
@@ -591,14 +594,58 @@ export const AdminDashboardView: React.FC = () => {
     return true;
   });
 
+  // Calculate Needs Attention priority list
+  const attentionItems = React.useMemo(() => {
+    const items: {
+      commissionId: string;
+      projectName: string;
+      clientName: string;
+      reason: string;
+      actionLabel: string;
+      actionType: 'proof' | 'review' | 'chat';
+    }[] = [];
+
+    commissions.forEach(c => {
+      const s = (c.status || '').toLowerCase();
+      if (s === 'pending' || s === 'reviewing' || s === 'request_submitted') {
+        items.push({
+          commissionId: c.id,
+          projectName: c.projectName,
+          clientName: c.clientName,
+          reason: 'New commission submission awaiting review',
+          actionLabel: 'Review Request',
+          actionType: 'review',
+        });
+      } else if (s === 'revision' || s === 'revision requested' || s === 'revision_requested') {
+        items.push({
+          commissionId: c.id,
+          projectName: c.projectName,
+          clientName: c.clientName,
+          reason: 'Client submitted revision feedback on draft',
+          actionLabel: 'Open Proofs',
+          actionType: 'proof',
+        });
+      } else if (c.currentStage === 5 || s === 'for_review' || s === 'client review') {
+        items.push({
+          commissionId: c.id,
+          projectName: c.projectName,
+          clientName: c.clientName,
+          reason: 'Stage 05 proof pending client sign-off',
+          actionLabel: 'Inspect Proof',
+          actionType: 'proof',
+        });
+      }
+    });
+
+    return items;
+  }, [commissions]);
+
   if (authLoading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto animate-pulse">
-          <ShieldCheck className="w-6 h-6 text-orange-600" />
-        </div>
-        <p className="text-xs text-zinc-500 font-mono-code">
-          Hydrating Supabase session & verifying studio director privileges...
+      <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
+        <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+          Verifying studio credentials...
         </p>
       </div>
     );
@@ -606,23 +653,23 @@ export const AdminDashboardView: React.FC = () => {
 
   if (currentUser?.role !== 'admin') {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6">
-        <div className="w-16 h-16 rounded-3xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto shadow-sm">
-          <ShieldCheck className="w-8 h-8 text-rose-600" />
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
+        <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
+          <ShieldCheck className="w-5 h-5 text-[#EA580C]" />
         </div>
         <div className="space-y-2">
-          <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
-            Studio Director Access Restricted
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+            Studio Director Access
           </h2>
-          <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed">
-            This administrative dashboard is restricted to authorized studio directors. To access management tools, your account must have an administrator role assigned in the database.
+          <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+            This production desk is reserved for authorized studio directors.
           </p>
         </div>
         <div className="flex justify-center gap-3 pt-2">
           <button
             type="button"
             onClick={() => setActiveView('home')}
-            className="px-5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+            className="px-6 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold text-xs transition-all cursor-pointer"
           >
             Return to Home
           </button>
@@ -632,115 +679,155 @@ export const AdminDashboardView: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10 animate-in fade-in duration-300">
       
-      {/* Admin Studio Header Banner */}
-      <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-          {/* Admin personal account avatar */}
-          <div className="relative shrink-0">
-            <img
-              src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
-              alt={currentUser?.name || 'Administrator'}
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-4 ring-orange-500/20 shadow-xs"
-            />
-            <button
-              type="button"
-              onClick={() => setActiveAdminTab('admin-account')}
-              title="Edit Admin Account Profile Photo"
-              className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-zinc-900 text-white hover:bg-orange-600 transition-colors shadow-xs border border-white cursor-pointer"
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-mono-code font-bold uppercase">
-                Studio Owner Portal
-              </span>
-              <span className="text-xs text-zinc-500 font-mono-code font-medium">
-                Administrator: <strong className="text-zinc-800">{currentUser?.name || studioProfile.designerName}</strong>
-              </span>
-              <span className="text-[11px] text-zinc-400 font-mono-code">
-                ({currentUser?.email || studioProfile.email})
-              </span>
+      {/* Studio Control Room Editorial Header */}
+      <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              <span>Brewster Creative — Studio</span>
+              <span>·</span>
+              <span className="text-[#EA580C] font-semibold">Production Desk</span>
+              <span>·</span>
+              <span>Director: {currentUser?.name || studioProfile.designerName}</span>
             </div>
-            <h1 className="font-display text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
-              Designer Control & Website Management Center
+
+            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+              Production & Commissions
             </h1>
-            <p className="text-xs sm:text-sm text-zinc-500 mt-1 font-medium max-w-2xl leading-relaxed">
-              Full administrative control: customize your website profile & bio, publish or edit portfolio works, configure design packages & pricing, and oversee all client commission orders.
+
+            <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-2xl leading-relaxed">
+              Oversee client commissions, manage artwork deliverables, approve iterations, and publish portfolio works.
             </p>
           </div>
-        </div>
 
-        {/* Studio Slots & Orders Status Badge */}
-        <div className="bg-zinc-50 px-5 py-3 rounded-2xl border border-zinc-200 flex items-center gap-4 shrink-0">
-          <div>
-            <span className="text-[11px] font-mono-code text-zinc-400 uppercase block font-bold">Live Slots</span>
-            <span className="font-display text-xl font-black text-emerald-600">
-              {studioProfile.availableSlots} Available
-            </span>
-          </div>
-          <div className="h-8 w-px bg-zinc-200"></div>
-          <div>
-            <span className="text-[11px] font-mono-code text-zinc-400 uppercase block font-bold">All Orders</span>
-            <span className="font-display text-xl font-black text-zinc-900">
-              {commissions.length}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Admin Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 overflow-x-auto no-scrollbar">
-        {(
-          [
-            { id: 'admin-tab-commissions', tab: 'commissions' as const, label: 'All Commissions', icon: FolderArchive, count: commissions.length },
-            { id: 'admin-tab-clients', tab: 'clients' as const, label: 'Clients & Inquiries', icon: Users, count: clientList.length },
-            { id: 'admin-tab-portfolio', tab: 'portfolio' as const, label: 'Edit Portfolio', icon: ImageIcon, count: portfolio.length },
-            { id: 'admin-tab-services', tab: 'services' as const, label: 'Services & Pricing', icon: Layers, count: services.length },
-            { id: 'admin-tab-website-info', tab: 'website-info' as const, label: 'Edit Website Info', icon: Settings, count: undefined },
-            { id: 'admin-tab-account', tab: 'admin-account' as const, label: 'Admin Account & Profile', icon: UserCheck, count: undefined },
-            { id: 'admin-tab-proofs', tab: 'proof-uploader' as const, label: 'Creative Proofs', icon: UploadCloud, count: undefined },
-            { id: 'admin-tab-chat', tab: 'chat' as const, label: 'Client Chat', icon: MessageSquare, count: undefined },
-            { id: 'admin-tab-typography', tab: 'typography' as const, label: 'Typography (Plus Jakarta Sans)', icon: Type, count: undefined },
-          ]
-        ).map(({ id, tab, label, icon: TabIcon, count }) => (
-          <button
-            key={id}
-            id={id}
-            type="button"
-            title={label}
-            aria-label={label}
-            aria-current={activeAdminTab === tab ? 'true' : undefined}
-            onClick={() => setActiveAdminTab(tab)}
-            className={`relative shrink-0 w-11 h-11 rounded-full transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 ${
-              activeAdminTab === tab
-                ? 'bg-zinc-900 text-white shadow-xs'
-                : 'text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200'
-            }`}
-          >
-            <TabIcon className="w-4 h-4" />
-            {typeof count === 'number' && count > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-orange-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border-2 border-white">
-                {count}
+          <div className="flex items-center gap-6 shrink-0 font-mono text-xs self-start md:self-auto">
+            <div>
+              <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] block uppercase">Live Availability</span>
+              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] text-base font-display">
+                {studioProfile.availableSlots} Slots Open
               </span>
-            )}
-          </button>
-        ))}
+            </div>
+
+            <div className="h-8 w-px bg-[#E4E2DC] dark:bg-[#27272A]" />
+
+            <div>
+              <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] block uppercase">Active Orders</span>
+              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] text-base font-display">
+                {commissions.length}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Priority 1: NEEDS ATTENTION SECTION */}
+      {attentionItems.length > 0 && (
+        <section className="bg-white dark:bg-[#18181B] border border-[#EA580C] rounded-xl p-5 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-[#E4E2DC] dark:border-[#27272A] pb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-pulse" />
+              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold">
+                Needs Attention ({attentionItems.length})
+              </span>
+            </div>
+            <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+              High-priority review queue
+            </span>
+          </div>
+
+          <div className="divide-y divide-[#E4E2DC] dark:divide-[#27272A]">
+            {attentionItems.map((item, idx) => (
+              <div key={idx} className="py-3 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="space-y-0.5 min-w-0">
+                  <div className="flex items-center gap-2 font-mono text-[11px]">
+                    <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] truncate">{item.projectName}</span>
+                    <span className="text-[#71717A] dark:text-[#A1A1AA]">·</span>
+                    <span className="text-[#71717A] dark:text-[#A1A1AA] truncate">{item.clientName}</span>
+                  </div>
+                  <p className="text-[#71717A] dark:text-[#A1A1AA]">
+                    {item.reason}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCommissionId(item.commissionId);
+                    setActiveCommissionId(item.commissionId);
+                    if (item.actionType === 'proof') {
+                      setActiveAdminTab('proof-uploader');
+                    } else if (item.actionType === 'chat') {
+                      setActiveAdminTab('chat');
+                    } else {
+                      setActiveAdminTab('commissions');
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] hover:bg-[#F4F2ED] dark:hover:bg-[#27272A] border border-[#E4E2DC] dark:border-[#27272A] font-semibold text-[#EA580C] transition-all cursor-pointer shrink-0 self-start sm:self-auto"
+                >
+                  <span>{item.actionLabel}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Editorial Navigation Tabs */}
+      <nav className="flex items-center gap-1 border-b border-[#E4E2DC] dark:border-[#27272A] pb-1 overflow-x-auto no-scrollbar" aria-label="Studio administration navigation">
+        {[
+          { id: 'commissions' as const, label: 'Production Ledger', icon: FolderArchive, count: commissions.length },
+          { id: 'proof-uploader' as const, label: 'Creative Proofs', icon: UploadCloud },
+          { id: 'clients' as const, label: 'Client Directory', icon: Users, count: clientList.length },
+          { id: 'portfolio' as const, label: 'Portfolio Archive', icon: ImageIcon, count: portfolio.length },
+          { id: 'services' as const, label: 'Studio Services', icon: Layers, count: services.length },
+          { id: 'website-info' as const, label: 'Studio Profile', icon: Settings },
+          { id: 'admin-account' as const, label: 'Director Account', icon: UserCheck },
+          { id: 'typography' as const, label: 'Typography', icon: Type },
+        ].map(({ id, label, icon: TabIcon, count }) => {
+          const isSelected = activeAdminTab === id;
+
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => {
+                setActiveAdminTab(id);
+                setActiveDashboardTab(id);
+              }}
+              className={`relative px-3.5 py-2 text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                isSelected
+                  ? 'text-[#18181B] dark:text-[#EDEDEC] font-bold'
+                  : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+              }`}
+            >
+              <TabIcon className="w-3.5 h-3.5" />
+              <span>{label}</span>
+              {typeof count === 'number' && (
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA]">
+                  {count}
+                </span>
+              )}
+              {isSelected && (
+                <span className="absolute bottom-0 inset-x-3 h-0.5 bg-[#EA580C] rounded-full animate-in fade-in duration-200" />
+              )}
+            </button>
+          );
+        })}
+      </nav>
 
       {/* ======================================================== */}
-      {/* TAB 1: ALL COMMISSIONS (BREWSTER SEES ALL CLIENT REQUESTS) */}
+      {/* TAB 1: PRODUCTION LEDGER (ALL COMMISSIONS)               */}
       {/* ======================================================== */}
       {activeAdminTab === 'commissions' && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-200">
           
-          {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-zinc-200">
+          {/* Understated Filter Navigation */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-zinc-500 uppercase font-mono-code mr-1">Filter:</span>
+              <span className="text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mr-1">Filter:</span>
               {[
                 { key: 'all', label: `All (${commissions.length})` },
                 { key: 'pending', label: 'Pending Review' },
@@ -752,10 +839,10 @@ export const AdminDashboardView: React.FC = () => {
                   key={f.key}
                   type="button"
                   onClick={() => setCommissionFilter(f.key)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                  className={`px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer ${
                     commissionFilter === f.key
-                      ? 'bg-zinc-900 text-white shadow-xs'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                      ? 'bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold'
+                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
                   }`}
                 >
                   {f.label}
@@ -763,254 +850,124 @@ export const AdminDashboardView: React.FC = () => {
               ))}
             </div>
 
-            <span className="text-xs text-zinc-500 font-mono-code">
-              Showing {filteredCommissions.length} of {commissions.length} total client requests
+            <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+              Showing {filteredCommissions.length} of {commissions.length} commissions
             </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-6">
+          {/* Commissions List */}
+          <div className="space-y-4">
             {filteredCommissions.map((comm) => {
               const isSelected = comm.id === selectedCommissionId;
 
               return (
-                <div
+                <article
                   key={comm.id}
-                  className={`bg-white border rounded-[32px] p-6 sm:p-7 transition-all shadow-xs ${
-                    isSelected ? 'border-orange-500 ring-2 ring-orange-500/20' : 'border-[#E5E5E5] hover:border-zinc-300'
+                  className={`bg-white dark:bg-[#18181B] border rounded-xl p-5 sm:p-6 transition-all space-y-5 ${
+                    isSelected ? 'border-[#EA580C] shadow-2xs' : 'border-[#E4E2DC] dark:border-[#27272A]'
                   }`}
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-zinc-100">
+                  {/* Commission Header Row */}
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
                     <div className="flex items-start gap-4">
                       <img
                         src={comm.clientAvatar}
                         alt={comm.clientName}
-                        className="w-12 h-12 rounded-2xl object-cover ring-2 ring-zinc-200 shrink-0"
+                        className="w-11 h-11 rounded-full object-cover ring-1 ring-[#E4E2DC] dark:ring-[#27272A] shrink-0"
                       />
-                      <div>
+                      <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-display text-lg sm:text-xl font-black text-zinc-900">
+                          <h3 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
                             {comm.projectName}
                           </h3>
-                          <span 
-                            className="px-2.5 py-0.5 rounded-full text-[11px] font-mono-code bg-zinc-100 text-zinc-600 font-bold border border-zinc-200"
-                            title={`Commission ID: ${comm.id}`}
-                          >
-                            ID: #{comm.id.length > 12 ? `${comm.id.slice(0, 8)}...` : comm.id}
+                          <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                            #{comm.id.slice(0, 8)}
                           </span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono-code font-bold border ${
-                            comm.status === 'Completed' || comm.status === 'Final Approval' || comm.status === 'completed' || comm.status === 'final_approval'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : comm.status === 'In Progress' || comm.status === 'in_progress' || comm.status === 'accepted'
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : comm.status === 'Client Review' || comm.status === 'Revision Requested' || comm.status === 'for_review' || comm.status === 'reviewing' || comm.status === 'revision'
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : comm.status === 'Rejected' || comm.status === 'cancelled'
-                              ? 'bg-rose-50 text-rose-700 border-rose-200'
-                              : 'bg-orange-50 text-orange-700 border-orange-200'
-                          }`}>
-                            Status: {formatCommissionStatus(comm.status)}
-                          </span>
-                          {/* Supabase Priority Selector (Phase 3B.3) */}
-                          <div className="inline-flex items-center gap-1.5">
-                            <div className={`relative inline-flex items-center rounded-full border pl-2.5 pr-6 py-0.5 text-[11px] font-mono-code font-bold transition-colors ${
-                              (comm.priority || 'normal').toLowerCase() === 'urgent' || (comm.priority || 'normal').toLowerCase() === 'high'
-                                ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                            }`}>
-                              <label htmlFor={`priority-select-${comm.id}`} className="mr-1 select-none cursor-pointer">
-                                Priority:
-                              </label>
-                              <select
-                                id={`priority-select-${comm.id}`}
-                                value={(comm.priority || 'normal').toLowerCase()}
-                                disabled={priorityUpdatingId === comm.id}
-                                onChange={(e) => handlePriorityChange(comm.id, e.target.value as CommissionPriority)}
-                                className="appearance-none bg-transparent font-mono-code font-bold focus:outline-none cursor-pointer disabled:opacity-50"
-                                title="Update commission priority in Supabase"
-                              >
-                                {PRIORITY_OPTIONS.map(opt => (
-                                  <option key={opt.value} value={opt.value} className="bg-white text-zinc-900 font-sans">
-                                    {opt.label}
-                                  </option>
-                                ))}
-                              </select>
-                              <div className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-current">
-                                {priorityUpdatingId === comm.id ? (
-                                  <Loader2 className="w-3 h-3 animate-spin text-orange-500" />
-                                ) : (
-                                  <ChevronDown className="w-3 h-3 opacity-60" />
-                                )}
-                              </div>
-                            </div>
-                            {prioritySuccessId === comm.id && (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-mono-code font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full border border-emerald-300 animate-fade-in">
-                                <Check className="w-3 h-3 text-emerald-600" /> Saved
-                              </span>
-                            )}
-                          </div>
-                          <span className="px-3 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code font-bold border border-orange-200">
+                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] text-[#EA580C] font-semibold uppercase">
                             {comm.serviceType}
                           </span>
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono-code bg-zinc-100 text-zinc-700 font-bold border border-zinc-200">
-                            Budget: {comm.budget}
+                          <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
+                            {comm.budget}
                           </span>
                         </div>
-                        <p className="text-xs text-zinc-500 mt-1.5 font-medium flex items-center gap-1.5 flex-wrap">
-                          <span>Client: <strong className="text-zinc-800 font-bold">{comm.clientName}</strong> ({comm.clientEmail})</span>
-                          <span>•</span>
-                          <span>Date Submitted: <strong className="text-zinc-700 font-semibold">{formatCommissionDate(comm.createdAt)}</strong></span>
-                          <span>•</span>
-                          <span>Deadline: <strong className="text-orange-600 font-bold">{formatCommissionDate(comm.deadline)}</strong></span>
-                        </p>
 
-                        {/* Direct Email & Contact Actions for Brewster */}
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          <a
-                            id={`btn-email-client-${comm.id}`}
-                            href={`mailto:${comm.clientEmail}?subject=${encodeURIComponent(`Brewster Creative — Update on ${comm.projectName}`)}&body=${encodeURIComponent(`Hi ${comm.clientName},\n\nThis is Brewster from Brewster Creative following up on your project "${comm.projectName}".\n\n`)}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold border border-orange-200 transition-colors"
-                            title={`Open email client to contact ${comm.clientEmail}`}
-                          >
-                            <Mail className="w-3.5 h-3.5 text-orange-600" />
-                            <span>Email Client</span>
-                          </a>
-
-                          <button
-                            id={`btn-copy-email-${comm.id}`}
-                            type="button"
-                            onClick={() => handleCopyEmail(comm.clientEmail, `comm-${comm.id}`)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold border border-zinc-200 transition-colors cursor-pointer"
-                            title="Copy client email to clipboard"
-                          >
-                            {copiedEmailId === `comm-${comm.id}` ? (
-                              <>
-                                <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                <span className="text-emerald-700 font-bold text-xs">Copied!</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                                <span>Copy Email</span>
-                              </>
-                            )}
-                          </button>
-
-                          {comm.clientHandle && (
-                            <span className="px-2.5 py-1 rounded-xl bg-zinc-50 text-zinc-600 text-xs font-mono-code border border-zinc-200">
-                              {comm.clientHandle}
-                            </span>
-                          )}
-
-                          {comm.contactMethod && (
-                            <span className="px-2.5 py-1 rounded-xl bg-zinc-50 text-zinc-500 text-xs font-medium border border-zinc-200">
-                              Contact: {comm.contactMethod}
-                            </span>
-                          )}
+                        <div className="flex items-center gap-2 text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] flex-wrap">
+                          <span>Client: <strong className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{comm.clientName}</strong></span>
+                          <span>·</span>
+                          <span>{comm.clientEmail}</span>
+                          <span>·</span>
+                          <span>Deadline: {formatCommissionDate(comm.deadline)}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Quick Action Buttons & Status Management for Designer */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
-                      {/* Status Dropdown Selector (Phase 3B.2 Supabase backed) */}
-                      <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-200 rounded-2xl px-3 py-1.5">
-                        <label
-                          htmlFor={`status-select-${comm.id}`}
-                          className="text-[11px] font-bold text-zinc-500 font-mono-code uppercase tracking-wider shrink-0"
-                        >
+                    {/* Status & Priority Selectors */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {/* Status Dropdown */}
+                      <div className="flex items-center gap-1.5 font-mono text-xs">
+                        <label htmlFor={`status-select-${comm.id}`} className="text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA]">
                           Status:
                         </label>
-                        <div className="relative inline-flex items-center">
-                          <select
-                            id={`status-select-${comm.id}`}
-                            value={
-                              comm.status === 'In Progress' ? 'in_progress' :
-                              comm.status === 'Client Review' ? 'for_review' :
-                              comm.status === 'Revision Requested' ? 'revision' :
-                              comm.status === 'Final Approval' || comm.status === 'final_approval' ? 'final_approval' :
-                              comm.status === 'Rejected' ? 'cancelled' :
-                              comm.status === 'Completed' ? 'completed' :
-                              comm.status === 'Pending' ? 'pending' :
-                              comm.status
-                            }
-                            disabled={statusUpdatingId === comm.id}
-                            onChange={(e) => handleStatusChange(comm.id, e.target.value as CommissionStatus)}
-                            className="appearance-none pl-2.5 pr-7 py-1 text-xs font-mono-code font-bold bg-white text-zinc-900 border border-zinc-200 rounded-xl hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 disabled:opacity-50 cursor-pointer transition-colors"
-                            title="Update commission status in Supabase"
-                          >
-                            {STATUS_OPTIONS.map(opt => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400">
-                            {statusUpdatingId === comm.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
-                            ) : (
-                              <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
-                            )}
-                          </div>
-                        </div>
+                        <select
+                          id={`status-select-${comm.id}`}
+                          value={
+                            comm.status === 'In Progress' ? 'in_progress' :
+                            comm.status === 'Client Review' ? 'for_review' :
+                            comm.status === 'Revision Requested' ? 'revision' :
+                            comm.status === 'Final Approval' || comm.status === 'final_approval' ? 'final_approval' :
+                            comm.status === 'Rejected' ? 'cancelled' :
+                            comm.status === 'Completed' ? 'completed' :
+                            comm.status === 'Pending' ? 'pending' :
+                            comm.status
+                          }
+                          disabled={statusUpdatingId === comm.id}
+                          onChange={(e) => handleStatusChange(comm.id, e.target.value as CommissionStatus)}
+                          className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-2.5 py-1 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] cursor-pointer"
+                        >
+                          {STATUS_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
                         {statusSuccessId === comm.id && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-mono-code font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-lg border border-emerald-300 animate-fade-in">
-                            <Check className="w-3 h-3 text-emerald-600" /> Saved
-                          </span>
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400">✓ Saved</span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {(comm.status === 'Request Submitted' || comm.status === 'pending') && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => acceptCommission(comm.id)}
-                              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Accept Commission</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => declineCommission(comm.id)}
-                              className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                              <span>Decline</span>
-                            </button>
-                          </>
-                        )}
+                      {/* Priority Dropdown */}
+                      <div className="flex items-center gap-1.5 font-mono text-xs">
+                        <label htmlFor={`priority-select-${comm.id}`} className="text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA]">
+                          Priority:
+                        </label>
+                        <select
+                          id={`priority-select-${comm.id}`}
+                          value={(comm.priority || 'normal').toLowerCase()}
+                          disabled={priorityUpdatingId === comm.id}
+                          onChange={(e) => handlePriorityChange(comm.id, e.target.value as CommissionPriority)}
+                          className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-2.5 py-1 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] cursor-pointer"
+                        >
+                          {PRIORITY_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
+                      {/* Action Links */}
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => {
-                            setExpandedProofsCommissionId(prev => prev === comm.id ? null : comm.id);
+                            setSelectedCommissionId(comm.id);
+                            setActiveCommissionId(comm.id);
+                            setActiveView('chat');
                           }}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
-                            expandedProofsCommissionId === comm.id 
-                              ? 'bg-zinc-900 text-white border-zinc-900 shadow-xs' 
-                              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border-zinc-200'
-                          }`}
-                          title="Toggle Creative Proofs section"
+                          title="Open Conversation"
+                          className="p-1.5 rounded-md border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] transition-colors cursor-pointer"
                         >
-                          <Layers className="w-3.5 h-3.5" />
-                          <span>{expandedProofsCommissionId === comm.id ? 'Hide Proofs' : 'Proofs'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setExpandedDeliverablesCommissionId(prev => prev === comm.id ? null : comm.id);
-                          }}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
-                            expandedDeliverablesCommissionId === comm.id 
-                              ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' 
-                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
-                          }`}
-                          title="Toggle Final Deliverables section"
-                        >
-                          <FolderArchive className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>{expandedDeliverablesCommissionId === comm.id ? 'Hide Deliverables' : 'Final Deliverables'}</span>
+                          <MessageSquare className="w-3.5 h-3.5" />
                         </button>
 
                         <button
@@ -1020,212 +977,94 @@ export const AdminDashboardView: React.FC = () => {
                             setActiveCommissionId(comm.id);
                             setActiveAdminTab('proof-uploader');
                           }}
-                          className="px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold text-xs transition-opacity hover:opacity-90 cursor-pointer"
                         >
                           <UploadCloud className="w-3.5 h-3.5" />
-                          <span>Upload Proof</span>
+                          <span>Proofs</span>
                         </button>
+                      </div>
+                    </div>
+                  </div>
 
+                  {/* Accept / Decline Bar if Pending */}
+                  {(comm.status === 'Request Submitted' || comm.status === 'pending') && (
+                    <div className="p-3 bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg flex items-center justify-between gap-3 text-xs">
+                      <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                        New commission proposal submitted by {comm.clientName}.
+                      </span>
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setSelectedCommissionId(comm.id);
-                            setActiveCommissionId(comm.id);
-                            setActiveAdminTab('chat');
-                          }}
-                          className="px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold transition-all flex items-center gap-1.5 border border-zinc-200"
+                          onClick={() => acceptCommission(comm.id)}
+                          className="px-3 py-1 rounded bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-colors cursor-pointer"
                         >
-                          <MessageSquare className="w-3.5 h-3.5 text-zinc-600" />
-                          <span>Client Chat</span>
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => declineCommission(comm.id)}
+                          className="px-3 py-1 rounded border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] hover:text-red-600 text-xs transition-colors cursor-pointer"
+                        >
+                          Decline
                         </button>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Supabase status update error banner if any */}
-                  {statusErrorMap[comm.id] && (
-                    <div className="mt-4 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl px-4 py-2.5 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
-                        <span>{statusErrorMap[comm.id]}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setStatusErrorMap(prev => {
-                          const copy = { ...prev };
-                          delete copy[comm.id];
-                          return copy;
-                        })}
-                        className="text-rose-400 hover:text-rose-700 font-bold ml-3 text-sm leading-none cursor-pointer"
-                        title="Dismiss error"
-                      >
-                        ×
-                      </button>
-                    </div>
                   )}
 
-                  {/* Supabase priority update error banner if any */}
-                  {priorityErrorMap[comm.id] && (
-                    <div className="mt-4 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl px-4 py-2.5 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
-                        <span>{priorityErrorMap[comm.id]}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPriorityErrorMap(prev => {
-                          const copy = { ...prev };
-                          delete copy[comm.id];
-                          return copy;
-                        })}
-                        className="text-rose-400 hover:text-rose-700 font-bold ml-3 text-sm leading-none cursor-pointer"
-                        title="Dismiss error"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Structured Creative Brief (Phase 3C.1) */}
-                  <div className="mt-5 p-5 rounded-2xl bg-zinc-50/90 border border-zinc-200/80 space-y-4">
-                    <div className="flex items-center justify-between gap-2 border-b border-zinc-200/60 pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
-                          <FileText className="w-3.5 h-3.5" />
-                        </div>
-                        <h4 className="font-display text-sm font-bold text-zinc-900">
-                          Structured Creative Brief
-                        </h4>
-                      </div>
-                      <span className="text-[11px] font-mono-code text-zinc-400 font-bold uppercase tracking-wider">
-                        Project Specifications
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
-                        Project Description
-                      </span>
-                      <p className="text-zinc-800 text-xs sm:text-sm leading-relaxed bg-white p-3.5 rounded-xl border border-zinc-200 font-medium whitespace-pre-line">
-                        {comm.description || 'No description provided.'}
-                      </p>
-                    </div>
-
-                    {/* Purpose & Audience */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
-                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
-                          Purpose & Context
-                        </span>
-                        <p className="text-zinc-800 text-xs font-semibold">
-                          {comm.purpose || <span className="text-zinc-400 font-normal italic">Not specified</span>}
-                        </p>
-                      </div>
-
-                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
-                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
-                          Target Audience
-                        </span>
-                        <p className="text-zinc-800 text-xs font-semibold">
-                          {comm.targetAudience || <span className="text-zinc-400 font-normal italic">Not specified</span>}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Style & Dimensions */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
-                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
-                          Aesthetic Style Direction
-                        </span>
-                        {comm.preferredStyle ? (
-                          <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs font-bold font-mono-code inline-block border border-orange-200">
-                            {comm.preferredStyle}
-                          </span>
-                        ) : (
-                          <span className="text-zinc-400 text-xs font-normal italic">Flexible / Designer discretion</span>
-                        )}
-                      </div>
-
-                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
-                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
-                          Required Dimensions / Format
-                        </span>
-                        <p className="text-zinc-800 text-xs font-mono-code font-semibold">
-                          {comm.requiredDimensions || <span className="text-zinc-400 font-normal italic">Not specified</span>}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Preferred Colors */}
-                    {comm.preferredColors && comm.preferredColors.length > 0 && (
-                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
-                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1.5 font-bold">
-                          Brand / Color Palette
-                        </span>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {comm.preferredColors.map((hex, i) => (
-                            <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-50 border border-zinc-200 text-xs font-mono-code text-zinc-800 font-medium">
-                              {hex.startsWith('#') && (
-                                <span className="w-3.5 h-3.5 rounded-full border border-zinc-300 shadow-2xs shrink-0" style={{ backgroundColor: hex }}></span>
-                              )}
-                              <span>{hex}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Reference Links */}
-                    {comm.referenceLinks && comm.referenceLinks.length > 0 && (
-                      <div className="bg-white p-3 rounded-xl border border-zinc-200">
-                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1.5 font-bold">
-                          Reference & Inspiration Links
-                        </span>
-                        <ul className="space-y-1.5 text-xs">
-                          {comm.referenceLinks.map((link, i) => {
-                            const isUrl = isValidReferenceUrl(link);
-                            return (
-                              <li key={i}>
-                                {isUrl ? (
-                                  <a
-                                    href={link}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-orange-600 hover:underline inline-flex items-center gap-1.5 font-medium max-w-full"
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                                    <span className="truncate">{link}</span>
-                                  </a>
-                                ) : (
-                                  <span className="text-zinc-600 inline-flex items-center gap-1.5 font-medium max-w-full text-xs">
-                                    <span className="truncate">{link}</span>
-                                  </span>
-                                )}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Additional Notes */}
-                    {comm.additionalNotes && (
-                      <div className="bg-white p-3.5 rounded-xl border border-zinc-200">
-                        <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider block mb-1 font-bold">
-                          Additional Requirements / Notes
-                        </span>
-                        <p className="text-zinc-700 text-xs whitespace-pre-line leading-relaxed">
-                          {comm.additionalNotes}
-                        </p>
-                      </div>
-                    )}
+                  {/* 8-Stage Interactive Production Bar */}
+                  <div className="pt-1">
+                    <ProgressBar commission={comm} interactiveAdmin={true} />
                   </div>
 
-                  {/* Creative Proofs Section (Phase 3C.2-B) */}
+                  {/* Expandable Proofs and Deliverables Accordion Controls */}
+                  <div className="flex items-center justify-between pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedProofsCommissionId(prev => prev === comm.id ? null : comm.id)}
+                        className="text-[#EA580C] hover:underline flex items-center gap-1 cursor-pointer font-semibold"
+                      >
+                        <Layers className="w-3 h-3" />
+                        <span>{expandedProofsCommissionId === comm.id ? 'Hide Proofs' : 'Inspect Proofs'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setExpandedDeliverablesCommissionId(prev => prev === comm.id ? null : comm.id)}
+                        className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] flex items-center gap-1 cursor-pointer"
+                      >
+                        <FolderArchive className="w-3 h-3" />
+                        <span>{expandedDeliverablesCommissionId === comm.id ? 'Hide Deliverables' : 'Final Deliverables'}</span>
+                      </button>
+                    </div>
+
+                    {/* Payment Status Toggles */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#71717A] dark:text-[#A1A1AA]">Settlement:</span>
+                      {(['Unpaid', 'Partial', 'Paid'] as const).map((pStatus) => (
+                        <button
+                          key={pStatus}
+                          type="button"
+                          onClick={() => updatePaymentStatus(comm.id, pStatus)}
+                          className={`px-2.5 py-0.5 rounded text-[11px] font-mono transition-colors cursor-pointer ${
+                            comm.paymentStatus === pStatus
+                              ? pStatus === 'Paid'
+                                ? 'bg-emerald-600 text-white font-bold'
+                                : pStatus === 'Partial'
+                                ? 'bg-amber-600 text-white font-bold'
+                                : 'bg-red-600 text-white font-bold'
+                              : 'bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA]'
+                          }`}
+                        >
+                          {pStatus}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Expanded Proofs Subsection */}
                   {expandedProofsCommissionId === comm.id && (
-                    <div className="mt-6 pt-6 border-t border-zinc-200">
+                    <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] animate-in fade-in duration-200">
                       <AdminCreativeProofsSection
                         commission={comm}
                         currentUser={currentUser}
@@ -1233,89 +1072,16 @@ export const AdminDashboardView: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Final Deliverables Section (Phase 5C) */}
+                  {/* Expanded Deliverables Subsection */}
                   {expandedDeliverablesCommissionId === comm.id && (
-                    <div className="mt-6 pt-6 border-t border-zinc-200">
+                    <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] animate-in fade-in duration-200">
                       <AdminDeliverablesSection
                         commission={comm}
-                        currentUser={currentUser}
                       />
                     </div>
                   )}
 
-                  {/* Stage Controller Selector */}
-                  <div className="mt-5 space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-zinc-700 flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-orange-500" />
-                        Update Project Milestone Stage:
-                      </span>
-                      <span className="font-mono-code font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
-                        Current: Stage 0{comm.currentStage} — {COMMISSION_STAGES.find(s => s.number === comm.currentStage)?.name} ({comm.progress}%)
-                      </span>
-                    </div>
-
-                    {/* Stage selector bar */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-                      {COMMISSION_STAGES.map((s) => {
-                        const isCurrent = comm.currentStage === s.number;
-                        const isPassed = comm.currentStage > s.number;
-
-                        return (
-                          <button
-                            key={s.number}
-                            type="button"
-                            onClick={() => handleStageChange(comm.id, s.number)}
-                            className={`p-2.5 rounded-xl text-left transition-all text-xs flex flex-col justify-between border ${
-                              isCurrent
-                                ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm ring-2 ring-orange-500/30'
-                                : isPassed
-                                ? 'bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100'
-                                : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100'
-                            }`}
-                          >
-                            <span className="font-mono-code font-black text-[10px] block opacity-70">
-                              0{s.number}
-                            </span>
-                            <span className="font-bold text-[11px] line-clamp-1 mt-1">
-                              {s.name}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Payment Status Switcher & Project Notes */}
-                  <div className="mt-5 pt-4 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-4 text-xs">
-                    <div className="flex items-center gap-3">
-                      <span className="text-zinc-500 font-bold">Payment Status:</span>
-                      {(['Unpaid', 'Partial', 'Paid'] as const).map((pStatus) => (
-                        <button
-                          key={pStatus}
-                          type="button"
-                          onClick={() => updatePaymentStatus(comm.id, pStatus)}
-                          className={`px-3 py-1 rounded-full text-xs font-bold transition-all border ${
-                            comm.paymentStatus === pStatus
-                              ? pStatus === 'Paid' 
-                                ? 'bg-emerald-600 text-white border-emerald-600'
-                                : pStatus === 'Partial'
-                                ? 'bg-amber-500 text-white border-amber-500'
-                                : 'bg-rose-500 text-white border-rose-500'
-                              : 'bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200'
-                          }`}
-                        >
-                          {pStatus}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="text-zinc-400 font-mono-code text-[11px]">
-                      Date Submitted: {formatCommissionDate(comm.createdAt)} • Deadline: {formatCommissionDate(comm.deadline)} • Revisions Used: {comm.revisionsUsed}/{comm.revisionsAllowed}
-                    </div>
-                  </div>
-
-                </div>
+                </article>
               );
             })}
           </div>
@@ -1324,964 +1090,24 @@ export const AdminDashboardView: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* TAB: CLIENTS & CONTACT DIRECTORY (FOR BREWSTER OUTREACH) */}
-      {/* ======================================================== */}
-      {activeAdminTab === 'clients' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-[28px] border border-[#E5E5E5] shadow-xs">
-            <div>
-              <h3 className="font-display text-xl font-black text-zinc-900 flex items-center gap-2">
-                <Users className="w-5 h-5 text-orange-500" />
-                <span>Client Contact Directory</span>
-              </h3>
-              <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                Quick access to all client email addresses, contact handles, and commission histories.
-              </p>
-            </div>
-
-            <div className="text-xs text-zinc-500 bg-zinc-50 border border-zinc-200 px-3.5 py-2 rounded-xl font-medium">
-              Total Clients on Record: <strong className="text-zinc-900 font-bold">{clientList.length}</strong>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {clientList.map((client) => {
-              return (
-                <div 
-                  key={client.email}
-                  className="bg-white border border-zinc-200/90 rounded-[28px] p-6 shadow-xs hover:border-zinc-300 transition-all flex flex-col justify-between gap-5"
-                >
-                  <div className="flex items-start gap-4">
-                    <img 
-                      src={client.avatar} 
-                      alt={client.name} 
-                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-zinc-100 shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="font-display font-bold text-base text-zinc-900 truncate">
-                          {client.name}
-                        </h4>
-                        <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 text-[11px] font-bold shrink-0">
-                          {client.commissionsCount} {client.commissionsCount === 1 ? 'Project' : 'Projects'}
-                        </span>
-                      </div>
-
-                      {/* Email address row */}
-                      <p className="text-xs text-zinc-500 font-mono-code truncate mt-0.5">
-                        {client.email}
-                      </p>
-
-                      {/* Additional contact metadata */}
-                      <div className="flex items-center gap-2 flex-wrap mt-2.5">
-                        {client.handle && (
-                          <span className="px-2 py-0.5 rounded-lg bg-zinc-100 text-zinc-700 text-[11px] font-mono-code">
-                            {client.handle}
-                          </span>
-                        )}
-                        {client.contactMethod && (
-                          <span className="px-2 py-0.5 rounded-lg bg-zinc-100 text-zinc-600 text-[11px]">
-                            {client.contactMethod}
-                          </span>
-                        )}
-                        {client.phone && (
-                          <a
-                            href={`tel:${client.phone}`}
-                            className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] flex items-center gap-1 font-mono-code"
-                          >
-                            <Phone className="w-3 h-3" />
-                            <span>{client.phone}</span>
-                          </a>
-                        )}
-                      </div>
-
-                      {client.latestProject && (
-                        <p className="text-xs text-zinc-600 mt-2">
-                          Latest Project: <strong className="text-zinc-900">{client.latestProject}</strong>
-                          {client.latestStatus && (
-                            <span className="text-zinc-400 font-normal"> ({formatCommissionStatus(client.latestStatus)})</span>
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Outreach Action Buttons */}
-                  <div className="pt-4 border-t border-zinc-100 flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={`mailto:${client.email}?subject=${encodeURIComponent(`Brewster Creative — Hello ${client.name}`)}&body=${encodeURIComponent(`Hi ${client.name},\n\nThis is Brewster from Brewster Creative.\n\n`)}`}
-                        className="px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
-                      >
-                        <Mail className="w-3.5 h-3.5" />
-                        <span>Send Email</span>
-                      </a>
-
-                      <button
-                        type="button"
-                        onClick={() => handleCopyEmail(client.email, `client-dir-${client.id}`)}
-                        className="px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold transition-all border border-zinc-200 flex items-center gap-1.5"
-                      >
-                        {copiedEmailId === `client-dir-${client.id}` ? (
-                          <>
-                            <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="text-emerald-700 font-bold">Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                            <span>Copy Email</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const comm = commissions.find(c => c.clientEmail.toLowerCase() === client.email.toLowerCase() || c.clientId === client.id);
-                        if (comm) {
-                          setSelectedCommissionId(comm.id);
-                          setActiveCommissionId(comm.id);
-                        }
-                        setActiveAdminTab('chat');
-                      }}
-                      className="px-3 py-2 rounded-xl bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-bold transition-all border border-zinc-200 flex items-center gap-1.5"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 text-zinc-600" />
-                      <span>Open Chat</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {activeAdminTab === 'portfolio' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-[28px] border border-[#E5E5E5] shadow-xs">
-            <div>
-              <h3 className="font-display text-xl font-black text-zinc-900">
-                Portfolio Projects Manager
-              </h3>
-              <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                Add, edit, or remove showcase pieces displayed on the public Portfolio page.
-              </p>
-            </div>
-
-            <button
-              id="btn-admin-add-portfolio"
-              type="button"
-              onClick={handleOpenAddProject}
-              className="px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs flex items-center gap-2 self-start sm:self-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Portfolio Project</span>
-            </button>
-          </div>
-
-          {/* Add / Edit Project Modal/Form */}
-          {isAddingProject && (
-            <div className="bg-white border-2 border-orange-400 rounded-[28px] p-6 sm:p-8 shadow-md space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-                <h4 className="font-display text-lg font-black text-zinc-900">
-                  {editingProject ? `Edit Project: ${editingProject.title}` : 'Publish New Portfolio Project'}
-                </h4>
-                <button
-                  type="button"
-                  onClick={() => setIsAddingProject(false)}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveProject} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Project Title *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={projectForm.title || ''}
-                      onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
-                      placeholder="e.g. Nexus Cybernetics Identity"
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Category *
-                    </label>
-                    <select
-                      value={projectForm.category || 'Branding'}
-                      onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value as any })}
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                    >
-                      <option value="Branding">Branding</option>
-                      <option value="Logo">Logo</option>
-                      <option value="Poster">Poster</option>
-                      <option value="Illustration">Illustration</option>
-                      <option value="Social Media">Social Media</option>
-                      <option value="Book Covers">Book Covers</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Client / Brand Name
-                    </label>
-                    <input
-                      type="text"
-                      value={projectForm.client || ''}
-                      onChange={(e) => setProjectForm({ ...projectForm, client: e.target.value })}
-                      placeholder="e.g. Solis Labs, Tokyo"
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Cover Image (URL or Direct Upload) *
-                    </label>
-                    <div className="space-y-2">
-                      <input
-                        type="url"
-                        required
-                        value={projectForm.image || ''}
-                        onChange={(e) => setProjectForm({ ...projectForm, image: e.target.value })}
-                        placeholder="https://images.unsplash.com/... or upload below"
-                        className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                      />
-                      <div className="flex items-center gap-2">
-                        <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[11px] font-bold transition-colors inline-flex items-center gap-1.5 border border-zinc-200">
-                          <UploadCloud className="w-3.5 h-3.5 text-orange-500" />
-                          <span>{isUploadingMedia ? 'Uploading Image...' : 'Upload to Portfolio Media'}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            disabled={isUploadingMedia}
-                            onChange={handlePortfolioMediaUpload}
-                            className="hidden"
-                          />
-                        </label>
-                        {projectForm.image && (
-                          <span className="text-[10px] font-mono-code text-zinc-400 truncate max-w-xs">
-                            Active: {projectForm.image.substring(0, 40)}...
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1">
-                    Short Description *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={projectForm.shortDesc || ''}
-                    onChange={(e) => setProjectForm({ ...projectForm, shortDesc: e.target.value })}
-                    placeholder="Brief 1-sentence synopsis for the portfolio grid card"
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1">
-                    Detailed Case Study Story
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={projectForm.fullDesc || ''}
-                    onChange={(e) => setProjectForm({ ...projectForm, fullDesc: e.target.value })}
-                    placeholder="Provide context on client goals, typographic decisions, and deliverable suite..."
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white resize-none"
-                  />
-                </div>
-
-                {projectSaveError && (
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium">
-                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
-                    <span>{projectSaveError}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="chk-featured"
-                    checked={!!projectForm.featured}
-                    onChange={(e) => setProjectForm({ ...projectForm, featured: e.target.checked })}
-                    className="rounded text-orange-500 focus:ring-orange-400"
-                  />
-                  <label htmlFor="chk-featured" className="text-xs font-bold text-zinc-800">
-                    Feature on Homepage Carousel
-                  </label>
-                </div>
-
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingProject(false)}
-                    disabled={isSavingProject}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-500 hover:text-zinc-800"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSavingProject}
-                    className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5"
-                  >
-                    {isSavingProject ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Saving to Database...</span>
-                      </>
-                    ) : (
-                      <span>{editingProject ? 'Save Project Changes' : 'Publish Project'}</span>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* Portfolio Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {portfolio.map((proj) => (
-              <div 
-                key={proj.id} 
-                className="bg-white border border-[#E5E5E5] rounded-[28px] overflow-hidden shadow-xs flex flex-col justify-between group hover:border-zinc-400 transition-all"
-              >
-                <div>
-                  <div className="aspect-[16/10] overflow-hidden bg-zinc-100 relative">
-                    <img
-                      src={proj.image}
-                      alt={proj.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-zinc-950/70 backdrop-blur-md text-[10px] font-mono-code text-white font-bold uppercase">
-                      {proj.category}
-                    </span>
-                    {proj.featured && (
-                      <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-orange-500 text-[10px] font-bold text-white shadow-xs">
-                        Featured
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="p-5 space-y-2">
-                    <h4 className="font-display font-black text-base text-zinc-900 line-clamp-1">
-                      {proj.title}
-                    </h4>
-                    <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed font-medium">
-                      {proj.shortDesc}
-                    </p>
-                    <div className="text-[11px] text-zinc-400 font-mono-code pt-2">
-                      Client: {proj.client || 'Direct Commission'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-400 font-mono-code">
-                    ID: {proj.id}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditProject(proj)}
-                      className="px-3 py-1.5 rounded-lg bg-white border border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:border-zinc-300 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs"
-                    >
-                      <Edit3 className="w-3.5 h-3.5 text-zinc-500" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteProject(proj.id, proj.title)}
-                      className="px-2.5 py-1.5 rounded-lg bg-white border border-zinc-200 text-rose-600 hover:bg-rose-50 text-xs font-bold transition-all"
-                      title="Delete from Portfolio"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            ))}
-          </div>
-
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* TAB 3: SERVICES & PRICING MANAGER (EDIT RATES & PACKAGES) */}
-      {/* ======================================================== */}
-      {activeAdminTab === 'services' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-[28px] border border-[#E5E5E5] shadow-xs">
-            <div>
-              <h3 className="font-display text-xl font-black text-zinc-900">
-                Services & Pricing Manager
-              </h3>
-              <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                Configure rates, deliverables, and turnarounds shown on the public Services & Pricing page.
-              </p>
-            </div>
-
-            <button
-              id="btn-admin-add-service"
-              type="button"
-              onClick={handleOpenAddService}
-              className="px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs flex items-center gap-2 self-start sm:self-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Service Package</span>
-            </button>
-          </div>
-
-          {/* Add / Edit Service Modal/Form */}
-          {isAddingService && (
-            <div className="bg-white border-2 border-orange-400 rounded-[28px] p-6 sm:p-8 shadow-md space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-                <h4 className="font-display text-lg font-black text-zinc-900">
-                  {editingService ? `Edit Package: ${editingService.name}` : 'Create New Service Package'}
-                </h4>
-                <button
-                  type="button"
-                  onClick={() => setIsAddingService(false)}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveService} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Service Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={serviceForm.name || ''}
-                      onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })}
-                      placeholder="e.g. Brand Identity Package"
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Category *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={serviceForm.category || ''}
-                      onChange={(e) => setServiceForm({ ...serviceForm, category: e.target.value })}
-                      placeholder="e.g. Branding, Posters, Illustration"
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Starting Price ({studioProfile.currencySymbol}) *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min="100"
-                      value={serviceForm.startingPrice || 3500}
-                      onChange={(e) => setServiceForm({ ...serviceForm, startingPrice: Number(e.target.value) })}
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 font-mono-code font-bold focus:outline-none focus:border-orange-500 focus:bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Estimated Turnaround *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={serviceForm.turnaround || '3–7 days'}
-                      onChange={(e) => setServiceForm({ ...serviceForm, turnaround: e.target.value })}
-                      placeholder="e.g. 5–10 days"
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Included Revisions
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="10"
-                      value={serviceForm.revisionsCount || 2}
-                      onChange={(e) => setServiceForm({ ...serviceForm, revisionsCount: Number(e.target.value) })}
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1">
-                    Short Description *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={serviceForm.shortDesc || ''}
-                    onChange={(e) => setServiceForm({ ...serviceForm, shortDesc: e.target.value })}
-                    placeholder="Clear description of what this service delivers"
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1">
-                    Deliverables List (One per line)
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={deliverablesText}
-                    onChange={(e) => setDeliverablesText(e.target.value)}
-                    placeholder="Primary vector logo&#10;Color palette breakdown&#10;Typography guidelines"
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-xs text-zinc-900 font-mono-code focus:outline-none focus:border-orange-500 focus:bg-white resize-none"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="chk-popular"
-                    checked={!!serviceForm.popular}
-                    onChange={(e) => setServiceForm({ ...serviceForm, popular: e.target.checked })}
-                    className="rounded text-orange-500 focus:ring-orange-400"
-                  />
-                  <label htmlFor="chk-popular" className="text-xs font-bold text-zinc-800">
-                    Mark as "Most Popular" on Services page
-                  </label>
-                </div>
-
-                {serviceSaveError && (
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium">
-                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
-                    <span>{serviceSaveError}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingService(false)}
-                    disabled={isSavingService}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-500 hover:text-zinc-800"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSavingService}
-                    className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5"
-                  >
-                    {isSavingService ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Saving to Database...</span>
-                      </>
-                    ) : (
-                      <span>{editingService ? 'Save Package Changes' : 'Create Package'}</span>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* Services Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((srv) => (
-              <div 
-                key={srv.id} 
-                className="bg-white border border-[#E5E5E5] rounded-[28px] p-6 space-y-4 shadow-xs flex flex-col justify-between hover:border-zinc-400 transition-all"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-mono-code text-orange-600 font-bold uppercase">{srv.category}</span>
-                    <span className="font-display font-black text-xl text-zinc-900">
-                      {studioProfile.currencySymbol}{srv.startingPrice.toLocaleString()}
-                    </span>
-                  </div>
-
-                  <h4 className="font-display font-black text-lg text-zinc-900">{srv.name}</h4>
-                  <p className="text-xs text-zinc-500 font-medium mt-1 leading-relaxed">{srv.shortDesc}</p>
-
-                  <div className="mt-4 pt-3 border-t border-zinc-100 space-y-1.5 text-xs text-zinc-600">
-                    <div className="font-bold text-[11px] text-zinc-400 uppercase font-mono-code">Included Deliverables:</div>
-                    {srv.deliverables.map((del, i) => (
-                      <div key={i} className="flex items-center gap-1.5 text-[11px]">
-                        <span className="text-orange-500 font-bold">•</span>
-                        <span>{del}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-zinc-100 flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-400 font-mono-code">
-                    {srv.turnaround} • {srv.revisionsCount} Revs
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditService(srv)}
-                      className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold transition-all flex items-center gap-1"
-                    >
-                      <Edit3 className="w-3.5 h-3.5 text-zinc-500" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteService(srv.id, srv.name)}
-                      className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-rose-50 text-rose-600 text-xs font-bold transition-all"
-                      title="Delete Service"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            ))}
-          </div>
-
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* TAB 4: EDIT WEBSITE INFO & ARTIST PROFILE */}
-      {/* ======================================================== */}
-      {activeAdminTab === 'website-info' && (
-        <div className="max-w-4xl mx-auto space-y-8">
-          
-          <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-1.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-950">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Website Content & Artist Identity Synchronization</span>
-            </div>
-            <p className="text-xs text-zinc-600 leading-relaxed font-medium">
-              Changes saved here instantly update the public homepage hero, artist statement, navigation logo, footer, and commission availability banner across the entire website.
-            </p>
-          </div>
-
-          {profileSaveSuccess && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Website information and studio settings have been saved successfully!</span>
-            </div>
-          )}
-
-          <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-10 space-y-8 shadow-xs">
-            <h3 className="font-display text-xl font-black text-zinc-900 pb-3 border-b border-zinc-100 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-orange-500" />
-              Edit Artist & Website Information
-            </h3>
-
-            <form onSubmit={handleSaveProfile} className="space-y-6">
-              
-              {/* Designer Studio Photo row (System 1: Studio / Website Photo) */}
-              <div className="p-1">
-                <StudioPhotoUploader
-                  adminUserId={currentUser?.id || 'usr-admin-1'}
-                  currentPhoto={profileForm.avatar || studioProfile.avatar}
-                  onPhotoUpdated={(newUrl) => {
-                    setProfileForm(prev => ({ ...prev, avatar: newUrl }));
-                  }}
-                  label="Brewster A. Cabando — Studio / Website Brand Photo"
-                  description="Professional portrait representing the designer on the public homepage 'Meet The Designer' section. Changing this photo updates the public website and does NOT change your personal account avatar."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                    Artist Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={profileForm.designerName}
-                    onChange={(e) => setProfileForm({ ...profileForm, designerName: e.target.value })}
-                    placeholder="Brewster A. Cabando"
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                    Studio Brand Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={profileForm.studioName}
-                    onChange={(e) => setProfileForm({ ...profileForm, studioName: e.target.value })}
-                    placeholder="Brewster Creative"
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                    Professional Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={profileForm.title}
-                    onChange={(e) => setProfileForm({ ...profileForm, title: e.target.value })}
-                    placeholder="Multimedia Artist & Brand Designer"
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                    Studio Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={profileForm.email}
-                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                    placeholder="brewstercreates@gmail.com"
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white font-medium"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                  Artist Bio / Studio Statement *
-                </label>
-                <textarea
-                  rows={4}
-                  required
-                  value={profileForm.bio}
-                  onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:bg-white resize-none font-medium leading-relaxed"
-                />
-              </div>
-
-              {/* Commission Availability Controls */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 p-5 rounded-2xl bg-zinc-50 border border-zinc-200">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                    Available Commission Slots
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    value={profileForm.availableSlots}
-                    onChange={(e) => setProfileForm({ ...profileForm, availableSlots: Number(e.target.value) })}
-                    className="w-full bg-white border border-zinc-200 rounded-xl px-3.5 py-2 text-xs font-mono-code font-bold text-zinc-900 focus:outline-none focus:border-orange-500"
-                  />
-                  <span className="text-[10px] text-zinc-400 font-mono-code block mt-1">
-                    Shown on homepage hero badge
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                    Commission Status
-                  </label>
-                  <select
-                    value={profileForm.commissionStatus}
-                    onChange={(e) => setProfileForm({ ...profileForm, commissionStatus: e.target.value as any })}
-                    className="w-full bg-white border border-zinc-200 rounded-xl px-3.5 py-2 text-xs text-zinc-900 font-medium focus:outline-none focus:border-orange-500"
-                  >
-                    <option value="open">Open for Commissions</option>
-                    <option value="waitlist">Waitlist Only</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                    Currency Symbol
-                  </label>
-                  <input
-                    type="text"
-                    value={profileForm.currencySymbol}
-                    onChange={(e) => setProfileForm({ ...profileForm, currencySymbol: e.target.value })}
-                    placeholder="₱"
-                    className="w-full bg-white border border-zinc-200 rounded-xl px-3.5 py-2 text-xs font-mono-code font-bold text-zinc-900 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-              </div>
-
-              {profileSaveError && (
-                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
-                  <span>{profileSaveError}</span>
-                </div>
-              )}
-
-              <div className="flex justify-end pt-2">
-                <button
-                  id="btn-save-website-profile"
-                  type="submit"
-                  disabled={isSavingProfile}
-                  className="px-8 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center gap-2"
-                >
-                  {isSavingProfile ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Saving to Database...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Save Website Content</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-            </form>
-          </div>
-
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* TAB: ADMIN PERSONAL ACCOUNT PROFILE (SYSTEM 2) */}
-      {/* ======================================================== */}
-      {activeAdminTab === 'admin-account' && (
-        <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
-          <div className="p-5 rounded-2xl bg-orange-50/70 border border-orange-200 space-y-1.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-orange-950">
-              <UserCheck className="w-4 h-4 text-orange-600 shrink-0" />
-              <span>Administrator Personal Account Profile</span>
-            </div>
-            <p className="text-xs text-zinc-600 leading-relaxed font-medium">
-              This is your individual administrator account profile. Your profile photo is used for your personal login session, top navigation bar, and client chat conversations.
-            </p>
-          </div>
-
-          <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-10 space-y-8 shadow-xs">
-            <h3 className="font-display text-xl font-black text-zinc-900 pb-3 border-b border-zinc-100 flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-orange-500" />
-              My Administrator Account Profile
-            </h3>
-
-            {/* Account Profile Photo Uploader with Facebook-style crop */}
-            {currentUser?.id ? (
-              <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-200">
-                <ProfilePhotoUploader
-                  userId={currentUser.id}
-                  currentAvatar={currentUser.avatar}
-                  label="Administrator Account Profile Photo"
-                  description="Upload and adjust your personal account portrait with the circular crop editor. Changing this will NOT modify the public Studio/Website photo on the homepage."
-                  avatarSizeClass="w-20 h-20 sm:w-24 sm:h-24"
-                />
-              </div>
-            ) : (
-              <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-200 text-center text-xs text-zinc-500 font-mono-code">
-                Loading administrator session...
-              </div>
-            )}
-
-            {/* Account Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
-              <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1">
-                  Account Name
-                </label>
-                <div className="w-full bg-zinc-100 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium">
-                  {currentUser?.name || 'Brewster A. Cabando'}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1">
-                  Login Email
-                </label>
-                <div className="w-full bg-zinc-100 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-zinc-700 font-mono-code">
-                  {currentUser?.email || 'admin@brewstercreative.com'}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1">
-                  Account Role
-                </label>
-                <div className="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5 text-xs text-emerald-800 font-bold uppercase tracking-wider font-mono-code">
-                  Studio Owner / Administrator
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1">
-                  Storage Path Pattern
-                </label>
-                <div className="w-full bg-zinc-100 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs text-zinc-600 font-mono-code truncate">
-                  avatars/{currentUser?.id || 'usr-admin-1'}/profile-*.jpg
-                </div>
-              </div>
-            </div>
-
-            {/* Notice card explaining separation */}
-            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex items-start gap-3 text-xs text-zinc-600">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <p>
-                <strong>Two Independent Systems:</strong> This account profile photo is strictly your personal account picture (stored in <code className="text-zinc-800 font-mono-code">public.profiles.avatar</code>). The public homepage <em>Meet The Designer</em> studio photo is managed separately under <button type="button" onClick={() => setActiveAdminTab('website-info')} className="text-orange-600 font-bold underline cursor-pointer">Edit Website Info</button>.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* TAB 5: CREATIVE PROOFS & UPLOAD (Phase 3C.2-B) */}
+      {/* TAB 2: CREATIVE PROOFS UPLOADER                          */}
       {/* ======================================================== */}
       {activeAdminTab === 'proof-uploader' && (
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Active Commission Selector */}
-          <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-7 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <label htmlFor="select-proof-commission" className="block text-xs font-bold text-zinc-800 mb-1">
-                  Active Commission
-                </label>
-                <p className="text-xs text-zinc-500 font-medium">
-                  Select a client project to view existing creative proofs or upload a new draft iteration.
-                </p>
-              </div>
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
+                Iteration Delivery
+              </span>
+              <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                Creative Proofs & Review Rounds
+              </h3>
+            </div>
 
+            <div className="flex items-center gap-2">
+              <label htmlFor="select-proof-commission" className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                Project:
+              </label>
               <select
                 id="select-proof-commission"
                 value={selectedCommissionId}
@@ -2289,135 +1115,641 @@ export const AdminDashboardView: React.FC = () => {
                   setSelectedCommissionId(e.target.value);
                   setActiveCommissionId(e.target.value);
                 }}
-                className="bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 font-bold focus:outline-none focus:border-orange-500 focus:bg-white min-w-[280px]"
+                className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-3 py-1.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
               >
                 {commissions.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.projectName} ({c.clientName}) — {formatCommissionStatus(c.status)}
+                    {c.projectName} ({c.clientName})
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {currentCommission ? (
+          {currentCommission && (
             <AdminCreativeProofsSection
               commission={currentCommission}
               currentUser={currentUser}
             />
-          ) : (
-            <div className="p-12 text-center bg-white border border-zinc-200 rounded-[32px] text-zinc-500 text-sm">
-              No commission found. Please create or select a commission.
-            </div>
           )}
         </div>
       )}
 
       {/* ======================================================== */}
-      {/* TAB 6: CLIENT MESSAGES */}
+      {/* TAB 4: CLIENT DIRECTORY                                  */}
       {/* ======================================================== */}
-      {activeAdminTab === 'chat' && currentCommission && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 bg-white p-3.5 rounded-[24px] border border-[#E5E5E5] shadow-xs">
-            <span className="text-xs font-mono-code text-zinc-500 uppercase font-bold">Chatting with:</span>
-            <select
-              value={selectedCommissionId}
-              onChange={(e) => {
-                setSelectedCommissionId(e.target.value);
-                setActiveCommissionId(e.target.value);
-              }}
-              className="bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-1.5 text-xs text-zinc-900 font-bold"
-            >
-              {commissions.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.clientName} ({c.projectName})
-                </option>
-              ))}
-            </select>
+      {activeAdminTab === 'clients' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+            <div>
+              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block mb-0.5">
+                Client Roster
+              </span>
+              <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                Studio Client Directory ({clientList.length})
+              </h3>
+            </div>
           </div>
 
-          <ChatWindow commission={currentCommission} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {clientList.map((client) => (
+              <div
+                key={client.email}
+                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-5 space-y-4"
+              >
+                <div className="flex items-center gap-3">
+                  <img
+                    src={client.avatar}
+                    alt={client.name}
+                    className="w-10 h-10 rounded-full object-cover ring-1 ring-[#E4E2DC] dark:ring-[#27272A]"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC] truncate">
+                      {client.name}
+                    </h4>
+                    <p className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] truncate">
+                      {client.email}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-1 font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                  <div className="flex justify-between">
+                    <span>Commissions:</span>
+                    <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">{client.commissionsCount}</span>
+                  </div>
+                  {client.latestProject && (
+                    <div className="flex justify-between">
+                      <span>Latest:</span>
+                      <span className="text-[#18181B] dark:text-[#EDEDEC] truncate max-w-[150px]">{client.latestProject}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 flex items-center justify-between gap-2">
+                  <a
+                    href={`mailto:${client.email}`}
+                    className="inline-flex items-center gap-1 text-xs font-mono text-[#EA580C] hover:underline"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Email</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyEmail(client.email, client.id)}
+                    className="text-xs font-mono text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC] cursor-pointer"
+                  >
+                    {copiedEmailId === client.id ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* ======================================================== */}
-      {/* TAB 7: BRAND TYPOGRAPHY (PLUS JAKARTA SANS) */}
+      {/* TAB 5: PORTFOLIO SHOWCASE MANAGEMENT                     */}
       {/* ======================================================== */}
-      {activeAdminTab === 'typography' && (
-        <div className="max-w-2xl mx-auto space-y-8">
-          <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-8 space-y-6 shadow-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <h3 className="font-display text-lg font-black text-zinc-900 flex items-center gap-2">
-                <Type className="w-5 h-5 text-orange-500" />
-                Typography & Brand Typeface
-              </h3>
-              <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-mono-code font-bold">
-                Active: Plus Jakarta Sans
+      {activeAdminTab === 'portfolio' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+            <div>
+              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block mb-0.5">
+                Exhibition Archive
               </span>
+              <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                Portfolio Projects ({portfolio.length})
+              </h3>
             </div>
 
-            <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-zinc-800">Permanent Typography Standard:</span>
-                  <span className="font-mono-code font-bold text-orange-600">Plus Jakarta Sans</span>
-                </div>
-                <p className="text-xs text-zinc-500 font-medium leading-relaxed">
-                  Brewster Creative utilizes a single cohesive typeface standard: <strong className="text-zinc-900">Plus Jakarta Sans</strong> across hero headings, section titles, navigation, button controls, body text, form elements, metadata, and studio dashboards.
-                </p>
-              </div>
+            <button
+              type="button"
+              onClick={handleOpenAddProject}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Project</span>
+            </button>
+          </div>
 
-              {/* Sample Typography Test Card */}
-              <div className="p-5 rounded-2xl bg-zinc-950 text-white space-y-3">
-                <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono-code">
-                  <span>LIVE TYPE SPECIMEN</span>
-                  <span>GEOMETRIC SANS-SERIF</span>
-                </div>
-                <div className="font-display text-2xl sm:text-3xl font-black text-white tracking-tight">
-                  Plus Jakarta Sans
-                </div>
-                <div className="text-xs text-zinc-300 font-normal leading-relaxed">
-                  The quick brown fox jumps over the lazy dog. 0123456789 & @ $ ₱ ! ?
-                </div>
-                <div className="text-[11px] text-zinc-500 font-mono-code pt-2 border-t border-zinc-800 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  CSS font-family: 'Plus Jakarta Sans', system-ui, sans-serif
-                </div>
-              </div>
-
-              {/* Optional Font File Dropper / Bundler */}
-              <div className="border-2 border-dashed border-zinc-200 hover:border-orange-400 rounded-2xl p-5 text-center transition-colors">
-                <input
-                  type="file"
-                  id="font-file-input"
-                  accept=".otf,.ttf,.woff,.woff2"
-                  onChange={handleFontFileUpload}
-                  className="hidden"
-                />
-                <label
-                  htmlFor="font-file-input"
-                  className="cursor-pointer flex flex-col items-center justify-center space-y-2"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
-                    <UploadCloud className="w-5 h-5" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {portfolio.map((proj) => (
+              <div
+                key={proj.id}
+                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl overflow-hidden flex flex-col justify-between"
+              >
+                <div>
+                  <div className="aspect-[16/10] overflow-hidden bg-[#FAF9F6] dark:bg-[#0F0F11]">
+                    <img
+                      src={proj.image}
+                      alt={proj.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <div>
-                    <span className="text-xs font-bold text-zinc-900 hover:text-orange-600">
-                      Upload Custom Brand Font File
+                  <div className="p-4 space-y-1">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold">
+                      {proj.category} · {proj.date}
                     </span>
-                    <p className="text-[11px] text-zinc-400 mt-0.5 font-medium">
-                      Optional: Load a local .otf, .ttf, or .woff2 file directly into this browser session
+                    <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                      {proj.title}
+                    </h4>
+                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] line-clamp-2">
+                      {proj.shortDesc}
                     </p>
                   </div>
-                </label>
+                </div>
 
-                {fontUploadMessage && (
-                  <div className="mt-3 p-2.5 rounded-xl bg-orange-50 text-orange-700 text-xs font-mono-code font-bold">
-                    {fontUploadMessage}
+                <div className="p-4 pt-0 border-t border-[#E4E2DC] dark:border-[#27272A] mt-3 flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                    {proj.client}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditProject(proj)}
+                      className="p-1.5 rounded text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC] cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteProject(proj.id, proj.title)}
+                      className="p-1.5 rounded text-[#71717A] hover:text-red-600 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Add / Edit Project Modal */}
+          {isAddingProject && (
+            <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl max-w-xl w-full p-6 sm:p-8 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                  <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                    {editingProject ? 'Edit Portfolio Project' : 'New Portfolio Project'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingProject(false)}
+                    className="text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC]"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {projectSaveError && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 text-red-600 text-xs rounded-lg border border-red-200">
+                    {projectSaveError}
                   </div>
                 )}
+
+                <form onSubmit={handleSaveProject} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                      Project Title
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={projectForm.title}
+                      onChange={(e) => setProjectForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                        Category
+                      </label>
+                      <select
+                        value={projectForm.category}
+                        onChange={(e) => setProjectForm(prev => ({ ...prev, category: e.target.value as any }))}
+                        className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                      >
+                        <option value="Branding">Branding</option>
+                        <option value="Illustration">Illustration</option>
+                        <option value="Poster">Poster</option>
+                        <option value="Logo">Logo</option>
+                        <option value="Merchandise">Merchandise</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                        Client
+                      </label>
+                      <input
+                        type="text"
+                        value={projectForm.client}
+                        onChange={(e) => setProjectForm(prev => ({ ...prev, client: e.target.value }))}
+                        className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                      Short Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={projectForm.shortDesc}
+                      onChange={(e) => setProjectForm(prev => ({ ...prev, shortDesc: e.target.value }))}
+                      className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                      Artwork Image URL or Upload
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={projectForm.image}
+                        onChange={(e) => setProjectForm(prev => ({ ...prev, image: e.target.value }))}
+                        className="flex-1 bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                      />
+                      <label className="shrink-0 px-3 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono hover:bg-[#F4F2ED] cursor-pointer flex items-center gap-1">
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>{isUploadingMedia ? 'Uploading...' : 'Upload'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePortfolioMediaUpload}
+                          className="hidden"
+                          disabled={isUploadingMedia}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingProject(false)}
+                      className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingProject}
+                      className="px-5 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSavingProject ? 'Saving...' : 'Save Project'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
+          )}
+
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 6: STUDIO SERVICES                                   */}
+      {/* ======================================================== */}
+      {activeAdminTab === 'services' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+            <div>
+              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block mb-0.5">
+                Service Catalog
+              </span>
+              <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                Studio Services ({services.length})
+              </h3>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenAddService}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Service</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {services.map((srv) => (
+              <div
+                key={srv.id}
+                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-5 space-y-3"
+              >
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <span className="font-mono text-[10px] uppercase text-[#EA580C] font-semibold block">
+                      {srv.category}
+                    </span>
+                    <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                      {srv.name}
+                    </h4>
+                  </div>
+                  <span className="font-mono font-bold text-sm text-[#18181B] dark:text-[#EDEDEC]">
+                    ₱{srv.startingPrice.toLocaleString()}
+                  </span>
+                </div>
+
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                  {srv.shortDesc}
+                </p>
+
+                <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                  <span>{srv.turnaround} · {srv.revisionsCount} revisions</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditService(srv)}
+                      className="hover:text-[#18181B] dark:hover:text-[#EDEDEC] cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteService(srv.id, srv.name)}
+                      className="hover:text-red-600 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Add / Edit Service Modal */}
+          {isAddingService && (
+            <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl max-w-lg w-full p-6 sm:p-8 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                  <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                    {editingService ? 'Edit Service Package' : 'New Service Package'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingService(false)}
+                    className="text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC]"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {serviceSaveError && (
+                  <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-200">
+                    {serviceSaveError}
+                  </div>
+                )}
+
+                <form onSubmit={handleSaveService} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                      Service Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={serviceForm.name}
+                      onChange={(e) => setServiceForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                        Starting Price (₱)
+                      </label>
+                      <input
+                        type="number"
+                        value={serviceForm.startingPrice}
+                        onChange={(e) => setServiceForm(prev => ({ ...prev, startingPrice: Number(e.target.value) }))}
+                        className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                        Turnaround
+                      </label>
+                      <input
+                        type="text"
+                        value={serviceForm.turnaround}
+                        onChange={(e) => setServiceForm(prev => ({ ...prev, turnaround: e.target.value }))}
+                        className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                      Deliverables (one per line)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={deliverablesText}
+                      onChange={(e) => setDeliverablesText(e.target.value)}
+                      className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] font-mono"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingService(false)}
+                      className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingService}
+                      className="px-5 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSavingService ? 'Saving...' : 'Save Service'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 7: STUDIO PROFILE & BIO                              */}
+      {/* ======================================================== */}
+      {activeAdminTab === 'website-info' && (
+        <div className="max-w-2xl mx-auto bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
+          <div className="pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+            <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block mb-0.5">
+              Studio Configuration
+            </span>
+            <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              Public Studio Profile
+            </h3>
+          </div>
+
+          {profileSaveSuccess && (
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-xs rounded-lg border border-emerald-200">
+              Studio profile updated successfully.
+            </div>
+          )}
+
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <StudioPhotoUploader
+              adminUserId={currentUser?.id || ''}
+              currentPhoto={profileForm.avatar}
+              currentPhotoUrl={profileForm.avatar}
+              onPhotoUpdated={(newUrl) => setProfileForm(prev => ({ ...prev, avatar: newUrl }))}
+              label="Studio Lead Photo"
+              description="Professional portrait displayed on the public website homepage 'Meet The Designer' section. Represents Brewster A. Cabando (Studio Lead)."
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                  Designer Name
+                </label>
+                <input
+                  type="text"
+                  value={profileForm.designerName}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, designerName: e.target.value }))}
+                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                  Studio Email
+                </label>
+                <input
+                  type="email"
+                  value={profileForm.email}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                Studio Bio
+              </label>
+              <textarea
+                rows={4}
+                value={profileForm.bio}
+                onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] leading-relaxed resize-none"
+              />
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="submit"
+                disabled={isSavingProfile}
+                className="px-5 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold disabled:opacity-50 cursor-pointer"
+              >
+                {isSavingProfile ? 'Saving...' : 'Save Studio Profile'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 8: DIRECTOR ACCOUNT & PHOTO                          */}
+      {/* ======================================================== */}
+      {activeAdminTab === 'admin-account' && (
+        <div className="max-w-2xl mx-auto bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
+          <div className="pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+            <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block mb-0.5">
+              Access & Credentials
+            </span>
+            <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              Director Account Profile
+            </h3>
+          </div>
+
+          <ProfilePhotoUploader
+            userId={currentUser?.id || 'usr-admin-1'}
+            currentAvatar={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
+            onAvatarUpdated={(newUrl) => {
+              if (currentUser) {
+                currentUser.avatar = newUrl;
+              }
+            }}
+            label="Director Account Avatar"
+            description="Used within project dialogues and the admin top bar."
+            avatarSizeClass="w-16 h-16"
+          />
+
+          <div className="grid grid-cols-2 gap-3 pt-2 font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+            <div>
+              <span className="text-[10px] uppercase block">Director Name</span>
+              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">{currentUser?.name}</span>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase block">Account Email</span>
+              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">{currentUser?.email}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 9: TYPOGRAPHY                                        */}
+      {/* ======================================================== */}
+      {activeAdminTab === 'typography' && (
+        <div className="max-w-2xl mx-auto bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
+          <div className="pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+            <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block mb-0.5">
+              Studio System
+            </span>
+            <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              Typography Standard
+            </h3>
+          </div>
+
+          <div className="p-4 rounded-lg bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] space-y-1">
+            <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] uppercase">Primary Typeface</span>
+            <h4 className="font-display font-bold text-2xl text-[#18181B] dark:text-[#EDEDEC]">
+              Plus Jakarta Sans
+            </h4>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed pt-1">
+              Geometric sans-serif standard deployed across all studio touchpoints, case studies, and editorial documents.
+            </p>
+          </div>
+
+          {/* Optional Local Font Loader */}
+          <div className="border border-dashed border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-5 text-center">
+            <input
+              type="file"
+              id="font-file-input"
+              accept=".otf,.ttf,.woff,.woff2"
+              onChange={handleFontFileUpload}
+              className="hidden"
+            />
+            <label htmlFor="font-file-input" className="cursor-pointer space-y-1 block">
+              <span className="text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:text-[#EA580C]">
+                Load Custom Font File
+              </span>
+              <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                Optional: load a local .otf, .ttf, or .woff2 file for this session
+              </p>
+            </label>
+            {fontUploadMessage && (
+              <p className="mt-2 text-xs font-mono text-[#EA580C]">{fontUploadMessage}</p>
+            )}
           </div>
         </div>
       )}

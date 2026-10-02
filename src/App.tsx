@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Copy, Check, X, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Copy, Check, X, RotateCcw, ShieldCheck } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -12,6 +12,8 @@ import { AdminDashboardView } from './views/AdminDashboardView';
 import { AuthView } from './views/AuthView';
 import { ShopView } from './views/ShopView';
 import { ProductDetailView } from './views/ProductDetailView';
+import { SettingsView } from './views/SettingsView';
+import { ChatView } from './views/ChatView';
 
 const DatabaseErrorBanner: React.FC = () => {
   const { databaseError, clearDatabaseError, refreshCurrentUserProfile } = useApp();
@@ -98,9 +100,11 @@ const DatabaseErrorBanner: React.FC = () => {
 const MainLayout: React.FC = () => {
   const { activeView, currentUser, authLoading, setActiveView } = useApp();
 
-  // Scroll to top on view changes
+  // Scroll to top instantly on view changes without animation
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, [activeView]);
 
   const renderCurrentView = () => {
@@ -116,12 +120,10 @@ const MainLayout: React.FC = () => {
       case 'client-dashboard':
         if (authLoading) {
           return (
-            <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto animate-pulse">
-                <span className="font-display font-black text-xl">✨</span>
-              </div>
-              <p className="text-xs text-zinc-500 font-mono-code">
-                Hydrating client workspace session...
+            <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
+              <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                Opening studio workspace...
               </p>
             </div>
           );
@@ -131,29 +133,27 @@ const MainLayout: React.FC = () => {
         // Guard: Wait for session hydration before deciding admin status
         if (authLoading) {
           return (
-            <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto animate-pulse">
-                <span className="font-display font-black text-xl">✨</span>
-              </div>
-              <p className="text-xs text-zinc-500 font-mono-code">
-                Hydrating Supabase session & verifying studio director privileges...
+            <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
+              <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                Verifying studio credentials...
               </p>
             </div>
           );
         }
-        // Guard: Only users with role === 'admin' in public.profiles can access admin dashboard
+        // Guard: Only users with role === 'admin' can access admin dashboard
         if (currentUser?.role !== 'admin') {
           return (
-            <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6">
-              <div className="w-16 h-16 rounded-3xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto shadow-sm">
-                <span className="font-display font-black text-2xl">🔒</span>
+            <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
+              <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
+                <ShieldCheck className="w-5 h-5 text-[#EA580C]" />
               </div>
               <div className="space-y-2">
-                <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
-                  Studio Director Access Restricted
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  Studio Director Access
                 </h2>
-                <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed">
-                  This administrative dashboard is restricted to authorized studio directors. To access management tools, your account must have an administrative role assigned in the database.
+                <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+                  This production area is reserved for authorized studio directors. Please sign in with your studio account to manage commissions and archive records.
                 </p>
               </div>
 
@@ -162,7 +162,7 @@ const MainLayout: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveView('client-dashboard')}
-                    className="px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-xs transition-all"
+                    className="px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-all cursor-pointer"
                   >
                     Go to My Client Workspace
                   </button>
@@ -170,9 +170,9 @@ const MainLayout: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveView('auth')}
-                    className="px-5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs shadow-xs transition-all"
+                    className="px-6 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] hover:opacity-90 text-white dark:text-[#18181B] font-semibold text-xs transition-all cursor-pointer"
                   >
-                    Sign In with Studio Credentials
+                    Sign In to Studio
                   </button>
                 )}
               </div>
@@ -186,6 +186,20 @@ const MainLayout: React.FC = () => {
         return <ShopView />;
       case 'product-detail':
         return <ProductDetailView />;
+      case 'settings':
+        return <SettingsView />;
+      case 'chat':
+        if (authLoading) {
+          return (
+            <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
+              <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                Connecting to studio conversations...
+              </p>
+            </div>
+          );
+        }
+        return <ChatView />;
       default:
         return <HomeView />;
     }

@@ -3,20 +3,15 @@ import { useApp } from '../context/AppContext';
 import { formatCommissionDate } from '../utils/dateUtils';
 import { isValidReferenceUrl } from '../utils/urlUtils';
 import { 
-  Sparkles, 
   Send, 
   CheckCircle2, 
   AlertCircle, 
   Clock, 
-  Calendar, 
-  Layers, 
   ShieldCheck, 
   ArrowRight,
   RotateCcw,
-  Info,
-  ExternalLink,
-  ChevronRight,
-  Plus
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 
 export const CommissionFormView: React.FC = () => {
@@ -30,7 +25,7 @@ export const CommissionFormView: React.FC = () => {
     setActiveView 
   } = useApp();
 
-  // Commission Form Fields (as specified by Phase 3A & 3C.1 requirements)
+  // Commission Form Fields
   const [serviceType, setServiceType] = useState(preselectedService || 'Brand Identity Package');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -56,7 +51,6 @@ export const CommissionFormView: React.FC = () => {
   // Sync preselectedService if passed from Portfolio or Services page
   useEffect(() => {
     if (preselectedService) {
-      // Find matching service name if partial or category match
       const matchingService = services.find(
         s => s.name.toLowerCase() === preselectedService.toLowerCase() ||
              s.category.toLowerCase() === preselectedService.toLowerCase()
@@ -170,7 +164,6 @@ export const CommissionFormView: React.FC = () => {
       return;
     }
 
-    // Prevent accidental duplicate submissions
     if (isSubmitting) return;
     setIsSubmitting(true);
 
@@ -205,247 +198,233 @@ export const CommissionFormView: React.FC = () => {
     }
   };
 
-  // SUCCESS CONFIRMATION STATE
+  // SUCCESS CONFIRMATION STATE (Editorial Studio Receipt)
   if (submittedCommission) {
     return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 animate-in fade-in zoom-in-95 duration-200">
-        <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-10 shadow-xl space-y-8">
-          
-          {/* Header Badge & Title */}
-          <div className="text-center space-y-3">
-            <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
-              <CheckCircle2 className="w-8 h-8" />
-            </div>
-
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-mono-code font-bold border border-emerald-200 uppercase tracking-wider">
-              <span>Saved to Database</span>
-            </div>
-
-            <h1 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
-              Commission Request Submitted!
-            </h1>
-            <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed">
-              Your request has been successfully recorded in the Brewster Creative database with initial status <strong className="text-zinc-800">Pending</strong>.
-            </p>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 animate-in fade-in duration-300 space-y-10">
+        
+        {/* Receipt Header */}
+        <div className="space-y-4 border-b border-[#E4E2DC] dark:border-[#27272A] pb-8">
+          <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+            <span>Project Receipt & Alignment</span>
           </div>
 
-          {/* Submission Details Bento Box */}
-          <div className="bg-zinc-50 border border-zinc-200/80 rounded-2xl p-5 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-200/60">
-              <span className="text-xs text-zinc-500 font-mono-code font-bold uppercase tracking-wider">
-                Commission Reference
-              </span>
-              <span className="font-mono-code text-xs sm:text-sm font-bold text-zinc-800 bg-white px-2.5 py-1 rounded-md border border-zinc-200">
-                #{submittedCommission.id.slice(0, 8).toUpperCase()}
-              </span>
-            </div>
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+            Commission Brief Initiated
+          </h1>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
-              <div>
-                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase">Service</span>
-                <span className="font-bold text-zinc-900">{submittedCommission.service}</span>
-              </div>
-
-              <div>
-                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase">Status</span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold border border-amber-200 text-xs mt-0.5">
-                  <Clock className="w-3 h-3 text-amber-500" />
-                  <span>Pending Designer Review</span>
-                </span>
-              </div>
-
-              <div>
-                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase">Project Title</span>
-                <span className="font-medium text-zinc-800">{submittedCommission.projectName}</span>
-              </div>
-
-              <div>
-                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase">Estimated Budget</span>
-                <span className="font-bold text-orange-600 font-mono-code">{submittedCommission.budget}</span>
-              </div>
-
-              <div>
-                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase">Target Deadline</span>
-                <span className="font-medium text-zinc-800">{formatCommissionDate(submittedCommission.deadline)}</span>
-              </div>
-
-              <div>
-                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase">Submitted By</span>
-                <span className="font-medium text-zinc-800">{currentUser?.name} ({currentUser?.email})</span>
-              </div>
-            </div>
-
-            {submittedCommission.description && (
-              <div className="pt-3 border-t border-zinc-200/60">
-                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase mb-1">Brief Description</span>
-                <p className="text-xs text-zinc-600 line-clamp-3 bg-white p-3 rounded-xl border border-zinc-200/60 whitespace-pre-line">
-                  {submittedCommission.description}
-                </p>
-              </div>
-            )}
-
-            {/* Structured Creative Brief Summary if available */}
-            {(submittedCommission.purpose || submittedCommission.targetAudience || submittedCommission.preferredStyle || submittedCommission.requiredDimensions || (submittedCommission.preferredColors && submittedCommission.preferredColors.length > 0) || (submittedCommission.referenceLinks && submittedCommission.referenceLinks.length > 0) || submittedCommission.additionalNotes) && (
-              <div className="pt-3 border-t border-zinc-200/60 space-y-3">
-                <span className="text-zinc-400 block text-[11px] font-mono-code uppercase font-bold">Creative Brief Specifications</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-xl border border-zinc-200/60">
-                  {submittedCommission.purpose && (
-                    <div>
-                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase">Purpose & Context</span>
-                      <span className="font-medium text-zinc-800">{submittedCommission.purpose}</span>
-                    </div>
-                  )}
-                  {submittedCommission.targetAudience && (
-                    <div>
-                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase">Target Audience</span>
-                      <span className="font-medium text-zinc-800">{submittedCommission.targetAudience}</span>
-                    </div>
-                  )}
-                  {submittedCommission.preferredStyle && (
-                    <div>
-                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase">Aesthetic Style</span>
-                      <span className="font-medium text-zinc-800">{submittedCommission.preferredStyle}</span>
-                    </div>
-                  )}
-                  {submittedCommission.requiredDimensions && (
-                    <div>
-                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase">Required Dimensions</span>
-                      <span className="font-medium text-zinc-800 font-mono-code">{submittedCommission.requiredDimensions}</span>
-                    </div>
-                  )}
-                  {submittedCommission.preferredColors && submittedCommission.preferredColors.length > 0 && (
-                    <div className="sm:col-span-2">
-                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase mb-1">Color Palette</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {submittedCommission.preferredColors.map((color: string, idx: number) => (
-                          <span key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 text-[11px] text-zinc-700 font-mono-code">
-                            {color.startsWith('#') && (
-                              <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: color }} />
-                            )}
-                            {color}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {submittedCommission.referenceLinks && submittedCommission.referenceLinks.length > 0 && (
-                    <div className="sm:col-span-2">
-                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase mb-1">References / Links</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {submittedCommission.referenceLinks.map((link: string, idx: number) => {
-                          const isUrl = isValidReferenceUrl(link);
-                          return isUrl ? (
-                            <a
-                              key={idx}
-                              href={link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-[11px] text-orange-700 hover:underline break-all"
-                            >
-                              <span>{link}</span>
-                            </a>
-                          ) : (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 text-[11px] text-zinc-600 break-all"
-                            >
-                              <span>{link}</span>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  {submittedCommission.additionalNotes && (
-                    <div className="sm:col-span-2">
-                      <span className="text-zinc-400 block text-[10px] font-mono-code uppercase">Additional Requirements</span>
-                      <span className="font-medium text-zinc-700 whitespace-pre-line">{submittedCommission.additionalNotes}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Next Steps Guidance */}
-          <div className="p-4 rounded-2xl bg-orange-50/60 border border-orange-200/60 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-orange-800">
-              <Sparkles className="w-4 h-4 text-orange-600" />
-              <span>What happens next?</span>
-            </div>
-            <p className="text-xs text-orange-950/80 leading-relaxed">
-              Brewster will review your creative specifications and project scope. You can track real-time milestones, exchange messages, and review design drafts directly in your <strong>Client Dashboard</strong>.
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-            <button
-              id="btn-submit-another"
-              type="button"
-              onClick={resetForm}
-              className="w-full sm:w-auto px-5 py-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs sm:text-sm font-bold transition-colors flex items-center justify-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>Submit Another Request</span>
-            </button>
-
-            <button
-              id="btn-view-client-dashboard"
-              type="button"
-              onClick={() => setActiveView('client-dashboard')}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-bold transition-all shadow-xs flex items-center justify-center gap-2"
-            >
-              <span>Go to Client Dashboard</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
+          <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-2xl font-normal">
+            Your creative specifications have been securely recorded. Brewster will review your scope, verify scheduling, and initiate preliminary concept boards.
+          </p>
         </div>
+
+        {/* Ledger Summary */}
+        <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-[#E4E2DC] dark:border-[#27272A] flex-wrap gap-2">
+            <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider font-semibold">
+              Commission Reference
+            </span>
+            <span className="font-mono text-xs sm:text-sm font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              #{submittedCommission.id.slice(0, 8).toUpperCase()}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 text-xs sm:text-sm">
+            <div>
+              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block mb-1">Service Practice</span>
+              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">{submittedCommission.service}</span>
+            </div>
+
+            <div>
+              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block mb-1">Status</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#EA580C]">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Pending Designer Review</span>
+              </span>
+            </div>
+
+            <div>
+              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block mb-1">Proposed Investment</span>
+              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] font-mono">{submittedCommission.budget}</span>
+            </div>
+
+            <div>
+              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block mb-1">Target Delivery</span>
+              <span className="font-medium text-[#18181B] dark:text-[#EDEDEC]">{formatCommissionDate(submittedCommission.deadline)}</span>
+            </div>
+
+            <div className="sm:col-span-2">
+              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block mb-1">Project Title</span>
+              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">{submittedCommission.projectName}</span>
+            </div>
+          </div>
+
+          {submittedCommission.description && (
+            <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-1.5">
+              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block">Brief Summary</span>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed whitespace-pre-line bg-[#FAF9F6] dark:bg-[#0F0F11] p-4 rounded-lg border border-[#E4E2DC] dark:border-[#27272A]">
+                {submittedCommission.description}
+              </p>
+            </div>
+          )}
+
+          {/* Creative Brief Specifications */}
+          {(submittedCommission.purpose || submittedCommission.targetAudience || submittedCommission.preferredStyle || submittedCommission.requiredDimensions || (submittedCommission.preferredColors && submittedCommission.preferredColors.length > 0) || (submittedCommission.referenceLinks && submittedCommission.referenceLinks.length > 0) || submittedCommission.additionalNotes) && (
+            <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-4">
+              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block font-bold">
+                Creative Specifications Recorded
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-[#FAF9F6] dark:bg-[#0F0F11] p-4 rounded-lg border border-[#E4E2DC] dark:border-[#27272A]">
+                {submittedCommission.purpose && (
+                  <div>
+                    <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Context & Purpose</span>
+                    <span className="text-[#18181B] dark:text-[#EDEDEC] font-medium">{submittedCommission.purpose}</span>
+                  </div>
+                )}
+                {submittedCommission.targetAudience && (
+                  <div>
+                    <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Target Audience</span>
+                    <span className="text-[#18181B] dark:text-[#EDEDEC] font-medium">{submittedCommission.targetAudience}</span>
+                  </div>
+                )}
+                {submittedCommission.preferredStyle && (
+                  <div>
+                    <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Aesthetic Direction</span>
+                    <span className="text-[#18181B] dark:text-[#EDEDEC] font-medium">{submittedCommission.preferredStyle}</span>
+                  </div>
+                )}
+                {submittedCommission.requiredDimensions && (
+                  <div>
+                    <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Dimensions & Formats</span>
+                    <span className="text-[#18181B] dark:text-[#EDEDEC] font-mono">{submittedCommission.requiredDimensions}</span>
+                  </div>
+                )}
+                {submittedCommission.preferredColors && submittedCommission.preferredColors.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block mb-1">Color Palette</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {submittedCommission.preferredColors.map((color: string, idx: number) => (
+                        <span key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] text-[11px] font-mono text-[#18181B] dark:text-[#EDEDEC]">
+                          {color.startsWith('#') && (
+                            <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: color }} />
+                          )}
+                          {color}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {submittedCommission.referenceLinks && submittedCommission.referenceLinks.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block mb-1">Inspiration Links</span>
+                    <div className="flex flex-wrap gap-2">
+                      {submittedCommission.referenceLinks.map((link: string, idx: number) => (
+                        <a
+                          key={idx}
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-mono text-[#EA580C] hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span className="truncate max-w-xs">{link}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {submittedCommission.additionalNotes && (
+                  <div className="sm:col-span-2">
+                    <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Special Directives</span>
+                    <span className="text-[#18181B] dark:text-[#EDEDEC] whitespace-pre-line">{submittedCommission.additionalNotes}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* What Happens Next Guidance */}
+        <div className="p-6 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] space-y-2">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+            Next Stages
+          </span>
+          <h3 className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC]">
+            Collaborative Dialogue & Proof Delivery
+          </h3>
+          <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+            Brewster will review your project requirements and confirm milestone scheduling. You can track progress, exchange messages, and review proofs directly through your <strong>Client Dashboard</strong>.
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+          <button
+            id="btn-submit-another"
+            type="button"
+            onClick={resetForm}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Submit Another Project</span>
+          </button>
+
+          <button
+            id="btn-view-client-dashboard"
+            type="button"
+            onClick={() => setActiveView('client-dashboard')}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Proceed to Client Dashboard</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
       </div>
     );
   }
 
-  // STANDARD FORM VIEW
+  // STANDARD FORM VIEW (Creative Studio Collaboration)
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-12 sm:space-y-16">
       
-      {/* Header Banner */}
-      <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code uppercase tracking-wider font-bold border border-orange-200">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Commission Request</span>
+      {/* Editorial Header */}
+      <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-8 sm:pb-12">
+        <div className="space-y-3 max-w-2xl">
+          <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+            <span>Creative Consultation</span>
+          </div>
+
+          <h1 className="font-display text-3xl sm:text-5xl lg:text-5.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
+            Initiate a Project Commission
+          </h1>
+
+          <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
+            A structured brief to align vision, scope, and technical deliverables with the studio. Every inquiry receives personalized creative direction from Brewster.
+          </p>
         </div>
-        <h1 className="font-display text-3xl sm:text-4xl font-black text-zinc-900 tracking-tight">
-          Request a Custom Design Commission
-        </h1>
-        <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed font-medium">
-          Fill out the project specifications below to submit your commission request directly to our database.
-        </p>
       </div>
 
       {/* Sign-in prompt for unauthenticated visitors */}
       {!currentUser && (
-        <div className="mb-8 p-5 sm:p-6 rounded-2xl bg-amber-50/70 border border-amber-300 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
-              <AlertCircle className="w-5 h-5" />
+        <div className="p-6 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              <ShieldCheck className="w-4 h-4 text-[#EA580C]" />
+              <span>Client Account Authentication Required</span>
             </div>
-            <div className="space-y-1">
-              <h4 className="text-xs sm:text-sm font-bold text-amber-950">
-                Sign In Required to Submit
-              </h4>
-              <p className="text-xs text-amber-800/90 leading-relaxed max-w-xl">
-                A logged-in client account is required so your commission is securely assigned to your profile in Supabase and manageable in your client dashboard.
-              </p>
-            </div>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+              Please sign in or register so your commission is securely assigned to your client portal in Supabase, enabling real-time proof reviews, messaging, and asset downloads.
+            </p>
           </div>
 
           <button
             id="btn-signin-to-submit"
             type="button"
             onClick={() => setActiveView('auth')}
-            className="shrink-0 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+            className="shrink-0 px-5 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] hover:opacity-90 text-xs font-semibold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
           >
             <span>Sign In / Register</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -455,8 +434,8 @@ export const CommissionFormView: React.FC = () => {
 
       {/* ERROR FEEDBACK BANNER */}
       {formError && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 flex items-start gap-3 animate-in fade-in duration-150">
-          <AlertCircle className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
+        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 flex items-start gap-3 animate-in fade-in duration-150">
+          <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
           <div className="text-xs sm:text-sm font-medium leading-relaxed flex-1">
             {formError}
           </div>
@@ -464,49 +443,47 @@ export const CommissionFormView: React.FC = () => {
       )}
 
       {/* COMMISSION FORM */}
-      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-10 sm:space-y-12">
 
         {/* SECTION 1: PROJECT OVERVIEW */}
-        <div className="bg-white border border-[#E5E5E5] rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-xs space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
-            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 font-mono-code font-bold flex items-center justify-center text-xs border border-orange-200">
-              01
-            </div>
-            <div>
-              <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
-                Project Overview
-              </h3>
-              <p className="text-xs text-zinc-500 font-medium">
-                Specify your project title, service package, core description, and overarching purpose.
-              </p>
-            </div>
+        <section className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-4 space-y-1">
+            <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+              01 / PROJECT SCOPE & CONTEXT
+            </span>
+            <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              What are we creating together?
+            </h3>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              Define your project title, practice package, core objectives, and strategic purpose.
+            </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label htmlFor="input-project-title" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Project Title <span className="text-orange-500">*</span>
+              <label htmlFor="input-project-title" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Project Title <span className="text-[#EA580C]">*</span>
               </label>
               <input
                 id="input-project-title"
                 type="text"
                 required
-                placeholder="e.g. Solis Labs Brand Identity Package"
+                placeholder="e.g. Solis Labs Brand Identity System"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
             </div>
 
             <div>
-              <label htmlFor="select-commission-service" className="block text-xs font-bold text-zinc-800 mb-2">
-                Service Package <span className="text-orange-500">*</span>
+              <label htmlFor="select-commission-service" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Practice Package <span className="text-[#EA580C]">*</span>
               </label>
               <select
                 id="select-commission-service"
                 value={serviceType}
                 onChange={(e) => handleServiceChange(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white font-medium cursor-pointer"
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors cursor-pointer"
               >
                 {services.map((srv) => (
                   <option key={srv.id} value={srv.name}>
@@ -517,21 +494,22 @@ export const CommissionFormView: React.FC = () => {
               </select>
 
               {selectedServiceItem && (
-                <div className="mt-2 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
-                  <span className="text-zinc-600 font-medium">
+                <div className="mt-2.5 p-3 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">
                     {selectedServiceItem.shortDesc}
                   </span>
-                  <div className="flex items-center gap-3 shrink-0 text-zinc-500 font-mono-code">
-                    <span>Turnaround: <strong className="text-zinc-800 font-bold">{selectedServiceItem.turnaround}</strong></span>
-                    <span>Base: <strong className="text-orange-600 font-bold">{studioProfile.currencySymbol}{selectedServiceItem.startingPrice.toLocaleString()}</strong></span>
+                  <div className="flex items-center gap-3 shrink-0 text-[#71717A] dark:text-[#A1A1AA] font-mono text-[11px]">
+                    <span>Turnaround: <strong className="text-[#18181B] dark:text-[#EDEDEC]">{selectedServiceItem.turnaround}</strong></span>
+                    <span>·</span>
+                    <span>Base: <strong className="text-[#EA580C]">{studioProfile.currencySymbol}{selectedServiceItem.startingPrice.toLocaleString()}</strong></span>
                   </div>
                 </div>
               )}
             </div>
 
             <div>
-              <label htmlFor="textarea-project-description" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Project Description <span className="text-orange-500">*</span>
+              <label htmlFor="textarea-project-description" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Project Description & Deliverables <span className="text-[#EA580C]">*</span>
               </label>
               <textarea
                 id="textarea-project-description"
@@ -540,192 +518,176 @@ export const CommissionFormView: React.FC = () => {
                 placeholder="Describe your design needs, deliverables, key themes, and primary goals for this project..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white resize-none"
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none leading-relaxed"
               />
             </div>
 
             <div>
-              <label htmlFor="input-project-purpose" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Purpose & Context <span className="text-zinc-400 font-normal">(Optional)</span>
+              <label htmlFor="input-project-purpose" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Purpose & Strategic Context <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
               </label>
               <input
                 id="input-project-purpose"
                 type="text"
-                placeholder="e.g. Launching a new tech startup, rebranding an artisan bakery, Q4 marketing campaign..."
+                placeholder="e.g. Launching a new tech startup, rebranding an artisan roastery, album release..."
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
-              <span className="text-[11px] text-zinc-400 mt-1 block">
-                Explain what problem this project solves or what event/launch it supports.
-              </span>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* SECTION 2: AUDIENCE & CREATIVE DIRECTION */}
-        <div className="bg-white border border-[#E5E5E5] rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-xs space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
-            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 font-mono-code font-bold flex items-center justify-center text-xs border border-orange-200">
-              02
-            </div>
-            <div>
-              <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
-                Audience & Creative Direction
-              </h3>
-              <p className="text-xs text-zinc-500 font-medium">
-                Define the intended demographic, desired aesthetic feel, color palette, and visual references.
-              </p>
-            </div>
+        <section className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-4 space-y-1">
+            <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+              02 / AESTHETIC DIRECTION & REFERENCES
+            </span>
+            <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              Visual Mood & Atmosphere
+            </h3>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              Define your intended audience, preferred aesthetic style, color palette, and inspiration links.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="input-target-audience" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Target Audience <span className="text-zinc-400 font-normal">(Optional)</span>
+              <label htmlFor="input-target-audience" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Target Demographic <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
               </label>
               <input
                 id="input-target-audience"
                 type="text"
-                placeholder="e.g. Tech-savvy professionals aged 25-40, college students, luxury consumers..."
+                placeholder="e.g. Art collectors, early-stage founders, design-minded consumers..."
                 value={targetAudience}
                 onChange={(e) => setTargetAudience(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
             </div>
 
             <div>
-              <label htmlFor="input-preferred-style" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Aesthetic / Style Direction <span className="text-zinc-400 font-normal">(Optional)</span>
+              <label htmlFor="input-preferred-style" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Aesthetic Style / Feel <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
               </label>
               <input
                 id="input-preferred-style"
                 type="text"
-                placeholder="e.g. Modern Minimalist, Swiss International, brutalist, warm editorial..."
+                placeholder="e.g. Swiss typographic minimalism, warm editorial, brutalist..."
                 value={preferredStyle}
                 onChange={(e) => setPreferredStyle(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label htmlFor="input-preferred-colors" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Brand / Color Palette <span className="text-zinc-400 font-normal">(Optional)</span>
+              <label htmlFor="input-preferred-colors" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Color Palette or Hex Codes <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
               </label>
               <input
                 id="input-preferred-colors"
                 type="text"
-                placeholder="e.g. #0F172A, #F97316, warm sand, navy blue (comma-separated)"
+                placeholder="e.g. #0F172A, #F97316, warm sand, charcoal black (comma-separated)"
                 value={colorsInput}
                 onChange={(e) => setColorsInput(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
-              <span className="text-[11px] text-zinc-400 mt-1 block">
-                Enter hex codes (e.g. #F97316) or color names separated by commas.
-              </span>
             </div>
 
             <div className="sm:col-span-2">
-              <label htmlFor="textarea-reference-links" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                References / Inspiration Links <span className="text-zinc-400 font-normal">(Optional)</span>
+              <label htmlFor="textarea-reference-links" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Visual References & Moodboards <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
               </label>
               <textarea
                 id="textarea-reference-links"
                 rows={2}
-                placeholder="e.g. https://www.behance.net/example, https://dribbble.com/example, https://pinterest.com/example (comma or newline separated)..."
+                placeholder="e.g. https://www.behance.net/example, https://are.na/channel, https://pinterest.com/example (must start with https://)"
                 value={referenceLinksInput}
                 onChange={(e) => {
                   setReferenceLinksInput(e.target.value);
                   if (referenceLinksError) setReferenceLinksError(null);
                 }}
-                className={`w-full bg-zinc-50 border ${
-                  referenceLinksError ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-200'
-                } rounded-2xl p-4 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white resize-none`}
+                className={`w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border ${
+                  referenceLinksError ? 'border-red-500 ring-1 ring-red-500' : 'border-[#E4E2DC] dark:border-[#27272A]'
+                } rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none`}
               />
-              {referenceLinksError ? (
-                <span className="text-[11px] text-red-600 font-medium mt-1.5 flex items-center gap-1">
+              {referenceLinksError && (
+                <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1.5 flex items-center gap-1">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   {referenceLinksError}
-                </span>
-              ) : (
-                <span className="text-[11px] text-zinc-400 mt-1 block">
-                  Share URLs to moodboards, existing websites, or styles you admire (must begin with https://).
                 </span>
               )}
             </div>
           </div>
-        </div>
+        </section>
 
         {/* SECTION 3: TECHNICAL REQUIREMENTS */}
-        <div className="bg-white border border-[#E5E5E5] rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-xs space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
-            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 font-mono-code font-bold flex items-center justify-center text-xs border border-orange-200">
-              03
-            </div>
-            <div>
-              <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
-                Technical Requirements
-              </h3>
-              <p className="text-xs text-zinc-500 font-medium">
-                Specify exact dimensions, required file formats, and any additional constraints.
-              </p>
-            </div>
+        <section className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-4 space-y-1">
+            <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+              03 / TECHNICAL SPECIFICATIONS & PRODUCTION
+            </span>
+            <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              Formats & Delivery Requirements
+            </h3>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              Specify required aspect ratios, print specs, vector layers, or existing brand guidelines.
+            </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label htmlFor="input-required-dimensions" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Required Dimensions / Format <span className="text-zinc-400 font-normal">(Optional)</span>
+              <label htmlFor="input-required-dimensions" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Dimensions & Formats <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
               </label>
               <input
                 id="input-required-dimensions"
                 type="text"
-                placeholder="e.g. Vector SVG + High-Res PNG, 1080x1080px IG Square, A2 300DPI print poster, 1920x1080 horizontal..."
+                placeholder="e.g. Scalable SVG + Vector AI, A2 300 DPI print poster, 1920x1080 horizontal..."
                 value={requiredDimensions}
                 onChange={(e) => setRequiredDimensions(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
             </div>
 
             <div>
-              <label htmlFor="textarea-additional-notes" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Additional Requirements / Notes <span className="text-zinc-400 font-normal">(Optional)</span>
+              <label htmlFor="textarea-additional-notes" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Additional Directives / Constraints <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
               </label>
               <textarea
                 id="textarea-additional-notes"
                 rows={3}
-                placeholder="e.g. Special print considerations, existing brand assets to incorporate, specific copy/wording that must be included, or deadlines for preliminary milestones..."
+                placeholder="e.g. Special spot-color considerations, existing brand typography to respect, specific copy to embed..."
                 value={additionalNotes}
                 onChange={(e) => setAdditionalNotes(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white resize-none"
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none leading-relaxed"
               />
             </div>
           </div>
-        </div>
+        </section>
 
         {/* SECTION 4: BUDGET & TIMELINE */}
-        <div className="bg-white border border-[#E5E5E5] rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-xs space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
-            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 font-mono-code font-bold flex items-center justify-center text-xs border border-orange-200">
-              04
-            </div>
-            <div>
-              <h3 className="font-display text-base sm:text-lg font-black text-zinc-900">
-                Budget & Timeline
-              </h3>
-              <p className="text-xs text-zinc-500 font-medium">
-                Specify your proposed investment and target completion date.
-              </p>
-            </div>
+        <section className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-4 space-y-1">
+            <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+              04 / INVESTMENT & TIMELINE
+            </span>
+            <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              Proposed Budget & Delivery Window
+            </h3>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              Set your target investment and requested delivery date.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="input-commission-budget" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Estimated Budget ({studioProfile.currencySymbol}) <span className="text-orange-500">*</span>
+              <label htmlFor="input-commission-budget" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Estimated Budget ({studioProfile.currencySymbol}) <span className="text-[#EA580C]">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-mono-code text-sm font-bold">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#71717A] dark:text-[#A1A1AA] font-mono text-xs font-bold">
                   {studioProfile.currencySymbol}
                 </span>
                 <input
@@ -737,17 +699,17 @@ export const CommissionFormView: React.FC = () => {
                   placeholder="5000"
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-9 pr-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white font-mono-code font-bold text-orange-600"
+                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-8 pr-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors font-mono font-bold"
                 />
               </div>
-              <span className="text-[11px] text-zinc-400 mt-1 block">
-                Estimated starting rate is {studioProfile.currencySymbol}{selectedServiceItem ? selectedServiceItem.startingPrice.toLocaleString() : '3,500'}.
+              <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 block">
+                Practice base rate: {studioProfile.currencySymbol}{selectedServiceItem ? selectedServiceItem.startingPrice.toLocaleString() : '3,500'}.
               </span>
             </div>
 
             <div>
-              <label htmlFor="input-commission-deadline" className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Target Deadline <span className="text-orange-500">*</span>
+              <label htmlFor="input-commission-deadline" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
+                Target Delivery Date <span className="text-[#EA580C]">*</span>
               </label>
               <input
                 id="input-commission-deadline"
@@ -756,47 +718,45 @@ export const CommissionFormView: React.FC = () => {
                 min={tomorrowStr}
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white font-medium cursor-pointer"
+                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors cursor-pointer"
               />
-              <span className="text-[11px] text-zinc-400 mt-1 block">
-                Select your preferred project delivery target date.
+              <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 block">
+                Committed delivery target for final approved assets.
               </span>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* SUBMISSION & STATUS INFO BOX */}
-        <div className="bg-zinc-50 border border-orange-200/80 rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 space-y-5 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-zinc-600 pb-4 border-b border-zinc-200/60">
+        {/* SUBMISSION FOOTER */}
+        <div className="bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#71717A] dark:text-[#A1A1AA] pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Initial Status: <strong className="text-zinc-800">Pending Designer Review</strong> (Database default)</span>
+              <ShieldCheck className="w-4 h-4 text-[#EA580C]" />
+              <span>Initial Status: <strong className="text-[#18181B] dark:text-[#EDEDEC]">Pending Designer Review</strong></span>
             </div>
-            <div className="flex items-center gap-2 text-zinc-400 font-mono-code text-[11px]">
-              <span>Directly written to Supabase commissions table</span>
-            </div>
+            <span className="font-mono text-[11px]">Directly assigned in Supabase database</span>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
-            <p className="text-xs text-zinc-500 text-center sm:text-left leading-relaxed max-w-md">
-              By submitting, your brief will be saved to the database. You can track progress and milestones in your Client Dashboard.
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] text-center sm:text-left leading-relaxed max-w-md">
+              By initiating this brief, your specifications will be transmitted to the studio. You can track all stages, discuss revisions, and inspect proofs in your Client Dashboard.
             </p>
 
             <button
               id="btn-submit-commission-form"
               type="submit"
               disabled={isSubmitting || !currentUser}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold text-sm sm:text-base transition-all shadow-md shadow-orange-500/10 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-7 py-3 rounded-lg bg-[#EA580C] hover:bg-[#D94814] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
               {isSubmitting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Saving Commission...</span>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Transmitting Brief...</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
-                  <span>Submit Commission Request</span>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Transmit Commission Brief</span>
                 </>
               )}
             </button>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PortfolioCard } from '../components/PortfolioCard';
 import { PortfolioModal } from '../components/PortfolioModal';
-import { Sparkles, Search, Filter, Layers, Send } from 'lucide-react';
+import { Search, Layers, Send } from 'lucide-react';
 
 export const PortfolioView: React.FC = () => {
   const { 
@@ -39,110 +39,192 @@ export const PortfolioView: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-12 sm:space-y-16">
       
-      {/* Portfolio Header */}
-      <div className="text-center max-w-3xl mx-auto space-y-4">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code uppercase tracking-wider font-bold border border-orange-200">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Showcase of Selected Works</span>
+      {/* Editorial Exhibition Header */}
+      <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-8 sm:pb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-3 max-w-2xl">
+            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+              <span>Exhibition Archive</span>
+            </div>
+
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-5.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
+              Selected Visual Systems & Bespoke Artworks
+            </h1>
+
+            <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
+              An ongoing catalog of commissioned brand marks, typographic systems, screen-print posters, digital illustrations, and publication designs.
+            </p>
+          </div>
+
+          <div className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] self-start md:self-end">
+            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{filteredProjects.length}</span> Works Documented
+          </div>
         </div>
-
-        <h1 className="font-display text-4xl sm:text-5xl font-black text-zinc-900 tracking-tight">
-          Visual Identity & Multimedia Gallery
-        </h1>
-
-        <p className="text-sm sm:text-base text-zinc-500 leading-relaxed font-normal">
-          Explore previous graphic design commissions, logo systems, poster artworks, book covers, and custom creative campaigns.
-        </p>
       </div>
 
-      {/* Filter Bar & Search */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white border border-[#E5E5E5] p-4 rounded-[24px] shadow-xs">
+      {/* Editorial Category Navigation & Search */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-5 border-b border-[#E4E2DC] dark:border-[#27272A] pb-4">
         
-        {/* Categories Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              id={`filter-cat-${cat.toLowerCase().replace(/\s+/g, '-')}`}
-              type="button"
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                selectedCategory === cat
-                  ? 'bg-orange-500 text-white shadow-xs'
-                  : 'bg-zinc-100 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 border border-zinc-200/80'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {/* Simple Text Navigation Filter (No chunky pills) */}
+        <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-1" aria-label="Portfolio categories">
+          {categories.map((cat) => {
+            const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
+            return (
+              <button
+                key={cat}
+                id={`filter-cat-${cat.toLowerCase().replace(/\s+/g, '-')}`}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                className={`relative px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                  isSelected
+                    ? 'text-[#18181B] dark:text-[#EDEDEC] font-bold'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                }`}
+              >
+                <span>{cat}</span>
+                {isSelected && (
+                  <span className="absolute bottom-0 inset-x-3 h-0.5 bg-[#EA580C] rounded-full animate-in fade-in duration-200" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
 
-        {/* Search Input */}
-        <div className="relative w-full md:w-64 shrink-0">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        {/* Minimal Search Input */}
+        <div className="relative w-full md:w-72 shrink-0">
+          <Search className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             id="input-portfolio-search"
             type="text"
-            placeholder="Search projects, tools, tags..."
+            placeholder="Search archive, tools, client..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-zinc-50 border border-zinc-200 rounded-full pl-9 pr-4 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white"
+            className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
           />
         </div>
       </div>
 
-      {/* Project Grid */}
+      {/* Art-Directed Gallery Grid with Visual Rhythm */}
       {filteredProjects.length === 0 ? (
-        <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-16 text-center space-y-3 shadow-xs">
-          <Layers className="w-10 h-10 text-zinc-400 mx-auto" />
-          <h3 className="font-display text-lg font-black text-zinc-800">
-            No projects found matching your criteria
-          </h3>
-          <p className="text-xs text-zinc-500 font-medium">
-            Try adjusting your search query or selecting a different category filter.
-          </p>
+        <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-16 text-center space-y-4 shadow-2xs max-w-xl mx-auto">
+          <Layers className="w-8 h-8 text-[#A1A1AA] mx-auto opacity-70" />
+          <div className="space-y-1">
+            <h3 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              No archived works found
+            </h3>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+              No matching pieces were found for "{searchQuery}" in {selectedCategory}.
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }}
-            className="mt-2 px-4 py-2 rounded-full bg-zinc-100 text-xs text-orange-600 font-bold hover:bg-zinc-200 border border-zinc-200"
+            className="px-4 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] hover:bg-[#F4F2ED] dark:hover:bg-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] transition-colors cursor-pointer"
           >
-            Reset Filters
+            Clear Filters
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <PortfolioCard
-              key={project.id}
-              project={project}
-              onSelect={(p) => setSelectedPortfolioProject(p)}
-            />
-          ))}
+        <div className="space-y-8 sm:space-y-12">
+          {/* Asymmetric Exhibition Flow: Leading Piece is Featured if on All / no search */}
+          {selectedCategory === 'All' && !searchQuery && filteredProjects.length >= 3 ? (
+            <>
+              {/* Primary Anchor: Large Featured Project + Two Smaller Projects */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div className="lg:col-span-8">
+                  <PortfolioCard
+                    project={filteredProjects[0]}
+                    variant="featured"
+                    onSelect={(p) => setSelectedPortfolioProject(p)}
+                  />
+                </div>
+
+                <div className="lg:col-span-4 flex flex-col gap-8">
+                  <PortfolioCard
+                    project={filteredProjects[1]}
+                    variant="compact"
+                    onSelect={(p) => setSelectedPortfolioProject(p)}
+                  />
+                  {filteredProjects[2] && (
+                    <PortfolioCard
+                      project={filteredProjects[2]}
+                      variant="compact"
+                      onSelect={(p) => setSelectedPortfolioProject(p)}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Middle Section: Wide Panoramic Project if 4th exists */}
+              {filteredProjects.length > 3 && (
+                <div className="pt-2">
+                  <PortfolioCard
+                    project={filteredProjects[3]}
+                    variant="wide"
+                    onSelect={(p) => setSelectedPortfolioProject(p)}
+                  />
+                </div>
+              )}
+
+              {/* Subsequent Works in Alternating Rhythm */}
+              {filteredProjects.length > 4 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 pt-4">
+                  {filteredProjects.slice(4).map((project) => (
+                    <PortfolioCard
+                      key={project.id}
+                      project={project}
+                      variant="standard"
+                      onSelect={(p) => setSelectedPortfolioProject(p)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            /* Filtered or Searched Grid: Clean 2-3 Column Editorial Gallery */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {filteredProjects.map((project, index) => (
+                <PortfolioCard
+                  key={project.id}
+                  project={project}
+                  variant={index === 0 && filteredProjects.length > 1 ? 'featured' : 'standard'}
+                  className={index === 0 && filteredProjects.length > 1 ? 'md:col-span-2' : ''}
+                  onSelect={(p) => setSelectedPortfolioProject(p)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Bottom CTA */}
-      <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-8 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xs">
-        <div>
-          <h3 className="font-display text-xl sm:text-2xl font-black text-zinc-900">
-            Ready to bring your own vision to life?
-          </h3>
-          <p className="text-xs sm:text-sm text-zinc-500 mt-1 font-medium">
-            Let's design a tailor-made visual package for your upcoming brand or release.
-          </p>
-        </div>
+      {/* Editorial Closing Invitation */}
+      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#27272A]">
+        <div className="bg-[#18181B] dark:bg-[#18181B] text-white rounded-xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-transparent dark:border-[#27272A]">
+          <div className="space-y-2 max-w-xl">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
+              Bespoke Inquiries
+            </span>
+            <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              Have a visionary project in mind?
+            </h3>
+            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
+              Every commission begins with an open dialogue about your aesthetic ambitions, target deliverables, and deadlines.
+            </p>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveView('commission-form')}
-          className="px-6 py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-bold transition-all shadow-xs flex items-center gap-2 shrink-0"
-        >
-          <Send className="w-4 h-4" />
-          <span>Commission a Project</span>
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => setActiveView('commission-form')}
+            className="px-6 py-3.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs sm:text-sm font-semibold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer shrink-0"
+          >
+            <Send className="w-4 h-4" />
+            <span>Initiate Project Consultation</span>
+          </button>
+        </div>
+      </section>
 
       {/* Deep Dive Project Modal */}
       {selectedPortfolioProject && (

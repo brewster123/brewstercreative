@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Brewster Creative Theme Tokens — Light Mode */
   --bg-canvas: #FAF9F6;
@@ -29,12 +31,12 @@
   color-scheme: dark;
 
   /* Brewster Creative Theme Tokens — Dark Mode */
-  --bg-canvas: #111111;
-  --bg-surface: #181818;
-  --bg-surface-secondary: #222222;
-  --text-primary: #F5F5F0;
+  --bg-canvas: #0F0F11;
+  --bg-surface: #18181B;
+  --bg-surface-secondary: #232327;
+  --text-primary: #EDEDEC;
   --text-muted: #A1A1AA;
-  --border-subtle: #2F2F2F;
+  --border-subtle: #27272A;
   --accent: #EA580C;
   --accent-hover: #D94814;
 
@@ -120,7 +122,7 @@
 
 .dark .bg-\[\#FAF9F6\]\/90,
 .dark .bg-\[\#faf9f6\]\/90 {
-  background-color: rgba(17, 17, 17, 0.9) !important;
+  background-color: rgba(15, 15, 17, 0.9) !important;
 }
 
 .dark .bg-\[\#F4F2ED\],
@@ -135,15 +137,15 @@
 }
 
 .dark .bg-zinc-100 {
-  background-color: #222222 !important;
+  background-color: #232327 !important;
 }
 
 .dark .bg-zinc-100\/90 {
-  background-color: rgba(34, 34, 34, 0.9) !important;
+  background-color: rgba(35, 35, 39, 0.9) !important;
 }
 
 .dark .bg-zinc-200 {
-  background-color: #2A2A2A !important;
+  background-color: #2A2A2E !important;
 }
 
 /* Borders */
@@ -163,8 +165,12 @@
 /* Text Colors */
 .dark .text-\[\#18181B\],
 .dark .text-\[\#18181b\],
+.dark .text-black,
 .dark .text-zinc-900,
-.dark .text-zinc-800 {
+.dark .text-zinc-800,
+.dark .text-neutral-900,
+.dark .text-gray-900,
+.dark .text-\[\#141416\] {
   color: var(--text-primary) !important;
 }
 
@@ -177,7 +183,7 @@
 }
 
 .dark .text-zinc-400 {
-  color: #71717A !important;
+  color: #A1A1AA !important;
 }
 
 /* Dark mode inputs, textareas, selects */
@@ -199,7 +205,7 @@
 .dark .bg-zinc-950:not(.bg-orange-500):not(.bg-emerald-600):not(.bg-rose-600),
 .dark .bg-\[\#18181B\]:not(.bg-orange-500) {
   background-color: #27272A !important;
-  color: #F5F5F0 !important;
+  color: #EDEDEC !important;
 }
 
 .dark .bg-zinc-900:hover,
@@ -210,7 +216,7 @@
 
 /* Brand logo fill in dark mode */
 .dark #brand-official-logo g {
-  fill: #F5F5F0 !important;
+  fill: #EDEDEC !important;
 }
 
 /* Semantic Badges & Notifications in Dark Mode */

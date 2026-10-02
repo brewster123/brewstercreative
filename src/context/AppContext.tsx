@@ -77,7 +77,9 @@ export type AppView =
   | 'admin-dashboard'
   | 'auth'
   | 'shop'
-  | 'product-detail';
+  | 'product-detail'
+  | 'settings'
+  | 'chat';
 
 export type AppTheme = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';

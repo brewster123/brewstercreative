@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
-  ShieldCheck, 
   ArrowRight, 
   Mail, 
   Lock,
@@ -9,10 +8,8 @@ import {
   EyeOff,
   User, 
   CheckCircle2, 
-  Briefcase,
   Sparkles,
   Phone,
-  MessageSquare,
   Loader2,
   AlertCircle,
   LogOut,
@@ -30,6 +27,7 @@ export const AuthView: React.FC = () => {
     emailVerificationStatus,
     clearEmailVerificationStatus,
     resendVerificationEmail,
+    studioProfile
   } = useApp();
 
   const [mode, setMode] = useState<'signin' | 'register'>('signin');
@@ -37,8 +35,9 @@ export const AuthView: React.FC = () => {
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
+  const [showForgotNotice, setShowForgotNotice] = useState(false);
 
-  // Resend verification email form state (shown only in the expired/error banner)
+  // Resend verification email form state (shown in expired/error callback banner)
   const [resendEmail, setResendEmail] = useState('');
   const [isResending, setIsResending] = useState(false);
   const [resendResultMessage, setResendResultMessage] = useState('');
@@ -50,8 +49,6 @@ export const AuthView: React.FC = () => {
     setResendResultMessage('');
     await resendVerificationEmail(resendEmail);
     setIsResending(false);
-    // Deliberately generic wording — never confirms/denies whether an
-    // account exists for the entered email.
     setResendResultMessage('If an account exists for that email, a new verification link has been sent.');
   };
 
@@ -78,6 +75,7 @@ export const AuthView: React.FC = () => {
     setAuthError('');
     setAuthSuccess('');
     setInfoMessage('');
+    setShowForgotNotice(false);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -100,10 +98,9 @@ export const AuthView: React.FC = () => {
     try {
       const result = await loginUser(email, password);
       if (result.success && result.user) {
-        setAuthSuccess(`Signed in successfully. Welcome, ${result.user.name}!`);
-        // Redirection is handled in loginUser according to the role in public.profiles
+        setAuthSuccess(`Welcome back, ${result.user.name}.`);
       } else {
-        setAuthError(result.error || 'Invalid email or password. Please check your credentials.');
+        setAuthError(result.error || 'Invalid email or password. Please verify your credentials.');
       }
     } catch (err: any) {
       setAuthError(err?.message || 'An unexpected error occurred during sign in.');
@@ -156,13 +153,12 @@ export const AuthView: React.FC = () => {
       if (result.success) {
         if (result.confirmationRequired) {
           setInfoMessage(
-            'Account registered successfully! A confirmation link has been sent to your email. Please verify your email before signing in.'
+            'Account registered successfully. A confirmation link has been sent to your email. Please verify before signing in.'
           );
           setMode('signin');
           setSignInEmail(email);
         } else if (result.user) {
-          setAuthSuccess(`Account created successfully! Welcome to Brewster Creative Co., ${result.user.name}.`);
-          // Redirected to client workspace automatically
+          setAuthSuccess(`Account created. Welcome to Brewster Creative, ${result.user.name}.`);
         }
       } else {
         setAuthError(result.error || 'Failed to create account. Please check your details and try again.');
@@ -175,60 +171,54 @@ export const AuthView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto px-4 sm:px-6 py-10 sm:py-16 space-y-6">
+    <div className="max-w-md mx-auto px-4 sm:px-6 py-16 sm:py-24 space-y-10 animate-in fade-in duration-300">
       
-      {/* Studio Header */}
-      <div className="text-center space-y-3">
+      {/* Small brand mark / logo & Welcome */}
+      <div className="text-center space-y-4">
         <div className="flex justify-center">
-          <BrandLogo size="lg" className="hover:scale-105 transition-transform" />
+          <BrandLogo size="md" className="hover:scale-102 transition-transform duration-300" />
         </div>
-        <h1 className="font-display font-black text-2xl sm:text-3xl text-zinc-900 tracking-tight">
-          {mode === 'signin' ? 'Sign In to Your Account' : 'Create Client Account'}
-        </h1>
-        <p className="text-sm text-zinc-500 font-medium max-w-md mx-auto">
-          {mode === 'signin' 
-            ? 'Sign in with your email and password to access your design commissions, proofs, and studio direct messages.'
-            : 'Register your client account to collaborate with Brewster, track design milestones, and access deliverables.'}
-        </p>
+
+        <div className="space-y-1">
+          <h1 className="font-display font-medium text-3xl sm:text-4xl text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+            {mode === 'signin' ? 'Welcome back.' : 'Create an account.'}
+          </h1>
+          <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+            {mode === 'signin' 
+              ? 'Sign in to continue to your studio.'
+              : 'Join to collaborate on custom projects and inspect creative proofs.'}
+          </p>
+        </div>
       </div>
 
       {/* Email Verification Callback Banner */}
       {emailVerificationStatus && (
         <div
-          className={`rounded-2xl p-4 border shadow-xs ${
+          className={`rounded-lg p-4 border text-xs leading-relaxed ${
             emailVerificationStatus === 'success'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-              : 'bg-amber-50 border-amber-200 text-amber-900'
+              ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300'
+              : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 text-amber-900 dark:text-amber-300'
           }`}
         >
           <div className="flex items-start gap-3">
-            <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                emailVerificationStatus === 'success'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-amber-100 text-amber-700'
-              }`}
-            >
+            <div className="shrink-0 mt-0.5">
               {emailVerificationStatus === 'success' ? (
-                <CheckCircle2 className="w-4.5 h-4.5" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               ) : (
-                <AlertCircle className="w-4.5 h-4.5" />
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               )}
             </div>
             <div className="flex-1 space-y-2 min-w-0">
               <div>
-                <p className="text-sm font-bold">
-                  {emailVerificationStatus === 'success' && 'Your email has been verified!'}
+                <p className="font-bold">
+                  {emailVerificationStatus === 'success' && 'Your email has been verified.'}
                   {emailVerificationStatus === 'expired' && 'This verification link has expired.'}
                   {emailVerificationStatus === 'error' && 'This verification link is invalid.'}
                 </p>
-                <p className="text-xs font-medium opacity-90 mt-0.5">
-                  {emailVerificationStatus === 'success' &&
-                    'Thanks for confirming your address — you can now sign in below.'}
-                  {emailVerificationStatus === 'expired' &&
-                    "Verification links only stay valid for a limited time. Enter your email below and we'll send you a new one."}
-                  {emailVerificationStatus === 'error' &&
-                    "This link may have already been used, or the URL may be incomplete. Enter your email below and we'll send you a new one."}
+                <p className="mt-0.5 opacity-90">
+                  {emailVerificationStatus === 'success' && 'You can now sign in below.'}
+                  {emailVerificationStatus === 'expired' && "Verification links remain valid for a limited period. Request a fresh link below."}
+                  {emailVerificationStatus === 'error' && "This link may have already been consumed. Request a fresh link below."}
                 </p>
               </div>
 
@@ -241,24 +231,25 @@ export const AuthView: React.FC = () => {
                     value={resendEmail}
                     onChange={(e) => setResendEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="flex-1 min-w-0 bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500"
+                    className="flex-1 min-w-0 bg-white dark:bg-[#18181B] border border-amber-300 dark:border-amber-800 rounded-lg px-3 py-1.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
                   />
                   <button
                     id="btn-resend-verification"
                     type="submit"
                     disabled={isResending}
-                    className="shrink-0 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 disabled:opacity-60 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    className="shrink-0 px-3.5 py-1.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] text-xs font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     {isResending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                    <span>Resend Verification Email</span>
+                    <span>Resend Link</span>
                   </button>
                 </form>
               )}
 
               {resendResultMessage && (
-                <p className="text-xs font-semibold opacity-90">{resendResultMessage}</p>
+                <p className="font-semibold">{resendResultMessage}</p>
               )}
             </div>
+
             <button
               type="button"
               onClick={() => {
@@ -266,7 +257,7 @@ export const AuthView: React.FC = () => {
                 setResendResultMessage('');
                 setResendEmail('');
               }}
-              aria-label="Dismiss"
+              aria-label="Dismiss banner"
               className="shrink-0 opacity-50 hover:opacity-100 transition-opacity"
             >
               <X className="w-4 h-4" />
@@ -277,161 +268,95 @@ export const AuthView: React.FC = () => {
 
       {/* Currently Authenticated Session Card */}
       {currentUser && (
-        <div className="bg-white border border-zinc-200/90 rounded-2xl p-4 shadow-xs flex items-center justify-between gap-4">
+        <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <img 
               src={currentUser.avatar} 
               alt={currentUser.name} 
-              className="w-11 h-11 rounded-full object-cover ring-2 ring-orange-500/20 shrink-0"
+              className="w-10 h-10 rounded-full object-cover ring-1 ring-[#E4E2DC] dark:ring-[#27272A] shrink-0"
             />
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-sm text-zinc-900 truncate">{currentUser.name}</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono-code font-bold uppercase ${
-                  currentUser.role === 'admin' 
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-orange-50 text-orange-700 border border-orange-200'
-                }`}>
-                  {currentUser.role === 'admin' ? 'Studio Director (Admin)' : 'Client Workspace'}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-400 font-mono-code truncate">{currentUser.email}</p>
+            <div className="min-w-0 space-y-0.5">
+              <span className="font-semibold text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] block truncate">
+                {currentUser.name}
+              </span>
+              <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] font-mono truncate">
+                {currentUser.role === 'admin' ? 'Studio Director' : 'Client Account'}
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {currentUser.role === 'admin' ? (
-              <button
-                type="button"
-                id="btn-active-session-admin"
-                onClick={() => setActiveView('admin-dashboard')}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Admin Studio</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                id="btn-active-session-client"
-                onClick={() => setActiveView('client-dashboard')}
-                className="px-3.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
-              >
-                <Briefcase className="w-3.5 h-3.5" />
-                <span>My Workspace</span>
-              </button>
-            )}
             <button
               type="button"
-              id="btn-active-session-logout"
-              onClick={logout}
-              className="px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold transition-all flex items-center gap-1.5"
+              onClick={() => setActiveView(currentUser.role === 'admin' ? 'admin-dashboard' : 'client-dashboard')}
+              className="px-3.5 py-1.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
+              <span>Enter Studio</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={logout}
+              title="Sign Out"
+              className="p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Authentication Card */}
-      <div className="bg-white border border-zinc-200/90 rounded-[28px] p-6 sm:p-8 shadow-sm space-y-6">
-        
-        {/* Toggle Mode: Sign In vs Register */}
-        <div className="flex p-1 bg-zinc-100/90 rounded-2xl border border-zinc-200/70">
+      {/* Feedback Messages */}
+      {authError && (
+        <div className="p-3.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-start gap-2.5">
+          <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+          <span className="leading-relaxed flex-1">{authError}</span>
+        </div>
+      )}
+
+      {authSuccess && (
+        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-start gap-2.5">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+          <span className="leading-relaxed flex-1">{authSuccess}</span>
+        </div>
+      )}
+
+      {infoMessage && (
+        <div className="p-3.5 rounded-lg bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50 text-orange-900 dark:text-orange-300 text-xs flex items-start gap-2.5">
+          <Sparkles className="w-4 h-4 shrink-0 text-[#EA580C] mt-0.5" />
+          <span className="leading-relaxed flex-1">{infoMessage}</span>
+        </div>
+      )}
+
+      {showForgotNotice && (
+        <div className="p-3.5 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed flex items-start justify-between gap-2">
+          <span>
+            To reset your password, contact Brewster directly via your registered email at <strong>{studioProfile.email}</strong>.
+          </span>
           <button
-            id="tab-auth-signin"
             type="button"
-            onClick={() => {
-              setMode('signin');
-              resetFeedback();
-            }}
-            className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-              mode === 'signin'
-                ? 'bg-white text-zinc-900 shadow-xs'
-                : 'text-zinc-500 hover:text-zinc-800'
-            }`}
+            onClick={() => setShowForgotNotice(false)}
+            className="text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC]"
           >
-            Sign In
-          </button>
-          <button
-            id="tab-auth-register"
-            type="button"
-            onClick={() => {
-              setMode('register');
-              resetFeedback();
-            }}
-            className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-              mode === 'register'
-                ? 'bg-white text-zinc-900 shadow-xs'
-                : 'text-zinc-500 hover:text-zinc-800'
-            }`}
-          >
-            Register
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
+      )}
 
-        {/* Feedback Alert Messages */}
-        {authError && (
-          <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-start gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
-            <div className="flex-1 space-y-2">
-              <p>{authError}</p>
-              {authError.includes('42501') && (
-                <div className="p-3 bg-white rounded-xl border border-rose-200 text-zinc-800 space-y-2 text-left">
-                  <p className="font-bold text-zinc-900 text-xs">
-                    Quick Fix: Run this query in Supabase Dashboard &rarr; SQL Editor:
-                  </p>
-                  <pre className="p-2.5 bg-zinc-950 text-emerald-400 rounded-lg text-[11px] font-mono-code select-all overflow-x-auto whitespace-pre">
-GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
-                  </pre>
-                  <p className="text-[11px] text-zinc-600 font-normal">
-                    This grants table-level privileges to the authenticated role so your RLS policies can evaluate.
-                  </p>
-                </div>
-              )}
-              {authError.toLowerCase().includes('already exists') && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('signin');
-                    setSignInEmail(regEmail);
-                    resetFeedback();
-                  }}
-                  className="mt-1.5 text-xs text-rose-800 font-bold underline hover:no-underline cursor-pointer"
-                >
-                  Switch to Sign In &rarr;
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {authSuccess && (
-          <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{authSuccess}</span>
-          </div>
-        )}
-
-        {infoMessage && (
-          <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold flex items-center gap-2">
-            <Sparkles className="w-4 h-4 shrink-0" />
-            <span>{infoMessage}</span>
-          </div>
-        )}
-
+      {/* Main Authentication Form Container */}
+      <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+        
         {mode === 'signin' ? (
           /* ======================================================== */
-          /* SIGN IN: EMAIL & PASSWORD */
+          /* SIGN IN FORM                                             */
           /* ======================================================== */
           <form onSubmit={handleSignIn} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Email Address
+              <label htmlFor="input-signin-email" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-1.5 font-mono uppercase tracking-wider">
+                Email
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   id="input-signin-email"
                   type="email"
@@ -439,18 +364,27 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                   autoComplete="email"
                   value={signInEmail}
                   onChange={(e) => setSignInEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-10 pr-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+                  placeholder="alex@studio.com"
+                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-9 pr-3.5 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="input-signin-password" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] font-mono uppercase tracking-wider">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotNotice(true)}
+                  className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] transition-colors cursor-pointer"
+                >
+                  Forgot password?
+                </button>
+              </div>
               <div className="relative">
-                <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   id="input-signin-password"
                   type={showSignInPassword ? 'text' : 'password'}
@@ -458,20 +392,16 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                   autoComplete="current-password"
                   value={signInPassword}
                   onChange={(e) => setSignInPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-10 pr-11 py-3 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+                  placeholder="••••••••"
+                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-9 pr-10 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowSignInPassword(!showSignInPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]"
                   aria-label={showSignInPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showSignInPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
+                  {showSignInPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -481,7 +411,7 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                 id="btn-signin-submit"
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3.5 px-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 disabled:opacity-60 text-white font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                className="w-full py-2.5 px-4 rounded-lg bg-[#EA580C] hover:bg-[#D94814] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isLoading ? (
                   <>
@@ -491,40 +421,39 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                 ) : (
                   <>
                     <span>Sign In</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>
             </div>
 
-            <div className="text-center pt-2">
-              <p className="text-xs text-zinc-500">
-                Don't have an account yet?{' '}
+            <div className="text-center pt-3 border-t border-[#E4E2DC] dark:border-[#27272A]">
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                New here?{' '}
                 <button
                   type="button"
                   onClick={() => {
                     setMode('register');
-                    setRegEmail(signInEmail);
                     resetFeedback();
                   }}
-                  className="font-bold text-orange-600 hover:text-orange-700 underline"
+                  className="font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:text-[#EA580C] transition-colors underline cursor-pointer"
                 >
-                  Register here
+                  Create an account
                 </button>
               </p>
             </div>
           </form>
         ) : (
           /* ======================================================== */
-          /* REGISTRATION: FULL NAME, EMAIL, PASSWORD, CONFIRM PW */
+          /* REGISTRATION FORM                                        */
           /* ======================================================== */
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-zinc-800 mb-1">
-                Full Name <span className="text-orange-500">*</span>
+              <label htmlFor="input-reg-name" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-1.5 font-mono uppercase tracking-wider">
+                Full Name <span className="text-[#EA580C]">*</span>
               </label>
               <div className="relative">
-                <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <User className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   id="input-reg-name"
                   type="text"
@@ -532,18 +461,18 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                   autoComplete="name"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
-                  placeholder="e.g. Alex Rivera"
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+                  placeholder="Alex Rivera"
+                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-9 pr-3.5 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-zinc-800 mb-1">
-                Email Address <span className="text-orange-500">*</span>
+              <label htmlFor="input-reg-email" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-1.5 font-mono uppercase tracking-wider">
+                Email Address <span className="text-[#EA580C]">*</span>
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   id="input-reg-email"
                   type="email"
@@ -551,19 +480,19 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                   autoComplete="email"
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
-                  placeholder="alex@company.com"
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+                  placeholder="alex@studio.com"
+                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-9 pr-3.5 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1">
-                  Password <span className="text-orange-500">*</span>
+                <label htmlFor="input-reg-password" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-1.5 font-mono uppercase tracking-wider">
+                  Password <span className="text-[#EA580C]">*</span>
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     id="input-reg-password"
                     type={showRegPassword ? 'text' : 'password'}
@@ -572,30 +501,26 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                     autoComplete="new-password"
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
-                    placeholder="Min 6 characters"
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-10 pr-10 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+                    placeholder="Min 6 chars"
+                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-9 pr-9 py-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => setShowRegPassword(!showRegPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] dark:text-[#A1A1AA]"
                     aria-label={showRegPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showRegPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
+                    {showRegPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1">
-                  Confirm Password <span className="text-orange-500">*</span>
+                <label htmlFor="input-reg-confirm-password" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-1.5 font-mono uppercase tracking-wider">
+                  Confirm <span className="text-[#EA580C]">*</span>
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     id="input-reg-confirm-password"
                     type={showRegConfirmPassword ? 'text' : 'password'}
@@ -605,85 +530,80 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                     value={regConfirmPassword}
                     onChange={(e) => setRegConfirmPassword(e.target.value)}
                     placeholder="Re-enter password"
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-10 pr-10 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-9 pr-9 py-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] dark:text-[#A1A1AA]"
                     aria-label={showRegConfirmPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showRegConfirmPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
+                    {showRegConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Optional Profile Information Section */}
-            <div className="pt-2">
+            {/* Optional Profile Info Accordion */}
+            <div className="pt-1">
               <button
                 type="button"
                 onClick={() => setShowProfileDetails(!showProfileDetails)}
-                className="text-xs font-bold text-zinc-600 hover:text-zinc-900 flex items-center gap-1.5 focus:outline-none cursor-pointer"
+                className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <span>{showProfileDetails ? '− Hide optional profile info' : '+ Add optional contact info (handle, phone, contact method)'}</span>
+                <span>{showProfileDetails ? '− Hide optional contact fields' : '+ Add optional contact details'}</span>
               </button>
 
               {showProfileDetails && (
-                <div className="mt-3 p-4 bg-zinc-50 border border-zinc-200 rounded-2xl space-y-3 animate-fadeIn">
+                <div className="mt-3 p-3.5 bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-zinc-800 mb-1">
-                        Company or Social Handle
+                      <label className="block text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] mb-1 uppercase">
+                        Handle or Studio
                       </label>
                       <input
                         id="input-reg-handle"
                         type="text"
                         value={regHandle}
                         onChange={(e) => setRegHandle(e.target.value)}
-                        placeholder="@alexrivera or Studio Co."
-                        className="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500"
+                        placeholder="@alexrivera"
+                        className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-2.5 py-1.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-zinc-800 mb-1">
+                      <label className="block text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] mb-1 uppercase">
                         Phone / WhatsApp
                       </label>
                       <div className="relative">
-                        <Phone className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <Phone className="w-3 h-3 text-[#A1A1AA] absolute left-2.5 top-1/2 -translate-y-1/2" />
                         <input
                           id="input-reg-phone"
                           type="tel"
                           value={regPhone}
                           onChange={(e) => setRegPhone(e.target.value)}
                           placeholder="+1 (555) 019-2834"
-                          className="w-full bg-white border border-zinc-200 rounded-xl pl-9 pr-3 py-2 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500"
+                          className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-md pl-8 pr-2.5 py-1.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
                         />
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-zinc-800 mb-1">
-                      Preferred Contact Method
+                    <label className="block text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] mb-1 uppercase">
+                      Contact Preference
                     </label>
                     <select
                       id="select-reg-contact"
                       value={regContact}
                       onChange={(e) => setRegContact(e.target.value)}
-                      className="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-orange-500 font-medium"
+                      className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-2.5 py-1.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
                     >
                       <option value="Email & Platform Chat">Email & Platform Chat (Default)</option>
                       <option value="Email Only">Email Only</option>
                       <option value="WhatsApp">WhatsApp</option>
                       <option value="Instagram / Social">Instagram / Social DM</option>
                       <option value="Discord">Discord</option>
-                      <option value="Telegram">Telegram</option>
                     </select>
                   </div>
                 </div>
@@ -695,7 +615,7 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                 id="btn-register-submit"
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3.5 px-4 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                className="w-full py-2.5 px-4 rounded-lg bg-[#EA580C] hover:bg-[#D94814] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isLoading ? (
                   <>
@@ -704,16 +624,16 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                   </>
                 ) : (
                   <>
-                    <span>Create Client Account</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>Create Account</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>
             </div>
 
-            <div className="text-center pt-2">
-              <p className="text-xs text-zinc-500">
-                Already registered?{' '}
+            <div className="text-center pt-3 border-t border-[#E4E2DC] dark:border-[#27272A]">
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                Already have an account?{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -721,7 +641,7 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
                     setSignInEmail(regEmail);
                     resetFeedback();
                   }}
-                  className="font-bold text-orange-600 hover:text-orange-700 underline"
+                  className="font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:text-[#EA580C] transition-colors underline cursor-pointer"
                 >
                   Sign in here
                 </button>
@@ -730,15 +650,6 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
           </form>
         )}
 
-      </div>
-
-      {/* Security & Access Notice */}
-      <div className="p-4 rounded-2xl bg-zinc-100/70 border border-zinc-200/80 text-zinc-600 text-xs text-center space-y-1">
-        <p className="font-semibold text-zinc-700">Brewster Creative Co. Authentication</p>
-        <p className="text-[11px] text-zinc-500">
-          Client accounts have access to their personal design commissions, proof approvals, and direct messaging.
-          Admin privileges are managed securely via Supabase database role assignment.
-        </p>
       </div>
 
     </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ProgressUpdate } from '../types';
-import { CheckCircle2, Clock, Calendar, Sparkles, UserCheck } from 'lucide-react';
+import { CheckCircle2, Clock, Sparkles, UserCheck } from 'lucide-react';
 
 interface ProgressTimelineProps {
   updates?: ProgressUpdate[];
@@ -8,80 +8,88 @@ interface ProgressTimelineProps {
 
 export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({ updates = [] }) => {
   const safeUpdates = updates || [];
+
   return (
-    <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-6 sm:p-7 shadow-xs">
-      <div className="flex items-center justify-between gap-2 mb-6 pb-4 border-b border-zinc-200/80">
+    <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+      
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
         <div>
-          <h3 className="font-display text-base sm:text-lg font-black text-zinc-900 flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-orange-500" />
-            Project Milestone Timeline
+          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
+            Production Ledger
+          </span>
+          <h3 className="font-display text-lg sm:text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+            Milestone Activity Log
           </h3>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            Key milestones, stage transitions, and activity logs
-          </p>
         </div>
-        <span className="text-xs font-mono-code text-zinc-600 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 font-bold">
-          {safeUpdates.length} Events Logged
+
+        <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+          {safeUpdates.length} {safeUpdates.length === 1 ? 'entry' : 'entries'} documented
         </span>
       </div>
 
-      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-200">
-        {safeUpdates.map((update, index) => {
-          const isLatest = index === safeUpdates.length - 1;
+      {safeUpdates.length === 0 ? (
+        <div className="py-8 text-center text-xs text-[#71717A] dark:text-[#A1A1AA]">
+          No milestones recorded yet. Production entries will appear as the project advances.
+        </div>
+      ) : (
+        <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-[#E4E2DC] dark:before:bg-[#27272A]">
+          {safeUpdates.map((update, index) => {
+            const isLatest = index === safeUpdates.length - 1;
 
-          return (
-            <div key={update.id} className="relative group">
-              {/* Timeline marker icon */}
-              <div 
-                className={`absolute -left-6 top-0 w-5 h-5 rounded-full flex items-center justify-center ring-4 ring-white ${
-                  isLatest
-                    ? 'bg-orange-500 text-white shadow-sm animate-pulse'
-                    : 'bg-emerald-50 text-emerald-600 border border-emerald-300'
-                }`}
-              >
-                {isLatest ? (
-                  <Sparkles className="w-2.5 h-2.5" />
-                ) : (
-                  <CheckCircle2 className="w-3 h-3" />
-                )}
-              </div>
-
-              {/* Event Content Card */}
-              <div className="bg-zinc-50 border border-zinc-200/80 rounded-2xl p-4 transition-all hover:border-zinc-300">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-zinc-900">
-                      {update.stage}
-                    </span>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono-code bg-orange-50 text-orange-600 font-bold border border-orange-200">
-                      {update.percentage}% Completed
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono-code">
-                    <Clock className="w-3 h-3 text-zinc-400" />
-                    <span>{update.timestamp}</span>
-                  </div>
+            return (
+              <div key={update.id} className="relative group">
+                {/* Marker */}
+                <div 
+                  className={`absolute -left-6 top-1 w-4 h-4 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-[#18181B] ${
+                    isLatest
+                      ? 'bg-[#EA580C] text-white shadow-xs'
+                      : 'bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA]'
+                  }`}
+                >
+                  {isLatest ? (
+                    <Sparkles className="w-2.5 h-2.5" />
+                  ) : (
+                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                  )}
                 </div>
 
-                <p className="text-xs text-zinc-700 leading-relaxed font-medium">
-                  {update.note}
-                </p>
+                {/* Content */}
+                <div className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-4 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                        {update.stage}
+                      </span>
+                      <span className="font-mono text-[10px] text-[#EA580C]">
+                        {update.percentage}%
+                      </span>
+                    </div>
 
-                <div className="mt-2 pt-2 border-t border-zinc-200/70 flex items-center justify-between text-[11px] text-zinc-500">
-                  <span className="flex items-center gap-1">
-                    <UserCheck className="w-3 h-3 text-zinc-400" />
-                    Logged by: <strong className="text-zinc-700 font-semibold">{update.updatedBy}</strong>
-                  </span>
-                  <span className="font-mono-code text-[10px] text-zinc-400 font-bold">
-                    Stage 0{update.stageNumber}
-                  </span>
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                      <Clock className="w-3 h-3 text-[#A1A1AA]" />
+                      <span>{update.timestamp}</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                    {update.note}
+                  </p>
+
+                  <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                    <span className="flex items-center gap-1">
+                      <UserCheck className="w-3 h-3" />
+                      <span>Recorded by {update.updatedBy}</span>
+                    </span>
+                    <span>Stage 0{update.stageNumber}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
+
     </div>
   );
 };

@@ -7,19 +7,14 @@ import {
   ChevronRight, 
   Download, 
   Box, 
-  Tag, 
-  Palette, 
-  Package, 
-  Type, 
-  Layers, 
   Sparkles, 
   Send, 
   ArrowRight, 
   FileCheck2, 
   Clock,
   ExternalLink,
-  ArrowUpRight,
-  Wand2 
+  Layers,
+  Wand2
 } from 'lucide-react';
 import { ShopProduct, PortfolioProject, ServiceItem } from '../types';
 import { ServiceCard } from '../components/ServiceCard';
@@ -82,64 +77,45 @@ export const ProductDetailView: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const renderVisualIcon = () => {
-    switch (product.iconName) {
-      case 'Tag':
-        return <Tag className="w-16 h-16 sm:w-20 sm:h-20 text-orange-500/85 mb-3" />;
-      case 'Palette':
-        return <Palette className="w-16 h-16 sm:w-20 sm:h-20 text-zinc-600 mb-3" />;
-      case 'Package':
-        return <Package className="w-16 h-16 sm:w-20 sm:h-20 text-orange-600 mb-3" />;
-      case 'Type':
-        return <Type className="w-16 h-16 sm:w-20 sm:h-20 text-zinc-700 mb-3" />;
-      case 'Layers':
-      default:
-        return <Layers className="w-16 h-16 sm:w-20 sm:h-20 text-orange-500 mb-3" />;
-    }
-  };
-
   const getStatusBadge = () => {
     switch (product.status) {
       case 'Available':
         return (
-          <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-mono-code font-bold border border-emerald-200 shadow-2xs flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            Available Now
+          <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>Available</span>
           </span>
         );
       case 'In Production':
         return (
-          <span className="px-3 py-1 rounded-full bg-white/95 text-zinc-700 text-xs font-mono-code font-bold border border-zinc-200 shadow-2xs flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-zinc-400 animate-pulse" />
-            In Production
+          <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#71717A] animate-pulse" />
+            <span>In Production</span>
           </span>
         );
       case 'Sold Out':
         return (
-          <span className="px-3 py-1 rounded-full bg-zinc-100 text-zinc-500 text-xs font-mono-code font-bold border border-zinc-200 shadow-2xs">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold">
             Sold Out
           </span>
         );
       case 'Coming Soon':
       default:
         return (
-          <span className="px-3 py-1 rounded-full bg-white/95 text-orange-600 text-xs font-mono-code font-bold border border-orange-200 shadow-2xs flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-            Coming Soon
+          <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C] animate-pulse" />
+            <span>Coming Soon</span>
           </span>
         );
     }
   };
 
-  // Other products for "More from the Studio Shop" section
   const relatedProducts = SHOP_PRODUCTS.filter(p => p.id !== product.id);
 
-  // Cross-selling: Related Portfolio Projects (Phase 4D.1)
   const relatedPortfolioProjects: PortfolioProject[] = (product.relatedPortfolioIds || [])
     .map((id) => portfolio.find((p) => p.id === id))
     .filter((p): p is PortfolioProject => Boolean(p));
 
-  // Cross-selling: Related Services (Phase 4D.4: Shop -> Services / Commissions)
   const relatedServices: ServiceItem[] = (product.relatedServiceIds || [])
     .map((id) => services.find((s) => s.id === id))
     .filter((s): s is ServiceItem => Boolean(s));
@@ -161,191 +137,150 @@ export const ProductDetailView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 sm:space-y-20">
       
-      {/* Navigation & Breadcrumb Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200">
-        
-        {/* Breadcrumb Trail */}
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-mono-code flex-wrap">
+      {/* Editorial Breadcrumb Navigation */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-mono flex-wrap">
           <button
             type="button"
             onClick={handleBackToShop}
-            className="text-zinc-500 hover:text-orange-600 font-bold transition-colors cursor-pointer flex items-center gap-1"
+            className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer"
           >
-            <span>Shop</span>
+            <span>Storefront</span>
           </button>
           
-          <ChevronRight className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-[#A1A1AA] shrink-0" />
           
           <button
             type="button"
             onClick={handleCategoryBreadcrumb}
-            className="text-zinc-500 hover:text-orange-600 font-bold transition-colors cursor-pointer"
+            className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer"
           >
             {product.category}
           </button>
           
-          <ChevronRight className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-[#A1A1AA] shrink-0" />
           
-          <span className="text-zinc-900 font-bold truncate max-w-[200px] sm:max-w-[340px]">
+          <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold truncate max-w-[200px] sm:max-w-xs">
             {product.name}
           </span>
         </nav>
 
-        {/* Back to Shop Action */}
         <button
           type="button"
           onClick={handleBackToShop}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-bold border border-zinc-200 shadow-2xs transition-all cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] transition-all cursor-pointer self-start sm:self-auto"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Shop</span>
+          <span>Return to Storefront</span>
         </button>
       </div>
 
-      {/* Main Product Showcase: 2-Column Bento on Desktop */}
+      {/* Main Product Showcase: 2-Column Presentation */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
         
         {/* Left Column: Product Visual Showcase */}
         <div className="lg:col-span-6 space-y-4">
-          <div className={`aspect-[4/3] rounded-[32px] bg-gradient-to-br ${
-            product.visualGradient || 'from-orange-100/60 via-amber-50/40 to-zinc-100'
-          } border border-zinc-200 shadow-sm flex flex-col items-center justify-center p-8 sm:p-12 text-center relative overflow-hidden group`}>
+          <div className="aspect-[4/3] rounded-xl bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden group shadow-xs">
             
-            {/* Top Left: Product Type Pill */}
-            <div className="absolute top-4 left-4 flex items-center gap-1.5 flex-wrap z-10">
-              <span className="px-3 py-1 rounded-full bg-white/95 text-zinc-800 text-xs font-mono-code font-bold border border-zinc-200 shadow-2xs flex items-center gap-1.5">
+            {/* Top Left: Medium Type */}
+            <div className="absolute top-4 left-4 z-10">
+              <span className="px-2.5 py-1 rounded bg-white/90 dark:bg-[#18181B]/90 text-[#18181B] dark:text-[#EDEDEC] text-[10px] font-mono font-semibold uppercase border border-[#E4E2DC] dark:border-[#27272A] backdrop-blur-xs flex items-center gap-1.5">
                 {product.productType === 'Digital' ? (
-                  <Download className="w-3.5 h-3.5 text-orange-500" />
+                  <Download className="w-3 h-3 text-[#EA580C]" />
                 ) : (
-                  <Box className="w-3.5 h-3.5 text-orange-500" />
+                  <Box className="w-3 h-3 text-[#EA580C]" />
                 )}
                 <span>
                   {product.isTemplate 
                     ? 'Digital Template' 
                     : product.isDownloadable 
-                    ? 'Digital Product' 
+                    ? 'Digital Asset' 
                     : `${product.productType} Release`}
                 </span>
               </span>
             </div>
 
             {/* Top Right: Status Badge */}
-            <div className="absolute top-4 right-4 z-10">
+            <div className="absolute top-4 right-4 z-10 px-2.5 py-1 rounded bg-white/90 dark:bg-[#18181B]/90 border border-[#E4E2DC] dark:border-[#27272A] backdrop-blur-xs">
               {getStatusBadge()}
             </div>
 
-            {/* Center Visual Element / Real Product Image */}
+            {/* Artwork / Image Viewport */}
             {hasImage && rawImage ? (
               <img 
                 src={rawImage} 
                 alt={imageAlt} 
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-103"
                 onError={() => setImgError(true)}
               />
             ) : (
               <div className="flex flex-col items-center justify-center space-y-2">
-                {renderVisualIcon()}
-                {product.badge && (
-                  <span className="text-sm font-mono-code text-zinc-800 font-bold bg-white/80 px-3 py-1 rounded-lg border border-zinc-200/80 shadow-2xs">
-                    {product.badge}
-                  </span>
-                )}
-                <span className="text-xs text-zinc-500 font-mono-code uppercase font-semibold">
+                <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono uppercase tracking-wider">
                   {product.category}
                 </span>
               </div>
             )}
 
             {/* Bottom Meta Bar inside visual */}
-            <div className="absolute bottom-4 inset-x-4 px-4 py-2 rounded-xl bg-white/90 backdrop-blur-xs border border-zinc-200/80 flex items-center justify-between text-xs font-mono-code text-zinc-600 z-10">
-              <span className="font-bold truncate max-w-[55%]">{product.formats || 'Vector & Master Formats'}</span>
-              <span className="text-zinc-500 font-semibold truncate max-w-[42%] text-right">
+            <div className="absolute bottom-4 inset-x-4 px-3.5 py-2 rounded-lg bg-black/60 backdrop-blur-xs border border-white/10 flex items-center justify-between text-xs font-mono text-white/90 z-10">
+              <span className="font-semibold truncate max-w-[55%]">{product.formats || 'Vector & Master Formats'}</span>
+              <span className="text-white/70 truncate max-w-[42%] text-right">
                 {product.productImageCredit ? `Photo: ${product.productImageCredit}` : (product.badge || product.category)}
               </span>
             </div>
           </div>
 
-          {/* Studio Craftsmanship Callout */}
-          <div className="p-5 rounded-2xl bg-zinc-50 border border-zinc-200/80 flex items-start gap-3.5">
-            <Sparkles className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+          {/* Studio Craftsmanship Note */}
+          <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-start gap-3.5">
+            <Sparkles className="w-4 h-4 text-[#EA580C] shrink-0 mt-0.5" />
             <div className="space-y-1 text-xs">
-              <span className="font-bold text-zinc-900 block font-display">
+              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] block font-display">
                 Studio Craft Standards
               </span>
-              <p className="text-zinc-500 leading-relaxed font-medium">
+              <p className="text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
                 Engineered to strict studio quality standards by {studioProfile.designerName} using precise grid systems and vector craft.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Product Information & Specifications */}
+        {/* Right Column: Information & Specifications */}
         <div className="lg:col-span-6 space-y-6">
           
           {/* Header Metadata */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code uppercase font-bold tracking-wider border border-orange-200">
-                {product.category}
-              </span>
-              {product.isTemplate && (
-                <span className="px-2.5 py-0.5 rounded-full bg-white text-orange-700 text-xs font-mono-code font-bold border border-orange-200 shadow-2xs">
-                  Template Product
-                </span>
-              )}
-              {product.isDownloadable && !product.isTemplate && (
-                <span className="px-2.5 py-0.5 rounded-full bg-white text-zinc-700 text-xs font-mono-code font-bold border border-zinc-200 shadow-2xs">
-                  Downloadable Product
-                </span>
-              )}
-              {product.productType === 'Physical' && (
-                <span className="px-2.5 py-0.5 rounded-full bg-white text-zinc-700 text-xs font-mono-code font-bold border border-zinc-200 shadow-2xs">
-                  Physical Release
-                </span>
-              )}
-              {product.badge && (
-                <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-700 text-xs font-mono-code font-bold border border-zinc-200">
-                  {product.badge}
-                </span>
-              )}
+          <div className="space-y-3 pb-6 border-b border-[#E4E2DC] dark:border-[#27272A]">
+            <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold">
+              <span>{product.category}</span>
+              {product.isTemplate && <span>· Template Edition</span>}
             </div>
 
-            <h1 className="font-display text-3xl sm:text-4xl lg:text-4xl font-black text-zinc-900 tracking-tight leading-tight">
+            <h1 className="font-display text-3xl sm:text-4xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-tight">
               {product.name}
             </h1>
 
-            {/* Pricing / Non-purchasable Indicator */}
-            <div className="flex items-center gap-3 pt-1">
-              <div className="px-3 py-1 rounded-xl bg-zinc-900 text-white font-mono-code font-bold text-sm sm:text-base shadow-2xs">
+            <div className="flex items-baseline gap-4 pt-1">
+              <span className="font-mono text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
                 {displayPriceLabel}
-              </div>
-              <span className="text-xs text-zinc-400 font-mono-code">
-                • Official catalog pricing announced upon release
+              </span>
+              <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                Catalog pricing upon storefront release
               </span>
             </div>
           </div>
 
           {/* Short Description */}
-          <p className="text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
-            {product.shortDescription}
+          <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
+            {product.shortDescription || product.description}
           </p>
 
-          {/* Variant / Size Options Selector (Only rendered when real variants exist) */}
+          {/* Variant Selector */}
           {hasVariants && product.variants && (
-            <div className="p-5 rounded-[24px] bg-white border border-[#E5E5E5] space-y-3 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <label className="font-display text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                  <Layers className="w-3.5 h-3.5 text-orange-500" />
-                  <span>{product.variantLabel || 'Available Formats / Options'}</span>
-                </label>
-                {selectedVariant && (
-                  <span className="text-xs font-mono-code text-zinc-500 font-semibold">
-                    {selectedVariant.name}
-                  </span>
-                )}
-              </div>
+            <div className="space-y-3 pt-2">
+              <label className="font-mono text-xs uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+                {product.variantLabel || 'Available Formats / Editions'}
+              </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {product.variants.map((variant) => {
@@ -355,24 +290,24 @@ export const ProductDetailView: React.FC = () => {
                       key={variant.id}
                       type="button"
                       onClick={() => setSelectedVariantId(variant.id)}
-                      className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                      className={`text-left p-3 rounded-lg border transition-all cursor-pointer flex flex-col justify-between gap-1 ${
                         isSelected
-                          ? 'border-orange-500 bg-orange-50/50 ring-1 ring-orange-500/30'
-                          : 'border-zinc-200 hover:border-zinc-300 bg-white'
+                          ? 'border-[#EA580C] bg-[#FFF7ED] dark:bg-[#78350F]/20 ring-1 ring-[#EA580C]'
+                          : 'border-[#E4E2DC] dark:border-[#27272A] hover:border-[#D4D2CA] bg-white dark:bg-[#18181B]'
                       }`}
                     >
                       <div className="flex items-center justify-between w-full">
-                        <span className={`text-xs font-bold font-mono-code ${isSelected ? 'text-orange-950' : 'text-zinc-800'}`}>
+                        <span className={`text-xs font-bold font-mono ${isSelected ? 'text-[#EA580C]' : 'text-[#18181B] dark:text-[#EDEDEC]'}`}>
                           {variant.name}
                         </span>
                         {variant.priceLabel && (
-                          <span className="text-[11px] font-mono-code font-bold text-zinc-600 bg-zinc-100 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
                             {variant.priceLabel}
                           </span>
                         )}
                       </div>
                       {variant.description && (
-                        <p className="text-[11px] text-zinc-500 line-clamp-1 leading-normal">
+                        <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] line-clamp-1 leading-normal">
                           {variant.description}
                         </p>
                       )}
@@ -383,238 +318,54 @@ export const ProductDetailView: React.FC = () => {
             </div>
           )}
 
-          {/* Full Studio Description */}
-          <div className="p-6 rounded-[24px] bg-white border border-[#E5E5E5] space-y-3 shadow-2xs">
-            <h3 className="font-display text-sm font-bold text-zinc-900 uppercase tracking-wider text-xs">
-              Design Overview & Utility
-            </h3>
-            <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed font-medium">
-              {product.description}
-            </p>
-          </div>
+          {/* Technical Specifications Grid (Clean Ledger) */}
+          <div className="space-y-3 pt-2">
+            <span className="font-mono text-xs uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+              Asset Specifications
+            </span>
 
-          {/* Technical Specifications Grid */}
-          <div className="bg-white border border-[#E5E5E5] rounded-[24px] p-6 space-y-4 shadow-2xs">
-            <h3 className="font-display font-bold text-sm text-zinc-900 flex items-center gap-2">
-              <FileCheck2 className="w-4 h-4 text-orange-500" />
-              <span>Asset Specifications</span>
-            </h3>
-
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 text-xs">
-              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                <span className="text-zinc-400 font-mono-code text-[11px] block">Category</span>
-                <span className="font-bold text-zinc-800">{product.category}</span>
-              </div>
-              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                <span className="text-zinc-400 font-mono-code text-[11px] block">Product Medium</span>
-                <span className="font-bold text-zinc-800">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] space-y-1">
+                <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Medium</span>
+                <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
                   {product.isTemplate ? 'Digital Template' : `${product.productType} Asset`}
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                <span className="text-zinc-400 font-mono-code text-[11px] block">Available Formats</span>
-                <span className="font-bold text-zinc-800 font-mono-code">{product.formats || 'Vector & Source'}</span>
+              <div className="p-3 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] space-y-1">
+                <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Master Formats</span>
+                <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] font-mono">{product.formats || 'Vector & Source'}</span>
               </div>
-              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                <span className="text-zinc-400 font-mono-code text-[11px] block">Current Status</span>
-                <span className="font-bold text-orange-600 font-mono-code">{product.status}</span>
+              <div className="p-3 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] space-y-1">
+                <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Status</span>
+                <span className="font-bold text-[#EA580C] font-mono">{product.status}</span>
+              </div>
+              <div className="p-3 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] space-y-1">
+                <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Delivery</span>
+                <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">Digital / Master Export</span>
               </div>
             </div>
           </div>
 
-          {/* Template Details (Template Type, Intended Use, Editable Format) */}
-          {product.isTemplate && (
-            <div className="bg-white border border-[#E5E5E5] rounded-[24px] p-6 space-y-4 shadow-2xs">
-              <h3 className="font-display font-bold text-sm text-zinc-900 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-orange-500" />
-                <span>Template Details</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                {product.templateType && (
-                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                    <span className="text-zinc-400 font-mono-code text-[11px] block">Template Type</span>
-                    <span className="font-bold text-zinc-800">{product.templateType}</span>
-                  </div>
-                )}
-                {product.editableFormat && (
-                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                    <span className="text-zinc-400 font-mono-code text-[11px] block">Editable Format</span>
-                    <span className="font-bold text-zinc-800 font-mono-code">{product.editableFormat}</span>
-                  </div>
-                )}
-                {product.intendedUse && (
-                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1 sm:col-span-2">
-                    <span className="text-zinc-400 font-mono-code text-[11px] block">Intended Use</span>
-                    <span className="font-bold text-zinc-800">{product.intendedUse}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Digital Product Details (Phase 4B.2) */}
-          {product.isDownloadable && (
-            <div className="bg-white border border-[#E5E5E5] rounded-[24px] p-6 space-y-4 shadow-2xs">
-              <h3 className="font-display font-bold text-sm text-zinc-900 flex items-center gap-2">
-                <Download className="w-4 h-4 text-orange-500" />
-                <span>Digital Product Details</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                  <span className="text-zinc-400 font-mono-code text-[11px] block">Product Type</span>
-                  <span className="font-bold text-zinc-800">
-                    {product.isTemplate ? 'Digital Template' : 'Digital Product'}
-                  </span>
-                </div>
-                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                  <span className="text-zinc-400 font-mono-code text-[11px] block">Download Status</span>
-                  <span className="font-bold text-orange-600 font-mono-code flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                    Download Not Yet Available
-                  </span>
-                </div>
-                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                  <span className="text-zinc-400 font-mono-code text-[11px] block">Available Formats</span>
-                  <span className="font-bold text-zinc-800 font-mono-code">
-                    {product.availableFormats || product.formats || 'Vector & Source'}
-                  </span>
-                </div>
-                {product.fileSizeLabel && (
-                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                    <span className="text-zinc-400 font-mono-code text-[11px] block">File Size</span>
-                    <span className="font-bold text-zinc-800 font-mono-code">{product.fileSizeLabel}</span>
-                  </div>
-                )}
-                <div className={`p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1 ${product.fileSizeLabel ? 'sm:col-span-2' : ''}`}>
-                  <span className="text-zinc-400 font-mono-code text-[11px] block">Delivery Method</span>
-                  <span className="font-bold text-zinc-800">Digital delivery upon official launch</span>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-orange-50/70 border border-orange-200/70 text-xs text-zinc-600 flex items-start gap-2.5">
-                <Clock className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                <p className="font-medium leading-relaxed">
-                  Digital delivery will be enabled when this product officially launches.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Physical Product Details (Phase 4C.1) */}
-          {product.productType === 'Physical' && (
-            <div className="bg-white border border-[#E5E5E5] rounded-[24px] p-6 space-y-4 shadow-2xs">
-              <h3 className="font-display font-bold text-sm text-zinc-900 flex items-center gap-2">
-                <Box className="w-4 h-4 text-orange-500" />
-                <span>Physical Product Details</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                  <span className="text-zinc-400 font-mono-code text-[11px] block">Product Type</span>
-                  <span className="font-bold text-zinc-800">Physical Merchandise</span>
-                </div>
-                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                  <span className="text-zinc-400 font-mono-code text-[11px] block">Availability</span>
-                  <span className="font-bold text-orange-600 font-mono-code flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                    {product.status === 'In Production' ? 'In Studio Production' : 'Coming Soon'}
-                  </span>
-                </div>
-                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                  <span className="text-zinc-400 font-mono-code text-[11px] block">Release Format</span>
-                  <span className="font-bold text-zinc-800 font-mono-code">{product.formats || 'Physical Release'}</span>
-                </div>
-                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                  <span className="text-zinc-400 font-mono-code text-[11px] block">Catalog Status</span>
-                  <span className="font-bold text-zinc-800">Physical Release In Preparation</span>
-                </div>
-                {product.material && (
-                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                    <span className="text-zinc-400 font-mono-code text-[11px] block">Material</span>
-                    <span className="font-bold text-zinc-800">{product.material}</span>
-                  </div>
-                )}
-                {product.dimensions && (
-                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                    <span className="text-zinc-400 font-mono-code text-[11px] block">Dimensions</span>
-                    <span className="font-bold text-zinc-800 font-mono-code">{product.dimensions}</span>
-                  </div>
-                )}
-                {product.variantLabel && (
-                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                    <span className="text-zinc-400 font-mono-code text-[11px] block">Available Variants</span>
-                    <span className="font-bold text-zinc-800">{product.variantLabel}</span>
-                  </div>
-                )}
-                {product.careInstructions && (
-                  <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1 sm:col-span-2">
-                    <span className="text-zinc-400 font-mono-code text-[11px] block">Care Instructions</span>
-                    <span className="font-bold text-zinc-800">{product.careInstructions}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-orange-50/70 border border-orange-200/70 text-xs text-zinc-600 flex items-start gap-2.5">
-                <Clock className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                <p className="font-medium leading-relaxed">
-                  Product specifications will be announced when this physical release officially launches. Direct ordering and fulfillment will be enabled upon release.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Tags */}
-          {product.tags && product.tags.length > 0 && (
-            <div className="space-y-2">
-              <span className="text-xs font-mono-code text-zinc-400 uppercase font-bold tracking-wider">
-                Tags & Descriptors
+          {/* Action Card */}
+          <div className="p-6 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] space-y-4">
+            <div className="space-y-1">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold block">
+                Catalog Preparation Notice
               </span>
-              <div className="flex flex-wrap gap-2">
-                {product.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-mono-code transition-colors"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Honest Catalog Status Action Card */}
-          <div className="p-6 rounded-[24px] bg-gradient-to-br from-zinc-50 via-orange-50/20 to-zinc-50 border border-orange-200/70 space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-orange-600" />
-                <span className="text-xs font-mono-code font-bold text-orange-700 uppercase tracking-wider">
-                  {product.isDownloadable
-                    ? 'Download Not Yet Available'
-                    : product.productType === 'Physical'
-                    ? 'Physical Release In Preparation'
-                    : 'Catalog Drop In Preparation'}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-600 leading-relaxed font-medium">
-                {product.isDownloadable
-                  ? 'Digital delivery will be enabled when this product officially launches. Direct checkout and file downloads are currently in preparation.'
-                  : product.productType === 'Physical'
-                  ? 'This physical merchandise item is scheduled for the studio catalog release. Direct ordering and physical fulfillment will be announced upon official launch.'
-                  : 'This item is scheduled for the initial Brewster Creative catalog release. Direct checkout and fulfillment will be enabled upon official storefront launch.'}
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                Direct storefront checkout will open upon launch. If you would like this exact aesthetic customized for your brand mark or collateral, you can initiate a bespoke commission directly.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 pt-1">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               {isCheckoutAvailable && product.externalCheckoutUrl && (
                 <a
                   href={product.externalCheckoutUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-5 py-3 rounded-2xl bg-zinc-900 hover:bg-black text-white font-bold text-xs sm:text-sm shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+                  className="px-5 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold text-xs shadow-xs flex items-center gap-2 transition-all cursor-pointer"
                 >
-                  <ExternalLink className="w-4 h-4 text-orange-400" />
+                  <ExternalLink className="w-3.5 h-3.5 text-[#EA580C]" />
                   <span>{product.externalCheckoutLabel || 'Purchase via External Store'}</span>
                 </a>
               )}
@@ -622,19 +373,19 @@ export const ProductDetailView: React.FC = () => {
               <button
                 type="button"
                 onClick={handleCommissionCustomVariant}
-                className="px-5 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-xs sm:text-sm shadow-sm shadow-orange-500/20 flex items-center gap-2 transition-all cursor-pointer"
+                className="px-5 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs shadow-xs flex items-center gap-2 transition-all cursor-pointer"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-3.5 h-3.5" />
                 <span>Commission Custom Variant</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleBackToShop}
-                className="px-5 py-3 rounded-2xl bg-white hover:bg-zinc-100 text-zinc-800 font-bold text-xs sm:text-sm border border-zinc-200 flex items-center gap-2 transition-all cursor-pointer"
+                className="px-4 py-2.5 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-xs hover:bg-[#F4F2ED] dark:hover:bg-[#232327] flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                <span>Browse More Goods</span>
-                <ArrowRight className="w-4 h-4 text-zinc-500" />
+                <span>Storefront Archive</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#A1A1AA]" />
               </button>
             </div>
           </div>
@@ -642,20 +393,19 @@ export const ProductDetailView: React.FC = () => {
         </div>
       </div>
 
-      {/* Related Services & Custom Commission Section (Phase 4D.4: Cross-selling Shop -> Services / Commissions) */}
+      {/* Related Services Section */}
       {relatedServices.length > 0 && (
-        <div className="pt-8 border-t border-zinc-200 space-y-6">
+        <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-1">
-                <Wand2 className="w-3.5 h-3.5" />
-                <span>Custom Creative Services</span>
-              </div>
-              <h3 className="font-display text-xl sm:text-2xl font-bold text-zinc-900">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
+                Custom Practices
+              </span>
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
                 Need Something Custom?
               </h3>
-              <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                Love the aesthetic of {product.name}? Commission our studio for a bespoke brand identity, tailored typography, or customized production assets.
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                Commission Brewster for a bespoke identity system, typography, or custom deliverables inspired by {product.name}.
               </p>
             </div>
 
@@ -665,39 +415,39 @@ export const ProductDetailView: React.FC = () => {
                 setActiveView('services');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer transition-colors"
+              className="text-xs font-mono text-[#EA580C] hover:underline font-semibold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
             >
-              <span>Explore All Services</span>
+              <span>Explore All Practices</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {relatedServices.map((srv) => (
+          <div className="space-y-4">
+            {relatedServices.map((srv, idx) => (
               <ServiceCard
                 key={srv.id}
                 service={srv}
+                index={idx}
                 hideRelatedShopProducts={true}
               />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Related Portfolio Work Section (Phase 4D.1: Cross-selling Shop -> Portfolio) */}
+      {/* Related Portfolio Work Section */}
       {relatedPortfolioProjects.length > 0 && (
-        <div className="pt-8 border-t border-zinc-200 space-y-6">
+        <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-1">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Studio Showcase</span>
-              </div>
-              <h3 className="font-display text-xl sm:text-2xl font-bold text-zinc-900">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
+                Exhibition Studies
+              </span>
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
                 Related Portfolio Work
               </h3>
-              <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                Explore real client commissions, visual systems, and artwork connected to this release.
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                Client commissions and design systems connected to this release.
               </p>
             </div>
             <button
@@ -706,127 +456,88 @@ export const ProductDetailView: React.FC = () => {
                 setActiveView('portfolio');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer transition-colors"
+              className="text-xs font-mono text-[#EA580C] hover:underline font-semibold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
             >
-              <span>Explore Full Portfolio</span>
+              <span>Explore Exhibition Archive</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {relatedPortfolioProjects.map((proj) => (
               <div
                 key={proj.id}
                 onClick={() => handleSelectPortfolioProject(proj)}
-                className="group relative rounded-[28px] overflow-hidden bg-white border border-[#E5E5E5] hover:border-orange-500/60 transition-all duration-300 cursor-pointer shadow-xs hover:shadow-xl flex flex-col justify-between h-full"
+                className="group relative bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46] rounded-xl overflow-hidden transition-all duration-300 cursor-pointer shadow-2xs hover:shadow-xs flex flex-col justify-between"
               >
-                {/* Project Image Container */}
-                <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+                <div className="relative aspect-[4/3] overflow-hidden bg-[#FAF9F6] dark:bg-[#0F0F11]">
                   <img
                     src={proj.image}
                     alt={proj.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500 ease-out"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-
-                  {/* Category Pill Tag */}
-                  <div className="absolute top-3.5 left-3.5">
-                    <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-zinc-900 text-xs font-mono-code font-bold border border-zinc-200/80 shadow-xs">
+                  <div className="absolute top-3 left-3">
+                    <span className="px-2 py-0.5 rounded bg-white/90 dark:bg-[#18181B]/90 text-[#18181B] dark:text-[#EDEDEC] text-[10px] font-mono uppercase font-semibold border border-[#E4E2DC] dark:border-[#27272A] backdrop-blur-xs">
                       {proj.category}
                     </span>
                   </div>
-
-                  {/* Hover Inspect Icon */}
-                  <div className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-zinc-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-md">
-                    <ArrowRight className="w-4 h-4 text-orange-400" />
-                  </div>
                 </div>
 
-                {/* Card Body */}
-                <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-mono-code mb-1.5 font-medium">
-                      <span>{proj.client}</span>
-                      <span>•</span>
-                      <span>{proj.date}</span>
-                    </div>
-
-                    <h4 className="font-display text-lg font-bold text-zinc-900 group-hover:text-orange-600 transition-colors line-clamp-1 mb-2">
+                <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-[#71717A] dark:text-[#A1A1AA] uppercase">
+                      {proj.client} · {proj.date}
+                    </span>
+                    <h4 className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC] group-hover:text-[#EA580C] group-hover:translate-x-1 transition-all duration-300 line-clamp-1">
                       {proj.title}
                     </h4>
-
-                    <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed mb-4">
-                      {proj.shortDesc}
-                    </p>
                   </div>
 
-                  {/* Tools & CTA row */}
-                  <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {proj.tools.slice(0, 2).map((tool, i) => (
-                        <span key={i} className="text-[10px] px-2.5 py-0.5 rounded-md bg-zinc-100 text-zinc-700 font-mono-code font-medium">
-                          {tool}
-                        </span>
-                      ))}
-                      {proj.tools.length > 2 && (
-                        <span className="text-[10px] text-zinc-400 font-mono-code">
-                          +{proj.tools.length - 2}
-                        </span>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectPortfolioProject(proj);
-                      }}
-                      className="text-xs text-orange-600 font-bold group-hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>View Project</span>
+                  <div className="pt-3 border-t border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between text-xs">
+                    <span className="text-[10px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                      {proj.tools[0]}
+                    </span>
+                    <span className="font-semibold text-[#EA580C] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                      <span>Case Study</span>
                       <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
+                    </span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Related Products Section ("More from the Studio Shop") */}
+      {/* More from the Studio Shop */}
       {relatedProducts.length > 0 && (
-        <div className="pt-8 border-t border-zinc-200 space-y-6">
+        <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-mono-code font-bold uppercase tracking-wider text-orange-600 mb-1">
-                <Tag className="w-3.5 h-3.5" />
-                <span>Studio Storefront</span>
-              </div>
-              <h3 className="font-display text-xl sm:text-2xl font-bold text-zinc-900">
-                More from the Studio Shop
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
+                Storefront Releases
+              </span>
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                More from the Studio Storefront
               </h3>
-              <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                Explore additional upcoming releases and design assets from Brewster Creative.
-              </p>
             </div>
             <button
               type="button"
               onClick={handleBackToShop}
-              className="text-xs font-mono-code text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer transition-colors"
+              className="text-xs font-mono text-[#EA580C] hover:underline font-semibold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
             >
-              <span>Browse All Goods</span>
+              <span>Explore All Goods</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {relatedProducts.map((p) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {relatedProducts.slice(0, 3).map((p) => (
               <ShopProductCard
                 key={p.id}
                 product={p}
-                actionLabel="View Product"
+                actionLabel="Inspect Good"
                 onSelect={(prod) => {
                   setSelectedShopProduct(prod);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -834,38 +545,8 @@ export const ProductDetailView: React.FC = () => {
               />
             ))}
           </div>
-        </div>
+        </section>
       )}
-
-      {/* Studio Commission Bridge Banner */}
-      <div className="bg-zinc-950 text-white rounded-[32px] p-8 sm:p-12 relative overflow-hidden shadow-md">
-        <div className="absolute -right-10 -bottom-10 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="max-w-2xl space-y-4 relative z-10">
-          <span className="px-3 py-1 rounded-full bg-zinc-800 text-orange-400 text-xs font-mono-code font-bold uppercase tracking-wider inline-flex items-center gap-1.5 border border-zinc-700">
-            <Sparkles className="w-3.5 h-3.5" />
-            Bespoke Creative Commissions
-          </span>
-          <h3 className="font-display text-2xl sm:text-3xl font-black tracking-tight">
-            Looking for something tailored specifically to your company?
-          </h3>
-          <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed font-medium">
-            Every studio asset can be commissioned as a comprehensive custom brand package. Get direct collaboration, iterative interactive proofing, and tailored final delivery.
-          </p>
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveView('commission-form');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="px-6 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-orange-500/25 flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <Send className="w-4 h-4" />
-              <span>Start a Custom Commission</span>
-            </button>
-          </div>
-        </div>
-      </div>
 
     </div>
   );

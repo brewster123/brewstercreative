@@ -1,24 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useApp } from '../context/AppContext';
 import { 
-  Sparkles, 
   Send, 
   ArrowRight, 
   CheckCircle2, 
-  Layers, 
-  Palette, 
-  MessageSquare, 
-  ShieldCheck, 
-  Star,
   ChevronRight,
-  Eye,
-  Flame,
-  Award
+  FileCheck,
+  Clock,
+  Layers,
+  Sparkles,
+  MapPin,
+  ExternalLink
 } from 'lucide-react';
 import { ServiceCard } from '../components/ServiceCard';
 import { PortfolioCard } from '../components/PortfolioCard';
 import { PortfolioModal } from '../components/PortfolioModal';
-import { PortfolioProject } from '../types';
 
 export const HomeView: React.FC = () => {
   const { 
@@ -28,86 +24,97 @@ export const HomeView: React.FC = () => {
     setActiveView, 
     selectedPortfolioProject, 
     setSelectedPortfolioProject,
-    currentUser
   } = useApp();
 
-  const [activeCategory, setActiveCategory] = useState<'All' | string>('All');
+  const featuredPortfolio = portfolio.slice(0, 4);
 
-  const featuredPortfolio = portfolio.filter(p => p.featured || true).slice(0, 4);
+  // Creative process stages without raw emojis or bento card footers
+  const processStages = [
+    {
+      step: '01',
+      title: 'Consultation & Brief',
+      desc: 'Submit your project parameters, creative vision, target dimensions, reference moodboards, and deadline through the studio intake.',
+    },
+    {
+      step: '02',
+      title: 'Scope Alignment & Deposit',
+      desc: 'Connect in the real-time client workspace to finalize deliverables, secure the 50% project deposit, and reserve your studio production slot.',
+    },
+    {
+      step: '03',
+      title: 'Design Craft & Proof Review',
+      desc: 'Track live milestone progression from concept development to high-resolution proofing with dedicated revision rounds.',
+    },
+    {
+      step: '04',
+      title: 'Archival Master Delivery',
+      desc: 'Receive master production files (scalable vector AI/SVG, 300 DPI print-ready PDFs, layered source packages) with full commercial rights.',
+    },
+  ];
 
-  const workflowSteps = [
+  // Core capabilities overview
+  const capabilities = [
     {
-      num: '01',
-      title: 'Submit Your Request',
-      desc: 'Fill out the guided commission form detailing your design vision, brand goals, dimensions, references, and deadline.',
-      icon: '📝',
+      title: 'Visual Identity & Brand Systems',
+      desc: 'Distinctive brand marks, typographic lockups, comprehensive visual guidelines, and vector asset libraries crafted for lasting presence.',
+      tag: 'Identity',
     },
     {
-      num: '02',
-      title: 'Discuss the Project',
-      desc: 'Connect in the real-time studio portal to align on creative direction, aesthetic style, deliverables, and secure deposit.',
-      icon: '💬',
+      title: 'Poster Art, Cover & Merchandise',
+      desc: 'Exhibition-grade poster illustrations, album covers, apparel graphics, and packaging with obsessive attention to ink and print aesthetics.',
+      tag: 'Print & Merch',
     },
     {
-      num: '03',
-      title: 'Design & Revisions',
-      desc: 'Track live progress from concept to vector polish. Inspect high-res proofs, leave direct comments, or request fine refinements.',
-      icon: '🎨',
-    },
-    {
-      num: '04',
-      title: 'Final Delivery',
-      desc: 'Receive master production files (vector SVGs, print 300DPI PDFs, layered packages) with full commercial licensing.',
-      icon: '📦',
+      title: 'Digital Art & Creative Campaigns',
+      desc: 'High-contrast multimedia visual storytelling, marketing assets, and bespoke illustrations tailored for modern digital ecosystems.',
+      tag: 'Digital Media',
     },
   ];
 
   return (
-    <div className="space-y-16 sm:space-y-24 pb-16 pt-6 sm:pt-10">
+    <div className="space-y-20 sm:space-y-28 pb-20 pt-6 sm:pt-10">
       
-      {/* 1. BENTO GRID HERO SECTION */}
+      {/* ======================================================== */}
+      {/* 1. EDITORIAL ATELIER HERO SECTION */}
+      {/* ======================================================== */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           
-          {/* Main Hero Bento Tile (Span 8) */}
-          <div className="md:col-span-8 bg-white border border-[#E5E5E5] rounded-[32px] p-8 sm:p-12 lg:p-14 shadow-sm flex flex-col justify-between relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent rounded-full blur-3xl pointer-events-none -z-0"></div>
+          {/* Left Column: Editorial Statement (Span 7) */}
+          <div className="lg:col-span-7 space-y-7">
             
-            <div className="space-y-6 relative z-10">
-              {/* Studio Status Pill */}
-              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-zinc-100 border border-zinc-200/80 text-xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="font-mono-code uppercase font-semibold text-zinc-700 text-[11px]">
-                  {studioProfile.availableSlots} Commission Slots Open
-                </span>
-                <span className="text-zinc-300">•</span>
-                <span className="text-zinc-600 font-medium">
-                  {studioProfile.designerName}
-                </span>
-              </div>
+            {/* Status & Identity Indicator */}
+            <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-md bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse" />
+              <span className="font-mono uppercase font-semibold text-[#18181B] dark:text-[#EDEDEC] text-[11px] tracking-wider">
+                {studioProfile.availableSlots} Commission Slots Open
+              </span>
+              <span className="text-[#A1A1AA]">•</span>
+              <span className="text-[#71717A] dark:text-[#A1A1AA] font-medium">
+                {studioProfile.designerName}
+              </span>
+            </div>
 
-              {/* Headline */}
-              <h1 className="font-display text-4xl sm:text-6xl font-black text-zinc-900 tracking-normal leading-tight">
-                Designs Made to Make Your{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-amber-600 to-rose-600">
-                  Ideas Stand Out.
-                </span>
+            {/* Main Headline */}
+            <div className="space-y-4">
+              <h1 className="font-display text-4xl sm:text-6xl lg:text-6.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
+                Visual Systems & Bespoke Artistry for Visionary Projects.
               </h1>
 
-              <p className="text-base sm:text-lg text-zinc-600 max-w-xl leading-relaxed">
-                Crafting distinctive brand identities, immersive poster art, digital illustrations, and multimedia visuals for forward-thinking creators, founders, and indie studios.
+              <p className="text-base sm:text-lg text-[#71717A] dark:text-[#A1A1AA] max-w-xl leading-relaxed font-normal">
+                An independent design practice crafting distinctive brand identities, immersive poster artworks, and digital illustrations with uncompromising custom craftsmanship.
               </p>
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-8 relative z-10">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
               <button
                 id="hero-btn-start-commission"
                 type="button"
                 onClick={() => setActiveView('commission-form')}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-sm sm:text-base transition-all shadow-md flex items-center justify-center gap-2 group"
+                className="px-6 py-3.5 rounded-lg bg-[#18181B] dark:bg-[#27272A] hover:bg-[#27272A] dark:hover:bg-[#3F3F46] text-white font-semibold text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer group"
               >
-                <Send className="w-4 h-4 text-orange-400 group-hover:rotate-12 transition-transform" />
+                <Send className="w-4 h-4 text-[#EA580C] group-hover:translate-x-0.5 transition-transform" />
                 <span>Start a Commission</span>
               </button>
 
@@ -115,282 +122,326 @@ export const HomeView: React.FC = () => {
                 id="hero-btn-view-portfolio"
                 type="button"
                 onClick={() => setActiveView('portfolio')}
-                className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold text-sm sm:text-base transition-all border border-zinc-200 flex items-center justify-center gap-2"
+                className="px-6 py-3.5 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-sm transition-all border border-[#E4E2DC] dark:border-[#27272A] shadow-2xs flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>View Portfolio</span>
-                <ArrowRight className="w-4 h-4 text-zinc-600" />
+                <span>View Selected Works</span>
+                <ArrowRight className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
               </button>
             </div>
+
+            {/* Studio Pillars Ribbon */}
+            <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-[#71717A] dark:text-[#A1A1AA] font-medium">
+              <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+                <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">100% Custom Artistry</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#71717A] dark:bg-[#A1A1AA]" />
+                <span>Direct 1-on-1 Studio Collaboration</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#71717A] dark:bg-[#A1A1AA]" />
+                <span>300 DPI Print & Vector Masters</span>
+              </div>
+            </div>
+
           </div>
 
-          {/* Right Side Bento Column (Span 4) */}
-          <div className="md:col-span-4 flex flex-col gap-4 sm:gap-6">
-            
-            {/* Live Progress Portal Tile */}
-            <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-7 shadow-sm flex flex-col justify-between flex-1 relative overflow-hidden group">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-mono-code font-bold text-orange-600 uppercase tracking-wider bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">
-                  Client Hub
-                </span>
-                <span className="text-xs text-zinc-400 font-mono-code">v2.4 Live</span>
-              </div>
-
-              <div>
-                <h3 className="font-display font-bold text-xl text-zinc-900 mb-1">
-                  Interactive Progress Tracker
-                </h3>
-                <p className="text-xs text-zinc-500 leading-relaxed">
-                  Real-time 8-stage milestone monitoring, high-res design proof approval, and built-in revisions manager.
-                </p>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-zinc-700 font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span>8 Stages Transparent</span>
+          {/* Right Column: Featured Artwork Composition (Span 5) */}
+          <div className="lg:col-span-5 relative">
+            <div className="relative rounded-xl overflow-hidden bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] shadow-xs group">
+              
+              {/* Primary Featured Artwork Frame */}
+              <div className="relative aspect-[4/5] overflow-hidden bg-[#FAF9F6] dark:bg-[#0F0F11]">
+                <img
+                  src={featuredPortfolio[0]?.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80'}
+                  alt={featuredPortfolio[0]?.title || 'Signature Brewster Creative Artwork'}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
+                
+                {/* Artwork Meta Overlay */}
+                <div className="absolute bottom-4 left-4 right-4 text-white space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#EA580C] bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded border border-white/10 font-semibold">
+                      Featured Piece
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-300">
+                      {featuredPortfolio[0]?.client || 'Studio Archive'}
+                    </span>
+                  </div>
+                  <h3 className="font-display font-bold text-lg text-white">
+                    {featuredPortfolio[0]?.title || 'Cyberpunk Tokyo Series'}
+                  </h3>
+                  <p className="text-xs text-zinc-300 line-clamp-1 font-normal">
+                    {featuredPortfolio[0]?.shortDesc || 'Visual system exploration with custom vector compositions.'}
+                  </p>
                 </div>
+              </div>
+
+              {/* Artwork Inspection Footer */}
+              <div className="p-3.5 bg-white dark:bg-[#18181B] flex items-center justify-between text-xs">
+                <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider">
+                  Archive No. 001
+                </span>
                 <button
                   type="button"
-                  onClick={() => setActiveView('client-dashboard')}
-                  className="text-xs text-orange-600 font-bold hover:underline flex items-center gap-1"
+                  onClick={() => featuredPortfolio[0] && setSelectedPortfolioProject(featuredPortfolio[0])}
+                  className="text-xs font-semibold text-[#EA580C] hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  Client Portal →
+                  <span>Inspect Case Study</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
+
             </div>
-
-            {/* Turnaround & Delivery Bento Tile */}
-            <div className="bg-zinc-900 text-white rounded-[32px] p-6 sm:p-7 shadow-sm flex flex-col justify-between flex-1 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">⚡</span>
-                <span className="text-[10px] font-mono-code text-zinc-400 uppercase">Fast Delivery</span>
-              </div>
-
-              <div>
-                <div className="font-display font-black text-3xl text-white">
-                  3–7 Days
-                </div>
-                <p className="text-xs text-zinc-400 mt-1">
-                  Average turnaround with complete presentation-ready assets & vector masters.
-                </p>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-zinc-800 text-[11px] font-mono-code text-orange-400 flex items-center gap-1.5 font-semibold">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Zero AI Generated Cliparts</span>
-              </div>
-            </div>
-
           </div>
 
-        </div>
-
-        {/* 4 Bottom Bento Stat Badges */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
-          <div className="p-5 rounded-[24px] bg-white border border-[#E5E5E5] shadow-xs">
-            <span className="font-display font-black text-2xl text-zinc-900 block">100%</span>
-            <span className="text-xs text-zinc-500 font-medium">Custom Artistry</span>
-          </div>
-          <div className="p-5 rounded-[24px] bg-white border border-[#E5E5E5] shadow-xs">
-            <span className="font-display font-black text-2xl text-zinc-900 block">120+</span>
-            <span className="text-xs text-zinc-500 font-medium">Completed Projects</span>
-          </div>
-          <div className="p-5 rounded-[24px] bg-white border border-[#E5E5E5] shadow-xs">
-            <span className="font-display font-black text-2xl text-zinc-900 block">1-on-1</span>
-            <span className="text-xs text-zinc-500 font-medium">Direct Studio Chat</span>
-          </div>
-          <div className="p-5 rounded-[24px] bg-white border border-[#E5E5E5] shadow-xs">
-            <span className="font-display font-black text-2xl text-zinc-900 block">300 DPI</span>
-            <span className="text-xs text-zinc-500 font-medium">Print & Vector Masters</span>
-          </div>
         </div>
       </section>
 
-      {/* 2. FEATURED SERVICES SECTION */}
+      {/* ======================================================== */}
+      {/* 2. CORE CAPABILITIES (Clean 3-Column Ledger) */}
+      {/* ======================================================== */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-mono-code uppercase tracking-wider text-orange-600 mb-2 font-bold">
-              <Sparkles className="w-4 h-4" />
-              <span>Commission Categories</span>
+        <div className="border-t border-[#E4E2DC] dark:border-[#27272A] pt-12">
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+            <div className="space-y-1.5">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+                01 / Practice
+              </span>
+              <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+                Design Services & Disciplines
+              </h2>
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl font-black text-zinc-900 tracking-tight">
-              Design Services Tailored to You
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={() => setActiveView('services')}
-            className="text-xs sm:text-sm text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1.5 group self-start md:self-auto"
-          >
-            <span>View All Services & Pricing</span>
-            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-
-        {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.slice(0, 6).map((service) => (
-            <ServiceCard key={service.id} service={service} />
-          ))}
-        </div>
-      </section>
-
-      {/* 3. HOW IT WORKS SECTION - BENTO STYLE (01 - 04) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-8 sm:p-12 lg:p-14 relative overflow-hidden shadow-sm">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
-            <span className="px-3.5 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code uppercase tracking-wider font-bold border border-orange-200/80">
-              Simple 4-Step Process
-            </span>
-            <h2 className="font-display text-3xl sm:text-4xl font-black text-zinc-900">
-              How It Works
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed">
-              From your initial brief to final production files, every stage is transparent, collaborative, and tracked in your client dashboard.
-            </p>
+            
+            <button
+              type="button"
+              onClick={() => setActiveView('services')}
+              className="text-xs sm:text-sm text-[#EA580C] font-semibold hover:underline flex items-center gap-1 cursor-pointer self-start md:self-auto"
+            >
+              <span>Explore All Packages & Rates</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {workflowSteps.map((step, i) => (
-              <div
+          {/* 3 Capabilities Columns with Hairline Separation */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            {capabilities.map((cap, i) => (
+              <div 
                 key={i}
-                className="bg-zinc-50 border border-zinc-200/80 rounded-[24px] p-6 relative flex flex-col justify-between hover:border-orange-500/50 hover:bg-white transition-all shadow-xs"
+                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-7 flex flex-col justify-between shadow-2xs hover:border-[#D4D2CA] dark:hover:border-[#3F3F46] transition-colors"
               >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="font-display font-black text-2xl text-zinc-900">
-                      {step.num}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold bg-[#FFF7ED] dark:bg-[#78350F]/30 px-2.5 py-0.5 rounded border border-[#FFEDD5] dark:border-[#92400E]">
+                      {cap.tag}
                     </span>
-                    <span className="text-2xl">{step.icon}</span>
+                    <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                      0{i + 1}
+                    </span>
                   </div>
 
-                  <h3 className="font-display font-bold text-base text-zinc-900 mb-2">
-                    {step.title}
+                  <h3 className="font-display font-bold text-lg text-[#18181B] dark:text-[#EDEDEC]">
+                    {cap.title}
                   </h3>
 
-                  <p className="text-xs text-zinc-500 leading-relaxed">
-                    {step.desc}
+                  <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
+                    {cap.desc}
                   </p>
                 </div>
 
-                <div className="mt-6 pt-3 border-t border-zinc-200/70 text-[10px] font-mono-code text-zinc-400 uppercase font-semibold">
-                  Step {step.num} of 04
+                <div className="pt-6 mt-6 border-t border-[#E4E2DC] dark:border-[#27272A]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('services')}
+                    className="text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:text-[#EA580C] flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span>View deliverables & timeline</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
+
         </div>
       </section>
 
-      {/* 4. FEATURED PORTFOLIO SECTION */}
+      {/* ======================================================== */}
+      {/* 3. CURATED PORTFOLIO SHOWCASE */}
+      {/* ======================================================== */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-mono-code uppercase tracking-wider text-orange-600 mb-2 font-bold">
-              <Sparkles className="w-4 h-4" />
-              <span>Curated Portfolio</span>
-            </div>
-            <h2 className="font-display text-3xl sm:text-4xl font-black text-zinc-900 tracking-tight">
-              Selected Works & Case Studies
-            </h2>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setActiveView('portfolio')}
-            className="px-5 py-2.5 rounded-full bg-white hover:bg-zinc-100 text-zinc-800 text-xs sm:text-sm font-bold transition-all border border-zinc-200 shadow-xs flex items-center gap-2 self-start md:self-auto"
-          >
-            <span>Explore Full Gallery ({portfolio.length})</span>
-            <ArrowRight className="w-4 h-4 text-orange-500" />
-          </button>
-        </div>
-
-        {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {featuredPortfolio.map((project) => (
-            <PortfolioCard
-              key={project.id}
-              project={project}
-              onSelect={(p) => setSelectedPortfolioProject(p)}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* 5. DESIGNER STUDIO BIO HIGHLIGHT - BENTO TILE */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-8 sm:p-12 shadow-sm flex flex-col lg:flex-row items-center gap-10">
+        <div className="border-t border-[#E4E2DC] dark:border-[#27272A] pt-12">
           
-          <div className="relative shrink-0">
-            <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-[28px] overflow-hidden ring-4 ring-orange-500/20 shadow-md">
-              <img
-                src={studioProfile.avatar}
-                alt={studioProfile.designerName}
-                className="w-full h-full object-cover"
-              />
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+            <div className="space-y-1.5">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+                02 / Portfolio
+              </span>
+              <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+                Selected Works & Case Studies
+              </h2>
             </div>
-            <div className="absolute -bottom-3 -right-3 px-3.5 py-1 rounded-full bg-zinc-900 text-white text-[11px] font-bold font-mono-code shadow-md">
-              Studio Lead
-            </div>
+
+            <button
+              type="button"
+              onClick={() => setActiveView('portfolio')}
+              className="px-4 py-2 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] text-xs sm:text-sm font-semibold transition-all border border-[#E4E2DC] dark:border-[#27272A] shadow-2xs flex items-center gap-2 cursor-pointer self-start md:self-auto"
+            >
+              <span>Explore Complete Archive ({portfolio.length})</span>
+              <ArrowRight className="w-4 h-4 text-[#EA580C]" />
+            </button>
           </div>
 
-          <div className="space-y-4 text-center lg:text-left flex-1">
-            <span className="text-xs font-mono-code text-orange-600 uppercase tracking-wider font-bold">
-              Meet The Designer
-            </span>
-            <h3 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
-              {studioProfile.designerName} — {studioProfile.title}
-            </h3>
-            <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
-              "{studioProfile.bio}"
-            </p>
-
-            <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-zinc-700 font-medium">
-              <div className="flex items-center gap-1.5 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200/60">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Custom Visual Systems</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200/60">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Production Master Delivery</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200/60">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Direct 1-on-1 Designer Communication</span>
-              </div>
-            </div>
+          {/* Asymmetrical Grid Presentation */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+            {featuredPortfolio.map((project) => (
+              <PortfolioCard
+                key={project.id}
+                project={project}
+                onSelect={(p) => setSelectedPortfolioProject(p)}
+              />
+            ))}
           </div>
 
         </div>
       </section>
 
-      {/* 6. FINAL CALL TO ACTION - BENTO CARD */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="bg-zinc-900 text-white rounded-[32px] p-10 sm:p-16 shadow-xl relative overflow-hidden space-y-6">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      {/* ======================================================== */}
+      {/* 4. THE COLLABORATIVE PROCESS (Linear Architectural Steps) */}
+      {/* ======================================================== */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="border-t border-[#E4E2DC] dark:border-[#27272A] pt-12">
+          
+          <div className="space-y-2 mb-10 max-w-xl">
+            <span className="font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+              03 / Method
+            </span>
+            <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+              The Commission Journey
+            </h2>
+            <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+              Transparent, deliberate, and monitored directly in your dedicated client workspace from initial inquiry to final handoff.
+            </p>
+          </div>
 
-          <span className="px-3.5 py-1 rounded-full bg-white/10 text-orange-400 text-xs font-mono-code uppercase tracking-wider font-bold border border-white/10 inline-block">
-            Let's Collaborate
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {processStages.map((step, i) => (
+              <div
+                key={i}
+                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 flex flex-col justify-between shadow-2xs space-y-4"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                    <span className="font-mono font-bold text-sm text-[#EA580C]">
+                      {step.step}
+                    </span>
+                    <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider">
+                      Stage {step.step}/04
+                    </span>
+                  </div>
+
+                  <h3 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                    {step.title}
+                  </h3>
+
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
+                    {step.desc}
+                  </p>
+                </div>
+
+                <div className="text-[10px] font-mono text-[#71717A] dark:text-[#A1A1AA] pt-2">
+                  Client Workspace Tracked
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* 5. STUDIO ATELIER & ARTIST PERSPECTIVE */}
+      {/* ======================================================== */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="border-t border-[#E4E2DC] dark:border-[#27272A] pt-12">
+          
+          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-8 sm:p-12 shadow-2xs flex flex-col lg:flex-row items-center gap-10">
+            
+            <div className="relative shrink-0">
+              <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-xl overflow-hidden ring-1 ring-[#E4E2DC] dark:ring-[#27272A] shadow-xs">
+                <img
+                  src={studioProfile.avatar}
+                  alt={studioProfile.designerName}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute -bottom-2.5 -right-2.5 px-3 py-0.5 rounded-md bg-[#18181B] dark:bg-[#27272A] text-white text-[10px] font-semibold font-mono uppercase tracking-wider shadow-xs">
+                Studio Lead
+              </div>
+            </div>
+
+            <div className="space-y-4 text-center lg:text-left flex-1">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+                04 / The Designer
+              </span>
+
+              <h3 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                {studioProfile.designerName} — {studioProfile.title}
+              </h3>
+
+              <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-2xl font-normal">
+                "{studioProfile.bio}"
+              </p>
+
+              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-[#18181B] dark:text-[#EDEDEC] font-medium">
+                <div className="flex items-center gap-1.5 bg-[#FAF9F6] dark:bg-[#232327] px-3 py-1 rounded-md border border-[#E4E2DC] dark:border-[#27272A] font-mono text-[11px]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#059669] dark:text-[#34D399]" />
+                  <span>Custom Visual Systems</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-[#FAF9F6] dark:bg-[#232327] px-3 py-1 rounded-md border border-[#E4E2DC] dark:border-[#27272A] font-mono text-[11px]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#059669] dark:text-[#34D399]" />
+                  <span>Production Master Delivery</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-[#FAF9F6] dark:bg-[#232327] px-3 py-1 rounded-md border border-[#E4E2DC] dark:border-[#27272A] font-mono text-[11px]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#059669] dark:text-[#34D399]" />
+                  <span>Direct 1-on-1 Communication</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* 6. CLOSING INVITATION (High-Contrast Editorial Callout) */}
+      {/* ======================================================== */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="bg-[#18181B] dark:bg-[#18181B] text-white rounded-xl p-10 sm:p-14 shadow-md space-y-6 relative overflow-hidden border border-transparent dark:border-[#27272A]">
+          
+          <span className="px-3 py-0.5 rounded-md bg-white/10 text-[#EA580C] text-[10px] font-mono uppercase tracking-widest font-semibold border border-white/10 inline-block">
+            Initiate Project
           </span>
 
-          <h2 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight">
+          <h2 className="font-display text-3xl sm:text-4.5xl font-black text-white tracking-tight leading-tight">
             Have a project in mind?<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-rose-400">
-              Let's create something together.
-            </span>
+            Let's build something enduring together.
           </h2>
 
-          <p className="text-xs sm:text-base text-zinc-300 max-w-xl mx-auto leading-relaxed">
-            Reserve your commission slot today. Submit your brief, discuss your project, and watch your vision come to life in our interactive studio hub.
+          <p className="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed font-normal">
+            Reserve your commission slot today. Submit your creative brief, align directly on scope, and follow progress in real-time.
           </p>
 
-          <div className="pt-4">
+          <div className="pt-2">
             <button
               id="cta-btn-start-commission"
               type="button"
               onClick={() => setActiveView('commission-form')}
-              className="px-9 py-4 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm sm:text-base transition-all shadow-lg shadow-orange-500/25 hover:scale-105 inline-flex items-center gap-2"
+              className="px-8 py-3.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-sm transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer"
             >
               <Send className="w-4 h-4" />
               <span>Start a Commission</span>

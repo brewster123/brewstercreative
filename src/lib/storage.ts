@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
+import { PORTFOLIO_MEDIA_BUCKET } from './studio';
 
 export const AVATARS_BUCKET = 'avatars';
 export const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -194,6 +195,24 @@ export async function uploadAccountProfilePhoto(
 }
 
 /**
+ * Converts a Blob to a base64 Data URL.
+ */
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Failed to convert image to data URL.'));
+      }
+    };
+    reader.onerror = () => reject(new Error('FileReader error.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
  * SYSTEM 1: STUDIO / WEBSITE BRAND PHOTO
  * Uploads the Studio / Website representation photo to:
  * avatars/{adminUserId}/studio-{timestamp}.{extension}
@@ -223,8 +242,25 @@ export async function uploadStudioWebsitePhoto(
 
   const contentType = fileOrBlob.type || (extension === 'jpg' ? 'image/jpeg' : `image/${extension}`);
 
+  // If Supabase is not configured (e.g. preview/offline mode), convert to data URL for immediate and persistent local storage
+  if (!isSupabaseConfigured()) {
+    try {
+      const dataUrl = await blobToDataUrl(fileOrBlob);
+      return {
+        success: true,
+        publicUrl: dataUrl,
+      };
+    } catch (dataUrlErr: any) {
+      return {
+        success: false,
+        error: dataUrlErr?.message || 'Failed to process studio image.',
+      };
+    }
+  }
+
   try {
-    const { error: uploadError } = await supabase.storage
+    // Attempt upload to AVATARS_BUCKET ('avatars')
+    let uploadResult = await supabase.storage
       .from(AVATARS_BUCKET)
       .upload(filePath, fileOrBlob, {
         cacheControl: '3600',
@@ -232,16 +268,40 @@ export async function uploadStudioWebsitePhoto(
         contentType,
       });
 
-    if (uploadError) {
+    let targetBucket = AVATARS_BUCKET;
+    let targetPath = filePath;
+
+    // If avatars bucket fails (e.g. bucket doesn't exist), fallback to the CMS media bucket ('portfolio-media')
+    if (uploadResult.error && (uploadResult.error.message?.toLowerCase().includes('bucket not found') || (uploadResult.error as any).statusCode === '404')) {
+      const fallbackPath = `studio/${adminUserId}/studio-${timestamp}.${extension}`;
+      const fallbackResult = await supabase.storage
+        .from(PORTFOLIO_MEDIA_BUCKET)
+        .upload(fallbackPath, fileOrBlob, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType,
+        });
+
+      if (!fallbackResult.error) {
+        uploadResult = fallbackResult;
+        targetBucket = PORTFOLIO_MEDIA_BUCKET;
+        targetPath = fallbackPath;
+      }
+    }
+
+    if (uploadResult.error) {
+      // If remote storage upload fails, fallback safely to persistent data URL
+      console.warn('Supabase storage upload failed, falling back to data URL:', uploadResult.error.message);
+      const dataUrl = await blobToDataUrl(fileOrBlob);
       return {
-        success: false,
-        error: uploadError.message || 'Failed to upload studio photo to Supabase Storage.',
+        success: true,
+        publicUrl: dataUrl,
       };
     }
 
     const { data: publicUrlData } = supabase.storage
-      .from(AVATARS_BUCKET)
-      .getPublicUrl(filePath);
+      .from(targetBucket)
+      .getPublicUrl(targetPath);
 
     if (!publicUrlData?.publicUrl) {
       return {
@@ -255,10 +315,18 @@ export async function uploadStudioWebsitePhoto(
       publicUrl: publicUrlData.publicUrl,
     };
   } catch (err: any) {
-    return {
-      success: false,
-      error: err?.message || 'An unexpected error occurred during studio photo upload.',
-    };
+    try {
+      const dataUrl = await blobToDataUrl(fileOrBlob);
+      return {
+        success: true,
+        publicUrl: dataUrl,
+      };
+    } catch {
+      return {
+        success: false,
+        error: err?.message || 'An unexpected error occurred during studio photo upload.',
+      };
+    }
   }
 }
 

@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Commission, CommissionProof, ProofStatus } from '../types';
+import { Commission, CommissionProof } from '../types';
 import {
   fetchCommissionProofs,
   getProofSignedUrl,
-  submitClientReviewRpc,
   formatProofFileSize,
   formatProofFileType,
   getProofStatusMeta,
@@ -15,15 +14,12 @@ import {
   Eye,
   Maximize2,
   AlertCircle,
-  Clock,
-  Send,
   X,
   RefreshCw,
   FileText,
   ExternalLink,
   ShieldCheck,
-  Check,
-  FileCheck2,
+  Check
 } from 'lucide-react';
 
 interface ClientReviewSectionProps {
@@ -87,7 +83,6 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
     loadProofs();
   }, [loadProofs]);
 
-  // Auto-dismiss success message
   useEffect(() => {
     if (successMsg) {
       const timer = setTimeout(() => setSuccessMsg(null), 6000);
@@ -104,7 +99,7 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
     setLoadingSignedUrlProofId(null);
 
     if (error || !signedUrl) {
-      setActionError(error || 'Failed to generate secure viewing link.');
+      setActionError(error || 'Failed to acquire secure viewing link.');
       return;
     }
 
@@ -122,18 +117,15 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
     if (isImage) {
       setViewingProof({ proof, signedUrl, isImage: true });
     } else {
-      // PDF or other document format: open signed URL in a secure new tab
       window.open(signedUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
-  // Open approve modal
   const handleOpenApproveModal = (proof: CommissionProof) => {
     setActionError(null);
     setApproveModalProof(proof);
   };
 
-  // Open revision modal
   const handleOpenRevisionModal = (proof: CommissionProof) => {
     setActionError(null);
     setRevisionNoteError(null);
@@ -141,41 +133,34 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
     setRevisionModalProof(proof);
   };
 
-  // Confirm approve via RPC
   const handleConfirmApprove = async () => {
     if (!approveModalProof) return;
     setActionError(null);
     setSubmittingProofId(approveModalProof.id);
 
-    const { error } = await submitClientReviewRpc(
-      approveModalProof.id,
-      'approved',
-      null
-    );
-
+    const res = await submitClientReviewAction(approveModalProof.id, 'approved');
     setSubmittingProofId(null);
 
-    if (error) {
-      setActionError(error);
-    } else {
-      const versionNumber = approveModalProof.version;
+    if (res.success) {
       setApproveModalProof(null);
-      setSuccessMsg(`Proof Version ${versionNumber} has been successfully approved!`);
-      // Update commission lifecycle to Stage 07 — Final Approval (95%) and persist to Supabase
-      submitClientReviewAction(commission.id, 'approve');
-      // Refetch proofs to update status in UI
-      loadProofs(true);
+      setSuccessMsg(`Creative Proof v${approveModalProof.version} successfully approved. Milestone advanced.`);
+      await loadProofs(true);
+    } else {
+      setActionError(res.error || 'Failed to record approval in database.');
     }
   };
 
-  // Submit revision request via RPC
-  const handleSubmitRevision = async (e: React.FormEvent) => {
+  const handleConfirmRevision = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!revisionModalProof) return;
 
     const trimmed = revisionNote.trim();
     if (!trimmed) {
-      setRevisionNoteError('Please enter a revision note describing the requested changes.');
+      setRevisionNoteError('Please describe the specific adjustments or composition changes needed.');
+      return;
+    }
+    if (trimmed.length < 5) {
+      setRevisionNoteError('Please provide more detailed feedback (minimum 5 characters).');
       return;
     }
 
@@ -183,36 +168,20 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
     setRevisionNoteError(null);
     setSubmittingProofId(revisionModalProof.id);
 
-    const { error } = await submitClientReviewRpc(
-      revisionModalProof.id,
-      'revision_requested',
-      trimmed
-    );
-
+    const res = await submitClientReviewAction(revisionModalProof.id, 'revision_requested', trimmed);
     setSubmittingProofId(null);
 
-    if (error) {
-      setActionError(error);
-    } else {
-      // Update commission lifecycle to Stage 06 — Revisions (85%) via authoritative Supabase RPC
-      const reviewRes = await submitClientReviewAction(commission.id, 'revision', trimmed);
-      if (reviewRes && !reviewRes.success) {
-        setActionError(reviewRes.error || 'Failed to submit revision request.');
-        return;
-      }
-
-      const versionNumber = revisionModalProof.version;
+    if (res.success) {
       setRevisionModalProof(null);
-      setRevisionNote('');
-      setSuccessMsg(`Revision request for Proof Version ${versionNumber} has been submitted.`);
-      // Refetch proofs to update status in UI
-      loadProofs(true);
+      setSuccessMsg(`Revision requested for Proof v${revisionModalProof.version}. Brewster has been notified.`);
+      await loadProofs(true);
+    } else {
+      setActionError(res.error || 'Failed to submit revision request.');
     }
   };
 
-  // Format date helper
-  const formatUploadDate = (isoString: string) => {
-    if (!isoString) return 'Recent';
+  const formatUploadDate = (isoString?: string) => {
+    if (!isoString) return 'Recently';
     try {
       return new Date(isoString).toLocaleDateString('en-US', {
         month: 'short',
@@ -225,348 +194,227 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
   };
 
   return (
-    <div className="space-y-6">
-      {/* Success Notification Banner */}
-      {successMsg && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-bold flex items-center justify-between gap-3 shadow-xs animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-2.5">
-            <Check className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSuccessMsg(null)}
-            className="p-1 rounded-lg text-emerald-600 hover:text-emerald-900 hover:bg-emerald-100"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Action / Mutation Error Banner */}
-      {actionError && (
-        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-medium flex items-center justify-between gap-3 shadow-xs animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-2.5">
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
-            <span>{actionError}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setActionError(null)}
-            className="p-1 rounded-lg text-rose-600 hover:text-rose-900 hover:bg-rose-100"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Main Creative Proofs Card Container */}
-      <div className="bg-white border border-[#E5E5E5] rounded-[28px] p-6 sm:p-8 shadow-xs relative overflow-hidden">
-        {/* Header Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-200/80">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code font-bold border border-orange-200">
-                Phase 3C — Client Creative Proof Review
-              </span>
-              <span className="text-xs text-zinc-400 font-mono-code font-medium">
-                Commission: #{commission.id.slice(0, 8)}
-              </span>
-            </div>
-            <h3 className="font-display text-xl sm:text-2xl font-black text-zinc-900 mt-1">
-              Creative Proofs
-            </h3>
-            <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">
-              Inspect your design drafts and iterations. You can approve or request revisions directly through secure review controls.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Revisions Allowance Counter */}
-            <div className="bg-zinc-50 px-4 py-2.5 rounded-2xl border border-zinc-200/80 shrink-0">
-              <div className="text-[11px] text-zinc-500 font-mono-code uppercase font-bold">
-                Revisions Used
-              </div>
-              <div className="text-sm font-bold text-zinc-800 flex items-center gap-1.5">
-                <span className="text-orange-600 text-lg font-black font-display">
-                  {commission.revisionsUsed || 0}
-                </span>
-                <span className="text-zinc-400">/</span>
-                <span>{commission.revisionsAllowed || 3} allowed</span>
-              </div>
-            </div>
-
-            {/* Refresh Proofs Button */}
-            <button
-              type="button"
-              onClick={() => loadProofs(true)}
-              disabled={refreshing || loading}
-              className="p-2.5 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900 transition-all border border-zinc-200 disabled:opacity-50"
-              title="Refresh creative proofs list"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-orange-600' : ''}`} />
-            </button>
-          </div>
+    <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+      
+      {/* Editorial Header */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+        <div>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
+            Art Approval Sheet
+          </span>
+          <h3 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+            Creative Proofs & Review Iterations
+          </h3>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+            Inspect high-resolution visual drafts and approve or request composition adjustments.
+          </p>
         </div>
 
-        {/* Security / Proof Vault Notice */}
-        <div className="mt-4 mb-6 p-4 rounded-2xl bg-zinc-50 border border-zinc-200/80 flex items-start gap-3">
-          <ShieldCheck className="w-5 h-5 text-zinc-600 shrink-0 mt-0.5" />
-          <div className="text-xs text-zinc-600 leading-relaxed">
-            <strong className="text-zinc-900">Encrypted Proof Vault:</strong> Creative proofs are securely hosted in a private storage repository. All viewing links are short-lived signed URLs generated specifically for your active session.
-          </div>
-        </div>
-
-        {/* Proof Content Area */}
-        {loading ? (
-          <div className="py-16 text-center space-y-3">
-            <div className="w-10 h-10 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center mx-auto text-orange-600 animate-pulse">
-              <RefreshCw className="w-5 h-5 animate-spin" />
-            </div>
-            <p className="text-xs text-zinc-500 font-mono-code">
-              Loading creative proofs from secure database...
-            </p>
-          </div>
-        ) : fetchError ? (
-          <div className="py-12 px-6 text-center space-y-3 rounded-2xl bg-rose-50/60 border border-rose-200">
-            <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
-            <p className="text-sm font-bold text-rose-900">
-              Unable to Load Creative Proofs
-            </p>
-            <p className="text-xs text-rose-700 max-w-md mx-auto">
-              {fetchError}
-            </p>
-            <button
-              type="button"
-              onClick={() => loadProofs(false)}
-              className="px-4 py-2 rounded-xl bg-white hover:bg-rose-100 text-rose-800 text-xs font-bold border border-rose-300 shadow-2xs transition-all"
-            >
-              Try Again
-            </button>
-          </div>
-        ) : proofs.length === 0 ? (
-          /* Empty State when no proofs uploaded to Supabase */
-          <div className="py-12 px-6 text-center space-y-4 rounded-2xl bg-zinc-50/80 border border-dashed border-zinc-300">
-            <div className="w-12 h-12 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center mx-auto text-zinc-400 shadow-2xs">
-              <FileCheck2 className="w-6 h-6 text-orange-500" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="font-display text-base sm:text-lg font-bold text-zinc-900">
-                No Creative Proofs Uploaded Yet
-              </h4>
-              <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed">
-                Your designer {commission.assignedDesigner || 'Brewster'} will upload high-resolution proof iterations for <strong className="text-zinc-700">{commission.projectName}</strong> once initial drafts are rendered.
-              </p>
-            </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-zinc-200 text-[11px] font-mono-code text-zinc-500">
-              <Clock className="w-3.5 h-3.5 text-orange-500" />
-              <span>Awaiting designer proof upload</span>
-            </div>
-          </div>
-        ) : (
-          /* Proofs List */
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-2">
-              <span className="text-xs font-mono-code text-zinc-600 uppercase tracking-wider font-bold">
-                Available Proof Iterations ({proofs.length})
-              </span>
-              <span className="text-[11px] text-zinc-400 font-medium">
-                Latest iterations appear first
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              {proofs.map((proof) => {
-                const statusMeta = getProofStatusMeta(proof.status);
-                const isApproved = proof.status === 'approved';
-                const isRevisionRequested = proof.status === 'revision_requested';
-                const isActionInProgress = submittingProofId === proof.id;
-                const isSigningUrl = loadingSignedUrlProofId === proof.id;
-
-                return (
-                  <div
-                    key={proof.id}
-                    className="p-5 sm:p-6 rounded-2xl border border-zinc-200/90 bg-white hover:border-zinc-300 transition-all shadow-2xs space-y-4"
-                  >
-                    {/* Top Row: Version, Metadata & Status Badge */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        {/* Version Badge */}
-                        <span className="px-3 py-1 rounded-xl bg-zinc-900 text-white font-mono-code text-xs font-black shadow-2xs">
-                          v{proof.version}
-                        </span>
-
-                        {/* File Name */}
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <FileText className="w-4 h-4 text-zinc-400 shrink-0" />
-                          <h4
-                            className="text-sm sm:text-base font-bold text-zinc-900 truncate"
-                            title={proof.file_name}
-                          >
-                            {proof.file_name}
-                          </h4>
-                        </div>
-                      </div>
-
-                      {/* Status Badge */}
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono-code font-bold border ${statusMeta.bgClass} ${statusMeta.textClass} ${statusMeta.borderClass}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dotClass}`} />
-                          {statusMeta.label}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Meta Details Row: Type, Size, Upload Date */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-zinc-50/70 p-3 rounded-xl border border-zinc-200/60 font-medium text-zinc-600">
-                      <div>
-                        <span className="text-[10px] font-mono-code uppercase text-zinc-400 block">
-                          Version
-                        </span>
-                        <span className="font-bold text-zinc-800">
-                          Iteration #{proof.version}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-mono-code uppercase text-zinc-400 block">
-                          Format
-                        </span>
-                        <span className="font-bold text-zinc-800">
-                          {formatProofFileType(proof.file_type, proof.file_name)}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-mono-code uppercase text-zinc-400 block">
-                          Size
-                        </span>
-                        <span className="font-bold text-zinc-800">
-                          {formatProofFileSize(proof.file_size)}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-mono-code uppercase text-zinc-400 block">
-                          Uploaded
-                        </span>
-                        <span className="font-bold text-zinc-800">
-                          {formatUploadDate(proof.created_at)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Revision Note Callout (if revision was requested on this proof) */}
-                    {isRevisionRequested && proof.revision_note && (
-                      <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 text-xs space-y-1">
-                        <div className="flex items-center gap-1.5 font-bold text-amber-900">
-                          <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Revision Requested with Note:</span>
-                        </div>
-                        <p className="text-amber-800 italic leading-relaxed font-medium pl-5">
-                          "{proof.revision_note}"
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Approved State Notice (Read-Only) */}
-                    {isApproved && (
-                      <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200/80 flex items-center justify-between gap-3 text-xs">
-                        <div className="flex items-center gap-2 text-emerald-900 font-bold">
-                          <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>Approved Proof — Ready for Production Packaging</span>
-                        </div>
-                        <span className="text-[11px] font-mono-code text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-md font-bold">
-                          READ-ONLY
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Action Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-zinc-100">
-                      {/* View Proof Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleViewProof(proof)}
-                        disabled={isSigningUrl}
-                        className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold transition-all border border-zinc-200 flex items-center justify-center gap-2 shadow-2xs disabled:opacity-50"
-                      >
-                        {isSigningUrl ? (
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-orange-500" />
-                        ) : (
-                          <Eye className="w-3.5 h-3.5 text-orange-500" />
-                        )}
-                        <span>{isSigningUrl ? 'Generating Access...' : 'View Proof'}</span>
-                      </button>
-
-                      {/* Review Actions: Only shown if proof is NOT approved */}
-                      {!isApproved ? (
-                        <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                          {/* Request Revision Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenRevisionModal(proof)}
-                            disabled={isActionInProgress}
-                            className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-white hover:bg-amber-50 text-amber-700 hover:text-amber-800 text-xs font-bold transition-all border border-amber-300 flex items-center justify-center gap-1.5 shadow-2xs disabled:opacity-50"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
-                            <span>Request Revision</span>
-                          </button>
-
-                          {/* Approve Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenApproveModal(proof)}
-                            disabled={isActionInProgress}
-                            className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
-                          >
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            <span>Approve Proof</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono-code">
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Approved Direction Locked</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => loadProofs(true)}
+          disabled={refreshing || loading}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer self-start sm:self-auto disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[#EA580C]' : ''}`} />
+          <span>Refresh Iterations</span>
+        </button>
       </div>
 
-      {/* MODAL 1: CONFIRM APPROVAL MODAL */}
-      {approveModalProof && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-zinc-200 rounded-[28px] max-w-md w-full p-6 sm:p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto mb-4 text-emerald-600">
-              <CheckCircle className="w-7 h-7" />
-            </div>
+      {/* Notifications */}
+      {successMsg && (
+        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-start gap-2">
+          <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+          <span>{successMsg}</span>
+        </div>
+      )}
 
-            <h3 className="font-display text-lg font-black text-zinc-900 text-center mb-1">
-              Approve Proof Version {approveModalProof.version}?
+      {actionError && (
+        <div className="p-3.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
+
+      {/* Proof Content */}
+      {loading ? (
+        <div className="py-16 text-center text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+          Loading creative proof iterations...
+        </div>
+      ) : fetchError ? (
+        <div className="py-12 text-center space-y-3">
+          <AlertCircle className="w-6 h-6 text-red-500 mx-auto" />
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fetchError}</p>
+          <button
+            type="button"
+            onClick={() => loadProofs(false)}
+            className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold"
+          >
+            Retry
+          </button>
+        </div>
+      ) : proofs.length === 0 ? (
+        <div className="py-16 text-center space-y-2 max-w-sm mx-auto">
+          <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+            Awaiting Proof Delivery
+          </h4>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+            High-resolution visual iterations for {commission.projectName} will appear here once initial concepts are rendered.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {proofs.map((proof) => {
+            const isApproved = proof.status === 'approved';
+            const isRevisionRequested = proof.status === 'revision_requested';
+            const isActionInProgress = submittingProofId === proof.id;
+            const isSigningUrl = loadingSignedUrlProofId === proof.id;
+
+            return (
+              <article
+                key={proof.id}
+                className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-5 sm:p-6 space-y-4"
+              >
+                {/* Proof Title & Status Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B]">
+                      v{proof.version}
+                    </span>
+                    <h4 className="font-display text-sm sm:text-base font-bold text-[#18181B] dark:text-[#EDEDEC] truncate max-w-xs sm:max-w-md">
+                      {proof.file_name}
+                    </h4>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">
+                      {isApproved ? (
+                        <span className="text-emerald-600 dark:text-emerald-400">Direction Approved</span>
+                      ) : isRevisionRequested ? (
+                        <span className="text-amber-600 dark:text-amber-400">Revision in Progress</span>
+                      ) : (
+                        <span className="text-[#EA580C]">Awaiting Client Review</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Specs Ledger */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                  <div>
+                    <span className="text-[10px] uppercase block">Format</span>
+                    <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                      {formatProofFileType(proof.file_type, proof.file_name)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase block">Size</span>
+                    <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                      {formatProofFileSize(proof.file_size)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase block">Uploaded</span>
+                    <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                      {formatUploadDate(proof.created_at)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase block">Access</span>
+                    <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">Private Vault</span>
+                  </div>
+                </div>
+
+                {/* Revision Note if applicable */}
+                {isRevisionRequested && proof.revision_note && (
+                  <div className="p-3 bg-white dark:bg-[#18181B] border border-amber-300 dark:border-amber-800 rounded-lg text-xs space-y-1">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 font-bold block">
+                      Client Adjustment Notes:
+                    </span>
+                    <p className="text-[#18181B] dark:text-[#EDEDEC] italic leading-relaxed">
+                      "{proof.revision_note}"
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#E4E2DC] dark:border-[#27272A]">
+                  <button
+                    type="button"
+                    onClick={() => handleViewProof(proof)}
+                    disabled={isSigningUrl}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#18181B] dark:hover:border-[#EDEDEC] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] transition-all cursor-pointer self-start sm:self-auto disabled:opacity-50"
+                  >
+                    {isSigningUrl ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#EA580C]" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5 text-[#EA580C]" />
+                    )}
+                    <span>Inspect Artwork Full-Scale</span>
+                  </button>
+
+                  {!isApproved ? (
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenRevisionModal(proof)}
+                        disabled={isActionInProgress}
+                        className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] hover:bg-white dark:hover:bg-[#18181B] text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        Request Revision
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenApproveModal(proof)}
+                        disabled={isActionInProgress}
+                        className="flex-1 sm:flex-none px-5 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Approve Proof</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 font-mono text-xs text-emerald-600 dark:text-emerald-400">
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Approved · Direction Locked</span>
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {/* CONFIRM APPROVAL MODAL */}
+      {approveModalProof && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl max-w-md w-full p-6 sm:p-8 space-y-4 shadow-2xl animate-in fade-in duration-200">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+              Confirm Direction
+            </span>
+            <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              Approve Proof v{approveModalProof.version}?
             </h3>
-            <p className="text-xs text-zinc-500 text-center mb-6 leading-relaxed">
-              By approving <strong className="text-zinc-800">{approveModalProof.file_name}</strong>, you confirm this creative direction. The proof status will be permanently marked as <strong className="text-emerald-700">Approved</strong> (read-only) and your designer can proceed to final deliverable packaging.
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+              By approving <strong>{approveModalProof.file_name}</strong>, you lock in this design direction. Brewster will proceed with compiling the final master production deliverables.
             </p>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 pt-3">
               <button
                 type="button"
                 onClick={() => setApproveModalProof(null)}
                 disabled={submittingProofId !== null}
-                className="flex-1 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-xs font-bold text-zinc-700 disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] cursor-pointer"
               >
-                Go Back
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmApprove}
                 disabled={submittingProofId !== null}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {submittingProofId === approveModalProof.id ? (
                   <>
@@ -575,8 +423,8 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span>Yes, Approve Proof</span>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Confirm Approval</span>
                   </>
                 )}
               </button>
@@ -585,63 +433,46 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
         </div>
       )}
 
-      {/* MODAL 2: REQUEST REVISION MODAL */}
+      {/* REQUEST REVISION MODAL */}
       {revisionModalProof && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-zinc-200 rounded-[28px] max-w-lg w-full p-6 sm:p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200">
-                  <RotateCcw className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-display text-base font-bold text-zinc-900">
-                    Request Revision — Version {revisionModalProof.version}
-                  </h3>
-                  <p className="text-[11px] text-zinc-500 font-medium">
-                    File: {revisionModalProof.file_name}
-                  </p>
-                </div>
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl max-w-lg w-full p-6 sm:p-8 space-y-4 shadow-2xl animate-in fade-in duration-200">
+            <div className="flex items-center justify-between pb-2 border-b border-[#E4E2DC] dark:border-[#27272A]">
+              <div>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+                  Studio Dialogue
+                </span>
+                <h3 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  Request Revision on Proof v{revisionModalProof.version}
+                </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setRevisionModalProof(null)}
-                disabled={submittingProofId !== null}
-                className="text-zinc-400 hover:text-zinc-700 p-1.5 rounded-full hover:bg-zinc-100"
+                className="text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC]"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitRevision} className="space-y-4">
+            <form onSubmit={handleConfirmRevision} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1.5">
-                  Revision Feedback & Adjustments Required *
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#18181B] dark:text-[#EDEDEC] mb-1.5 font-semibold">
+                  Adjustment Directives <span className="text-[#EA580C]">*</span>
                 </label>
                 <textarea
-                  id="input-proof-revision-note"
                   rows={4}
-                  required
-                  placeholder="Please describe specifically what adjustments or iterations you would like to see in the next draft version..."
                   value={revisionNote}
                   onChange={(e) => {
                     setRevisionNote(e.target.value);
                     if (revisionNoteError) setRevisionNoteError(null);
                   }}
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-3 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white resize-none"
+                  placeholder="Detail your feedback: typography weight, color balance, composition adjustments, or specific elements to refine..."
+                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] resize-none leading-relaxed"
                 />
                 {revisionNoteError && (
-                  <p className="text-[11px] font-bold text-rose-600 mt-1">
-                    {revisionNoteError}
-                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">{revisionNoteError}</p>
                 )}
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-[11px] text-zinc-600 space-y-1">
-                <p className="font-bold text-zinc-800">💡 Designer Tip:</p>
-                <p>
-                  Specific feedback regarding typography weight, geometry, proportions, contrast, or color tones helps your designer deliver precisely what you envision.
-                </p>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2">
@@ -649,26 +480,22 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
                   type="button"
                   onClick={() => setRevisionModalProof(null)}
                   disabled={submittingProofId !== null}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
-                  id="btn-submit-proof-revision"
                   type="submit"
                   disabled={submittingProofId !== null}
-                  className="px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-5 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   {submittingProofId === revisionModalProof.id ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Submitting...</span>
+                      <span>Transmitting...</span>
                     </>
                   ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Submit Revision Request</span>
-                    </>
+                    <span>Transmit Feedback</span>
                   )}
                 </button>
               </div>
@@ -677,58 +504,27 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
         </div>
       )}
 
-      {/* MODAL 3: LIGHTBOX / INLINE PROOF PREVIEW */}
+      {/* FULL-SCALE ARTWORK LIGHTBOX */}
       {viewingProof && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+        <div 
           onClick={() => setViewingProof(null)}
+          className="fixed inset-0 z-60 bg-black/95 flex items-center justify-center p-4 sm:p-8 cursor-zoom-out animate-in fade-in duration-200"
         >
-          <div
-            className="relative max-w-5xl w-full max-h-[92vh] flex flex-col items-center"
-            onClick={(e) => e.stopPropagation()}
+          <button
+            type="button"
+            onClick={() => setViewingProof(null)}
+            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
           >
-            {/* Modal Controls Bar */}
-            <div className="w-full flex items-center justify-between pb-3 text-white">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-lg bg-white/20 font-mono-code text-xs font-bold">
-                  v{viewingProof.proof.version}
-                </span>
-                <span className="text-sm font-bold truncate max-w-xs sm:max-w-md">
-                  {viewingProof.proof.file_name}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <a
-                  href={viewingProof.signedUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold flex items-center gap-1.5 transition-colors"
-                  title="Open high resolution in new tab"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span className="hidden sm:inline">Open in New Tab</span>
-                </a>
-                <button
-                  type="button"
-                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
-                  onClick={() => setViewingProof(null)}
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Proof Image Container */}
-            <div className="w-full flex items-center justify-center overflow-auto rounded-2xl bg-zinc-950/80 border border-zinc-800 p-2">
-              <img
-                src={viewingProof.signedUrl}
-                alt={viewingProof.proof.file_name}
-                className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl"
-              />
-            </div>
-          </div>
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={viewingProof.signedUrl}
+            alt={viewingProof.proof.file_name}
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+          />
         </div>
       )}
+
     </div>
   );
 };

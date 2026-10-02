@@ -41,132 +41,128 @@ export const ShopView: React.FC = () => {
   const shopHighlights = [
     {
       icon: Download,
-      title: 'Digital Asset Delivery',
-      desc: 'High-resolution master assets, source files (AI, EPS, SVG), and print-ready formats upon official launch.',
+      title: 'Digital Master Delivery',
+      desc: 'Source files in scalable vector formats (AI, EPS, SVG), layered PSDs, and press-ready PDFs upon release.',
     },
     {
       icon: Sparkles,
-      title: 'Curated Digital Assets',
-      desc: 'Carefully organized design kits, templates, and vector resources structured for professional creative workflows.',
+      title: 'Curated Design Systems',
+      desc: 'Structured asset kits, display typography, and vector resources calibrated for professional production workflows.',
     },
     {
       icon: Palette,
-      title: 'Studio Production Standards',
-      desc: 'Every asset is crafted with the exact precision, grid systems, and aesthetic rigor applied to bespoke client commissions.',
+      title: 'Studio Craftsmanship',
+      desc: 'Each release is crafted with identical mathematical rigor, typographic hierarchy, and attention to detail as bespoke commissions.',
     },
     {
       icon: Layers,
-      title: 'Bespoke Customization',
-      desc: 'Need a shop asset customized for your specific brand? Seamlessly transition any item into an active custom commission.',
+      title: 'Bespoke Adaptation',
+      desc: 'Require an asset customized for your specific brand marks or color space? Seamlessly transition any item into a commissioned brief.',
     },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-14">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 sm:space-y-20">
       
-      {/* Shop Header & Introduction */}
-      <div className="text-center max-w-3xl mx-auto space-y-4">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-mono-code uppercase tracking-wider font-bold border border-orange-200 shadow-2xs">
-          <ShoppingBag className="w-3.5 h-3.5" />
-          <span>Official Studio Storefront</span>
-        </div>
+      {/* Editorial Shop Header */}
+      <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-8 sm:pb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-3 max-w-2xl">
+            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+              <span>Studio Storefront & Editions</span>
+            </div>
 
-        <h1 className="font-display text-4xl sm:text-5xl font-black text-zinc-900 tracking-tight">
-          Brewster Creative Shop
-        </h1>
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-5.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
+              Editions, Prints & Design Assets
+            </h1>
 
-        <p className="text-sm sm:text-base text-zinc-500 leading-relaxed font-medium">
-          A curated collection of digital design assets, branding kits, typography, prints, and studio goods crafted with obsessive detail by {studioProfile.designerName}.
-        </p>
-
-        {/* Storefront Preparation Notice Strip */}
-        <div className="mt-4 p-4 rounded-2xl bg-zinc-50 border border-zinc-200/90 text-left flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
-          <div className="flex items-start sm:items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0 mt-1 sm:mt-0" />
-            <p className="text-zinc-600 leading-relaxed font-medium">
-              <span className="font-bold text-zinc-900 font-mono-code uppercase tracking-wider text-[11px] block sm:inline sm:mr-1.5">
-                Catalog In Preparation:
-              </span>
-              Direct purchasing will be enabled upon official storefront launch. In the meantime, all assets can be commissioned as custom variants.
+            <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
+              An ongoing release of digital design systems, display typography, screen-print posters, and vector libraries created by {studioProfile.designerName}.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+          <div className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] self-start md:self-end">
+            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{filteredProducts.length}</span> Curated Editions
+          </div>
+        </div>
+
+        {/* Storefront Preparation Notice Strip */}
+        <div className="mt-8 p-4 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-pulse shrink-0" />
+            <p className="text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-medium">
+              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] font-mono uppercase tracking-wider text-[11px] mr-1.5">
+                Catalog in Preparation:
+              </span>
+              Direct purchasing activates upon launch. In the interim, all goods can be commissioned as customized variants.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
             <button
               type="button"
               onClick={() => setActiveView('commission-form')}
-              className="px-3.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Custom Work</span>
+              <span>Commission Variant</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveView('portfolio')}
-              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-bold text-xs border border-zinc-200 shadow-2xs flex items-center gap-1 transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] hover:bg-[#F4F2ED] dark:hover:bg-[#27272A] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-xs border border-[#E4E2DC] dark:border-[#27272A] flex items-center gap-1 transition-colors cursor-pointer"
             >
-              <span>Portfolio</span>
-              <ArrowRight className="w-3 h-3 text-zinc-400" />
+              <span>Exhibitions</span>
+              <ArrowRight className="w-3 h-3 text-[#A1A1AA]" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Catalog Section with Category Navigation Directly Above Products */}
-      <div className="space-y-6">
-        {/* Category Navigation Bar */}
-        <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar pb-1">
-          {SHOP_CATEGORIES.map((cat) => {
-            const isSelected = selectedShopCategory === cat.name;
-            const count = cat.name === 'All' 
-              ? SHOP_PRODUCTS.length 
-              : SHOP_PRODUCTS.filter(p => p.category === cat.name).length;
+      {/* Catalog Section with Category Navigation */}
+      <div className="space-y-8">
+        
+        {/* Simple Text Navigation Category Filter */}
+        <div className="flex items-center justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#27272A] pb-3">
+          <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-1" aria-label="Shop categories">
+            {SHOP_CATEGORIES.map((cat) => {
+              const isSelected = selectedShopCategory === cat.name;
+              const count = cat.name === 'All' 
+                ? SHOP_PRODUCTS.length 
+                : SHOP_PRODUCTS.filter(p => p.category === cat.name).length;
 
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedShopCategory(cat.name)}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
-                  isSelected
-                    ? 'bg-zinc-900 text-white shadow-xs'
-                    : 'bg-white text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 border border-zinc-200'
-                }`}
-              >
-                <span>{cat.name}</span>
-                <span className={`text-[10px] font-mono-code font-bold px-1.5 py-0.2 rounded-md ${
-                  isSelected ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-100 text-zinc-500'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedShopCategory(cat.name)}
+                  className={`relative px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'text-[#18181B] dark:text-[#EDEDEC] font-bold'
+                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                  }`}
+                >
+                  <span>{cat.name}</span>
+                  <span className={`text-[10px] font-mono font-normal ${isSelected ? 'text-[#EA580C]' : 'text-[#A1A1AA]'}`}>
+                    ({count})
+                  </span>
+                  {isSelected && (
+                    <span className="absolute bottom-0 inset-x-3 h-0.5 bg-[#EA580C] rounded-full animate-in fade-in duration-200" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-        {/* Category Header Info */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="font-display text-lg sm:text-xl font-bold text-zinc-900">
-                {selectedShopCategory === 'All' ? 'Curated Studio Releases' : `${selectedShopCategory} Releases`}
-              </h2>
-              <span className="text-[11px] font-mono-code font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">
-                {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
-              </span>
-            </div>
-            <p className="text-xs text-zinc-500 font-medium mt-0.5">
-              {currentCategory.description}
-            </p>
-          </div>
-          <span className="text-xs font-mono-code text-zinc-400 bg-white px-3 py-1 rounded-full border border-zinc-200 font-bold self-start sm:self-auto">
-            Studio Collection
+          <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] hidden sm:inline">
+            Studio Goods Archive
           </span>
         </div>
 
         {/* Product Cards Grid or Empty State */}
         {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {filteredProducts.map((product) => (
               <ShopProductCard 
                 key={product.id}
@@ -176,28 +172,27 @@ export const ShopView: React.FC = () => {
             ))}
           </div>
         ) : (
-          /* Empty State for In-Production Categories (e.g. Typography, Digital Mockups) */
-          <div className="bg-white border border-dashed border-zinc-300 rounded-[28px] p-8 sm:p-14 text-center space-y-5 max-w-xl mx-auto shadow-2xs">
-            <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto shadow-2xs">
+          /* Empty State */
+          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-12 sm:p-16 text-center space-y-4 max-w-xl mx-auto shadow-2xs">
+            <div className="w-12 h-12 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-[#EA580C] flex items-center justify-center mx-auto">
               {selectedShopCategory === 'Typography' ? (
-                <Type className="w-7 h-7" />
+                <Type className="w-6 h-6" />
               ) : selectedShopCategory === 'Digital Mockups' ? (
-                <Layers className="w-7 h-7" />
+                <Layers className="w-6 h-6" />
               ) : (
-                <Box className="w-7 h-7" />
+                <Box className="w-6 h-6" />
               )}
             </div>
 
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 text-xs font-mono-code font-bold border border-zinc-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                <span>In Studio Production</span>
-              </div>
-              <h3 className="font-display font-bold text-xl sm:text-2xl text-zinc-900">
-                New {selectedShopCategory} Releases Coming Soon
+            <div className="space-y-1">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold">
+                In Studio Production
+              </span>
+              <h3 className="font-display font-bold text-xl text-[#18181B] dark:text-[#EDEDEC]">
+                {selectedShopCategory} Releases Coming Soon
               </h3>
-              <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed font-medium">
-                New {selectedShopCategory} assets are currently being crafted in the studio. Direct ordering and downloads will activate upon catalog release.
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+                New {selectedShopCategory} assets are currently being typeset and tested in the studio. Direct ordering activates with the catalog release.
               </p>
             </div>
 
@@ -205,7 +200,7 @@ export const ShopView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedShopCategory('All')}
-                className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>View All Categories</span>
@@ -213,7 +208,7 @@ export const ShopView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveView('commission-form')}
-                className="px-4 py-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-[#18181B] dark:text-[#EDEDEC] text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 hover:bg-[#F4F2ED] dark:hover:bg-[#232327]"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Request Custom {selectedShopCategory}</span>
@@ -224,68 +219,67 @@ export const ShopView: React.FC = () => {
       </div>
 
       {/* Studio Production Standards & Quality Highlights */}
-      <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-10 shadow-xs space-y-6">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <span className="text-xs font-mono-code text-orange-600 uppercase tracking-wider font-bold">
-            Studio Production Standards
+      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-10">
+        <div className="max-w-2xl space-y-2">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
+            Quality & Specifications
           </span>
-          <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
-            Crafted for Professional Workflows
+          <h2 className="font-display text-2xl sm:text-3xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+            Crafted for Rigorous Creative Workflows
           </h2>
-          <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed font-medium">
-            Every digital asset and physical print release is calibrated to the rigorous aesthetic and technical standards of Brewster Creative.
+          <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+            Every digital asset and tactile print release is calibrated to the strict aesthetic and technical criteria of Brewster Creative.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {shopHighlights.map((highlight, idx) => {
             const Icon = highlight.icon;
             return (
               <div 
-                key={idx}
-                className="p-5 rounded-2xl bg-zinc-50/80 border border-zinc-200/80 space-y-2.5 transition-all hover:bg-zinc-50 hover:border-zinc-300"
+                key={idx} 
+                className="space-y-3 pb-6 border-b border-[#E4E2DC] dark:border-[#27272A] sm:border-b-0"
               >
-                <div className="w-10 h-10 rounded-xl bg-white border border-zinc-200 flex items-center justify-center text-orange-500 shadow-2xs">
-                  <Icon className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-[#EA580C] flex items-center justify-center">
+                  <Icon className="w-4 h-4" />
                 </div>
-                <h3 className="font-display text-sm font-bold text-zinc-900">
+                <h3 className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC]">
                   {highlight.title}
                 </h3>
-                <p className="text-xs text-zinc-500 leading-relaxed font-medium">
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
                   {highlight.desc}
                 </p>
               </div>
             );
           })}
         </div>
-      </div>
+      </section>
 
       {/* Commission Bridge Banner */}
-      <div className="bg-zinc-950 text-white rounded-[32px] p-8 sm:p-12 relative overflow-hidden shadow-md">
-        <div className="absolute -right-10 -bottom-10 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="max-w-2xl space-y-4 relative z-10">
-          <span className="px-3 py-1 rounded-full bg-zinc-800 text-orange-400 text-xs font-mono-code font-bold uppercase tracking-wider inline-flex items-center gap-1.5 border border-zinc-700">
-            <Sparkles className="w-3.5 h-3.5" />
-            Bespoke Creative Commissions
-          </span>
-          <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight">
-            Need a custom design crafted exclusively for your brand?
-          </h2>
-          <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed font-medium">
-            While studio templates offer immediate inspiration and structure, Brewster Creative specializes in one-of-a-kind bespoke visual identities, logo marks, and multimedia campaigns with interactive milestone reviews.
-          </p>
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => setActiveView('commission-form')}
-              className="px-6 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-orange-500/25 flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <Send className="w-4 h-4" />
-              <span>Start a Custom Commission</span>
-            </button>
+      <section className="pt-6">
+        <div className="bg-[#18181B] dark:bg-[#18181B] text-white rounded-xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-transparent dark:border-[#27272A]">
+          <div className="space-y-2 max-w-xl">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
+              Bespoke Studio Directives
+            </span>
+            <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              Need a custom asset crafted exclusively for your brand?
+            </h3>
+            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
+              While studio templates provide immediate utility, Brewster specializes in one-of-a-kind visual identities, brand systems, and multimedia campaigns with interactive client reviews.
+            </p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setActiveView('commission-form')}
+            className="px-6 py-3.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs sm:text-sm font-semibold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer shrink-0"
+          >
+            <Send className="w-4 h-4" />
+            <span>Initiate Custom Brief</span>
+          </button>
         </div>
-      </div>
+      </section>
 
     </div>
   );

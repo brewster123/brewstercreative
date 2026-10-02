@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Commission, CommissionDeliverable } from '../types';
-import { useApp } from '../context/AppContext';
 import { 
-  Sparkles, 
   Download, 
-  CheckCircle2, 
-  FolderArchive, 
+  Check, 
   Calendar, 
   FileText, 
-  Send,
-  ShieldCheck,
-  Star,
-  FileCheck,
+  ShieldCheck, 
   AlertTriangle,
   Clock,
-  ExternalLink
+  Loader2
 } from 'lucide-react';
 import { 
   fetchCommissionDeliverables, 
@@ -28,17 +22,14 @@ interface FinalDeliverySectionProps {
 }
 
 export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ commission }) => {
-  const { setActiveView } = useApp();
   const [deliverables, setDeliverables] = useState<CommissionDeliverable[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Download states per file ID
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadSuccessId, setDownloadSuccessId] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  // Load real deliverables from Supabase
   const loadDeliverables = async () => {
     if (!commission?.id) return;
     setIsLoading(true);
@@ -69,19 +60,16 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ comm
     };
   }, [commission?.id]);
 
-  // Secure signed download handler
   const handleDownloadFile = async (deliverable: CommissionDeliverable) => {
     setDownloadingId(deliverable.id);
     setDownloadError(null);
     try {
-      // Generate temporary authorized signed URL with 1-hour expiration
       const { signedUrl, error: signErr } = await getDeliverableSignedUrl(deliverable.filePath, 3600);
       if (signErr || !signedUrl) {
-        setDownloadError(signErr || 'Failed to acquire authorized signed download URL. Please try again.');
+        setDownloadError(signErr || 'Failed to acquire authorized download URL.');
         return;
       }
 
-      // Trigger secure browser download
       const a = document.createElement('a');
       a.href = signedUrl;
       a.download = deliverable.fileName;
@@ -92,15 +80,14 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ comm
       document.body.removeChild(a);
 
       setDownloadSuccessId(deliverable.id);
-      setTimeout(() => setDownloadSuccessId(null), 3500);
+      setTimeout(() => setDownloadSuccessId(null), 3000);
     } catch (err: any) {
-      setDownloadError(err?.message || 'A network error occurred while starting download.');
+      setDownloadError(err?.message || 'Network error initiating download.');
     } finally {
       setDownloadingId(null);
     }
   };
 
-  // Download all files in sequence
   const handleDownloadAll = async () => {
     if (deliverables.length === 0) return;
     setDownloadingId('all');
@@ -118,14 +105,13 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ comm
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          // Small pause between multiple trigger clicks
-          await new Promise(r => setTimeout(r, 400));
+          await new Promise(r => setTimeout(r, 350));
         }
       }
       setDownloadSuccessId('all');
-      setTimeout(() => setDownloadSuccessId(null), 3500);
+      setTimeout(() => setDownloadSuccessId(null), 3000);
     } catch (err: any) {
-      setDownloadError(err?.message || 'Failed while preparing all download links.');
+      setDownloadError(err?.message || 'Error occurred while preparing file links.');
     } finally {
       setDownloadingId(null);
     }
@@ -135,237 +121,158 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ comm
     ? new Date(commission.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : 'Completed';
 
-  // Calculate total package size
   const totalSizeBytes = deliverables.reduce((acc, d) => acc + (d.fileSize || 0), 0);
   const totalSizeFormatted = formatDeliverableFileSize(totalSizeBytes);
 
   return (
-    <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-10 shadow-xs relative overflow-hidden text-center sm:text-left">
+    <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-10 space-y-8">
       
-      {/* Background celebration glow */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-emerald-500/10 via-orange-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+      {/* Editorial Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[#E4E2DC] dark:border-[#27272A]">
+        <div className="space-y-1.5 max-w-2xl">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+            <span>Final Delivery · Stage 08 Archive</span>
+          </div>
 
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-8 border-b border-zinc-200/80">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 p-0.5 shadow-xs shrink-0 flex items-center justify-center text-emerald-600">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <div className="text-center sm:text-left">
-            <span className="px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-mono-code font-bold border border-emerald-200 inline-block mb-1">
-              ✓ STAGE 08 — FINAL DELIVERY
-            </span>
-            <h2 className="font-display text-2xl sm:text-3xl font-black text-zinc-900">
-              {deliverables.length > 0 ? '🎉 Your deliverables are ready!' : 'Preparing Final Deliverables'}
-            </h2>
-          </div>
+          <h2 className="font-display text-2xl sm:text-3xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+            {commission.projectName}
+          </h2>
+
+          <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+            All approved vector masters, production formats, and full commercial licensing documents.
+          </p>
         </div>
 
-        <div className="bg-zinc-50 px-5 py-3 rounded-2xl border border-zinc-200/80 text-center sm:text-right">
-          <div className="text-[11px] text-zinc-500 font-mono-code uppercase font-bold">Project State</div>
-          <div className="text-sm font-bold text-zinc-800 flex items-center gap-1.5 justify-center sm:justify-end">
-            <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-            <span>{completedDate}</span>
-          </div>
+        <div className="flex items-baseline gap-2 font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Released {completedDate}</span>
         </div>
       </div>
 
       {downloadError && (
-        <div className="my-4 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+        <div className="p-3.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
           <span>{downloadError}</span>
         </div>
       )}
 
-      {/* Project Final Showcase & Downloads Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 my-8 text-left">
-        
-        {/* Left: Summary / Specs */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="p-6 rounded-2xl border border-zinc-200 bg-zinc-50/60 space-y-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-orange-500" />
-              <h4 className="font-display text-base font-bold text-zinc-900">
-                {commission.projectName}
-              </h4>
-            </div>
-
-            <p className="text-xs text-zinc-600 leading-relaxed">
-              {commission.description || 'Custom creative design production commissioned through Brewster Creative.'}
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <div className="bg-white p-3 rounded-xl border border-zinc-200">
-                <span className="text-[10px] font-mono-code text-zinc-400 font-bold uppercase block">
-                  Lead Designer
-                </span>
-                <span className="text-xs font-bold text-zinc-800">
-                  {commission.assignedDesigner || 'Brewster A. Cabando'}
-                </span>
-              </div>
-              <div className="bg-white p-3 rounded-xl border border-zinc-200">
-                <span className="text-[10px] font-mono-code text-zinc-400 font-bold uppercase block">
-                  Delivered Total Files
-                </span>
-                <span className="text-xs font-bold text-emerald-600 font-mono-code">
-                  {deliverables.length} {deliverables.length === 1 ? 'Asset' : 'Assets'}
-                </span>
-              </div>
-            </div>
+      {/* Main Download Area */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider font-semibold">
+            <span>Production Assets</span>
+            <span>·</span>
+            <span>{deliverables.length} files ({totalSizeFormatted})</span>
           </div>
 
-          {/* Licensing & Commercial Rights Note */}
-          <div className="p-5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 text-xs text-zinc-600 flex items-start gap-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold text-zinc-900 block text-xs">Full Commercial Release</span>
-              <span className="text-[11px] leading-relaxed text-zinc-600 mt-0.5 block">
-                All production master files delivered below are licensed for worldwide commercial distribution, reproduction, and trademark registration.
-              </span>
-            </div>
-          </div>
+          {deliverables.length > 1 && (
+            <button
+              type="button"
+              onClick={handleDownloadAll}
+              disabled={downloadingId !== null}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            >
+              {downloadingId === 'all' ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Preparing Package...</span>
+                </>
+              ) : downloadSuccessId === 'all' ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Package Downloaded</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Complete Package</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
-        {/* Right: Deliverables List & Downloads */}
-        <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-          <div className="bg-zinc-50 border border-zinc-200/80 rounded-[28px] p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FolderArchive className="w-5 h-5 text-orange-500" />
-                <h4 className="font-display text-sm font-black text-zinc-900">
-                  Production Deliverables
-                </h4>
-              </div>
-              {deliverables.length > 0 && (
-                <span className="text-xs font-mono-code text-zinc-500 font-bold">
-                  {totalSizeFormatted}
-                </span>
-              )}
-            </div>
+        {isLoading ? (
+          <div className="py-16 text-center text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+            Loading production deliverables...
+          </div>
+        ) : loadError ? (
+          <div className="py-12 text-center text-xs text-red-600 dark:text-red-400">
+            {loadError}
+          </div>
+        ) : deliverables.length === 0 ? (
+          <div className="py-16 text-center space-y-2 max-w-sm mx-auto">
+            <Clock className="w-6 h-6 text-[#A1A1AA] mx-auto opacity-70" />
+            <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+              Final Packaging Underway
+            </h4>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+              Brewster is packaging and verifying your master vector and print files. Once uploaded, download links will appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {deliverables.map((item) => {
+              const isDownloading = downloadingId === item.id;
+              const isDownloaded = downloadSuccessId === item.id;
 
-            {isLoading ? (
-              <div className="py-8 text-center text-xs text-zinc-400 font-mono-code">
-                Loading production files...
-              </div>
-            ) : loadError ? (
-              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
-                {loadError}
-              </div>
-            ) : deliverables.length === 0 ? (
-              <div className="py-8 text-center text-zinc-500 text-xs space-y-1">
-                <Clock className="w-8 h-8 text-zinc-300 mx-auto mb-2 opacity-60" />
-                <p className="font-bold text-zinc-700">Final files are being prepared</p>
-                <p className="text-[11px] text-zinc-400">
-                  Brewster is compiling your master production files. You will receive an alert once uploaded.
-                </p>
-              </div>
-            ) : (
-              <>
-                <ul className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
-                  {deliverables.map((item) => {
-                    const isDownloading = downloadingId === item.id;
-                    const isSuccess = downloadSuccessId === item.id;
+              return (
+                <article
+                  key={item.id}
+                  className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-5 flex items-center justify-between gap-4 transition-all hover:border-[#D4D2CA]"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5 text-[#EA580C]" />
+                    </div>
 
-                    return (
-                      <li key={item.id} className="p-3 rounded-xl bg-white border border-zinc-200 flex items-center justify-between gap-2 shadow-2xs">
-                        <div className="flex items-start gap-2.5 min-w-0">
-                          <FileCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                          <div className="min-w-0">
-                            <span className="block truncate font-mono-code text-xs font-bold text-zinc-800">
-                              {item.title || item.fileName}
-                            </span>
-                            <span className="text-[10px] text-zinc-400 font-mono-code">
-                              {item.fileName} · {formatDeliverableFileSize(item.fileSize)}
-                            </span>
-                          </div>
-                        </div>
+                    <div className="min-w-0">
+                      <h4 
+                        className="font-display text-sm font-bold text-[#18181B] dark:text-[#EDEDEC] truncate"
+                        title={item.fileName}
+                      >
+                        {item.fileName}
+                      </h4>
+                      <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+                        {formatDeliverableFileSize(item.fileSize)} · {item.fileType?.split('/')?.[1] || 'Asset'}
+                      </p>
+                    </div>
+                  </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDownloadFile(item)}
-                          disabled={isDownloading}
-                          className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-orange-500 hover:text-white text-zinc-700 text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
-                          title="Generate secure download link"
-                        >
-                          {isDownloading ? (
-                            <div className="w-3.5 h-3.5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                          ) : isSuccess ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          ) : (
-                            <Download className="w-3.5 h-3.5" />
-                          )}
-                          <span className="text-[11px] font-mono-code">
-                            {isDownloading ? 'Signing...' : isSuccess ? 'Ready' : 'Get'}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                {/* Master Download Action Button */}
-                {deliverables.length > 1 && (
                   <button
-                    id="btn-download-final-package"
                     type="button"
-                    onClick={handleDownloadAll}
-                    disabled={downloadingId === 'all'}
-                    className={`w-full py-3 px-5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer ${
-                      downloadSuccessId === 'all'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-orange-500 hover:bg-orange-600 text-white'
-                    }`}
+                    onClick={() => handleDownloadFile(item)}
+                    disabled={isDownloading}
+                    className="p-2.5 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#18181B] dark:hover:border-[#EDEDEC] text-[#18181B] dark:text-[#EDEDEC] transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                    title={`Download ${item.fileName}`}
                   >
-                    {downloadingId === 'all' ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Generating Secure Signed Links...</span>
-                      </>
-                    ) : downloadSuccessId === 'all' ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>All Downloads Initiated!</span>
-                      </>
+                    {isDownloading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-[#EA580C]" />
+                    ) : isDownloaded ? (
+                      <Check className="w-4 h-4 text-emerald-600" />
                     ) : (
-                      <>
-                        <Download className="w-4 h-4" />
-                        <span>Download All Production Deliverables</span>
-                      </>
+                      <Download className="w-4 h-4 text-[#EA580C]" />
                     )}
                   </button>
-                )}
-              </>
-            )}
+                </article>
+              );
+            })}
           </div>
-        </div>
-
+        )}
       </div>
 
-      {/* Thank you note & CTA */}
-      <div className="pt-8 border-t border-zinc-200/80 flex flex-col sm:flex-row items-center justify-between gap-6 bg-zinc-50 -mx-6 -mb-6 sm:-mx-10 sm:-mb-10 p-6 sm:p-8 rounded-b-[32px]">
-        <div className="text-center sm:text-left">
-          <div className="flex items-center gap-1.5 text-amber-500 mb-1 justify-center sm:justify-start">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-            ))}
-          </div>
-          <h4 className="font-display text-lg font-black text-zinc-900">
-            Thank you for collaborating with Brewster Creative!
-          </h4>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            It was a pleasure bringing your vision for {commission.projectName} to life.
-          </p>
+      {/* Commercial Licensing Ledger */}
+      <div className="pt-6 border-t border-[#E4E2DC] dark:border-[#27272A] flex items-start gap-3">
+        <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+        <div className="space-y-0.5 text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+          <strong className="text-[#18181B] dark:text-[#EDEDEC] block font-display">
+            Full Commercial Rights & Ownership Released
+          </strong>
+          <span>
+            All production master files delivered above are cleared for unrestricted worldwide commercial reproduction, digital publishing, physical fabrication, and trademark registration.
+          </span>
         </div>
-
-        <button
-          id="btn-commission-another-project"
-          type="button"
-          onClick={() => setActiveView('commission-form')}
-          className="px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs sm:text-sm transition-all shadow-xs flex items-center gap-2 shrink-0 cursor-pointer"
-        >
-          <Send className="w-4 h-4" />
-          <span>Commission Another Project</span>
-        </button>
       </div>
 
     </div>

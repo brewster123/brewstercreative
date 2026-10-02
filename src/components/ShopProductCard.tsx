@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { ShopProduct } from '../types';
 import { 
-  Tag, 
-  Palette, 
-  Package, 
-  Type, 
-  Layers, 
   Download, 
   Box, 
   ArrowRight,
-  Eye
+  Eye,
+  Tag,
+  Palette,
+  Package,
+  Type,
+  Layers
 } from 'lucide-react';
 
 interface ShopProductCardProps {
@@ -36,47 +36,47 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
   const renderVisualIcon = () => {
     switch (product.iconName) {
       case 'Tag':
-        return <Tag className="w-8 h-8 text-orange-500/80 mb-2 transition-transform duration-300 group-hover:scale-110" />;
+        return <Tag className="w-8 h-8 text-[#EA580C] mb-2 opacity-80" />;
       case 'Palette':
-        return <Palette className="w-8 h-8 text-zinc-600 mb-2 transition-transform duration-300 group-hover:scale-110" />;
+        return <Palette className="w-8 h-8 text-[#71717A] dark:text-[#A1A1AA] mb-2 opacity-80" />;
       case 'Package':
-        return <Package className="w-8 h-8 text-orange-600 mb-2 transition-transform duration-300 group-hover:scale-110" />;
+        return <Package className="w-8 h-8 text-[#EA580C] mb-2 opacity-80" />;
       case 'Type':
-        return <Type className="w-8 h-8 text-zinc-700 mb-2 transition-transform duration-300 group-hover:scale-110" />;
+        return <Type className="w-8 h-8 text-[#71717A] dark:text-[#A1A1AA] mb-2 opacity-80" />;
       case 'Layers':
       default:
-        return <Layers className="w-8 h-8 text-orange-500 mb-2 transition-transform duration-300 group-hover:scale-110" />;
+        return <Layers className="w-8 h-8 text-[#EA580C] mb-2 opacity-80" />;
     }
   };
 
-  const getStatusBadge = () => {
+  const getStatusLabel = () => {
     switch (product.status) {
       case 'Available':
         return (
-          <span className="px-2 py-0.5 rounded-md bg-white text-[#059669] text-[10px] font-mono font-medium border border-[#E4E2DC] shadow-2xs flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
-            Available
+          <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>Available</span>
           </span>
         );
       case 'In Production':
         return (
-          <span className="px-2 py-0.5 rounded-md bg-white text-[#71717A] text-[10px] font-mono font-medium border border-[#E4E2DC] shadow-2xs flex items-center gap-1">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#71717A] animate-pulse" />
-            In Production
+            <span>In Production</span>
           </span>
         );
       case 'Sold Out':
         return (
-          <span className="px-2 py-0.5 rounded-md bg-[#F4F2ED] text-[#71717A] text-[10px] font-mono font-medium border border-[#E4E2DC]">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold">
             Sold Out
           </span>
         );
       case 'Coming Soon':
       default:
         return (
-          <span className="px-2 py-0.5 rounded-md bg-white text-[#EA580C] text-[10px] font-mono font-medium border border-[#E4E2DC] shadow-2xs flex items-center gap-1">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C] animate-pulse" />
-            Coming Soon
+            <span>Coming Soon</span>
           </span>
         );
     }
@@ -89,19 +89,17 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
   };
 
   return (
-    <div
+    <article
       onClick={handleCardClick}
-      className={`bg-white border rounded-xl p-5 space-y-4 shadow-2xs relative overflow-hidden flex flex-col justify-between h-full transition-all duration-300 group hover:-translate-y-1 hover:shadow-xs cursor-pointer ${
-        product.featured ? 'border-[#EA580C]/40 hover:border-[#EA580C]' : 'border-[#E4E2DC] hover:border-[#D4D2CA]'
-      }`}
+      className="group relative bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46] rounded-xl p-5 flex flex-col justify-between transition-all duration-300 cursor-pointer shadow-2xs hover:shadow-xs space-y-4"
     >
-      <div className="space-y-3.5">
-        {/* Visual / Image Area */}
-        <div className={`aspect-[4/3] rounded-lg bg-[#FAF9F6] border border-[#E4E2DC] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden`}>
+      <div className="space-y-4">
+        {/* Visual / Artwork Viewport */}
+        <div className="aspect-[4/3] rounded-lg bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
           
-          {/* Top Left: Clean Primary Product Type & Complementary Badge */}
-          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap z-10 max-w-[65%]">
-            <span className="px-2 py-0.5 rounded-md bg-white/95 text-[#18181B] text-[10px] font-mono font-semibold uppercase border border-[#E4E2DC] shadow-2xs flex items-center gap-1 backdrop-blur-xs">
+          {/* Top Left: Medium Type */}
+          <div className="absolute top-3 left-3 z-10">
+            <span className="px-2 py-0.5 rounded bg-white/90 dark:bg-[#18181B]/90 text-[#18181B] dark:text-[#EDEDEC] text-[10px] font-mono font-semibold uppercase border border-[#E4E2DC] dark:border-[#27272A] backdrop-blur-xs flex items-center gap-1">
               {product.productType === 'Digital' ? (
                 <Download className="w-3 h-3 text-[#EA580C]" />
               ) : (
@@ -109,40 +107,26 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
               )}
               <span>{product.productType}</span>
             </span>
-            {product.isTemplate ? (
-              <span className="px-2 py-0.5 rounded-md bg-white/95 text-[#EA580C] text-[10px] font-mono font-semibold uppercase border border-[#E4E2DC] shadow-2xs backdrop-blur-xs">
-                Template
-              </span>
-            ) : product.variants && product.variants.length > 0 ? (
-              <span className="px-2 py-0.5 rounded-md bg-white/95 text-[#71717A] text-[10px] font-mono font-medium uppercase border border-[#E4E2DC] shadow-2xs backdrop-blur-xs">
-                Multi-Format
-              </span>
-            ) : null}
           </div>
 
-          {/* Top Right: Status Badge */}
-          <div className="absolute top-2.5 right-2.5 z-10">
-            {getStatusBadge()}
+          {/* Top Right: Status */}
+          <div className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded bg-white/90 dark:bg-[#18181B]/90 border border-[#E4E2DC] dark:border-[#27272A] backdrop-blur-xs">
+            {getStatusLabel()}
           </div>
 
-          {/* Center Graphic / Real Product Image */}
+          {/* Center Product Image or Minimal Icon */}
           {hasImage && rawImage ? (
             <img 
               src={rawImage} 
               alt={product.productImageAlt || product.name} 
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-103"
               loading="lazy"
               onError={() => setImgError(true)}
             />
           ) : (
             <div className="flex flex-col items-center justify-center p-4">
               {renderVisualIcon()}
-              {product.badge && (
-                <span className="text-xs font-mono-code text-zinc-800 font-bold mt-1">
-                  {product.badge}
-                </span>
-              )}
-              <span className="text-[10px] text-zinc-400 font-mono-code uppercase tracking-wider mt-0.5 font-medium">
+              <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-mono uppercase tracking-wider mt-1">
                 {product.category}
               </span>
             </div>
@@ -152,50 +136,35 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
         {/* Content Section */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-mono-code uppercase tracking-wider text-orange-600 font-bold">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[#EA580C] font-semibold">
               {product.category}
             </span>
-            <span className="font-mono-code font-bold text-xs text-zinc-900 bg-zinc-50 px-2 py-0.5 rounded-md border border-zinc-200/80">
+            <span className="font-mono font-bold text-xs text-[#18181B] dark:text-[#EDEDEC]">
               {product.priceLabel || (product.price > 0 ? `$${product.price}` : 'Price TBA')}
             </span>
           </div>
 
-          <h4 className="font-display font-bold text-base text-zinc-900 group-hover:text-orange-600 transition-colors line-clamp-2 min-h-[3rem] flex items-center">
+          <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC] group-hover:text-[#EA580C] group-hover:translate-x-1 transition-all duration-300 line-clamp-1">
             {product.name}
           </h4>
 
-          <p className="text-xs text-zinc-500 leading-relaxed font-medium line-clamp-2 min-h-[2rem]">
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed line-clamp-2 font-normal">
             {product.shortDescription || product.description}
           </p>
         </div>
       </div>
 
-      {/* Footer & Primary Action */}
-      <div className="pt-3 border-t border-[#E4E2DC] space-y-3">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-mono text-[10px] font-semibold text-[#71717A] truncate max-w-[65%] uppercase tracking-wider">
-            {product.formats || 'Digital Assets'}
-          </span>
-          <span className="text-[10px] font-mono text-[#EA580C] font-semibold bg-[#FFF7ED] px-2 py-0.5 rounded border border-[#FFEDD5] shrink-0">
-            {product.isTemplate ? 'Template' : (product.badge || 'Studio Asset')}
-          </span>
-        </div>
+      {/* Footer Specs & Action */}
+      <div className="pt-3.5 border-t border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between text-xs">
+        <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] truncate max-w-[55%] uppercase tracking-wider">
+          {product.formats || 'Vector & Master Formats'}
+        </span>
 
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCardClick();
-          }}
-          className="w-full py-2 rounded-lg bg-[#FAF9F6] hover:bg-[#18181B] hover:text-white text-[#18181B] text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 border border-[#E4E2DC] hover:border-[#18181B] shadow-2xs cursor-pointer"
-        >
-          <Eye className="w-3.5 h-3.5" />
-          <span>
-            {actionLabel || 'View Product'}
-          </span>
-          <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-        </button>
+        <span className="inline-flex items-center gap-1 font-semibold text-xs text-[#EA580C] group-hover:translate-x-1 transition-transform shrink-0">
+          <span>{actionLabel || 'Inspect Edition'}</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </span>
       </div>
-    </div>
+    </article>
   );
 };

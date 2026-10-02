@@ -9,8 +9,9 @@ import {
 import { ProfilePhotoEditorModal } from './ProfilePhotoEditorModal';
 
 export interface StudioPhotoUploaderProps {
-  adminUserId: string;
+  adminUserId?: string;
   currentPhoto?: string;
+  currentPhotoUrl?: string;
   onPhotoUpdated?: (newUrl: string) => void;
   label?: string;
   description?: string;
@@ -18,15 +19,19 @@ export interface StudioPhotoUploaderProps {
 }
 
 export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
-  adminUserId,
+  adminUserId: propAdminUserId,
   currentPhoto,
+  currentPhotoUrl,
   onPhotoUpdated,
-  label = 'Studio / Website Brand Photo',
+  label = 'Studio Lead Photo',
   description = "Professional portrait displayed on the public website homepage 'Meet The Designer' section. Represents Brewster A. Cabando (Studio Lead).",
   className = '',
 }) => {
-  const { studioProfile, updateStudioProfile } = useApp();
+  const { currentUser, studioProfile, updateStudioProfile } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const effectiveAdminUserId = propAdminUserId || (currentUser?.role === 'admin' ? currentUser.id : '');
+  const photoFromProps = currentPhoto || currentPhotoUrl;
 
   // Editor Modal State
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
@@ -39,9 +44,14 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  // If user is not authenticated as admin, do not allow access
+  if (currentUser?.role !== 'admin') {
+    return null;
+  }
+
   const displayedPhoto =
     previewUrl ||
-    currentPhoto ||
+    photoFromProps ||
     studioProfile.avatar ||
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80';
 
@@ -62,7 +72,7 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
       return;
     }
 
-    if (!adminUserId) {
+    if (!effectiveAdminUserId || currentUser?.role !== 'admin') {
       setErrorMessage('Admin session is required to update the studio photo.');
       return;
     }
@@ -83,19 +93,19 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
   };
 
   const handleSaveCroppedPhoto = async (croppedBlob: Blob, fileExtension: string) => {
-    if (!adminUserId) {
-      setErrorMessage('Admin user ID is missing.');
+    if (!effectiveAdminUserId || currentUser?.role !== 'admin') {
+      setErrorMessage('Admin session is required to update the studio photo.');
       return;
     }
 
-    const previousPhotoUrl = currentPhoto || studioProfile.avatar;
+    const previousPhotoUrl = photoFromProps || studioProfile.avatar;
     setIsUploading(true);
 
     try {
-      // Strictly upload to: avatars/{adminUserId}/studio-{timestamp}.{extension}
+      // Upload via storage utility
       const result = await uploadStudioWebsitePhoto(
         croppedBlob,
-        adminUserId,
+        effectiveAdminUserId,
         `studio-cropped.${fileExtension}`
       );
 
@@ -108,9 +118,11 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
       // Update immediate local preview
       setPreviewUrl(newPublicUrl);
 
-      // Persist to studioProfile in AppContext & LocalStorage (controls public homepage "Meet The Designer")
-      // CRITICAL: Does NOT call updateUserProfile, ensuring personal account photos remain completely separate!
-      updateStudioProfile({ avatar: newPublicUrl });
+      // Persist to studioProfile in AppContext, LocalStorage, and Supabase DB
+      const updateResult = await updateStudioProfile({ avatar: newPublicUrl });
+      if (updateResult && !updateResult.success) {
+        console.warn('Database sync notice for studio profile:', updateResult.error);
+      }
 
       if (onPhotoUpdated) {
         onPhotoUpdated(newPublicUrl);
@@ -118,11 +130,11 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
 
       handleCloseEditor();
 
-      setSuccessMessage('Studio / Website photo updated! Live on public homepage.');
+      setSuccessMessage('Studio Lead Photo updated! Live on public homepage.');
 
-      // Storage cleanup: delete previous studio photo from admin's folder
+      // Storage cleanup: safely delete previous studio photo from admin's folder
       if (previousPhotoUrl && previousPhotoUrl !== newPublicUrl) {
-        deletePreviousUserPhoto(previousPhotoUrl, adminUserId, 'studio');
+        deletePreviousUserPhoto(previousPhotoUrl, effectiveAdminUserId, 'studio');
       }
 
       setTimeout(() => {
@@ -143,10 +155,10 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 sm:p-5 rounded-2xl bg-zinc-50 border border-zinc-200">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 sm:p-5 rounded-2xl bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A]">
         {/* Studio Photo Preview in Rounded Frame matching Homepage Bento Tile */}
         <div className="relative group shrink-0">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-orange-500/20 shadow-md bg-zinc-900">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-[#EA580C]/20 shadow-md bg-zinc-900">
             <img
               src={displayedPhoto}
               alt="Studio Lead Photo"
@@ -168,7 +180,7 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
             disabled={isUploading}
             title="Change Studio Photo"
             aria-label="Change Studio Photo"
-            className="absolute -bottom-1 -right-1 p-2 rounded-xl bg-zinc-900 text-white hover:bg-orange-600 transition-colors shadow-md border-2 border-white focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="absolute -bottom-1 -right-1 p-2 rounded-xl bg-[#18181B] dark:bg-[#27272A] text-white hover:bg-[#EA580C] dark:hover:bg-[#EA580C] transition-colors shadow-md border-2 border-white dark:border-[#18181B] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EA580C] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <Camera className="w-4 h-4" />
           </button>
@@ -177,15 +189,15 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
         {/* Action Controls & Description */}
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 text-[10px] font-mono-code font-bold uppercase flex items-center gap-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-orange-50 dark:bg-orange-950/40 text-[#EA580C] dark:text-orange-400 border border-orange-200 dark:border-orange-900/50 text-[10px] font-mono font-bold uppercase flex items-center gap-1">
               <Sparkles className="w-2.5 h-2.5" />
               Public Homepage Representation
             </span>
           </div>
 
           <div>
-            <span className="block text-xs sm:text-sm font-bold text-zinc-900">{label}</span>
-            <p className="text-xs text-zinc-500 font-medium leading-relaxed">{description}</p>
+            <span className="block text-xs sm:text-sm font-bold text-[#18181B] dark:text-[#EDEDEC]">{label}</span>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-normal leading-relaxed">{description}</p>
           </div>
 
           <div className="flex items-center gap-3 pt-1">
@@ -204,11 +216,11 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
               id="btn-upload-studio-photo"
               onClick={handleTriggerUpload}
               disabled={isUploading}
-              className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-orange-600 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#18181B] dark:bg-[#EDEDEC] hover:bg-[#EA580C] dark:hover:bg-[#EA580C] text-white dark:text-[#18181B] dark:hover:text-white text-xs font-bold transition-all flex items-center gap-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {isUploading ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-400" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#EA580C]" />
                   <span>Processing Studio Photo...</span>
                 </>
               ) : (
@@ -226,7 +238,7 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
       {errorMessage && (
         <div
           role="alert"
-          className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-start gap-2 animate-fadeIn"
+          className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400 text-xs font-medium flex items-start gap-2 animate-fadeIn"
         >
           <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
           <div className="flex-1">
@@ -235,7 +247,7 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
           <button
             type="button"
             onClick={() => setErrorMessage(null)}
-            className="text-rose-500 hover:text-rose-700 text-xs font-bold px-1"
+            className="text-rose-500 hover:text-rose-700 text-xs font-bold px-1 cursor-pointer"
           >
             ✕
           </button>
@@ -246,9 +258,9 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
       {successMessage && (
         <div
           role="status"
-          className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2 animate-fadeIn"
+          className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-xs font-medium flex items-center gap-2 animate-fadeIn"
         >
-          <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{successMessage}</span>
         </div>
       )}

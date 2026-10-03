@@ -144,13 +144,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   const commissionMessages = messages.filter(m => m.commissionId === commission.id);
 
   const scrollToBottom = useCallback((smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+    if (messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
   }, []);
 
   // Fetch history & subscribe to realtime
@@ -164,7 +170,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       if (!isCancelled) {
         setIsLoadingHistory(false);
         markMessagesAsRead(commission.id);
-        setTimeout(() => scrollToBottom(false), 50);
+        requestAnimationFrame(() => {
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+          }
+        });
       }
     };
 
@@ -357,7 +367,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         <div className="flex-1 flex flex-col min-w-0 h-full bg-white dark:bg-[#121215]">
           
           {/* Scrollable Message Timeline */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+          <div 
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4"
+          >
             
             {/* Loading Skeletons */}
             {isLoadingHistory ? (
@@ -532,8 +545,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 );
               })
             )}
-
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Attachment Preview Banner Before Sending */}

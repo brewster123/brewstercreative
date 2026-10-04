@@ -30,19 +30,24 @@ import {
 
 interface AdminDeliverablesSectionProps {
   commission: Commission;
-  currentUser: User | null;
+  currentUser?: User | null;
   onDeliverableUploaded?: (deliverable: CommissionDeliverable) => void;
 }
 
 export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> = ({
   commission,
-  currentUser,
+  currentUser: propUser,
   onDeliverableUploaded,
 }) => {
-  const { dispatchNotification } = useApp();
+  const { currentUser: contextUser, dispatchNotification, updateCommissionStage } = useApp();
+  const currentUser = propUser || contextUser;
   const [deliverables, setDeliverables] = useState<CommissionDeliverable[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Mark Completed action state
+  const [isCompleting, setIsCompleting] = useState<boolean>(false);
+  const [completionSuccess, setCompletionSuccess] = useState<string | null>(null);
 
   // Upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -210,7 +215,52 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
     }
   };
 
+  const normStatus = (commission.status || '').toLowerCase().trim();
+  const isFinalApproval = normStatus === 'final_approval' || normStatus === 'final approval';
+  const isAlreadyCompleted = normStatus === 'completed' || commission.currentStage === 8;
   const isStageReadyForDelivery = commission.currentStage >= 7;
+
+  // Handle explicit admin action to complete the project
+  const handleMarkCompleted = async () => {
+    if (!currentUser || currentUser.role !== 'admin') {
+      setActionError('Permission denied: Only administrators can complete commissions.');
+      return;
+    }
+
+    if (!isFinalApproval) {
+      setActionError(`Cannot complete commission: Current status is "${commission.status}". Project must be in "final_approval" after creative proof approval.`);
+      return;
+    }
+
+    if (deliverables.length === 0) {
+      setActionError('Please upload at least one final production deliverable before marking this commission as completed.');
+      return;
+    }
+
+    setIsCompleting(true);
+    setActionError(null);
+    setCompletionSuccess(null);
+
+    try {
+      const res = await updateCommissionStage(
+        commission.id,
+        8,
+        'Final Delivery',
+        'Project marked completed by administrator. All final deliverables deployed to client portal.'
+      );
+
+      if (!res.success) {
+        setActionError(res.error || 'Failed to mark commission as completed in database.');
+        return;
+      }
+
+      setCompletionSuccess('✓ Commission successfully marked as completed! Milestone advanced to Stage 08 (100%).');
+    } catch (err: any) {
+      setActionError(err?.message || 'An unexpected error occurred while completing the commission.');
+    } finally {
+      setIsCompleting(false);
+    }
+  };
 
   return (
     <div className="bg-white border border-zinc-200 rounded-[28px] p-6 space-y-6 shadow-xs">
@@ -237,7 +287,12 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
         </div>
 
         <div className="flex items-center gap-2">
-          {isStageReadyForDelivery ? (
+          {isAlreadyCompleted ? (
+            <span className="px-3 py-1 rounded-xl bg-zinc-900 text-white border border-zinc-900 text-xs font-mono-code font-bold flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              Completed (Stage 08)
+            </span>
+          ) : isStageReadyForDelivery ? (
             <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-mono-code font-bold flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Ready for Delivery
@@ -255,6 +310,74 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
         <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium">
           <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
           <span>{actionError}</span>
+        </div>
+      )}
+
+      {completionSuccess && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 font-medium">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+          <span>{completionSuccess}</span>
+        </div>
+      )}
+
+      {/* Completion Action Banner for final_approval */}
+      {isFinalApproval && (
+        <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-mono-code text-[10px] uppercase tracking-wider text-emerald-800 font-bold px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-200">
+                Action Required · Stage 07 Approved
+              </span>
+            </div>
+            <h5 className="font-display font-bold text-sm text-zinc-900">
+              Ready to Finalize Commission
+            </h5>
+            <p className="text-xs text-zinc-600">
+              The creative proof has been approved by the client. Once all production assets are uploaded below, mark this commission as completed to finalize the engagement and update the client portal.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleMarkCompleted}
+            disabled={isCompleting || deliverables.length === 0}
+            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+            title={deliverables.length === 0 ? "Upload at least one final deliverable before completing" : "Mark Commission Completed"}
+          >
+            {isCompleting ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Completing...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Mark Commission Completed</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Already Completed Status Banner */}
+      {isAlreadyCompleted && (
+        <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+            <div>
+              <h5 className="font-bold text-xs text-zinc-900">
+                Commission Completed · Stage 08 (100%)
+              </h5>
+              <p className="text-[11px] text-zinc-500">
+                This project has been finalized and completed. All master files are released to the client.
+              </p>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono-code font-bold">
+            Archived / Complete
+          </span>
         </div>
       )}
 
@@ -455,6 +578,33 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Bottom completion CTA if deliverables exist and project is in final_approval */}
+        {isFinalApproval && deliverables.length > 0 && (
+          <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-zinc-100">
+            <span className="text-xs text-zinc-500 font-medium">
+              All deliverables uploaded? Finalize and complete this commission.
+            </span>
+            <button
+              type="button"
+              onClick={handleMarkCompleted}
+              disabled={isCompleting}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            >
+              {isCompleting ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Completing...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Mark Commission Completed</span>
+                </>
+              )}
+            </button>
           </div>
         )}
       </div>

@@ -2,18 +2,20 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PortfolioCard } from '../components/PortfolioCard';
 import { PortfolioModal } from '../components/PortfolioModal';
-import { Search, Layers, Send } from 'lucide-react';
+import { PortfolioProject } from '../types';
+import { Search, Layers, Send, Sparkles } from 'lucide-react';
 
 export const PortfolioView: React.FC = () => {
   const { 
     portfolio, 
-    selectedPortfolioProject, 
-    setSelectedPortfolioProject,
+    openCaseStudy,
     setActiveView
   } = useApp();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'client' | 'concept'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [quickPreviewProject, setQuickPreviewProject] = useState<PortfolioProject | null>(null);
 
   const categories = [
     'All',
@@ -27,19 +29,32 @@ export const PortfolioView: React.FC = () => {
   ];
 
   const filteredProjects = portfolio.filter((project) => {
-    const matchesCategory = selectedCategory === 'All' || project.category.toLowerCase() === selectedCategory.toLowerCase();
-    const matchesSearch = 
-      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.shortDesc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      project.tools.some(tool => tool.toLowerCase().includes(searchQuery.toLowerCase()));
+    // 1. Category Filter
+    const matchesCategory = 
+      selectedCategory === 'All' || 
+      project.category.toLowerCase() === selectedCategory.toLowerCase();
 
-    return matchesCategory && matchesSearch;
+    // 2. Project Type Filter ('client' vs 'concept')
+    const projectType = project.projectType || 'client';
+    const matchesType = 
+      typeFilter === 'all' || 
+      projectType === typeFilter;
+
+    // 3. Keyword Search Filter
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch = 
+      !query ||
+      project.title.toLowerCase().includes(query) ||
+      project.shortDesc.toLowerCase().includes(query) ||
+      project.client.toLowerCase().includes(query) ||
+      (project.tags && project.tags.some(t => t.toLowerCase().includes(query))) ||
+      (project.tools && project.tools.some(tool => tool.toLowerCase().includes(query)));
+
+    return matchesCategory && matchesType && matchesSearch;
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-12 sm:space-y-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10 sm:space-y-14">
       
       {/* Editorial Exhibition Header */}
       <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-8 sm:pb-12">
@@ -47,7 +62,7 @@ export const PortfolioView: React.FC = () => {
           <div className="space-y-3 max-w-2xl">
             <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
-              <span>Exhibition Archive</span>
+              <span>Exhibition Archive & Case Studies</span>
             </div>
 
             <h1 className="font-display text-3xl sm:text-5xl lg:text-5.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
@@ -55,7 +70,7 @@ export const PortfolioView: React.FC = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
-              An ongoing catalog of commissioned brand marks, typographic systems, screen-print posters, digital illustrations, and publication designs.
+              An ongoing catalog of commissioned brand marks, typographic systems, screen-print posters, digital illustrations, and experimental studio R&D.
             </p>
           </div>
 
@@ -65,10 +80,65 @@ export const PortfolioView: React.FC = () => {
         </div>
       </div>
 
-      {/* Editorial Category Navigation & Search */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-5 border-b border-[#E4E2DC] dark:border-[#27272A] pb-4">
+      {/* Filter Control Ribbon: Project Type Toggles + Category Navigation + Search */}
+      <div className="space-y-4 border-b border-[#E4E2DC] dark:border-[#27272A] pb-5">
         
-        {/* Simple Text Navigation Filter (No chunky pills) */}
+        {/* Row 1: Project Type Tabs & Search */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          
+          {/* Classification Toggles */}
+          <div className="inline-flex p-1 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] self-start">
+            <button
+              type="button"
+              onClick={() => setTypeFilter('all')}
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                typeFilter === 'all'
+                  ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-bold'
+                  : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+              }`}
+            >
+              All Works
+            </button>
+            <button
+              type="button"
+              onClick={() => setTypeFilter('client')}
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                typeFilter === 'client'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs font-bold border border-emerald-200 dark:border-emerald-800/40'
+                  : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+              }`}
+            >
+              Client Work
+            </button>
+            <button
+              type="button"
+              onClick={() => setTypeFilter('concept')}
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                typeFilter === 'concept'
+                  ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 shadow-2xs font-bold border border-purple-200 dark:border-purple-800/40'
+                  : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+              }`}
+            >
+              Concept Explorations
+            </button>
+          </div>
+
+          {/* Minimal Search Input */}
+          <div className="relative w-full sm:w-72 shrink-0">
+            <Search className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              id="input-portfolio-search"
+              type="text"
+              placeholder="Search archive, tools, client..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
+            />
+          </div>
+
+        </div>
+
+        {/* Row 2: Category Navigation Strip */}
         <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-1" aria-label="Portfolio categories">
           {categories.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
@@ -93,18 +163,6 @@ export const PortfolioView: React.FC = () => {
           })}
         </nav>
 
-        {/* Minimal Search Input */}
-        <div className="relative w-full md:w-72 shrink-0">
-          <Search className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            id="input-portfolio-search"
-            type="text"
-            placeholder="Search archive, tools, client..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
-          />
-        </div>
       </div>
 
       {/* Art-Directed Gallery Grid with Visual Rhythm */}
@@ -116,21 +174,25 @@ export const PortfolioView: React.FC = () => {
               No archived works found
             </h3>
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
-              No matching pieces were found for "{searchQuery}" in {selectedCategory}.
+              No matching pieces were found matching your current filter criteria.
             </p>
           </div>
           <button
             type="button"
-            onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }}
+            onClick={() => { 
+              setSelectedCategory('All'); 
+              setTypeFilter('all');
+              setSearchQuery(''); 
+            }}
             className="px-4 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] hover:bg-[#F4F2ED] dark:hover:bg-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] transition-colors cursor-pointer"
           >
-            Clear Filters
+            Reset All Filters
           </button>
         </div>
       ) : (
         <div className="space-y-8 sm:space-y-12">
           {/* Asymmetric Exhibition Flow: Leading Piece is Featured if on All / no search */}
-          {selectedCategory === 'All' && !searchQuery && filteredProjects.length >= 3 ? (
+          {selectedCategory === 'All' && typeFilter === 'all' && !searchQuery && filteredProjects.length >= 3 ? (
             <>
               {/* Primary Anchor: Large Featured Project + Two Smaller Projects */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -138,7 +200,8 @@ export const PortfolioView: React.FC = () => {
                   <PortfolioCard
                     project={filteredProjects[0]}
                     variant="featured"
-                    onSelect={(p) => setSelectedPortfolioProject(p)}
+                    onSelect={(p) => openCaseStudy(p)}
+                    onPreview={(p) => setQuickPreviewProject(p)}
                   />
                 </div>
 
@@ -146,13 +209,15 @@ export const PortfolioView: React.FC = () => {
                   <PortfolioCard
                     project={filteredProjects[1]}
                     variant="compact"
-                    onSelect={(p) => setSelectedPortfolioProject(p)}
+                    onSelect={(p) => openCaseStudy(p)}
+                    onPreview={(p) => setQuickPreviewProject(p)}
                   />
                   {filteredProjects[2] && (
                     <PortfolioCard
                       project={filteredProjects[2]}
                       variant="compact"
-                      onSelect={(p) => setSelectedPortfolioProject(p)}
+                      onSelect={(p) => openCaseStudy(p)}
+                      onPreview={(p) => setQuickPreviewProject(p)}
                     />
                   )}
                 </div>
@@ -164,7 +229,8 @@ export const PortfolioView: React.FC = () => {
                   <PortfolioCard
                     project={filteredProjects[3]}
                     variant="wide"
-                    onSelect={(p) => setSelectedPortfolioProject(p)}
+                    onSelect={(p) => openCaseStudy(p)}
+                    onPreview={(p) => setQuickPreviewProject(p)}
                   />
                 </div>
               )}
@@ -177,7 +243,8 @@ export const PortfolioView: React.FC = () => {
                       key={project.id}
                       project={project}
                       variant="standard"
-                      onSelect={(p) => setSelectedPortfolioProject(p)}
+                      onSelect={(p) => openCaseStudy(p)}
+                      onPreview={(p) => setQuickPreviewProject(p)}
                     />
                   ))}
                 </div>
@@ -192,7 +259,8 @@ export const PortfolioView: React.FC = () => {
                   project={project}
                   variant={index === 0 && filteredProjects.length > 1 ? 'featured' : 'standard'}
                   className={index === 0 && filteredProjects.length > 1 ? 'md:col-span-2' : ''}
-                  onSelect={(p) => setSelectedPortfolioProject(p)}
+                  onSelect={(p) => openCaseStudy(p)}
+                  onPreview={(p) => setQuickPreviewProject(p)}
                 />
               ))}
             </div>
@@ -226,11 +294,11 @@ export const PortfolioView: React.FC = () => {
         </div>
       </section>
 
-      {/* Deep Dive Project Modal */}
-      {selectedPortfolioProject && (
+      {/* Quick Visual Preview Modal (Lightweight lightbox option) */}
+      {quickPreviewProject && (
         <PortfolioModal
-          project={selectedPortfolioProject}
-          onClose={() => setSelectedPortfolioProject(null)}
+          project={quickPreviewProject}
+          onClose={() => setQuickPreviewProject(null)}
         />
       )}
 

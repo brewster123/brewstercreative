@@ -80,7 +80,8 @@ export async function getProofSignedUrl(
  * Submits a client review action via the verified SECURITY DEFINER RPC.
  * 
  * SECURITY BOUNDARY:
- * - All reviews MUST go through supabase.rpc('client_review_commission_proof', ...).
+ * - Revision requests MUST go through supabase.rpc('client_review_commission_proof', ...).
+ * - Proof approvals MUST go through supabase.rpc('client_approve_commission', ...) via approveCommissionProofRpc().
  * - NEVER performs direct supabase.from('commission_proofs').update(...).
  */
 export async function submitClientReviewRpc(
@@ -90,6 +91,14 @@ export async function submitClientReviewRpc(
 ): Promise<{ data: CommissionProof | null; error: string | null }> {
   if (!proofId) {
     return { data: null, error: 'Proof ID is required for review.' };
+  }
+
+  // Enforce atomic approval boundary: direct approval via this legacy RPC is blocked
+  if (status === 'approved') {
+    return {
+      data: null,
+      error: 'Direct proof approval via submitClientReviewRpc is blocked. Use approveCommissionProofRpc(commissionId, proofId) to ensure atomic milestone recording.',
+    };
   }
 
   const trimmedNote = revisionNote ? revisionNote.trim() : null;
@@ -122,6 +131,48 @@ export async function submitClientReviewRpc(
     return {
       data: null,
       error: err?.message || 'An unexpected error occurred during review submission.',
+    };
+  }
+}
+
+/**
+ * Atomically approves a creative proof via the verified client_approve_commission RPC.
+ * - Verifies authenticated client ownership
+ * - Confirms commission is strictly 'for_review'
+ * - Confirms proof belongs to commission and is 'pending_review'
+ * - Marks proof 'approved'
+ * - Advances commission status to 'final_approval'
+ * - Appends Stage 7 milestone to public.commission_milestones in the same transaction
+ */
+export async function approveCommissionProofRpc(
+  commissionId: string,
+  proofId: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  if (!commissionId) {
+    return { success: false, error: 'Commission ID is required for approval.' };
+  }
+  if (!proofId) {
+    return { success: false, error: 'Proof ID is required for approval.' };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('client_approve_commission', {
+      p_commission_id: commissionId,
+      p_proof_id: proofId,
+    });
+
+    if (error) {
+      return {
+        success: false,
+        error: error.message || 'Failed to approve creative proof in database.',
+      };
+    }
+
+    return { success: true, data };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || 'An unexpected error occurred during proof approval.',
     };
   }
 }

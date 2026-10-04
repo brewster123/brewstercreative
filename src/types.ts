@@ -307,6 +307,29 @@ export interface ServiceItem {
   relatedShopProductIds?: string[];
 }
 
+export type ProjectType = 'client' | 'concept';
+
+export interface CaseStudyMediaItem {
+  id?: string;
+  url: string;
+  caption?: string;
+  type?: 'image' | 'video' | 'comparison';
+  aspectRatio?: string;
+}
+
+export interface CaseStudyContent {
+  overview?: string;
+  challenge?: string;
+  objective?: string;
+  researchInspiration?: string;
+  conceptDevelopment?: string;
+  designDecisions?: string;
+  finalSolution?: string;
+  reflection?: string;
+  deliverablesSummary?: string[];
+  media?: Record<string, CaseStudyMediaItem[]>;
+}
+
 export interface PortfolioProject {
   id: string;
   title: string;
@@ -324,6 +347,14 @@ export interface PortfolioProject {
 
   // Cross-selling metadata (Phase 4D.2: Portfolio -> Shop)
   relatedShopProductIds?: string[];
+
+  // Phase 5F: Social Portfolio & Case Study Studio
+  projectType?: ProjectType;
+  serviceId?: string;
+  commissionId?: string;
+  caseStudy?: CaseStudyContent;
+  likesCount?: number;
+  viewsCount?: number;
 }
 
 export interface StudioProfile {

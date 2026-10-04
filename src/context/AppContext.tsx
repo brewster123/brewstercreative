@@ -37,6 +37,7 @@ import {
   updateCommissionPriorityInSupabase,
   updateCommissionPaymentInSupabase,
   requestCommissionRevisionInSupabase,
+  approveCommissionInSupabase,
   subscribeToCommissionsChange,
   mapDbCommissionToAppCommission,
   getStageAndProgressFromStatus,
@@ -67,6 +68,12 @@ import {
   deletePortfolioProjectFromDb,
   subscribeToPublicContentChanges,
 } from '../lib/studioContent';
+import {
+  toggleProjectLike,
+  recordPortfolioViewDebounced,
+  fetchUserLikedProjectIds,
+  extractCaseStudyIdFromHash,
+} from '../lib/portfolio';
 
 export type AppView = 
   | 'home'
@@ -79,7 +86,8 @@ export type AppView =
   | 'shop'
   | 'product-detail'
   | 'settings'
-  | 'chat';
+  | 'chat'
+  | 'case-study';
 
 export type AppTheme = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
@@ -98,6 +106,10 @@ interface AppContextType {
   setActiveCommissionId: (id: string) => void;
   selectedPortfolioProject: PortfolioProject | null;
   setSelectedPortfolioProject: (p: PortfolioProject | null) => void;
+  openCaseStudy: (project: PortfolioProject) => void;
+  closeCaseStudy: () => void;
+  toggleProjectLikeInContext: (projectId: string) => Promise<{ liked: boolean; likesCount: number; error: string | null }>;
+  recordProjectViewInContext: (projectId: string) => Promise<{ viewsCount: number | null; error: string | null }>;
   preselectedService: string | null;
   setPreselectedService: (serviceName: string | null) => void;
   selectedShopProduct: ShopProduct | null;
@@ -158,7 +170,8 @@ interface AppContextType {
   updatePaymentStatus: (commissionId: string, status: 'Unpaid' | 'Partial' | 'Paid') => Promise<{ success: boolean; error?: string }> | void;
   acceptCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
   declineCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
-  submitClientReviewAction: (commissionId: string, action: 'approve' | 'revision', feedback?: string) => Promise<{ success: boolean; error?: string }> | void;
+  submitClientReviewAction: (commissionId: string, action: 'approve' | 'revision', feedback?: string, proofId?: string) => Promise<{ success: boolean; error?: string }> | void;
+  approveCommissionWithProof: (commissionId: string, proofId: string) => Promise<{ success: boolean; error?: string }>;
   deliverFinalFiles: (commissionId: string, finalPackage: FinalFilesPackage) => void;
   uploadDesignForReview: (commissionId: string, previewImages: string[], reviewNotes: string) => void;
   uploadDesignReviewDraft: (commissionId: string, previewImages: string[], reviewNotes: string) => void;
@@ -271,9 +284,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => mediaQuery.removeEventListener('change', listener);
   }, [theme]);
 
-  const [activeView, setActiveView] = useState<AppView>('home');
+  const [activeView, setActiveView] = useState<AppView>(() => {
+    if (typeof window !== 'undefined') {
+      const caseStudyId = extractCaseStudyIdFromHash(window.location.hash);
+      if (caseStudyId) {
+        return 'case-study';
+      }
+    }
+    return 'home';
+  });
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>('');
-  const [selectedPortfolioProject, setSelectedPortfolioProject] = useState<PortfolioProject | null>(null);
+  const [selectedPortfolioProject, setSelectedPortfolioProject] = useState<PortfolioProject | null>(() => {
+    if (typeof window !== 'undefined') {
+      const caseStudyId = extractCaseStudyIdFromHash(window.location.hash);
+      if (caseStudyId) {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEYS.PORTFOLIO);
+          if (saved) {
+            const list: PortfolioProject[] = JSON.parse(saved);
+            const found = list.find((p) => p.id === caseStudyId);
+            if (found) return found;
+          }
+        } catch {}
+        const fallback = INITIAL_PORTFOLIO.find((p) => p.id === caseStudyId);
+        if (fallback) return fallback;
+      }
+    }
+    return null;
+  });
   const [preselectedService, setPreselectedService] = useState<string | null>(null);
   const [selectedShopProduct, setSelectedShopProduct] = useState<ShopProduct | null>(null);
   const [selectedShopCategory, setSelectedShopCategory] = useState<ShopCategoryName>('All');
@@ -324,10 +362,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const parsed: PortfolioProject[] = JSON.parse(saved);
         return parsed.map((p) => {
           const init = INITIAL_PORTFOLIO.find((ip) => ip.id === p.id);
+          const rawLikes = p.likesCount != null ? Number(p.likesCount) : (init?.likesCount ?? 0);
+          const rawViews = p.viewsCount != null ? Number(p.viewsCount) : (init?.viewsCount ?? 0);
+          const item: PortfolioProject = {
+            ...p,
+            likesCount: !isNaN(rawLikes) ? rawLikes : 0,
+            viewsCount: !isNaN(rawViews) ? rawViews : 0,
+            projectType: p.projectType || init?.projectType || 'client',
+          };
           if (init?.relatedShopProductIds && !p.relatedShopProductIds) {
-            return { ...p, relatedShopProductIds: init.relatedShopProductIds };
+            item.relatedShopProductIds = init.relatedShopProductIds;
           }
-          return p;
+          return item;
         });
       } catch (e) {
         return INITIAL_PORTFOLIO;
@@ -472,10 +518,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [currentUser?.id]);
 
-  // Phase 5D: Mount query to hydrate Studio Profile, Services, and Portfolio from Supabase
+  // Phase 5D & 5F: Mount query to hydrate Studio Profile, Services, and Portfolio from Supabase
   useEffect(() => {
     let isMounted = true;
-    if (!isSupabaseConfigured()) return;
+
+    // Helper to resolve deep-link hash against hydrated projects
+    const resolveHashProject = (projects: PortfolioProject[]) => {
+      if (typeof window === 'undefined') return;
+      const requestedId = extractCaseStudyIdFromHash(window.location.hash);
+      if (!requestedId) return;
+
+      const found = projects.find((p) => p.id === requestedId) ||
+                    INITIAL_PORTFOLIO.find((p) => p.id === requestedId);
+      if (found) {
+        setSelectedPortfolioProject(found);
+        setActiveView('case-study');
+      } else {
+        // Nonexistent project hash -> return gracefully to home
+        setActiveView('home');
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+
+    if (!isSupabaseConfigured()) {
+      // Offline / unconfigured environment: resolve hash against local/initial portfolio
+      resolveHashProject(portfolio);
+      return;
+    }
 
     // 1. Fetch Studio Profile
     fetchStudioProfileFromDb().then(({ data, error }) => {
@@ -493,10 +562,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 3. Fetch Portfolio Projects
     fetchPortfolioProjectsFromDb().then(({ data, error }) => {
-      if (!error && data && data.length > 0 && isMounted) {
+      if (!isMounted) return;
+      if (!error && data && data.length > 0) {
         setPortfolio(data);
+        try {
+          localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(data));
+        } catch {}
+
+        resolveHashProject(data);
+      } else {
+        // Fallback to local portfolio / INITIAL_PORTFOLIO
+        resolveHashProject(portfolio);
       }
     });
+
+    // Hydrate user liked project IDs for authenticated accounts
+    fetchUserLikedProjectIds();
 
     // Realtime changes listener for public content
     const unsubscribe = subscribeToPublicContentChanges({
@@ -512,7 +593,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       },
       onPortfolioChanged: () => {
         fetchPortfolioProjectsFromDb().then(({ data }) => {
-          if (data && isMounted) setPortfolio(data);
+          if (data && isMounted) {
+            setPortfolio(data);
+            setSelectedPortfolioProject((prev) => {
+              if (!prev) return null;
+              const refreshed = data.find((p) => p.id === prev.id);
+              return refreshed || prev;
+            });
+          }
         });
       },
     });
@@ -1608,16 +1696,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return await updateCommissionStatus(commissionId, 'cancelled');
   };
 
+  const approveCommissionWithProof = async (
+    commissionId: string,
+    proofId: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    return await submitClientReviewAction(commissionId, 'approve', undefined, proofId);
+  };
+
   const submitClientReviewAction = async (
     commissionId: string, 
     action: 'approve' | 'revision', 
-    feedback?: string
+    feedback?: string,
+    proofId?: string
   ): Promise<{ success: boolean; error?: string }> => {
     const todayStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     const comm = commissions.find(c => c.id === commissionId);
     if (!comm) return { success: false, error: 'Commission not found.' };
 
     if (action === 'approve') {
+      // Phase 5E-3: Atomic client approval via SECURITY DEFINER RPC
+      // Validates client ownership, checks 'for_review', marks proof 'approved',
+      // advances commission status to 'final_approval', and inserts Stage 7 milestone.
+      if (isSupabaseConfigured()) {
+        if (!proofId) {
+          console.error('[AppContext] Proof ID is required for atomic client proof approval.');
+          return { success: false, error: 'Proof ID is required for client approval.' };
+        }
+
+        const approveRes = await approveCommissionInSupabase(commissionId, proofId);
+        if (!approveRes.success) {
+          console.error('[AppContext] Supabase client_approve_commission RPC rejected:', approveRes.error);
+          return { success: false, error: approveRes.error || 'Failed to approve creative proof in database.' };
+        }
+      }
+
       // Move to Final Approval (Stage 7)
       setCommissions(prev =>
         prev.map(c => {
@@ -1637,11 +1749,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return c;
         })
       );
-
-      // Persist canonical final_approval status to Supabase
-      updateCommissionStatusInSupabase(commissionId, 'final_approval').catch(err => {
-        console.error('[AppContext] Failed to persist final_approval to Supabase:', err);
-      });
 
       // Add timeline
       setTimelineUpdates(prev => [
@@ -2324,6 +2431,117 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSelectedCommissionId(id);
   };
 
+  const openCaseStudy = (project: PortfolioProject) => {
+    setSelectedPortfolioProject(project);
+    setActiveView('case-study');
+    if (typeof window !== 'undefined') {
+      window.location.hash = `case-study-${project.id}`;
+    }
+  };
+
+  const closeCaseStudy = () => {
+    setSelectedPortfolioProject(null);
+    setActiveView('portfolio');
+    if (typeof window !== 'undefined' && window.location.hash.startsWith('#case-study-')) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  };
+
+  const toggleProjectLikeInContext = async (
+    projectId: string
+  ): Promise<{ liked: boolean; likesCount: number; error: string | null }> => {
+    const res = await toggleProjectLike(projectId);
+    if (!res.error) {
+      setPortfolio((prev) => {
+        const next = prev.map((p) => {
+          if (p.id === projectId) {
+            return { ...p, likesCount: res.likesCount };
+          }
+          return p;
+        });
+        try {
+          localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+      setSelectedPortfolioProject((prev) => {
+        if (prev && prev.id === projectId) {
+          return { ...prev, likesCount: res.likesCount };
+        }
+        return prev;
+      });
+    }
+    return res;
+  };
+
+  const recordProjectViewInContext = async (
+    projectId: string
+  ): Promise<{ viewsCount: number | null; error: string | null }> => {
+    const res = await recordPortfolioViewDebounced(projectId);
+    if (!res.error && res.viewsCount !== null) {
+      setPortfolio((prev) => {
+        const next = prev.map((p) => {
+          if (p.id === projectId) {
+            return { ...p, viewsCount: res.viewsCount! };
+          }
+          return p;
+        });
+        try {
+          localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+      setSelectedPortfolioProject((prev) => {
+        if (prev && prev.id === projectId) {
+          return { ...prev, viewsCount: res.viewsCount! };
+        }
+        return prev;
+      });
+    }
+    return res;
+  };
+
+  // Deep-linking: Support #case-study-{projectId} & browser back/forward
+  useEffect(() => {
+    const handleHashNavigation = () => {
+      if (typeof window === 'undefined') return;
+      const hash = window.location.hash || '';
+      const projId = extractCaseStudyIdFromHash(hash);
+      if (projId) {
+        const found =
+          portfolio.find((p) => p.id === projId) ||
+          INITIAL_PORTFOLIO.find((p) => p.id === projId);
+        if (found) {
+          setSelectedPortfolioProject(found);
+          setActiveView('case-study');
+        } else {
+          fetchPortfolioProjectsFromDb().then(({ data }) => {
+            if (data) {
+              const fresh = data.find((p) => p.id === projId);
+              if (fresh) {
+                setSelectedPortfolioProject(fresh);
+                setActiveView('case-study');
+                return;
+              }
+            }
+            setActiveView('home');
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          });
+        }
+      } else if (activeView === 'case-study' && !projId) {
+        setActiveView('portfolio');
+        setSelectedPortfolioProject(null);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashNavigation);
+    window.addEventListener('popstate', handleHashNavigation);
+    return () => {
+      window.removeEventListener('hashchange', handleHashNavigation);
+      window.removeEventListener('popstate', handleHashNavigation);
+    };
+  }, [portfolio, activeView]);
+
   const uploadDesignReviewDraft = uploadDesignForReview;
 
   return (
@@ -2339,6 +2557,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setActiveCommissionId,
         selectedPortfolioProject,
         setSelectedPortfolioProject,
+        openCaseStudy,
+        closeCaseStudy,
+        toggleProjectLikeInContext,
+        recordProjectViewInContext,
         preselectedService,
         setPreselectedService,
         selectedShopProduct,
@@ -2381,6 +2603,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         acceptCommission,
         declineCommission,
         submitClientReviewAction,
+        approveCommissionWithProof,
         deliverFinalFiles,
         uploadDesignForReview,
         uploadDesignReviewDraft,

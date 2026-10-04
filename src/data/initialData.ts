@@ -174,6 +174,9 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
     tags: ['Brand Identity', 'Packaging', 'Typography', 'Luxury Minimalist'],
     featured: true,
     relatedShopProductIds: ['prod-branding-apex', 'prod-template-pitchdeck'],
+    projectType: 'client',
+    likesCount: 0,
+    viewsCount: 0,
   },
   {
     id: 'proj-2',
@@ -193,6 +196,9 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
     tags: ['Poster Design', 'Key Visual', 'Risograph', 'Typography'],
     featured: true,
     relatedShopProductIds: ['prod-print-swiss', 'prod-template-poster', 'prod-grain-textures'],
+    projectType: 'concept',
+    likesCount: 0,
+    viewsCount: 0,
   },
   {
     id: 'proj-3',
@@ -212,6 +218,9 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
     tags: ['Logo Design', 'Monogram', 'Audio', 'Vector'],
     featured: true,
     relatedShopProductIds: ['prod-vector-badges', 'prod-branding-apex'],
+    projectType: 'client',
+    likesCount: 0,
+    viewsCount: 0,
   },
   {
     id: 'proj-4',
@@ -230,6 +239,9 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
     colorPalette: ['#18181B', '#D97706', '#3B82F6', '#E4E4E7'],
     tags: ['Book Cover', 'Editorial', 'Illustration', 'Print'],
     featured: false,
+    projectType: 'client',
+    likesCount: 0,
+    viewsCount: 0,
   },
   {
     id: 'proj-5',
@@ -247,6 +259,9 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
     colorPalette: ['#172554', '#EA580C', '#FEF08A', '#F1F5F9'],
     tags: ['Illustration', 'Editorial', 'Surrealism', 'Digital Painting'],
     featured: false,
+    projectType: 'concept',
+    likesCount: 0,
+    viewsCount: 0,
   },
   {
     id: 'proj-6',
@@ -265,6 +280,9 @@ export const INITIAL_PORTFOLIO: PortfolioProject[] = [
     tags: ['Social Media', 'Apparel', 'Marketing', 'Templates'],
     featured: false,
     relatedShopProductIds: ['prod-template-social'],
+    projectType: 'client',
+    likesCount: 0,
+    viewsCount: 0,
   },
 ];
 

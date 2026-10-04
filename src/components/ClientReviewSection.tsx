@@ -6,6 +6,7 @@ import {
   formatProofFileSize,
   formatProofFileType,
   getProofStatusMeta,
+  submitClientReviewRpc,
 } from '../lib/proofs';
 import { useApp } from '../context/AppContext';
 import {
@@ -27,7 +28,7 @@ interface ClientReviewSectionProps {
 }
 
 export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commission }) => {
-  const { submitClientReviewAction } = useApp();
+  const { submitClientReviewAction, approveCommissionWithProof } = useApp();
   const [proofs, setProofs] = useState<CommissionProof[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -135,24 +136,37 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
 
   const handleConfirmApprove = async () => {
     if (!approveModalProof) return;
+    if (!commission?.id) {
+      setActionError('Commission record not found.');
+      return;
+    }
+
     setActionError(null);
     setSubmittingProofId(approveModalProof.id);
 
-    const res = await submitClientReviewAction(approveModalProof.id, 'approved');
+    // Atomically approve proof, advance commission to final_approval,
+    // and record Stage 7 milestone in a single transaction via client_approve_commission RPC
+    const res = await approveCommissionWithProof(commission.id, approveModalProof.id);
     setSubmittingProofId(null);
 
-    if (res.success) {
-      setApproveModalProof(null);
-      setSuccessMsg(`Creative Proof v${approveModalProof.version} successfully approved. Milestone advanced.`);
+    if (res && !res.success) {
+      setActionError(res.error || 'Failed to approve creative proof.');
       await loadProofs(true);
-    } else {
-      setActionError(res.error || 'Failed to record approval in database.');
+      return;
     }
+
+    setApproveModalProof(null);
+    setSuccessMsg(`Creative Proof v${approveModalProof.version} successfully approved. Milestone advanced.`);
+    await loadProofs(true);
   };
 
   const handleConfirmRevision = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!revisionModalProof) return;
+    if (!commission?.id) {
+      setActionError('Commission record not found.');
+      return;
+    }
 
     const trimmed = revisionNote.trim();
     if (!trimmed) {
@@ -168,16 +182,27 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
     setRevisionNoteError(null);
     setSubmittingProofId(revisionModalProof.id);
 
-    const res = await submitClientReviewAction(revisionModalProof.id, 'revision_requested', trimmed);
+    // 1. Record revision status and feedback on the proof in public.commission_proofs via RPC
+    const rpcRes = await submitClientReviewRpc(revisionModalProof.id, 'revision_requested', trimmed);
+    if (rpcRes.error) {
+      setSubmittingProofId(null);
+      setActionError(rpcRes.error || 'Failed to submit revision request for proof.');
+      return;
+    }
+
+    // 2. Advance commission lifecycle to 'revision' and increment revisions_used
+    const res = await submitClientReviewAction(commission.id, 'revision', trimmed);
     setSubmittingProofId(null);
 
-    if (res.success) {
-      setRevisionModalProof(null);
-      setSuccessMsg(`Revision requested for Proof v${revisionModalProof.version}. Brewster has been notified.`);
+    if (res && !res.success) {
+      setActionError(res.error || 'Proof revision recorded, but failed to update project status.');
       await loadProofs(true);
-    } else {
-      setActionError(res.error || 'Failed to submit revision request.');
+      return;
     }
+
+    setRevisionModalProof(null);
+    setSuccessMsg(`Revision requested for Proof v${revisionModalProof.version}. Brewster has been notified.`);
+    await loadProofs(true);
   };
 
   const formatUploadDate = (isoString?: string) => {

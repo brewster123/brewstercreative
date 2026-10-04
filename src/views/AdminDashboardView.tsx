@@ -8,7 +8,9 @@ import {
   COMMISSION_STAGES, 
   ServiceItem, 
   PortfolioProject,
-  StudioProfile 
+  StudioProfile,
+  ProjectType,
+  CaseStudyContent
 } from '../types';
 import { ProgressBar } from '../components/ProgressBar';
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
@@ -47,6 +49,8 @@ import {
   Phone,
   Loader2,
   ChevronDown,
+  ChevronUp,
+  BookOpen,
   FileText
 } from 'lucide-react';
 import { loadCustomFontFile, isFontLoaded } from '../utils/fontLoader';
@@ -291,6 +295,7 @@ export const AdminDashboardView: React.FC = () => {
   // Portfolio Management State
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [editingProject, setEditingProject] = useState<PortfolioProject | null>(null);
+  const [isCaseStudyExpanded, setIsCaseStudyExpanded] = useState<boolean>(false);
   const [projectForm, setProjectForm] = useState<Partial<PortfolioProject>>({
     title: '',
     category: 'Branding',
@@ -302,6 +307,9 @@ export const AdminDashboardView: React.FC = () => {
     tools: ['Adobe Illustrator', 'Photoshop'],
     tags: ['Branding', 'Vector'],
     featured: false,
+    projectType: 'client',
+    serviceId: '',
+    caseStudy: {},
   });
 
   // Services Management State
@@ -399,6 +407,7 @@ export const AdminDashboardView: React.FC = () => {
   const handleOpenAddProject = () => {
     setEditingProject(null);
     setProjectSaveError(null);
+    setIsCaseStudyExpanded(false);
     setProjectForm({
       title: '',
       category: 'Branding',
@@ -410,6 +419,9 @@ export const AdminDashboardView: React.FC = () => {
       tools: ['Adobe Illustrator', 'Photoshop'],
       tags: ['Branding', 'Vector'],
       featured: false,
+      projectType: 'client',
+      serviceId: '',
+      caseStudy: {},
     });
     setIsAddingProject(true);
   };
@@ -417,8 +429,25 @@ export const AdminDashboardView: React.FC = () => {
   const handleOpenEditProject = (proj: PortfolioProject) => {
     setEditingProject(proj);
     setProjectSaveError(null);
-    setProjectForm({ ...proj });
+    setIsCaseStudyExpanded(false);
+    setProjectForm({ 
+      ...proj,
+      projectType: proj.projectType || 'client',
+      serviceId: proj.serviceId || '',
+      featured: !!proj.featured,
+      caseStudy: proj.caseStudy || {},
+    });
     setIsAddingProject(true);
+  };
+
+  const handleCaseStudyFieldChange = (field: keyof CaseStudyContent, value: string) => {
+    setProjectForm(prev => ({
+      ...prev,
+      caseStudy: {
+        ...(prev.caseStudy || {}),
+        [field]: value,
+      },
+    }));
   };
 
   const handleSaveProject = async (e: React.FormEvent) => {
@@ -448,6 +477,11 @@ export const AdminDashboardView: React.FC = () => {
           client: projectForm.client || 'Commission Client',
           tags: Array.isArray(projectForm.tags) ? projectForm.tags : ['Design'],
           featured: !!projectForm.featured,
+          projectType: projectForm.projectType || 'client',
+          serviceId: projectForm.serviceId || undefined,
+          caseStudy: projectForm.caseStudy || {},
+          likesCount: 0,
+          viewsCount: 0,
         };
         const res = await addPortfolioProject(newProj);
         if (res && !res.success) {
@@ -1076,6 +1110,7 @@ export const AdminDashboardView: React.FC = () => {
                     <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] animate-in fade-in duration-200">
                       <AdminDeliverablesSection
                         commission={comm}
+                        currentUser={currentUser}
                       />
                     </div>
                   )}
@@ -1341,20 +1376,68 @@ export const AdminDashboardView: React.FC = () => {
 
                     <div>
                       <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
-                        Client
+                        Client / Commission Entity
                       </label>
                       <input
                         type="text"
                         value={projectForm.client}
+                        placeholder="e.g. Acme Studio / Independent Client"
                         onChange={(e) => setProjectForm(prev => ({ ...prev, client: e.target.value }))}
                         className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
                       />
                     </div>
                   </div>
 
+                  {/* Phase 5F: Project Type & Associated Service & Featured Controls */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-lg bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A]">
+                    <div>
+                      <label className="block text-[11px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                        Archive Classification
+                      </label>
+                      <select
+                        value={projectForm.projectType || 'client'}
+                        onChange={(e) => setProjectForm(prev => ({ ...prev, projectType: e.target.value as ProjectType }))}
+                        className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-1.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                      >
+                        <option value="client">Client Work (Commissioned)</option>
+                        <option value="concept">Concept Exploration (Studio R&D)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                        Associated Studio Service
+                      </label>
+                      <select
+                        value={projectForm.serviceId || ''}
+                        onChange={(e) => setProjectForm(prev => ({ ...prev, serviceId: e.target.value || undefined }))}
+                        className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-1.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                      >
+                        <option value="">-- No associated service --</option>
+                        {services.map((svc) => (
+                          <option key={svc.id} value={svc.id}>
+                            {svc.name} ({svc.category})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-2 pt-1 flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-[#18181B] dark:text-[#EDEDEC]">
+                        <input
+                          type="checkbox"
+                          checked={!!projectForm.featured}
+                          onChange={(e) => setProjectForm(prev => ({ ...prev, featured: e.target.checked }))}
+                          className="rounded border-[#E4E2DC] dark:border-[#27272A] text-[#EA580C] focus:ring-[#EA580C] w-4 h-4 cursor-pointer"
+                        />
+                        <span>Feature this project in Curated Exhibition on Home Page</span>
+                      </label>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
-                      Short Description
+                      Short Description / Abstract
                     </label>
                     <textarea
                       rows={2}
@@ -1387,6 +1470,138 @@ export const AdminDashboardView: React.FC = () => {
                         />
                       </label>
                     </div>
+                  </div>
+
+                  {/* Phase 5F: Collapsible Editorial Case Study Narrative Accordion */}
+                  <div className="border border-[#E4E2DC] dark:border-[#27272A] rounded-xl overflow-hidden bg-[#FAF9F6] dark:bg-[#0F0F11]">
+                    <button
+                      type="button"
+                      onClick={() => setIsCaseStudyExpanded(prev => !prev)}
+                      className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-[#EA580C]" />
+                        <span className="font-display text-sm font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                          Editorial Case Study Narrative Chapters
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                        <span>{isCaseStudyExpanded ? 'Collapse' : 'Expand Chapters'}</span>
+                        {isCaseStudyExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </div>
+                    </button>
+
+                    {isCaseStudyExpanded && (
+                      <div className="p-4 sm:p-5 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-4 bg-white dark:bg-[#18181B] animate-in fade-in duration-150">
+                        <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                          Document the deep-dive narrative for the standalone case study page. Blank fields will not be rendered to visitors.
+                        </p>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                            01 / Project Overview & Context
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={projectForm.caseStudy?.overview || ''}
+                            placeholder="Background of the project, client introduction, and overall context..."
+                            onChange={(e) => handleCaseStudyFieldChange('overview', e.target.value)}
+                            className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                            02 / The Challenge & Constraints
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={projectForm.caseStudy?.challenge || ''}
+                            placeholder="Core problems, audience obstacles, or technical hurdles faced..."
+                            onChange={(e) => handleCaseStudyFieldChange('challenge', e.target.value)}
+                            className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                            03 / Strategic Objective
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={projectForm.caseStudy?.objective || ''}
+                            placeholder="Primary aesthetic and functional goals..."
+                            onChange={(e) => handleCaseStudyFieldChange('objective', e.target.value)}
+                            className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                            04 / Research & Aesthetic Inquiries
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={projectForm.caseStudy?.researchInspiration || ''}
+                            placeholder="Visual references, historical typography, texture studies, moodboards..."
+                            onChange={(e) => handleCaseStudyFieldChange('researchInspiration', e.target.value)}
+                            className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                            05 / Concept Development & Iteration
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={projectForm.caseStudy?.conceptDevelopment || ''}
+                            placeholder="Early sketch phases, vector construction, creative pivots..."
+                            onChange={(e) => handleCaseStudyFieldChange('conceptDevelopment', e.target.value)}
+                            className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                            06 / Design Decisions & Rationale
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={projectForm.caseStudy?.designDecisions || ''}
+                            placeholder="Why specific typefaces, color harmonies, and grids were chosen..."
+                            onChange={(e) => handleCaseStudyFieldChange('designDecisions', e.target.value)}
+                            className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                            07 / Final Solution & Master Deliverables
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={projectForm.caseStudy?.finalSolution || ''}
+                            placeholder="The final outcome, brand impact, delivery format..."
+                            onChange={(e) => handleCaseStudyFieldChange('finalSolution', e.target.value)}
+                            className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                            08 / Studio Reflection & Retrospective
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={projectForm.caseStudy?.reflection || ''}
+                            placeholder="Key takeaways, future evolution, lessons learned..."
+                            onChange={(e) => handleCaseStudyFieldChange('reflection', e.target.value)}
+                            className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-2.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-3 flex justify-end gap-2">

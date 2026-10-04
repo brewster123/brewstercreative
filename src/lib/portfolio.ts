@@ -1,8 +1,50 @@
-import { supabase } from './supabase';
-import { PortfolioProject } from '../types';
+import { supabase, isSupabaseConfigured } from './supabase';
+import { PortfolioProject, ProjectType, CaseStudyContent } from '../types';
 
 export const PORTFOLIO_MEDIA_BUCKET = 'portfolio-media';
 export const MAX_PORTFOLIO_IMAGE_BYTES = 20 * 1024 * 1024; // 20 MB
+
+/**
+ * Maps database JSONB case_study column to strongly typed CaseStudyContent.
+ */
+function mapDbCaseStudy(cs: any): CaseStudyContent | undefined {
+  if (!cs || typeof cs !== 'object' || Object.keys(cs).length === 0) {
+    return undefined;
+  }
+  return {
+    overview: cs.overview || undefined,
+    challenge: cs.challenge || undefined,
+    objective: cs.objective || undefined,
+    researchInspiration: cs.research_inspiration || cs.researchInspiration || undefined,
+    conceptDevelopment: cs.concept_development || cs.conceptDevelopment || undefined,
+    designDecisions: cs.design_decisions || cs.designDecisions || undefined,
+    finalSolution: cs.final_solution || cs.finalSolution || undefined,
+    reflection: cs.reflection || undefined,
+    deliverablesSummary: Array.isArray(cs.deliverables_summary || cs.deliverablesSummary)
+      ? cs.deliverables_summary || cs.deliverablesSummary
+      : undefined,
+    media: cs.media && typeof cs.media === 'object' ? cs.media : undefined,
+  };
+}
+
+/**
+ * Maps frontend CaseStudyContent to database JSONB payload.
+ */
+function mapCaseStudyToDb(cs?: CaseStudyContent): any {
+  if (!cs) return {};
+  return {
+    overview: cs.overview || null,
+    challenge: cs.challenge || null,
+    objective: cs.objective || null,
+    research_inspiration: cs.researchInspiration || null,
+    concept_development: cs.conceptDevelopment || null,
+    design_decisions: cs.designDecisions || null,
+    final_solution: cs.finalSolution || null,
+    reflection: cs.reflection || null,
+    deliverables_summary: cs.deliverablesSummary || [],
+    media: cs.media || {},
+  };
+}
 
 /**
  * Maps a database row from public.portfolio_projects to frontend PortfolioProject.
@@ -23,6 +65,14 @@ export function mapDbToPortfolioProject(row: any): PortfolioProject {
     tags: Array.isArray(row.tags) ? row.tags : [],
     featured: !!row.featured,
     relatedShopProductIds: Array.isArray(row.related_shop_product_ids) ? row.related_shop_product_ids : [],
+
+    // Phase 5F: Social Portfolio & Case Study Studio
+    projectType: (row.project_type === 'concept' ? 'concept' : 'client') as ProjectType,
+    serviceId: row.service_id || undefined,
+    commissionId: row.commission_id || undefined,
+    caseStudy: mapDbCaseStudy(row.case_study),
+    likesCount: row.likes_count != null ? Number(row.likes_count) : 0,
+    viewsCount: row.views_count != null ? Number(row.views_count) : 0,
   };
 }
 
@@ -46,6 +96,12 @@ export function mapPortfolioProjectToDb(proj: PortfolioProject, displayOrder: nu
     featured: !!proj.featured,
     related_shop_product_ids: proj.relatedShopProductIds || [],
     display_order: displayOrder,
+
+    // Phase 5F: Social Portfolio & Case Study Studio
+    project_type: proj.projectType || 'client',
+    service_id: proj.serviceId || null,
+    commission_id: proj.commissionId || null,
+    case_study: mapCaseStudyToDb(proj.caseStudy),
     updated_at: new Date().toISOString(),
   };
 }
@@ -172,3 +228,226 @@ export async function uploadPortfolioMedia(
     return { publicUrl: null, error: err?.message || 'Unexpected error uploading portfolio media.' };
   }
 }
+
+/**
+ * Toggles a like for a portfolio project via atomic database RPC.
+ * When Supabase is configured, invokes toggle_portfolio_like on the database.
+ * If offline or unconfigured, updates locally so user interaction succeeds gracefully.
+ */
+export async function togglePortfolioLikeRpc(
+  projectId: string,
+  sessionId: string
+): Promise<{ liked: boolean; likesCount: number; error: string | null }> {
+  if (!projectId || !sessionId) {
+    return { liked: false, likesCount: 0, error: 'Project ID and Session ID are required.' };
+  }
+
+  if (!isSupabaseConfigured()) {
+    const isLiked = isProjectLikedLocally(projectId);
+    const nextLiked = !isLiked;
+    let count = 0;
+    try {
+      const saved = localStorage.getItem('cabando_portfolio_v3');
+      if (saved) {
+        const list = JSON.parse(saved);
+        const item = list.find((p: any) => p.id === projectId);
+        if (item && typeof item.likesCount === 'number') {
+          count = item.likesCount;
+        }
+      }
+    } catch {}
+    const newCount = nextLiked ? count + 1 : Math.max(0, count - 1);
+    return {
+      liked: nextLiked,
+      likesCount: newCount,
+      error: null,
+    };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('toggle_portfolio_like', {
+      p_project_id: projectId,
+      p_session_id: sessionId,
+    });
+
+    if (error) {
+      return { liked: false, likesCount: 0, error: error.message };
+    }
+
+    return {
+      liked: Boolean(data?.liked),
+      likesCount: Number(data?.likes_count ?? 0),
+      error: null,
+    };
+  } catch (err: any) {
+    return { liked: false, likesCount: 0, error: err?.message || 'Failed to toggle like.' };
+  }
+}
+
+/**
+ * Atomically increments the view count for a portfolio project via database RPC.
+ */
+export async function recordPortfolioViewRpc(
+  projectId: string
+): Promise<{ viewsCount: number | null; error: string | null }> {
+  if (!projectId) {
+    return { viewsCount: null, error: 'Project ID is required.' };
+  }
+
+  if (!isSupabaseConfigured()) {
+    return { viewsCount: 1, error: null };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('record_portfolio_view', {
+      p_project_id: projectId,
+    });
+
+    if (error) {
+      return { viewsCount: null, error: error.message };
+    }
+
+    return { viewsCount: Number(data), error: null };
+  } catch (err: any) {
+    return { viewsCount: null, error: err?.message || 'Failed to record project view.' };
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Phase 5F: Frontend Session & Engagement Helpers
+// -----------------------------------------------------------------------------
+
+const VISITOR_SESSION_KEY = 'brewster_visitor_session_id';
+const LIKED_PROJECTS_CACHE_KEY = 'brewster_liked_projects_cache';
+
+/**
+ * Resolves or creates a persistent visitor UUID from localStorage.
+ * Reused on later visits. Never exposed publicly in the UI.
+ */
+export function getVisitorSessionId(): string {
+  if (typeof window === 'undefined') {
+    return '00000000-0000-0000-0000-000000000000';
+  }
+  let sid = localStorage.getItem(VISITOR_SESSION_KEY);
+  if (!sid || sid.trim().length < 8) {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      sid = crypto.randomUUID();
+    } else {
+      sid = 'v-' + Math.random().toString(36).substring(2, 15) + '-' + Date.now().toString(36);
+    }
+    localStorage.setItem(VISITOR_SESSION_KEY, sid);
+  }
+  return sid;
+}
+
+/**
+ * Checks whether the current browser session has marked this project as liked.
+ */
+export function getLocalLikedProjects(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(LIKED_PROJECTS_CACHE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function isProjectLikedLocally(projectId: string): boolean {
+  return getLocalLikedProjects().has(projectId);
+}
+
+export function setLocalProjectLiked(projectId: string, isLiked: boolean): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const set = getLocalLikedProjects();
+    if (isLiked) {
+      set.add(projectId);
+    } else {
+      set.delete(projectId);
+    }
+    localStorage.setItem(LIKED_PROJECTS_CACHE_KEY, JSON.stringify(Array.from(set)));
+  } catch {
+    // Ignore storage write issues
+  }
+}
+
+/**
+ * Synchronizes and retrieves the set of project IDs liked by the current user/session.
+ */
+export async function fetchUserLikedProjectIds(): Promise<string[]> {
+  const localSet = getLocalLikedProjects();
+  if (!isSupabaseConfigured()) {
+    return Array.from(localSet);
+  }
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) {
+      const { data, error } = await supabase
+        .from('portfolio_likes')
+        .select('project_id')
+        .eq('user_id', session.user.id);
+
+      if (!error && Array.isArray(data)) {
+        data.forEach((row: any) => {
+          if (row.project_id) {
+            localSet.add(row.project_id);
+          }
+        });
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LIKED_PROJECTS_CACHE_KEY, JSON.stringify(Array.from(localSet)));
+        }
+      }
+    }
+  } catch {
+    // Graceful fallback to local cache
+  }
+  return Array.from(localSet);
+}
+
+/**
+ * Extracts the clean project ID from a #case-study-{id} hash string.
+ * Supports hashes like "#case-study-proj-1" and "/#case-study-proj-1".
+ */
+export function extractCaseStudyIdFromHash(hash?: string): string | null {
+  if (!hash) return null;
+  const clean = hash.replace(/^[#/]+/, '');
+  if (clean.startsWith('case-study-')) {
+    const id = clean.slice('case-study-'.length).trim();
+    return id.length > 0 ? id : null;
+  }
+  return null;
+}
+
+/**
+ * Frontend wrapper that invokes the atomic RPC with the visitor session ID
+ * and keeps local storage like state in sync.
+ */
+export async function toggleProjectLike(
+  projectId: string
+): Promise<{ liked: boolean; likesCount: number; error: string | null }> {
+  const sessionId = getVisitorSessionId();
+  const res = await togglePortfolioLikeRpc(projectId, sessionId);
+  if (!res.error) {
+    setLocalProjectLiked(projectId, res.liked);
+  }
+  return res;
+}
+
+/**
+ * In-memory session cache to prevent duplicate view increments on React re-renders.
+ */
+const sessionViewedProjects = new Set<string>();
+
+export async function recordPortfolioViewDebounced(
+  projectId: string
+): Promise<{ viewsCount: number | null; error: string | null }> {
+  if (!projectId || sessionViewedProjects.has(projectId)) {
+    return { viewsCount: null, error: null };
+  }
+  sessionViewedProjects.add(projectId);
+  return recordPortfolioViewRpc(projectId);
+}
+

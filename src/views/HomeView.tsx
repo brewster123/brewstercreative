@@ -24,9 +24,11 @@ export const HomeView: React.FC = () => {
     setActiveView, 
     selectedPortfolioProject, 
     setSelectedPortfolioProject,
+    openCaseStudy,
   } = useApp();
 
-  const featuredPortfolio = portfolio.slice(0, 4);
+  const explicitFeatured = portfolio.filter(p => p.featured);
+  const featuredPortfolio = explicitFeatured.length > 0 ? explicitFeatured.slice(0, 4) : portfolio.slice(0, 4);
 
   // Creative process stages without raw emojis or bento card footers
   const processStages = [
@@ -186,7 +188,7 @@ export const HomeView: React.FC = () => {
                 </span>
                 <button
                   type="button"
-                  onClick={() => featuredPortfolio[0] && setSelectedPortfolioProject(featuredPortfolio[0])}
+                  onClick={() => featuredPortfolio[0] && openCaseStudy(featuredPortfolio[0])}
                   className="text-xs font-semibold text-[#EA580C] hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <span>Inspect Case Study</span>
@@ -301,7 +303,7 @@ export const HomeView: React.FC = () => {
               <PortfolioCard
                 key={project.id}
                 project={project}
-                onSelect={(p) => setSelectedPortfolioProject(p)}
+                onSelect={(p) => openCaseStudy(p)}
               />
             ))}
           </div>

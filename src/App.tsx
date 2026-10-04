@@ -14,6 +14,7 @@ import { ShopView } from './views/ShopView';
 import { ProductDetailView } from './views/ProductDetailView';
 import { SettingsView } from './views/SettingsView';
 import { ChatView } from './views/ChatView';
+import { CaseStudyView } from './views/CaseStudyView';
 
 const DatabaseErrorBanner: React.FC = () => {
   const { databaseError, clearDatabaseError, refreshCurrentUserProfile } = useApp();
@@ -200,6 +201,8 @@ const MainLayout: React.FC = () => {
           );
         }
         return <ChatView />;
+      case 'case-study':
+        return <CaseStudyView />;
       default:
         return <HomeView />;
     }

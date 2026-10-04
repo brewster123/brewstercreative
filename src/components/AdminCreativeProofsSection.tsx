@@ -41,7 +41,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
   currentUser,
   onProofUploaded,
 }) => {
-  const { dispatchNotification } = useApp();
+  const { dispatchNotification, updateCommissionStatus } = useApp();
   const [proofs, setProofs] = useState<CommissionProof[]>([]);
   const [isLoadingProofs, setIsLoadingProofs] = useState<boolean>(true);
   const [proofsError, setProofsError] = useState<string | null>(null);
@@ -203,6 +203,19 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
         // Update local list
         setProofs((prev) => [newProof, ...prev.filter((p) => p.id !== newProof.id)]);
         refreshNextVersion();
+
+        // Advance commission lifecycle to 'for_review' only if in active production or under revision
+        const normStatus = (commission.status || '').toLowerCase().trim();
+        const isEligibleForReview =
+          normStatus === 'in_progress' ||
+          normStatus === 'revision';
+
+        if (isEligibleForReview) {
+          const statusRes = await updateCommissionStatus(commission.id, 'for_review');
+          if (!statusRes.success) {
+            console.warn('[AdminCreativeProofsSection] Notice updating commission status to for_review:', statusRes.error);
+          }
+        }
 
         if (onProofUploaded) {
           onProofUploaded(newProof);

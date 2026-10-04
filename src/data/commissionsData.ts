@@ -690,6 +690,57 @@ export async function requestCommissionRevisionInSupabase(
 }
 
 /**
+ * Atomically approves a commission's creative proof via the secure SECURITY DEFINER RPC.
+ * - Invokes public.client_approve_commission(p_commission_id, p_proof_id).
+ * - Validates ownership, checks 'for_review' state, marks proof 'approved',
+ *   transitions commission to 'final_approval', and inserts Stage 7 milestone.
+ */
+export async function approveCommissionInSupabase(
+  commissionId: string,
+  proofId: string
+): Promise<{ success: boolean; error?: string; data?: CommissionDbRow }> {
+  if (!commissionId) {
+    return { success: false, error: 'Commission ID is required.' };
+  }
+  if (!proofId) {
+    return { success: false, error: 'Proof ID is required for client approval.' };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('client_approve_commission', {
+      p_commission_id: commissionId,
+      p_proof_id: proofId,
+    });
+
+    if (error) {
+      console.error('[Supabase Commissions] RPC client_approve_commission error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to approve creative proof in database.',
+      };
+    }
+
+    if (!data) {
+      return {
+        success: false,
+        error: 'No commission record returned from approval request.',
+      };
+    }
+
+    return {
+      success: true,
+      data: data as CommissionDbRow,
+    };
+  } catch (err: any) {
+    console.error('[Supabase Commissions] Unexpected exception during proof approval RPC:', err);
+    return {
+      success: false,
+      error: err?.message || 'An unexpected error occurred while approving creative proof.',
+    };
+  }
+}
+
+/**
  * Subscribes to real-time changes on public.commissions.
  * Calls onInsert, onUpdate, and onDelete callbacks with mapped Commission models.
  */

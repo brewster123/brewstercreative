@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp, STORAGE_KEYS } from '../context/AppContext';
 import { 
   ArrowRight, 
   Mail, 
@@ -288,10 +288,25 @@ export const AuthView: React.FC = () => {
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={() => setActiveView(currentUser.role === 'admin' ? 'admin-dashboard' : 'client-dashboard')}
+              onClick={() => {
+                let hasDraft = false;
+                try {
+                  hasDraft = Boolean(typeof window !== 'undefined' && window.sessionStorage?.getItem(STORAGE_KEYS.COMMISSION_DRAFT));
+                } catch {}
+
+                if (hasDraft && currentUser.role !== 'admin') {
+                  setActiveView('commission-form');
+                } else {
+                  setActiveView(currentUser.role === 'admin' ? 'admin-dashboard' : 'client-dashboard');
+                }
+              }}
               className="px-3.5 py-1.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
             >
-              <span>Enter Studio</span>
+              <span>
+                {typeof window !== 'undefined' && window.sessionStorage?.getItem(STORAGE_KEYS.COMMISSION_DRAFT) && currentUser.role !== 'admin'
+                  ? 'Return to Brief'
+                  : 'Enter Studio'}
+              </span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
             <button

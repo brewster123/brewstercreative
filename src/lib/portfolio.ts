@@ -47,32 +47,113 @@ function mapCaseStudyToDb(cs?: CaseStudyContent): any {
 }
 
 /**
+ * Safely normalizes numeric stats (views, likes, shares) so missing, null,
+ * undefined, empty string, or non-numeric/NaN values always fall back to a safe number (default 0).
+ */
+export function normalizeNumericStat(val: unknown, fallback: number = 0): number {
+  if (val === null || val === undefined || val === '') {
+    return fallback;
+  }
+  if (typeof val === 'number') {
+    return Number.isFinite(val) && !Number.isNaN(val) ? Math.max(0, Math.floor(val)) : fallback;
+  }
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (!trimmed) return fallback;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) && !Number.isNaN(parsed) ? Math.max(0, Math.floor(parsed)) : fallback;
+  }
+  return fallback;
+}
+
+/**
+ * Safely extracts normalized view count from a project object across camelCase and snake_case properties.
+ */
+export function getProjectViews(project?: Partial<PortfolioProject> | null): number {
+  if (!project) return 0;
+  const raw = project.viewsCount ?? project.views_count ?? (project as any).views;
+  return normalizeNumericStat(raw, 0);
+}
+
+/**
+ * Safely extracts normalized like count from a project object across camelCase and snake_case properties.
+ */
+export function getProjectLikes(project?: Partial<PortfolioProject> | null): number {
+  if (!project) return 0;
+  const raw = project.likesCount ?? project.likes_count ?? (project as any).likes;
+  return normalizeNumericStat(raw, 0);
+}
+
+/**
+ * Safely extracts normalized share count from a project object across camelCase and snake_case properties.
+ */
+export function getProjectShares(project?: Partial<PortfolioProject> | null): number {
+  if (!project) return 0;
+  const raw = project.sharesCount ?? project.shares_count ?? (project as any).shares;
+  return normalizeNumericStat(raw, 0);
+}
+
+/**
  * Maps a database row from public.portfolio_projects to frontend PortfolioProject.
  */
 export function mapDbToPortfolioProject(row: any): PortfolioProject {
+  const viewsCount = normalizeNumericStat(row.views_count ?? row.viewsCount ?? row.views, 0);
+  const likesCount = normalizeNumericStat(row.likes_count ?? row.likesCount ?? row.likes, 0);
+  const sharesCount = normalizeNumericStat(row.shares_count ?? row.sharesCount ?? row.shares, 0);
+
+  const isFictionalSeedClient = 
+    row.client === 'Aura Botanica Co.' ||
+    row.client === 'Odyssey Live Productions' ||
+    row.client === 'Kroma Audio Labs' ||
+    row.client === 'Vanguard Literary Press' ||
+    row.client === 'Epoch Magazine' ||
+    row.client === 'HyperPulse Activewear' ||
+    row.client === 'Commission Client';
+
+  const cleanClient = isFictionalSeedClient ? 'Studio Concept' : (row.client || 'Studio Concept');
+  const projectType = (isFictionalSeedClient || row.project_type === 'concept' || row.projectType === 'concept' || !row.project_type)
+    ? 'concept'
+    : ((row.project_type || row.projectType) as ProjectType);
+
   return {
     id: row.id,
     title: row.title,
     category: row.category,
-    shortDesc: row.short_desc,
-    fullDesc: row.full_desc,
-    image: row.image_url,
-    gallery: Array.isArray(row.gallery_urls) && row.gallery_urls.length > 0 ? row.gallery_urls : [row.image_url],
+    shortDesc: row.short_desc ?? row.shortDesc ?? '',
+    fullDesc: row.full_desc ?? row.fullDesc ?? '',
+    image: row.image_url ?? row.image ?? '',
+    gallery: Array.isArray(row.gallery_urls) && row.gallery_urls.length > 0 
+      ? row.gallery_urls 
+      : Array.isArray(row.gallery) && row.gallery.length > 0 
+        ? row.gallery 
+        : [row.image_url || row.image || ''],
     tools: Array.isArray(row.tools) ? row.tools : [],
     date: row.date || '2026',
-    client: row.client || '',
-    colorPalette: Array.isArray(row.color_palette) ? row.color_palette : undefined,
+    client: cleanClient,
+    colorPalette: Array.isArray(row.color_palette) 
+      ? row.color_palette 
+      : Array.isArray(row.colorPalette) 
+        ? row.colorPalette 
+        : undefined,
     tags: Array.isArray(row.tags) ? row.tags : [],
     featured: !!row.featured,
-    relatedShopProductIds: Array.isArray(row.related_shop_product_ids) ? row.related_shop_product_ids : [],
+    relatedShopProductIds: Array.isArray(row.related_shop_product_ids) 
+      ? row.related_shop_product_ids 
+      : Array.isArray(row.relatedShopProductIds) 
+        ? row.relatedShopProductIds 
+        : [],
 
     // Phase 5F: Social Portfolio & Case Study Studio
-    projectType: (row.project_type === 'concept' ? 'concept' : 'client') as ProjectType,
-    serviceId: row.service_id || undefined,
-    commissionId: row.commission_id || undefined,
-    caseStudy: mapDbCaseStudy(row.case_study),
-    likesCount: row.likes_count != null ? Number(row.likes_count) : 0,
-    viewsCount: row.views_count != null ? Number(row.views_count) : 0,
+    projectType,
+    serviceId: row.service_id || row.serviceId || undefined,
+    commissionId: row.commission_id || row.commissionId || undefined,
+    caseStudy: mapDbCaseStudy(row.case_study ?? row.caseStudy),
+    likesCount,
+    viewsCount,
+    sharesCount,
+    likes_count: likesCount,
+    views_count: viewsCount,
+    shares_count: sharesCount,
   };
 }
 
@@ -90,7 +171,7 @@ export function mapPortfolioProjectToDb(proj: PortfolioProject, displayOrder: nu
     gallery_urls: proj.gallery || [proj.image],
     tools: proj.tools || [],
     date: proj.date || '2026',
-    client: proj.client || '',
+    client: proj.client || 'Studio Concept',
     color_palette: proj.colorPalette || [],
     tags: proj.tags || [],
     featured: !!proj.featured,
@@ -98,7 +179,7 @@ export function mapPortfolioProjectToDb(proj: PortfolioProject, displayOrder: nu
     display_order: displayOrder,
 
     // Phase 5F: Social Portfolio & Case Study Studio
-    project_type: proj.projectType || 'client',
+    project_type: proj.projectType || 'concept',
     service_id: proj.serviceId || null,
     commission_id: proj.commissionId || null,
     case_study: mapCaseStudyToDb(proj.caseStudy),
@@ -271,45 +352,83 @@ export async function togglePortfolioLikeRpc(
     });
 
     if (error) {
+      console.error('[Portfolio] RPC toggle_portfolio_like error:', error);
       return { liked: false, likesCount: 0, error: error.message };
     }
 
+    // Defensively handle parsed JSON object, JSON string, or array
+    let payload = data;
+    if (typeof payload === 'string') {
+      try {
+        payload = JSON.parse(payload);
+      } catch (parseErr) {
+        console.warn('[Portfolio] Could not JSON parse RPC response:', data);
+      }
+    }
+    const resultObj = Array.isArray(payload) ? payload[0] : payload;
+
+    const rawLiked = resultObj?.liked ?? resultObj?.is_liked ?? resultObj?.isLiked ?? false;
+    const rawLikesCount = resultObj?.likes_count ?? resultObj?.likesCount ?? resultObj?.likes;
+    const finalLikesCount = rawLikesCount != null ? Number(rawLikesCount) : 0;
+
     return {
-      liked: Boolean(data?.liked),
-      likesCount: Number(data?.likes_count ?? 0),
+      liked: Boolean(rawLiked),
+      likesCount: !isNaN(finalLikesCount) ? finalLikesCount : 0,
       error: null,
     };
   } catch (err: any) {
+    console.error('[Portfolio] Unexpected error in togglePortfolioLikeRpc:', err);
     return { liked: false, likesCount: 0, error: err?.message || 'Failed to toggle like.' };
   }
 }
 
 /**
- * Atomically increments the view count for a portfolio project via database RPC.
+ * Atomically increments the view count for a portfolio project via database RPC
+ * for the authenticated account.
  */
 export async function recordPortfolioViewRpc(
   projectId: string
-): Promise<{ viewsCount: number | null; error: string | null }> {
+): Promise<{ viewed: boolean; viewsCount: number | null; error: string | null }> {
   if (!projectId) {
-    return { viewsCount: null, error: 'Project ID is required.' };
+    return { viewed: false, viewsCount: null, error: 'Project ID is required.' };
   }
 
   if (!isSupabaseConfigured()) {
-    return { viewsCount: 1, error: null };
+    return { viewed: false, viewsCount: null, error: null };
   }
 
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) {
+      // Unauthenticated: do not call RPC, no view recorded
+      return { viewed: false, viewsCount: null, error: null };
+    }
+
     const { data, error } = await supabase.rpc('record_portfolio_view', {
       p_project_id: projectId,
     });
 
     if (error) {
-      return { viewsCount: null, error: error.message };
+      return { viewed: false, viewsCount: null, error: error.message };
     }
 
-    return { viewsCount: Number(data), error: null };
+    if (typeof data === 'object' && data !== null) {
+      const rawCount = data.views_count ?? data.viewsCount;
+      const safeViews = rawCount !== null && rawCount !== undefined ? normalizeNumericStat(rawCount, 0) : null;
+      return {
+        viewed: Boolean(data.viewed),
+        viewsCount: safeViews,
+        error: null,
+      };
+    }
+
+    if (typeof data === 'number' || typeof data === 'string') {
+      return { viewed: true, viewsCount: normalizeNumericStat(data, 0), error: null };
+    }
+
+    return { viewed: false, viewsCount: null, error: null };
   } catch (err: any) {
-    return { viewsCount: null, error: err?.message || 'Failed to record project view.' };
+    return { viewed: false, viewsCount: null, error: err?.message || 'Failed to record project view.' };
   }
 }
 
@@ -369,6 +488,81 @@ export function setLocalProjectLiked(projectId: string, isLiked: boolean): void 
       set.delete(projectId);
     }
     localStorage.setItem(LIKED_PROJECTS_CACHE_KEY, JSON.stringify(Array.from(set)));
+  } catch {
+    // Ignore storage write issues
+  }
+}
+
+const VIEWED_PROJECTS_STORAGE_KEY = 'brewster_viewed_portfolio_projects';
+
+/**
+ * Returns the set of project IDs that have been viewed by the visitor session.
+ * Reads from localStorage under 'brewster_viewed_portfolio_projects'.
+ * Supports both { [sessionId]: string[] } and plain string[] schemas.
+ */
+export function getLocalViewedProjects(sessionId?: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  const sid = sessionId || getVisitorSessionId();
+  try {
+    const raw = localStorage.getItem(VIEWED_PROJECTS_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+
+    // Schema A: Object mapping sessionId to project ID array: { [sessionId]: string[] }
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const list = parsed[sid];
+      if (Array.isArray(list)) {
+        return new Set(list);
+      }
+      return new Set();
+    }
+
+    // Schema B: Flat array of project IDs: string[]
+    if (Array.isArray(parsed)) {
+      return new Set(parsed);
+    }
+
+    return new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * Checks whether a given project ID has already been recorded as viewed for the visitor session.
+ */
+export function isProjectViewedLocally(projectId: string, sessionId?: string): boolean {
+  if (!projectId) return false;
+  return getLocalViewedProjects(sessionId).has(projectId);
+}
+
+/**
+ * Marks a portfolio project as viewed by the visitor session in persistent localStorage.
+ * Only called after the record_portfolio_view RPC succeeds.
+ */
+export function setLocalProjectViewed(projectId: string, sessionId?: string): void {
+  if (typeof window === 'undefined' || !projectId) return;
+  const sid = sessionId || getVisitorSessionId();
+  try {
+    const raw = localStorage.getItem(VIEWED_PROJECTS_STORAGE_KEY);
+    let store: Record<string, string[]> = {};
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          store = parsed;
+        } else if (Array.isArray(parsed)) {
+          store[sid] = parsed;
+        }
+      } catch {}
+    }
+
+    const sessionList = Array.isArray(store[sid]) ? store[sid] : [];
+    if (!sessionList.includes(projectId)) {
+      sessionList.push(projectId);
+    }
+    store[sid] = sessionList;
+    localStorage.setItem(VIEWED_PROJECTS_STORAGE_KEY, JSON.stringify(store));
   } catch {
     // Ignore storage write issues
   }
@@ -437,17 +631,45 @@ export async function toggleProjectLike(
 }
 
 /**
- * In-memory session cache to prevent duplicate view increments on React re-renders.
+ * In-flight promise registry to prevent duplicate concurrent calls from
+ * React StrictMode mount/remount or fast navigation while an RPC is in flight.
  */
-const sessionViewedProjects = new Set<string>();
+const inFlightViewRequests = new Map<string, Promise<{ viewed: boolean; viewsCount: number | null; error: string | null }>>();
 
+/**
+ * Atomically records a project view for the authenticated account.
+ * Client in-flight tracking is purely for performance and concurrency deduplication;
+ * the database unique ledger (portfolio_views) is the authoritative source of truth.
+ */
 export async function recordPortfolioViewDebounced(
-  projectId: string
-): Promise<{ viewsCount: number | null; error: string | null }> {
-  if (!projectId || sessionViewedProjects.has(projectId)) {
-    return { viewsCount: null, error: null };
+  projectId: string,
+  userId?: string
+): Promise<{ viewed: boolean; viewsCount: number | null; error: string | null }> {
+  if (!projectId) {
+    return { viewed: false, viewsCount: null, error: 'Project ID is required.' };
   }
-  sessionViewedProjects.add(projectId);
-  return recordPortfolioViewRpc(projectId);
+
+  // If visitor is unauthenticated, do NOT attempt to record a view
+  if (!userId) {
+    return { viewed: false, viewsCount: null, error: null };
+  }
+
+  // Prevent concurrent duplicate executions (e.g. React StrictMode mount-unmount-mount)
+  const flightKey = `${userId}:${projectId}`;
+  if (inFlightViewRequests.has(flightKey)) {
+    return inFlightViewRequests.get(flightKey)!;
+  }
+
+  const flightPromise = (async () => {
+    try {
+      const res = await recordPortfolioViewRpc(projectId);
+      return res;
+    } finally {
+      inFlightViewRequests.delete(flightKey);
+    }
+  })();
+
+  inFlightViewRequests.set(flightKey, flightPromise);
+  return flightPromise;
 }
 

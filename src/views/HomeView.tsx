@@ -87,9 +87,9 @@ export const HomeView: React.FC = () => {
             
             {/* Status & Identity Indicator */}
             <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-md bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
               <span className="font-mono uppercase font-semibold text-[#18181B] dark:text-[#EDEDEC] text-[11px] tracking-wider">
-                {studioProfile.availableSlots} Commission Slots Open
+                {studioProfile.studioName}
               </span>
               <span className="text-[#A1A1AA]">•</span>
               <span className="text-[#71717A] dark:text-[#A1A1AA] font-medium">
@@ -169,7 +169,9 @@ export const HomeView: React.FC = () => {
                       Featured Piece
                     </span>
                     <span className="text-[10px] font-mono text-zinc-300">
-                      {featuredPortfolio[0]?.client || 'Studio Archive'}
+                      {featuredPortfolio[0]?.projectType === 'concept' || !featuredPortfolio[0]?.projectType
+                        ? (featuredPortfolio[0]?.client && featuredPortfolio[0]?.client !== 'Client Commission' && featuredPortfolio[0]?.client !== 'Commission Client' ? featuredPortfolio[0]?.client : 'Studio Concept')
+                        : (featuredPortfolio[0]?.client || 'Studio Archive')}
                     </span>
                   </div>
                   <h3 className="font-display font-bold text-lg text-white">

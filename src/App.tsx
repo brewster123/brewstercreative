@@ -17,12 +17,58 @@ import { ChatView } from './views/ChatView';
 import { CaseStudyView } from './views/CaseStudyView';
 
 const DatabaseErrorBanner: React.FC = () => {
-  const { databaseError, clearDatabaseError, refreshCurrentUserProfile } = useApp();
+  const { databaseError, clearDatabaseError, refreshCurrentUserProfile, currentUser } = useApp();
   const [copied, setCopied] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
   if (!databaseError) return null;
 
+  // Technical database diagnostics should strictly only be available in development mode or to authenticated studio admins
+  const isDevOrAdmin = Boolean(import.meta.env.DEV || currentUser?.role === 'admin');
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    clearDatabaseError();
+    await refreshCurrentUserProfile();
+    setRetrying(false);
+  };
+
+  // Public visitors receive a clean, friendly fallback without database internals, raw errors, or SQL statements
+  if (!isDevOrAdmin) {
+    return (
+      <aside aria-label="Studio Notice" className="bg-[#18181B] text-white border-b border-[#27272A] px-4 py-3 text-xs z-50">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-[#EA580C] shrink-0" />
+            <p className="font-normal text-zinc-200 text-xs">
+              Some studio content is temporarily unavailable. Please try again shortly.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={retrying}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#27272A] hover:bg-[#3F3F46] text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 text-zinc-300 ${retrying ? 'animate-spin' : ''}`} />
+              <span>{retrying ? 'Checking...' : 'Retry'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={clearDatabaseError}
+              aria-label="Dismiss studio notice"
+              className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  // Developer / Admin diagnostics (DEV environment or authenticated admin role)
   const isNetworkError = databaseError.toLowerCase().includes('network') || databaseError.toLowerCase().includes('failed to fetch');
   const isPermissionDenied = databaseError.includes('42501') || databaseError.toLowerCase().includes('permission denied');
   const sqlFix = "GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;";
@@ -33,31 +79,27 @@ const DatabaseErrorBanner: React.FC = () => {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleRetry = async () => {
-    setRetrying(true);
-    clearDatabaseError();
-    await refreshCurrentUserProfile();
-    setRetrying(false);
-  };
-
   return (
-    <aside aria-label="Database Notice" className="bg-zinc-950 text-white border-b border-rose-900/60 px-4 py-3 text-xs z-50">
+    <aside aria-label="Database Diagnostic Notice" className="bg-zinc-950 text-white border-b border-rose-900/60 px-4 py-3 text-xs z-50">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <div className="flex items-start gap-2.5">
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="font-bold text-zinc-100 flex items-center gap-2">
-              <span>{isNetworkError ? 'Connection Notice:' : 'Database Notice:'}</span>
+            <p className="font-bold text-zinc-100 flex items-center gap-2 flex-wrap">
+              <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] font-mono uppercase text-amber-400">
+                {import.meta.env.DEV ? 'Dev Diagnostic' : 'Admin Diagnostic'}
+              </span>
+              <span>{isNetworkError ? 'Connection Notice:' : 'Database Diagnostic:'}</span>
               <span className="font-normal text-rose-300 font-mono text-[11px] break-all">{databaseError}</span>
             </p>
             {isPermissionDenied && (
               <p className="text-zinc-400 text-[11px]">
-                PostgreSQL denied access to <code className="bg-zinc-800 text-amber-300 px-1 py-0.5 rounded">public.profiles</code> for the <code className="bg-zinc-800 text-amber-300 px-1 py-0.5 rounded">authenticated</code> role. Run the fix in your Supabase SQL Editor.
+                PostgreSQL access restricted on <code className="bg-zinc-800 text-amber-300 px-1 py-0.5 rounded">public.profiles</code> for the <code className="bg-zinc-800 text-amber-300 px-1 py-0.5 rounded">authenticated</code> role.
               </p>
             )}
             {isNetworkError && (
               <p className="text-zinc-400 text-[11px]">
-                Connection to Supabase timed out or was interrupted. Check your network connection or ad-blocker and click Retry.
+                Connection to Supabase timed out or was interrupted. Check your network connection and click Retry.
               </p>
             )}
           </div>
@@ -87,7 +129,7 @@ const DatabaseErrorBanner: React.FC = () => {
           <button
             type="button"
             onClick={clearDatabaseError}
-            aria-label="Dismiss database error notice"
+            aria-label="Dismiss database diagnostic notice"
             className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />

@@ -97,7 +97,8 @@ export const AdminDashboardView: React.FC = () => {
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>(activeCommission?.id || commissions[0]?.id || '');
   const [expandedProofsCommissionId, setExpandedProofsCommissionId] = useState<string | null>(null);
   const [expandedDeliverablesCommissionId, setExpandedDeliverablesCommissionId] = useState<string | null>(null);
-  const [commissionFilter, setCommissionFilter] = useState<string>('all');
+  const [commissionSection, setCommissionSection] = useState<'active' | 'completed' | 'cancelled' | 'all'>('active');
+  const [activeStageFilter, setActiveStageFilter] = useState<string>('all');
   const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
 
   // Supabase Commission Status Management state
@@ -295,6 +296,8 @@ export const AdminDashboardView: React.FC = () => {
   // Portfolio Management State
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [editingProject, setEditingProject] = useState<PortfolioProject | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [isDeletingProject, setIsDeletingProject] = useState<boolean>(false);
   const [isCaseStudyExpanded, setIsCaseStudyExpanded] = useState<boolean>(false);
   const [projectForm, setProjectForm] = useState<Partial<PortfolioProject>>({
     title: '',
@@ -474,14 +477,18 @@ export const AdminDashboardView: React.FC = () => {
           gallery: [projectForm.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80'],
           tools: Array.isArray(projectForm.tools) ? projectForm.tools : ['Adobe Illustrator'],
           date: projectForm.date || '2026',
-          client: projectForm.client || 'Commission Client',
+          client: projectForm.client || 'Studio Concept',
           tags: Array.isArray(projectForm.tags) ? projectForm.tags : ['Design'],
           featured: !!projectForm.featured,
-          projectType: projectForm.projectType || 'client',
+          projectType: projectForm.projectType || 'concept',
           serviceId: projectForm.serviceId || undefined,
           caseStudy: projectForm.caseStudy || {},
           likesCount: 0,
           viewsCount: 0,
+          sharesCount: 0,
+          views_count: 0,
+          likes_count: 0,
+          shares_count: 0,
         };
         const res = await addPortfolioProject(newProj);
         if (res && !res.success) {
@@ -499,9 +506,18 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  const handleDeleteProject = async (id: string, title: string) => {
-    if (window.confirm(`Delete portfolio project "${title}" from the website?`)) {
-      await deletePortfolioProject(id);
+  const handleDeleteProject = (id: string, title: string) => {
+    setProjectToDelete({ id, title });
+  };
+
+  const handleConfirmDeleteProject = async () => {
+    if (!projectToDelete) return;
+    setIsDeletingProject(true);
+    try {
+      await deletePortfolioProject(projectToDelete.id);
+      setProjectToDelete(null);
+    } finally {
+      setIsDeletingProject(false);
     }
   };
 
@@ -609,20 +625,35 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  const filteredCommissions = commissions.filter(c => {
-    if (commissionFilter === 'all') return true;
-    const s = (c.status || '').toLowerCase().replace(/\s+/g, '_');
-    if (commissionFilter === 'pending') {
+  // Canonical commission section classification (Active, Completed, Cancelled)
+  const getCommissionSection = (status?: string): 'active' | 'completed' | 'cancelled' => {
+    if (!status) return 'active';
+    const s = status.toLowerCase().trim().replace(/[\s-]+/g, '_');
+    if (s === 'completed') {
+      return 'completed';
+    }
+    if (s === 'cancelled' || s === 'rejected') {
+      return 'cancelled';
+    }
+    // ACTIVE: pending, reviewing, accepted, in_progress, for_review, revision, final_approval, etc.
+    return 'active';
+  };
+
+  const activeCommissions = commissions.filter(c => getCommissionSection(c.status) === 'active');
+  const completedCommissions = commissions.filter(c => getCommissionSection(c.status) === 'completed');
+  const cancelledCommissions = commissions.filter(c => getCommissionSection(c.status) === 'cancelled');
+
+  const displayedActiveCommissions = activeCommissions.filter(c => {
+    if (activeStageFilter === 'all') return true;
+    const s = (c.status || '').toLowerCase().replace(/[\s-]+/g, '_');
+    if (activeStageFilter === 'pending') {
       return s === 'pending' || s === 'request_submitted' || s === 'reviewing';
     }
-    if (commissionFilter === 'in_progress') {
+    if (activeStageFilter === 'in_progress') {
       return s === 'in_progress' || s === 'accepted';
     }
-    if (commissionFilter === 'review') {
+    if (activeStageFilter === 'review') {
       return s === 'for_review' || s === 'revision' || s === 'client_review' || s === 'revision_requested' || s === 'final_approval';
-    }
-    if (commissionFilter === 'completed') {
-      return s === 'completed';
     }
     return true;
   });
@@ -711,6 +742,235 @@ export const AdminDashboardView: React.FC = () => {
     );
   }
 
+  const renderCommissionCard = (comm: Commission) => {
+    const isSelected = comm.id === selectedCommissionId;
+
+    return (
+      <article
+        key={comm.id}
+        className={`bg-white dark:bg-[#18181B] border rounded-xl p-5 sm:p-6 transition-all space-y-5 ${
+          isSelected ? 'border-[#EA580C] shadow-2xs' : 'border-[#E4E2DC] dark:border-[#27272A]'
+        }`}
+      >
+        {/* Commission Header Row */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+          <div className="flex items-start gap-4">
+            <img
+              src={comm.clientAvatar}
+              alt={comm.clientName}
+              className="w-11 h-11 rounded-full object-cover ring-1 ring-[#E4E2DC] dark:ring-[#27272A] shrink-0"
+            />
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  {comm.projectName}
+                </h3>
+                <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                  #{comm.id.slice(0, 8)}
+                </span>
+                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] text-[#EA580C] font-semibold uppercase">
+                  {comm.serviceType}
+                </span>
+                <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
+                  {comm.budget}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] flex-wrap">
+                <span>Client: <strong className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{comm.clientName}</strong></span>
+                <span>·</span>
+                <span>{comm.clientEmail}</span>
+                <span>·</span>
+                <span>Deadline: {formatCommissionDate(comm.deadline)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Status & Priority Selectors */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Status Dropdown */}
+            <div className="flex items-center gap-1.5 font-mono text-xs">
+              <label htmlFor={`status-select-${comm.id}`} className="text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA]">
+                Status:
+              </label>
+              <select
+                id={`status-select-${comm.id}`}
+                value={
+                  comm.status === 'In Progress' ? 'in_progress' :
+                  comm.status === 'Client Review' ? 'for_review' :
+                  comm.status === 'Revision Requested' ? 'revision' :
+                  comm.status === 'Final Approval' || comm.status === 'final_approval' ? 'final_approval' :
+                  comm.status === 'Rejected' ? 'cancelled' :
+                  comm.status === 'Completed' ? 'completed' :
+                  comm.status === 'Pending' ? 'pending' :
+                  comm.status
+                }
+                disabled={statusUpdatingId === comm.id}
+                onChange={(e) => handleStatusChange(comm.id, e.target.value as CommissionStatus)}
+                className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-2.5 py-1 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] cursor-pointer"
+              >
+                {STATUS_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              {statusSuccessId === comm.id && (
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400">✓ Saved</span>
+              )}
+            </div>
+
+            {/* Priority Dropdown */}
+            <div className="flex items-center gap-1.5 font-mono text-xs">
+              <label htmlFor={`priority-select-${comm.id}`} className="text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA]">
+                Priority:
+              </label>
+              <select
+                id={`priority-select-${comm.id}`}
+                value={(comm.priority || 'normal').toLowerCase()}
+                disabled={priorityUpdatingId === comm.id}
+                onChange={(e) => handlePriorityChange(comm.id, e.target.value as CommissionPriority)}
+                className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-2.5 py-1 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] cursor-pointer"
+              >
+                {PRIORITY_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Action Links */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCommissionId(comm.id);
+                  setActiveCommissionId(comm.id);
+                  setActiveView('chat');
+                }}
+                title="Open Conversation"
+                className="p-1.5 rounded-md border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] transition-colors cursor-pointer"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCommissionId(comm.id);
+                  setActiveCommissionId(comm.id);
+                  setActiveAdminTab('proof-uploader');
+                }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold text-xs transition-opacity hover:opacity-90 cursor-pointer"
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                <span>Proofs</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Accept / Decline Bar if Pending */}
+        {((comm.status as string) === 'Request Submitted' || comm.status === 'pending' || comm.status === 'Pending') && (
+          <div className="p-3 bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg flex items-center justify-between gap-3 text-xs">
+            <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono">
+              New commission proposal submitted by {comm.clientName}.
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => acceptCommission(comm.id)}
+                className="px-3 py-1 rounded bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-colors cursor-pointer"
+              >
+                Accept
+              </button>
+              <button
+                type="button"
+                onClick={() => declineCommission(comm.id)}
+                className="px-3 py-1 rounded border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] hover:text-red-600 text-xs transition-colors cursor-pointer"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 8-Stage Interactive Production Bar */}
+        <div className="pt-1">
+          <ProgressBar commission={comm} interactiveAdmin={true} />
+        </div>
+
+        {/* Expandable Proofs and Deliverables Accordion Controls */}
+        <div className="flex items-center justify-between pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setExpandedProofsCommissionId(prev => prev === comm.id ? null : comm.id)}
+              className="text-[#EA580C] hover:underline flex items-center gap-1 cursor-pointer font-semibold"
+            >
+              <Layers className="w-3 h-3" />
+              <span>{expandedProofsCommissionId === comm.id ? 'Hide Proofs' : 'Inspect Proofs'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setExpandedDeliverablesCommissionId(prev => prev === comm.id ? null : comm.id)}
+              className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] flex items-center gap-1 cursor-pointer"
+            >
+              <FolderArchive className="w-3 h-3" />
+              <span>{expandedDeliverablesCommissionId === comm.id ? 'Hide Deliverables' : 'Final Deliverables'}</span>
+            </button>
+          </div>
+
+          {/* Payment Status Toggles */}
+          <div className="flex items-center gap-2">
+            <span className="text-[#71717A] dark:text-[#A1A1AA]">Settlement:</span>
+            {(['Unpaid', 'Partial', 'Paid'] as const).map((pStatus) => (
+              <button
+                key={pStatus}
+                type="button"
+                onClick={() => updatePaymentStatus(comm.id, pStatus)}
+                className={`px-2.5 py-0.5 rounded text-[11px] font-mono transition-colors cursor-pointer ${
+                  comm.paymentStatus === pStatus
+                    ? pStatus === 'Paid'
+                      ? 'bg-emerald-600 text-white font-bold'
+                      : pStatus === 'Partial'
+                      ? 'bg-amber-600 text-white font-bold'
+                      : 'bg-red-600 text-white font-bold'
+                    : 'bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA]'
+                }`}
+              >
+                {pStatus}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Expanded Proofs Subsection */}
+        {expandedProofsCommissionId === comm.id && (
+          <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] animate-in fade-in duration-200">
+            <AdminCreativeProofsSection
+              commission={comm}
+              currentUser={currentUser}
+            />
+          </div>
+        )}
+
+        {/* Expanded Deliverables Subsection */}
+        {expandedDeliverablesCommissionId === comm.id && (
+          <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] animate-in fade-in duration-200">
+            <AdminDeliverablesSection
+              commission={comm}
+              currentUser={currentUser}
+            />
+          </div>
+        )}
+
+      </article>
+    );
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10 animate-in fade-in duration-300">
       
@@ -736,15 +996,6 @@ export const AdminDashboardView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-6 shrink-0 font-mono text-xs self-start md:self-auto">
-            <div>
-              <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] block uppercase">Live Availability</span>
-              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] text-base font-display">
-                {studioProfile.availableSlots} Slots Open
-              </span>
-            </div>
-
-            <div className="h-8 w-px bg-[#E4E2DC] dark:bg-[#27272A]" />
-
             <div>
               <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] block uppercase">Active Orders</span>
               <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] text-base font-display">
@@ -817,8 +1068,6 @@ export const AdminDashboardView: React.FC = () => {
           { id: 'portfolio' as const, label: 'Portfolio Archive', icon: ImageIcon, count: portfolio.length },
           { id: 'services' as const, label: 'Studio Services', icon: Layers, count: services.length },
           { id: 'website-info' as const, label: 'Studio Profile', icon: Settings },
-          { id: 'admin-account' as const, label: 'Director Account', icon: UserCheck },
-          { id: 'typography' as const, label: 'Typography', icon: Type },
         ].map(({ id, label, icon: TabIcon, count }) => {
           const isSelected = activeAdminTab === id;
 
@@ -855,270 +1104,282 @@ export const AdminDashboardView: React.FC = () => {
       {/* TAB 1: PRODUCTION LEDGER (ALL COMMISSIONS)               */}
       {/* ======================================================== */}
       {activeAdminTab === 'commissions' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-8 animate-in fade-in duration-200">
           
-          {/* Understated Filter Navigation */}
+          {/* Dynamic Summary Counters Banner */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Active Counter Card */}
+            <button
+              type="button"
+              onClick={() => setCommissionSection('active')}
+              className={`p-5 rounded-xl border text-left transition-all cursor-pointer ${
+                commissionSection === 'active'
+                  ? 'bg-orange-50/50 dark:bg-orange-950/20 border-[#EA580C] ring-1 ring-[#EA580C] shadow-2xs'
+                  : 'bg-white dark:bg-[#18181B] border-[#E4E2DC] dark:border-[#27272A] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46]'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-mono text-xs uppercase tracking-widest font-semibold text-[#EA580C]">
+                  Active
+                </span>
+                <span className={`w-2.5 h-2.5 rounded-full ${activeCommissions.length > 0 ? 'bg-[#EA580C] animate-pulse' : 'bg-zinc-300 dark:bg-zinc-700'}`} />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  {activeCommissions.length}
+                </span>
+                <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                  {activeCommissions.length === 1 ? 'commission' : 'commissions'}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 font-mono">
+                In progress, review & final approval
+              </p>
+            </button>
+
+            {/* Completed Counter Card */}
+            <button
+              type="button"
+              onClick={() => setCommissionSection('completed')}
+              className={`p-5 rounded-xl border text-left transition-all cursor-pointer ${
+                commissionSection === 'completed'
+                  ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500 ring-1 ring-emerald-500 shadow-2xs'
+                  : 'bg-white dark:bg-[#18181B] border-[#E4E2DC] dark:border-[#27272A] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46]'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-mono text-xs uppercase tracking-widest font-semibold text-emerald-600 dark:text-emerald-400">
+                  Completed
+                </span>
+                <span className={`w-2.5 h-2.5 rounded-full ${completedCommissions.length > 0 ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-700'}`} />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  {completedCommissions.length}
+                </span>
+                <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                  {completedCommissions.length === 1 ? 'commission' : 'commissions'}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 font-mono">
+                Finished commission history & deliverables
+              </p>
+            </button>
+
+            {/* Cancelled Counter Card */}
+            <button
+              type="button"
+              onClick={() => setCommissionSection('cancelled')}
+              className={`p-5 rounded-xl border text-left transition-all cursor-pointer ${
+                commissionSection === 'cancelled'
+                  ? 'bg-zinc-100 dark:bg-zinc-900 border-zinc-500 ring-1 ring-zinc-500 shadow-2xs'
+                  : 'bg-white dark:bg-[#18181B] border-[#E4E2DC] dark:border-[#27272A] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46]'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-mono text-xs uppercase tracking-widest font-semibold text-zinc-600 dark:text-zinc-400">
+                  Cancelled
+                </span>
+                <span className={`w-2.5 h-2.5 rounded-full ${cancelledCommissions.length > 0 ? 'bg-zinc-400' : 'bg-zinc-300 dark:bg-zinc-700'}`} />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  {cancelledCommissions.length}
+                </span>
+                <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                  {cancelledCommissions.length === 1 ? 'commission' : 'commissions'}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 font-mono">
+                Cancelled or declined historical records
+              </p>
+            </button>
+          </div>
+
+          {/* Section Navigation Tabs */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mr-1">Filter:</span>
-              {[
-                { key: 'all', label: `All (${commissions.length})` },
-                { key: 'pending', label: 'Pending Review' },
-                { key: 'in_progress', label: 'In Progress' },
-                { key: 'review', label: 'Proof Delivered' },
-                { key: 'completed', label: 'Completed' },
-              ].map(f => (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => setCommissionFilter(f.key)}
-                  className={`px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer ${
-                    commissionFilter === f.key
-                      ? 'bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold'
-                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
+            <div className="flex items-center gap-1.5 p-1 bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg flex-wrap">
+              <button
+                type="button"
+                onClick={() => setCommissionSection('active')}
+                className={`px-3.5 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer ${
+                  commissionSection === 'active'
+                    ? 'bg-white dark:bg-[#18181B] text-[#EA580C] shadow-2xs border border-[#E4E2DC] dark:border-[#27272A]'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                }`}
+              >
+                Active ({activeCommissions.length})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCommissionSection('completed')}
+                className={`px-3.5 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer ${
+                  commissionSection === 'completed'
+                    ? 'bg-white dark:bg-[#18181B] text-emerald-600 dark:text-emerald-400 shadow-2xs border border-[#E4E2DC] dark:border-[#27272A]'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                }`}
+              >
+                Completed ({completedCommissions.length})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCommissionSection('cancelled')}
+                className={`px-3.5 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer ${
+                  commissionSection === 'cancelled'
+                    ? 'bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs border border-[#E4E2DC] dark:border-[#27272A]'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                }`}
+              >
+                Cancelled ({cancelledCommissions.length})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCommissionSection('all')}
+                className={`px-3.5 py-1.5 rounded-md text-xs font-mono transition-all cursor-pointer ${
+                  commissionSection === 'all'
+                    ? 'bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] font-semibold shadow-2xs border border-[#E4E2DC] dark:border-[#27272A]'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                }`}
+              >
+                All Sections ({commissions.length})
+              </button>
             </div>
 
             <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
-              Showing {filteredCommissions.length} of {commissions.length} commissions
+              Total database records: <strong className="text-[#18181B] dark:text-[#EDEDEC]">{commissions.length}</strong>
             </span>
           </div>
 
-          {/* Commissions List */}
-          <div className="space-y-4">
-            {filteredCommissions.map((comm) => {
-              const isSelected = comm.id === selectedCommissionId;
+          {/* ACTIVE SECTION */}
+          {(commissionSection === 'active' || commissionSection === 'all') && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                <div>
+                  <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block">
+                    ACTIVE
+                  </span>
+                  <p className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                    {activeCommissions.length} {activeCommissions.length === 1 ? 'commission' : 'commissions'}
+                  </p>
+                </div>
 
-              return (
-                <article
-                  key={comm.id}
-                  className={`bg-white dark:bg-[#18181B] border rounded-xl p-5 sm:p-6 transition-all space-y-5 ${
-                    isSelected ? 'border-[#EA580C] shadow-2xs' : 'border-[#E4E2DC] dark:border-[#27272A]'
-                  }`}
-                >
-                  {/* Commission Header Row */}
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
-                    <div className="flex items-start gap-4">
-                      <img
-                        src={comm.clientAvatar}
-                        alt={comm.clientName}
-                        className="w-11 h-11 rounded-full object-cover ring-1 ring-[#E4E2DC] dark:ring-[#27272A] shrink-0"
-                      />
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
-                            {comm.projectName}
-                          </h3>
-                          <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
-                            #{comm.id.slice(0, 8)}
-                          </span>
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] text-[#EA580C] font-semibold uppercase">
-                            {comm.serviceType}
-                          </span>
-                          <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
-                            {comm.budget}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] flex-wrap">
-                          <span>Client: <strong className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{comm.clientName}</strong></span>
-                          <span>·</span>
-                          <span>{comm.clientEmail}</span>
-                          <span>·</span>
-                          <span>Deadline: {formatCommissionDate(comm.deadline)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Status & Priority Selectors */}
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {/* Status Dropdown */}
-                      <div className="flex items-center gap-1.5 font-mono text-xs">
-                        <label htmlFor={`status-select-${comm.id}`} className="text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA]">
-                          Status:
-                        </label>
-                        <select
-                          id={`status-select-${comm.id}`}
-                          value={
-                            comm.status === 'In Progress' ? 'in_progress' :
-                            comm.status === 'Client Review' ? 'for_review' :
-                            comm.status === 'Revision Requested' ? 'revision' :
-                            comm.status === 'Final Approval' || comm.status === 'final_approval' ? 'final_approval' :
-                            comm.status === 'Rejected' ? 'cancelled' :
-                            comm.status === 'Completed' ? 'completed' :
-                            comm.status === 'Pending' ? 'pending' :
-                            comm.status
-                          }
-                          disabled={statusUpdatingId === comm.id}
-                          onChange={(e) => handleStatusChange(comm.id, e.target.value as CommissionStatus)}
-                          className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-2.5 py-1 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] cursor-pointer"
-                        >
-                          {STATUS_OPTIONS.map(opt => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                        {statusSuccessId === comm.id && (
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400">✓ Saved</span>
-                        )}
-                      </div>
-
-                      {/* Priority Dropdown */}
-                      <div className="flex items-center gap-1.5 font-mono text-xs">
-                        <label htmlFor={`priority-select-${comm.id}`} className="text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA]">
-                          Priority:
-                        </label>
-                        <select
-                          id={`priority-select-${comm.id}`}
-                          value={(comm.priority || 'normal').toLowerCase()}
-                          disabled={priorityUpdatingId === comm.id}
-                          onChange={(e) => handlePriorityChange(comm.id, e.target.value as CommissionPriority)}
-                          className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-2.5 py-1 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] cursor-pointer"
-                        >
-                          {PRIORITY_OPTIONS.map(opt => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Action Links */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedCommissionId(comm.id);
-                            setActiveCommissionId(comm.id);
-                            setActiveView('chat');
-                          }}
-                          title="Open Conversation"
-                          className="p-1.5 rounded-md border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] transition-colors cursor-pointer"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedCommissionId(comm.id);
-                            setActiveCommissionId(comm.id);
-                            setActiveAdminTab('proof-uploader');
-                          }}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold text-xs transition-opacity hover:opacity-90 cursor-pointer"
-                        >
-                          <UploadCloud className="w-3.5 h-3.5" />
-                          <span>Proofs</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Accept / Decline Bar if Pending */}
-                  {(comm.status === 'Request Submitted' || comm.status === 'pending') && (
-                    <div className="p-3 bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg flex items-center justify-between gap-3 text-xs">
-                      <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono">
-                        New commission proposal submitted by {comm.clientName}.
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => acceptCommission(comm.id)}
-                          className="px-3 py-1 rounded bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-colors cursor-pointer"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => declineCommission(comm.id)}
-                          className="px-3 py-1 rounded border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] hover:text-red-600 text-xs transition-colors cursor-pointer"
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 8-Stage Interactive Production Bar */}
-                  <div className="pt-1">
-                    <ProgressBar commission={comm} interactiveAdmin={true} />
-                  </div>
-
-                  {/* Expandable Proofs and Deliverables Accordion Controls */}
-                  <div className="flex items-center justify-between pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono">
-                    <div className="flex items-center gap-3">
+                {/* Sub-filter only when viewing Active tab directly */}
+                {commissionSection === 'active' && activeCommissions.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mr-1">Stage:</span>
+                    {[
+                      { key: 'all', label: `All Active (${activeCommissions.length})` },
+                      { key: 'pending', label: 'Pending Review' },
+                      { key: 'in_progress', label: 'In Progress' },
+                      { key: 'review', label: 'In Review' },
+                    ].map(f => (
                       <button
+                        key={f.key}
                         type="button"
-                        onClick={() => setExpandedProofsCommissionId(prev => prev === comm.id ? null : comm.id)}
-                        className="text-[#EA580C] hover:underline flex items-center gap-1 cursor-pointer font-semibold"
+                        onClick={() => setActiveStageFilter(f.key)}
+                        className={`px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer ${
+                          activeStageFilter === f.key
+                            ? 'bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold'
+                            : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] bg-[#FAF9F6] dark:bg-[#0F0F11]'
+                        }`}
                       >
-                        <Layers className="w-3 h-3" />
-                        <span>{expandedProofsCommissionId === comm.id ? 'Hide Proofs' : 'Inspect Proofs'}</span>
+                        {f.label}
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setExpandedDeliverablesCommissionId(prev => prev === comm.id ? null : comm.id)}
-                        className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] flex items-center gap-1 cursor-pointer"
-                      >
-                        <FolderArchive className="w-3 h-3" />
-                        <span>{expandedDeliverablesCommissionId === comm.id ? 'Hide Deliverables' : 'Final Deliverables'}</span>
-                      </button>
-                    </div>
-
-                    {/* Payment Status Toggles */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#71717A] dark:text-[#A1A1AA]">Settlement:</span>
-                      {(['Unpaid', 'Partial', 'Paid'] as const).map((pStatus) => (
-                        <button
-                          key={pStatus}
-                          type="button"
-                          onClick={() => updatePaymentStatus(comm.id, pStatus)}
-                          className={`px-2.5 py-0.5 rounded text-[11px] font-mono transition-colors cursor-pointer ${
-                            comm.paymentStatus === pStatus
-                              ? pStatus === 'Paid'
-                                ? 'bg-emerald-600 text-white font-bold'
-                                : pStatus === 'Partial'
-                                ? 'bg-amber-600 text-white font-bold'
-                                : 'bg-red-600 text-white font-bold'
-                              : 'bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA]'
-                          }`}
-                        >
-                          {pStatus}
-                        </button>
-                      ))}
-                    </div>
+                    ))}
                   </div>
+                )}
+              </div>
 
-                  {/* Expanded Proofs Subsection */}
-                  {expandedProofsCommissionId === comm.id && (
-                    <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] animate-in fade-in duration-200">
-                      <AdminCreativeProofsSection
-                        commission={comm}
-                        currentUser={currentUser}
-                      />
-                    </div>
-                  )}
+              {displayedActiveCommissions.length === 0 ? (
+                <div className="p-8 text-center rounded-xl border border-dashed border-[#E4E2DC] dark:border-[#27272A] bg-[#FAF9F6] dark:bg-[#0F0F11] space-y-2">
+                  <Clock className="w-8 h-8 text-[#A1A1AA] mx-auto" />
+                  <h4 className="font-display font-semibold text-sm text-[#18181B] dark:text-[#EDEDEC]">
+                    No active commissions
+                  </h4>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                    All commissions currently in progress, review, or awaiting approval appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {displayedActiveCommissions.map(renderCommissionCard)}
+                </div>
+              )}
+            </section>
+          )}
 
-                  {/* Expanded Deliverables Subsection */}
-                  {expandedDeliverablesCommissionId === comm.id && (
-                    <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] animate-in fade-in duration-200">
-                      <AdminDeliverablesSection
-                        commission={comm}
-                        currentUser={currentUser}
-                      />
-                    </div>
-                  )}
+          {/* COMPLETED SECTION */}
+          {(commissionSection === 'completed' || commissionSection === 'all') && (
+            <section className="space-y-4 pt-2">
+              <div className="flex items-center justify-between pb-2 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                <div>
+                  <span className="font-mono text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold block">
+                    COMPLETED
+                  </span>
+                  <p className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                    {completedCommissions.length} {completedCommissions.length === 1 ? 'commission' : 'commissions'}
+                  </p>
+                </div>
+                <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                  Historical Delivered Records
+                </span>
+              </div>
 
-                </article>
-              );
-            })}
-          </div>
+              {completedCommissions.length === 0 ? (
+                <div className="p-8 text-center rounded-xl border border-dashed border-[#E4E2DC] dark:border-[#27272A] bg-[#FAF9F6] dark:bg-[#0F0F11] space-y-2">
+                  <CheckCircle2 className="w-8 h-8 text-[#A1A1AA] mx-auto" />
+                  <h4 className="font-display font-semibold text-sm text-[#18181B] dark:text-[#EDEDEC]">
+                    No completed commissions yet
+                  </h4>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                    Commissions marked as completed are permanently preserved here for reference.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {completedCommissions.map(renderCommissionCard)}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* CANCELLED SECTION */}
+          {(commissionSection === 'cancelled' || commissionSection === 'all') && (
+            <section className="space-y-4 pt-2">
+              <div className="flex items-center justify-between pb-2 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                <div>
+                  <span className="font-mono text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400 font-semibold block">
+                    CANCELLED
+                  </span>
+                  <p className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                    {cancelledCommissions.length} {cancelledCommissions.length === 1 ? 'commission' : 'commissions'}
+                  </p>
+                </div>
+                <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                  Historical Discontinued Records
+                </span>
+              </div>
+
+              {cancelledCommissions.length === 0 ? (
+                <div className="p-8 text-center rounded-xl border border-dashed border-[#E4E2DC] dark:border-[#27272A] bg-[#FAF9F6] dark:bg-[#0F0F11] space-y-2">
+                  <X className="w-8 h-8 text-[#A1A1AA] mx-auto" />
+                  <h4 className="font-display font-semibold text-sm text-[#18181B] dark:text-[#EDEDEC]">
+                    No cancelled commissions
+                  </h4>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                    Commissions that are cancelled or declined are kept here as historical records.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cancelledCommissions.map(renderCommissionCard)}
+                </div>
+              )}
+            </section>
+          )}
 
         </div>
       )}
@@ -1395,12 +1656,12 @@ export const AdminDashboardView: React.FC = () => {
                         Archive Classification
                       </label>
                       <select
-                        value={projectForm.projectType || 'client'}
+                        value={projectForm.projectType || 'concept'}
                         onChange={(e) => setProjectForm(prev => ({ ...prev, projectType: e.target.value as ProjectType }))}
                         className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-1.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
                       >
-                        <option value="client">Client Work (Commissioned)</option>
                         <option value="concept">Concept Exploration (Studio R&D)</option>
+                        <option value="client">Client Work (Commissioned)</option>
                       </select>
                     </div>
 
@@ -1621,6 +1882,63 @@ export const AdminDashboardView: React.FC = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* In-App Confirmation Dialog for Portfolio Project Deletion */}
+          {projectToDelete && (
+            <div 
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-project-title"
+              className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+            >
+              <div 
+                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150"
+              >
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900/50 flex items-center justify-center shrink-0 text-red-600 dark:text-red-400">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 id="delete-project-title" className="font-display text-base sm:text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                      Delete Portfolio Project
+                    </h3>
+                    <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                      Are you sure you want to delete <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">"{projectToDelete.title}"</span>? This portfolio project will be permanently deleted from the studio website.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setProjectToDelete(null)}
+                    disabled={isDeletingProject}
+                    className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDeleteProject}
+                    disabled={isDeletingProject}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+                  >
+                    {isDeletingProject ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete Project</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}

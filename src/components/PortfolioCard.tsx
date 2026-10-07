@@ -10,7 +10,12 @@ import {
   Check, 
   Maximize2 
 } from 'lucide-react';
-import { isProjectLikedLocally } from '../lib/portfolio';
+import { 
+  isProjectLikedLocally, 
+  getProjectLikes, 
+  getProjectViews, 
+  normalizeNumericStat 
+} from '../lib/portfolio';
 
 interface PortfolioCardProps {
   project: PortfolioProject;
@@ -32,21 +37,27 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
   const isWide = variant === 'wide';
 
   const [isLiked, setIsLiked] = useState<boolean>(() => isProjectLikedLocally(project.id));
-  const [likesCount, setLikesCount] = useState<number>(() => project.likesCount ?? 0);
+  const [likesCount, setLikesCount] = useState<number>(() => getProjectLikes(project));
   const [isLiking, setIsLiking] = useState<boolean>(false);
   const [copiedShare, setCopiedShare] = useState<boolean>(false);
 
   useEffect(() => {
-    setLikesCount(project.likesCount ?? 0);
+    setLikesCount(getProjectLikes(project));
     setIsLiked(isProjectLikedLocally(project.id));
-  }, [project.id, project.likesCount]);
+  }, [project.id, project.likesCount, project.likes_count]);
+
+  const viewsCount = getProjectViews(project);
 
   const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (isLiking) return;
     setIsLiking(true);
 
-    const nextLiked = !isLiked;
+    const prevLiked = isLiked;
+    const prevCount = likesCount;
+
+    const nextLiked = !prevLiked;
     setIsLiked(nextLiked);
     setLikesCount(prev => nextLiked ? prev + 1 : Math.max(0, prev - 1));
 
@@ -56,12 +67,12 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
         setIsLiked(res.liked);
         setLikesCount(res.likesCount);
       } else {
-        setIsLiked(!nextLiked);
-        setLikesCount(project.likesCount ?? 0);
+        setIsLiked(prevLiked);
+        setLikesCount(prevCount);
       }
     } catch {
-      setIsLiked(!nextLiked);
-      setLikesCount(project.likesCount ?? 0);
+      setIsLiked(prevLiked);
+      setLikesCount(prevCount);
     } finally {
       setIsLiking(false);
     }
@@ -127,11 +138,11 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
           </span>
 
           <span className={`font-mono text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded backdrop-blur-xs shadow-2xs border ${
-            project.projectType === 'concept'
+            project.projectType === 'concept' || !project.projectType
               ? 'bg-purple-950/80 text-purple-200 border-purple-800/60'
               : 'bg-emerald-950/80 text-emerald-200 border-emerald-800/60'
           }`}>
-            {project.projectType === 'concept' ? 'Concept' : 'Client'}
+            {project.projectType === 'concept' || !project.projectType ? 'Concept Exploration' : 'Client Commission'}
           </span>
         </div>
 
@@ -141,9 +152,12 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
             <button
               type="button"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 onPreview(project);
               }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               aria-label="Quick visual preview"
               title="Quick preview"
               className="w-7 h-7 rounded-lg bg-black/60 hover:bg-black text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer backdrop-blur-xs shadow-xs"
@@ -155,6 +169,8 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
           <button
             type="button"
             onClick={handleShare}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
             aria-label="Share case study"
             title={copiedShare ? "Link copied!" : "Share case study"}
             className="w-7 h-7 rounded-lg bg-black/60 hover:bg-black text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer backdrop-blur-xs shadow-xs"
@@ -177,7 +193,11 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
         <div className="space-y-2">
           {/* Metadata String */}
           <div className="flex items-center gap-2 text-[11px] text-[#71717A] dark:text-[#A1A1AA] font-mono tracking-wider uppercase font-medium">
-            <span>{project.client || (project.projectType === 'concept' ? 'Studio Concept' : 'Client Work')}</span>
+            <span>
+              {project.projectType === 'concept' || !project.projectType
+                ? (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Studio Concept')
+                : (project.client || 'Client Commission')}
+            </span>
             <span aria-hidden="true" className="text-[#A1A1AA]">•</span>
             <span>{project.date}</span>
           </div>
@@ -200,7 +220,16 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
             <button
               type="button"
               onClick={handleLike}
-              disabled={isLiking}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleLike(e as any);
+                }
+              }}
+              aria-disabled={isLiking}
               aria-label={isLiked ? "Unlike project" : "Like project"}
               className={`inline-flex items-center gap-1.5 text-xs font-mono transition-colors cursor-pointer py-1 px-1.5 -ml-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5 ${
                 isLiked 
@@ -209,13 +238,13 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
               }`}
             >
               <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current text-rose-500' : ''}`} />
-              <span>{likesCount}</span>
+              <span>{likesCount.toLocaleString()}</span>
             </button>
 
             {/* Views Metric */}
             <div className="inline-flex items-center gap-1 text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
               <Eye className="w-3.5 h-3.5 text-[#A1A1AA]" />
-              <span>{(project.viewsCount ?? 0).toLocaleString()}</span>
+              <span>{viewsCount.toLocaleString()}</span>
             </div>
           </div>
 

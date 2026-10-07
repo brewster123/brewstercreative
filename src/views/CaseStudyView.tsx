@@ -3,8 +3,11 @@ import { useApp } from '../context/AppContext';
 import { PortfolioProject, ServiceItem } from '../types';
 import { 
   isProjectLikedLocally, 
-  recordPortfolioViewDebounced,
   extractCaseStudyIdFromHash,
+  getProjectViews,
+  getProjectLikes,
+  getProjectShares,
+  normalizeNumericStat,
 } from '../lib/portfolio';
 import { 
   ArrowLeft, 
@@ -24,7 +27,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { ServiceCard } from '../components/ServiceCard';
-import { PortfolioModal } from '../components/PortfolioModal';
+import { ImageLightbox } from '../components/ImageLightbox';
 
 export const CaseStudyView: React.FC = () => {
   const { 
@@ -36,6 +39,8 @@ export const CaseStudyView: React.FC = () => {
     setPreselectedService, 
     setActiveView,
     toggleProjectLikeInContext,
+    recordProjectViewInContext,
+    currentUser,
   } = useApp();
 
   // Resolve target project: prefer matching selected project, otherwise resolve by URL hash
@@ -48,36 +53,53 @@ export const CaseStudyView: React.FC = () => {
     null;
 
   const [isLiked, setIsLiked] = useState<boolean>(() => project ? isProjectLikedLocally(project.id) : false);
-  const [likesCount, setLikesCount] = useState<number>(() => project?.likesCount ?? 0);
-  const [viewsCount, setViewsCount] = useState<number>(() => project?.viewsCount ?? 0);
+  const [likesCount, setLikesCount] = useState<number>(() => getProjectLikes(project));
+  const [viewsCount, setViewsCount] = useState<number>(() => getProjectViews(project));
+  const [sharesCount, setSharesCount] = useState<number>(() => getProjectShares(project));
   const [isLiking, setIsLiking] = useState<boolean>(false);
   const [copiedShare, setCopiedShare] = useState<boolean>(false);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState<number>(0);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
 
-  // Sync state when project or likes count changes
+  // View recording effect: strictly triggered ONLY when the actual viewed project changes
   useEffect(() => {
-    if (!project) return;
-    setIsLiked(isProjectLikedLocally(project.id));
-    setLikesCount(project.likesCount ?? 0);
-    setViewsCount(project.viewsCount ?? 0);
+    if (!project?.id) return;
     setActiveGalleryIndex(0);
 
     // Scroll instantly to top
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
-    // Atomically increment views via RPC with in-memory session debounce
+    // Strictly authenticated accounts generate portfolio views
+    if (!currentUser?.id) return;
+
     let isMounted = true;
-    recordPortfolioViewDebounced(project.id).then((res) => {
-      if (isMounted && res.viewsCount !== null && typeof res.viewsCount === 'number') {
-        setViewsCount(res.viewsCount);
+    recordProjectViewInContext(project.id).then((res) => {
+      if (isMounted && res.viewed && res.viewsCount !== null) {
+        setViewsCount(normalizeNumericStat(res.viewsCount, 0));
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [project?.id, project?.likesCount]);
+  }, [project?.id, currentUser?.id]);
+
+  // Synchronize local like, views, and shares state when project data changes without re-triggering view recording
+  useEffect(() => {
+    if (!project) return;
+    setIsLiked(isProjectLikedLocally(project.id));
+    setLikesCount(getProjectLikes(project));
+    setViewsCount(getProjectViews(project));
+    setSharesCount(getProjectShares(project));
+  }, [
+    project?.id, 
+    project?.likesCount, 
+    (project as any)?.likes_count, 
+    project?.viewsCount, 
+    (project as any)?.views_count,
+    (project as any)?.sharesCount,
+    (project as any)?.shares_count
+  ]);
 
   if (!project && hashId) {
     return (
@@ -129,8 +151,11 @@ export const CaseStudyView: React.FC = () => {
     if (isLiking || !project) return;
     setIsLiking(true);
 
+    const prevLiked = isLiked;
+    const prevCount = likesCount;
+
     // Optimistic UI update
-    const nextLiked = !isLiked;
+    const nextLiked = !prevLiked;
     setIsLiked(nextLiked);
     setLikesCount(prev => nextLiked ? prev + 1 : Math.max(0, prev - 1));
 
@@ -141,13 +166,13 @@ export const CaseStudyView: React.FC = () => {
         setLikesCount(res.likesCount);
       } else {
         // Rollback on RPC error
-        setIsLiked(!nextLiked);
-        setLikesCount(project.likesCount ?? 0);
+        setIsLiked(prevLiked);
+        setLikesCount(prevCount);
       }
     } catch {
       // Rollback on network failure
-      setIsLiked(!nextLiked);
-      setLikesCount(project.likesCount ?? 0);
+      setIsLiked(prevLiked);
+      setLikesCount(prevCount);
     } finally {
       setIsLiking(false);
     }
@@ -202,6 +227,10 @@ export const CaseStudyView: React.FC = () => {
     cs?.reflection
   );
 
+  const formattedViews = `${viewsCount.toLocaleString()} ${viewsCount === 1 ? 'View' : 'Views'}`;
+  const formattedLikes = `${likesCount.toLocaleString()} ${likesCount === 1 ? 'Like' : 'Likes'}`;
+  const formattedShares = `${sharesCount.toLocaleString()} ${sharesCount === 1 ? 'Share' : 'Shares'}`;
+
   return (
     <article className="min-h-screen pb-24">
       {/* ------------------------------------------------------------- */}
@@ -225,14 +254,14 @@ export const CaseStudyView: React.FC = () => {
             {/* View Count Indicator */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
               <Eye className="w-3.5 h-3.5 text-[#A1A1AA]" />
-              <span>{viewsCount.toLocaleString()}</span>
+              <span>{formattedViews}</span>
             </div>
 
             {/* Like Button */}
             <button
               type="button"
               onClick={handleToggleLike}
-              disabled={isLiking}
+              aria-disabled={isLiking}
               aria-label={isLiked ? "Unlike case study" : "Like case study"}
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
                 isLiked
@@ -241,7 +270,7 @@ export const CaseStudyView: React.FC = () => {
               }`}
             >
               <Heart className={`w-3.5 h-3.5 transition-transform ${isLiked ? 'fill-current scale-110' : ''}`} />
-              <span className="font-mono">{likesCount.toLocaleString()}</span>
+              <span className="font-mono">{formattedLikes}</span>
             </button>
 
             {/* Share Button */}
@@ -259,7 +288,7 @@ export const CaseStudyView: React.FC = () => {
               ) : (
                 <>
                   <Share2 className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA]" />
-                  <span>Share</span>
+                  <span>{formattedShares}</span>
                 </>
               )}
             </button>
@@ -277,11 +306,11 @@ export const CaseStudyView: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3">
           {/* Project Type Badge */}
           <span className={`font-mono text-[11px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded border ${
-            project.projectType === 'concept'
+            project.projectType === 'concept' || !project.projectType
               ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/50'
               : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
           }`}>
-            {project.projectType === 'concept' ? 'Concept Exploration' : 'Client Commission'}
+            {project.projectType === 'concept' || !project.projectType ? 'Concept Exploration' : 'Client Commission'}
           </span>
 
           <span className="font-mono text-[11px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] px-2.5 py-1 rounded bg-[#F4F2ED] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A]">
@@ -310,8 +339,14 @@ export const CaseStudyView: React.FC = () => {
         {/* Metadata Ledger Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-y border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono">
           <div>
-            <span className="text-[#A1A1AA] uppercase tracking-wider text-[10px] block mb-1">Commission Client</span>
-            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{project.client || 'Internal Studio Project'}</span>
+            <span className="text-[#A1A1AA] uppercase tracking-wider text-[10px] block mb-1">
+              {project.projectType === 'concept' || !project.projectType ? 'Project Origin' : 'Commission Client'}
+            </span>
+            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">
+              {project.projectType === 'concept' || !project.projectType
+                ? (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Self-Initiated Studio Work')
+                : (project.client || 'Client Commission')}
+            </span>
           </div>
 
           <div>
@@ -327,7 +362,7 @@ export const CaseStudyView: React.FC = () => {
           <div>
             <span className="text-[#A1A1AA] uppercase tracking-wider text-[10px] block mb-1">Archive Classification</span>
             <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">
-              {project.projectType === 'concept' ? 'Experimental R&D' : 'Client Production'}
+              {project.projectType === 'concept' || !project.projectType ? 'Studio R&D' : 'Client Production'}
             </span>
           </div>
         </div>
@@ -735,14 +770,18 @@ export const CaseStudyView: React.FC = () => {
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* 5. LIGHTBOX PREVIEW MODAL (Reusing PortfolioModal for zoom)   */}
+      {/* 5. LIGHTBOX PREVIEW MODAL (Lightweight image-focused lightbox) */}
       {/* ------------------------------------------------------------- */}
-      {isPreviewModalOpen && (
-        <PortfolioModal
-          project={project}
-          onClose={() => setIsPreviewModalOpen(false)}
-        />
-      )}
+      <ImageLightbox
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        imageUrl={galleryImages[activeGalleryIndex]}
+        altText={`${project.title} - Image ${(activeGalleryIndex + 1).toString()}`}
+        title={project.title}
+        images={galleryImages}
+        currentIndex={activeGalleryIndex}
+        onNavigate={(newIdx) => setActiveGalleryIndex(newIdx)}
+      />
 
     </article>
   );

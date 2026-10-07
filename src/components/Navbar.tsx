@@ -36,16 +36,16 @@ export const Navbar: React.FC = () => {
 
   // Unread notifications count
   const unreadCount = notifications.filter(n => 
-    !n.readStatus && (currentUser?.role === 'admin' ? true : n.userId === currentUser?.id)
+    !n.readStatus && !n.is_read && (currentUser?.role === 'admin' ? true : (n.userId === currentUser?.id || n.recipient_id === currentUser?.id || n.recipientId === currentUser?.id || n.user_id === currentUser?.id))
   ).length;
 
   // Unread messages indicator for authenticated user (both client and admin)
   const unreadMessagesCount = currentUser
     ? (currentUser.role === 'admin'
         ? (messages.filter(m => m.senderId !== currentUser.id && m.senderRole !== 'admin' && !m.readStatus).length +
-           notifications.filter(n => !n.readStatus && n.type === 'message').length)
+           notifications.filter(n => (!n.readStatus && !n.is_read) && n.type === 'message').length)
         : (messages.filter(m => m.senderId !== currentUser.id && !m.readStatus).length +
-           notifications.filter(n => !n.readStatus && n.userId === currentUser.id && n.type === 'message').length))
+           notifications.filter(n => (!n.readStatus && !n.is_read) && (n.userId === currentUser.id || n.recipient_id === currentUser.id || n.recipientId === currentUser.id || n.user_id === currentUser.id) && n.type === 'message').length))
     : 0;
 
   const isCommissionActive = (c: Commission) => {

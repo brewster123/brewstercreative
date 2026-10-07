@@ -79,7 +79,11 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
           {/* 1. Project Title & Metadata Header */}
           <div className="space-y-4 max-w-3xl">
             <div className="flex items-center gap-3 text-xs sm:text-sm font-mono text-[#71717A] dark:text-[#A1A1AA] tracking-wider uppercase">
-              <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{project.client}</span>
+              <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">
+                {project.projectType === 'concept' || !project.projectType
+                  ? (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Studio Concept')
+                  : (project.client || 'Client Project')}
+              </span>
               <span aria-hidden="true" className="text-[#A1A1AA]">·</span>
               <span>{project.category}</span>
               <span aria-hidden="true" className="text-[#A1A1AA]">·</span>
@@ -221,13 +225,15 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
               {/* Project Client & Year */}
               <div className="space-y-1.5 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold">
-                  Commission Client
+                  {project.projectType === 'concept' || !project.projectType ? 'Project Origin' : 'Commission Client'}
                 </span>
                 <p className="text-sm font-bold text-[#18181B] dark:text-[#EDEDEC]">
-                  {project.client}
+                  {project.projectType === 'concept' || !project.projectType
+                    ? (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Self-Initiated Studio Work')
+                    : (project.client || 'Client Commission')}
                 </p>
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-                  Completed: {project.date}
+                  {project.projectType === 'concept' || !project.projectType ? 'Archived' : 'Completed'}: {project.date}
                 </p>
               </div>
 

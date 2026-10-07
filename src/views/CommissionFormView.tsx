@@ -14,6 +14,88 @@ import {
   ExternalLink
 } from 'lucide-react';
 
+export const COMMISSION_DRAFT_STORAGE_KEY = 'brewster_commission_form_draft_v1';
+
+export interface CommissionDraftData {
+  serviceType?: string;
+  title?: string;
+  description?: string;
+  purpose?: string;
+  targetAudience?: string;
+  preferredStyle?: string;
+  colorsInput?: string;
+  referenceLinksInput?: string;
+  requiredDimensions?: string;
+  additionalNotes?: string;
+  budget?: string;
+  deadline?: string;
+  updatedAt?: number;
+}
+
+/**
+ * Safely loads the saved commission brief draft from sessionStorage.
+ * Corrupted, invalid, or unparseable drafts are safely discarded without throwing.
+ */
+export function loadCommissionDraft(): CommissionDraftData | null {
+  try {
+    if (typeof window === 'undefined' || !window.sessionStorage) return null;
+    const raw = window.sessionStorage.getItem(COMMISSION_DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      window.sessionStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
+      return null;
+    }
+    return {
+      serviceType: typeof parsed.serviceType === 'string' ? parsed.serviceType : undefined,
+      title: typeof parsed.title === 'string' ? parsed.title : '',
+      description: typeof parsed.description === 'string' ? parsed.description : '',
+      purpose: typeof parsed.purpose === 'string' ? parsed.purpose : '',
+      targetAudience: typeof parsed.targetAudience === 'string' ? parsed.targetAudience : '',
+      preferredStyle: typeof parsed.preferredStyle === 'string' ? parsed.preferredStyle : '',
+      colorsInput: typeof parsed.colorsInput === 'string' ? parsed.colorsInput : '',
+      referenceLinksInput: typeof parsed.referenceLinksInput === 'string' ? parsed.referenceLinksInput : '',
+      requiredDimensions: typeof parsed.requiredDimensions === 'string' ? parsed.requiredDimensions : '',
+      additionalNotes: typeof parsed.additionalNotes === 'string' ? parsed.additionalNotes : '',
+      budget: typeof parsed.budget === 'string' ? parsed.budget : undefined,
+      deadline: typeof parsed.deadline === 'string' ? parsed.deadline : '',
+      updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : undefined,
+    };
+  } catch (err) {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
+      }
+    } catch {}
+    return null;
+  }
+}
+
+/**
+ * Safely persists the user-entered commission brief draft to sessionStorage.
+ * Never throws if storage quota is exceeded or storage is disabled.
+ */
+export function saveCommissionDraft(draft: CommissionDraftData): void {
+  try {
+    if (typeof window === 'undefined' || !window.sessionStorage) return;
+    window.sessionStorage.setItem(COMMISSION_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  } catch (err) {
+    // Silently handle quota exceeded or storage restrictions
+  }
+}
+
+/**
+ * Safely clears the commission brief draft from sessionStorage upon completion or reset.
+ */
+export function clearCommissionDraft(): void {
+  try {
+    if (typeof window === 'undefined' || !window.sessionStorage) return;
+    window.sessionStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
+  } catch (err) {
+    // Silently handle storage clearance failures
+  }
+}
+
 export const CommissionFormView: React.FC = () => {
   const { 
     currentUser, 
@@ -25,32 +107,53 @@ export const CommissionFormView: React.FC = () => {
     setActiveView 
   } = useApp();
 
-  // Commission Form Fields
-  const [serviceType, setServiceType] = useState(preselectedService || 'Brand Identity Package');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [purpose, setPurpose] = useState('');
-  const [targetAudience, setTargetAudience] = useState('');
-  const [preferredStyle, setPreferredStyle] = useState('');
-  const [colorsInput, setColorsInput] = useState('');
-  const [referenceLinksInput, setReferenceLinksInput] = useState('');
-  const [requiredDimensions, setRequiredDimensions] = useState('');
-  const [additionalNotes, setAdditionalNotes] = useState('');
-  const [budget, setBudget] = useState('5000');
-  const [deadline, setDeadline] = useState('');
+  // Load initial draft from sessionStorage on initial mount (runs once)
+  const [initialDraft] = useState<CommissionDraftData | null>(() => loadCommissionDraft());
+
+  // Commission Form Fields initialized from draft (or preselectedService/defaults)
+  const [serviceType, setServiceType] = useState(() => {
+    return initialDraft?.serviceType || preselectedService || 'Brand Identity Package';
+  });
+  const [title, setTitle] = useState(() => initialDraft?.title || '');
+  const [description, setDescription] = useState(() => initialDraft?.description || '');
+  const [purpose, setPurpose] = useState(() => initialDraft?.purpose || '');
+  const [targetAudience, setTargetAudience] = useState(() => initialDraft?.targetAudience || '');
+  const [preferredStyle, setPreferredStyle] = useState(() => initialDraft?.preferredStyle || '');
+  const [colorsInput, setColorsInput] = useState(() => initialDraft?.colorsInput || '');
+  const [referenceLinksInput, setReferenceLinksInput] = useState(() => initialDraft?.referenceLinksInput || '');
+  const [requiredDimensions, setRequiredDimensions] = useState(() => initialDraft?.requiredDimensions || '');
+  const [additionalNotes, setAdditionalNotes] = useState(() => initialDraft?.additionalNotes || '');
+  const [budget, setBudget] = useState(() => initialDraft?.budget || '5000');
+  const [deadline, setDeadline] = useState(() => initialDraft?.deadline || '');
 
   // UI States
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [referenceLinksError, setReferenceLinksError] = useState<string | null>(null);
   const [submittedCommission, setSubmittedCommission] = useState<any | null>(null);
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(() => {
+    return Boolean(
+      initialDraft && (
+        initialDraft.title || 
+        initialDraft.description || 
+        initialDraft.purpose || 
+        initialDraft.targetAudience || 
+        initialDraft.preferredStyle || 
+        initialDraft.colorsInput || 
+        initialDraft.referenceLinksInput || 
+        initialDraft.requiredDimensions || 
+        initialDraft.additionalNotes || 
+        initialDraft.deadline
+      )
+    );
+  });
 
   // Tomorrow's date string for input min attribute
   const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
-  // Sync preselectedService if passed from Portfolio or Services page
+  // Sync preselectedService if passed from Portfolio or Services page, UNLESS an existing draft was restored
   useEffect(() => {
-    if (preselectedService) {
+    if (preselectedService && !initialDraft) {
       const matchingService = services.find(
         s => s.name.toLowerCase() === preselectedService.toLowerCase() ||
              s.category.toLowerCase() === preselectedService.toLowerCase()
@@ -62,9 +165,56 @@ export const CommissionFormView: React.FC = () => {
         setServiceType(preselectedService);
       }
     }
-  }, [preselectedService, services]);
+  }, [preselectedService, services, initialDraft]);
 
-  // When serviceType changes, update recommended budget default
+  // Update sessionStorage draft whenever user edits any form field
+  useEffect(() => {
+    const hasMeaningfulContent = Boolean(
+      title.trim() ||
+      description.trim() ||
+      purpose.trim() ||
+      targetAudience.trim() ||
+      preferredStyle.trim() ||
+      colorsInput.trim() ||
+      referenceLinksInput.trim() ||
+      requiredDimensions.trim() ||
+      additionalNotes.trim() ||
+      deadline.trim()
+    );
+
+    if (hasMeaningfulContent) {
+      saveCommissionDraft({
+        serviceType,
+        title,
+        description,
+        purpose,
+        targetAudience,
+        preferredStyle,
+        colorsInput,
+        referenceLinksInput,
+        requiredDimensions,
+        additionalNotes,
+        budget,
+        deadline,
+        updatedAt: Date.now(),
+      });
+    }
+  }, [
+    serviceType,
+    title,
+    description,
+    purpose,
+    targetAudience,
+    preferredStyle,
+    colorsInput,
+    referenceLinksInput,
+    requiredDimensions,
+    additionalNotes,
+    budget,
+    deadline,
+  ]);
+
+  // When serviceType changes, update recommended budget default if user hasn't explicitly customized budget
   const handleServiceChange = (newService: string) => {
     setServiceType(newService);
     const match = services.find(s => s.name === newService);
@@ -76,6 +226,8 @@ export const CommissionFormView: React.FC = () => {
   const selectedServiceItem = services.find(s => s.name === serviceType);
 
   const resetForm = () => {
+    clearCommissionDraft();
+    setHasRestoredDraft(false);
     setTitle('');
     setDescription('');
     setPurpose('');
@@ -184,6 +336,8 @@ export const CommissionFormView: React.FC = () => {
       });
 
       if (response.success && response.commission) {
+        clearCommissionDraft();
+        setHasRestoredDraft(false);
         setSubmittedCommission(response.commission);
         setPreselectedService(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -407,6 +561,25 @@ export const CommissionFormView: React.FC = () => {
         </div>
       </div>
 
+      {/* Restored draft notification banner */}
+      {hasRestoredDraft && (
+        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between gap-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="leading-relaxed">
+              <strong>Draft Restored:</strong> Your previously entered project details have been restored for this session.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setHasRestoredDraft(false)}
+            className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:underline shrink-0 cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Sign-in prompt for unauthenticated visitors */}
       {!currentUser && (
         <div className="p-6 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
@@ -416,7 +589,7 @@ export const CommissionFormView: React.FC = () => {
               <span>Client Account Authentication Required</span>
             </div>
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
-              Please sign in or register so your commission is securely assigned to your client portal in Supabase, enabling real-time proof reviews, messaging, and asset downloads.
+              Please sign in or register so your commission is securely assigned to your client portal in Supabase. Your draft will be automatically preserved.
             </p>
           </div>
 
@@ -434,11 +607,22 @@ export const CommissionFormView: React.FC = () => {
 
       {/* ERROR FEEDBACK BANNER */}
       {formError && (
-        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 flex items-start gap-3 animate-in fade-in duration-150">
-          <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
-          <div className="text-xs sm:text-sm font-medium leading-relaxed flex-1">
-            {formError}
+        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 flex items-start justify-between gap-3 animate-in fade-in duration-150">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+            <div className="text-xs sm:text-sm font-medium leading-relaxed flex-1">
+              {formError}
+            </div>
           </div>
+          {!currentUser && (
+            <button
+              type="button"
+              onClick={() => setActiveView('auth')}
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors cursor-pointer"
+            >
+              Sign In
+            </button>
+          )}
         </div>
       )}
 

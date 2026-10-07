@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Bell, 
@@ -9,7 +9,8 @@ import {
   Sparkles, 
   AlertCircle, 
   Clock, 
-  CheckCircle2 
+  CheckCircle2,
+  ArrowRight
 } from 'lucide-react';
 import { AppNotification, NotificationType } from '../types';
 
@@ -28,12 +29,24 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
     setActiveDashboardTab 
   } = useApp();
 
+  const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
+
   // Scope notifications to authenticated user (or allow admin oversight)
   const userNotifications = notifications.filter(n => 
     currentUser?.role === 'admin' 
       ? true 
-      : (n.userId === currentUser?.id || n.recipient_id === currentUser?.id)
+      : (n.userId === currentUser?.id || n.recipient_id === currentUser?.id || n.recipientId === currentUser?.id || n.user_id === currentUser?.id)
   );
+
+  const isNotificationUnread = (n: AppNotification): boolean => {
+    return !n.readStatus && !n.is_read;
+  };
+
+  const unreadCount = userNotifications.filter(isNotificationUnread).length;
+
+  const displayedNotifications = activeTab === 'unread'
+    ? userNotifications.filter(isNotificationUnread)
+    : userNotifications;
 
   const getIcon = (type: NotificationType | string) => {
     switch (type) {
@@ -59,7 +72,22 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
   };
 
   const handleNotificationClick = (n: AppNotification) => {
-    markNotificationAsRead(n.id);
+    if (isNotificationUnread(n)) {
+      markNotificationAsRead(n.id);
+    }
+    if (n.commissionId || n.commission_id) {
+      setSelectedCommissionId(n.commissionId || n.commission_id!);
+    }
+    if (n.linkTab || n.link_tab) {
+      setActiveDashboardTab?.(n.linkTab || n.link_tab!);
+    }
+  };
+
+  const handleNavigate = (e: React.MouseEvent, n: AppNotification) => {
+    e.stopPropagation();
+    if (isNotificationUnread(n)) {
+      markNotificationAsRead(n.id);
+    }
     if (n.commissionId || n.commission_id) {
       setSelectedCommissionId(n.commissionId || n.commission_id!);
     }
@@ -93,21 +121,32 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
           <h4 className="text-xs font-bold text-[#18181B] dark:text-[#EDEDEC] uppercase tracking-wider">
             Notifications
           </h4>
-          <span className="px-2 py-0.5 rounded-md bg-[#F4F2ED] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-mono font-semibold">
-            {userNotifications.length}
-          </span>
+          {unreadCount > 0 ? (
+            <span 
+              id="notifications-unread-counter"
+              className="px-1.5 py-0.5 rounded-full bg-[#EA580C]/10 border border-[#EA580C]/20 text-[10px] text-[#EA580C] font-mono font-bold"
+            >
+              {unreadCount} unread
+            </span>
+          ) : (
+            <span className="px-1.5 py-0.5 rounded-full bg-[#F4F2ED] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-mono font-medium">
+              All caught up
+            </span>
+          )}
         </div>
         
         <div className="flex items-center gap-1">
-          {userNotifications.some(n => !n.readStatus && !n.is_read) && (
+          {unreadCount > 0 && (
             <button
               id="btn-mark-all-notifications-read"
               type="button"
               onClick={() => markAllNotificationsAsRead()}
               className="text-[11px] font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] transition-colors flex items-center gap-1 px-2 py-1 rounded-md hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] cursor-pointer"
+              title="Mark all notifications as read"
+              aria-label="Mark all as read"
             >
               <CheckCheck className="w-3.5 h-3.5" />
-              Mark all read
+              <span>Mark all as read</span>
             </button>
           )}
           <button
@@ -121,47 +160,159 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
         </div>
       </div>
 
+      {/* Tabs Toolbar: All vs Unread */}
+      <div className="px-4 py-2 bg-[#FAF9F6]/80 dark:bg-[#202024] border-b border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 bg-[#F4F2ED] dark:bg-[#18181B] p-1 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] w-full">
+          <button
+            id="tab-notifications-all"
+            type="button"
+            onClick={() => setActiveTab('all')}
+            className={`flex-1 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeTab === 'all'
+                ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-semibold'
+                : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+            }`}
+          >
+            <span>All</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-[#E4E2DC]/60 dark:bg-[#3F3F46]/60 text-[#71717A] dark:text-[#A1A1AA]">
+              {userNotifications.length}
+            </span>
+          </button>
+
+          <button
+            id="tab-notifications-unread"
+            type="button"
+            onClick={() => setActiveTab('unread')}
+            className={`flex-1 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeTab === 'unread'
+                ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-semibold'
+                : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+            }`}
+          >
+            <span>Unread</span>
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+              unreadCount > 0
+                ? 'bg-[#EA580C] text-white font-bold'
+                : 'bg-[#E4E2DC]/60 dark:bg-[#3F3F46]/60 text-[#71717A] dark:text-[#A1A1AA]'
+            }`}>
+              {unreadCount}
+            </span>
+          </button>
+        </div>
+      </div>
+
       {/* Notifications List */}
       <div className="max-h-80 overflow-y-auto divide-y divide-[#E4E2DC] dark:divide-[#27272A]">
-        {userNotifications.length === 0 ? (
+        {displayedNotifications.length === 0 ? (
           <div className="py-8 px-4 text-center">
-            <Bell className="w-8 h-8 text-[#A1A1AA] dark:text-[#71717A] mx-auto mb-2 opacity-60" />
-            <p className="text-xs text-[#18181B] dark:text-[#EDEDEC] font-bold">No notifications yet</p>
-            <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 font-medium">You're all caught up with studio activity.</p>
+            {activeTab === 'unread' ? (
+              <>
+                <CheckCircle2 className="w-8 h-8 text-[#059669] dark:text-[#34D399] mx-auto mb-2 opacity-80" />
+                <p className="text-xs text-[#18181B] dark:text-[#EDEDEC] font-bold">No unread notifications</p>
+                <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 font-medium">You're all caught up with studio activity.</p>
+                {userNotifications.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('all')}
+                    className="mt-2.5 text-xs text-[#EA580C] hover:underline font-semibold cursor-pointer"
+                  >
+                    View all notifications ({userNotifications.length})
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <Bell className="w-8 h-8 text-[#A1A1AA] dark:text-[#71717A] mx-auto mb-2 opacity-60" />
+                <p className="text-xs text-[#18181B] dark:text-[#EDEDEC] font-bold">No notifications yet</p>
+                <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 font-medium">You're all caught up with studio activity.</p>
+              </>
+            )}
           </div>
         ) : (
-          userNotifications.map((notif) => {
-            const isUnread = !notif.readStatus && !notif.is_read;
+          displayedNotifications.map((notif) => {
+            const isUnread = isNotificationUnread(notif);
+            const hasLink = Boolean(notif.commissionId || notif.commission_id || notif.linkTab || notif.link_tab || notif.type === 'message');
 
             return (
               <div
                 key={notif.id}
+                data-notification-id={notif.id}
+                data-read-status={isUnread ? 'unread' : 'read'}
                 onClick={() => handleNotificationClick(notif)}
-                className={`p-3.5 transition-colors cursor-pointer flex items-start gap-3 hover:bg-[#FAF9F6] dark:hover:bg-[#232327] ${
-                  isUnread ? 'bg-[#FFF7ED] dark:bg-[#78350F]/20' : ''
+                className={`p-3.5 transition-all cursor-pointer flex items-start gap-3 group relative ${
+                  isUnread 
+                    ? 'bg-[#FFF7ED] dark:bg-[#78350F]/20 hover:bg-[#FFEDD5]/60 dark:hover:bg-[#78350F]/30 border-l-[3px] border-l-[#EA580C]' 
+                    : 'bg-white dark:bg-[#18181B] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] border-l-[3px] border-l-transparent'
                 }`}
               >
-                <div className="mt-0.5 p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] shrink-0">
+                <div className={`mt-0.5 p-2 rounded-lg shrink-0 border ${
+                  isUnread
+                    ? 'bg-white dark:bg-[#18181B] border-[#FDBA74] dark:border-[#9A3412]/50'
+                    : 'bg-[#FAF9F6] dark:bg-[#232327] border-[#E4E2DC] dark:border-[#27272A]'
+                }`}>
                   {getIcon(notif.type)}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <h5 className={`text-xs ${isUnread ? 'font-bold text-[#18181B] dark:text-[#EDEDEC]' : 'font-medium text-[#71717A] dark:text-[#A1A1AA]'} truncate`}>
+                    <h5 className={`text-xs ${
+                      isUnread 
+                        ? 'font-bold text-[#18181B] dark:text-[#EDEDEC]' 
+                        : 'font-medium text-[#71717A] dark:text-[#A1A1AA]'
+                    } truncate`}>
                       {notif.title || 'Studio Notice'}
                     </h5>
-                    {isUnread && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C] shrink-0 mt-0.5" />
-                    )}
+                    
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isUnread && (
+                        <span 
+                          className="w-2 h-2 rounded-full bg-[#EA580C] shrink-0" 
+                          title="Unread notification"
+                          aria-label="Unread notification"
+                        />
+                      )}
+                      {isUnread && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markNotificationAsRead(notif.id);
+                          }}
+                          className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] hover:bg-white/80 dark:hover:bg-[#27272A] opacity-70 group-hover:opacity-100 transition-all cursor-pointer"
+                          title="Mark as read"
+                          aria-label="Mark as read"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <p className={`text-xs mt-0.5 leading-relaxed line-clamp-2 ${isUnread ? 'text-[#18181B] dark:text-[#EDEDEC] font-medium' : 'text-[#71717A] dark:text-[#A1A1AA] font-normal'}`}>
+                  <p className={`text-xs mt-0.5 leading-relaxed line-clamp-2 ${
+                    isUnread 
+                      ? 'text-[#18181B] dark:text-[#EDEDEC] font-medium' 
+                      : 'text-[#71717A] dark:text-[#A1A1AA] font-normal'
+                  }`}>
                     {notif.message}
                   </p>
 
-                  <p className="text-[10px] text-[#A1A1AA] dark:text-[#71717A] mt-1 font-mono">
-                    {notif.timestamp}
-                  </p>
+                  <div className="flex items-center justify-between mt-1 pt-0.5">
+                    <p className="text-[10px] text-[#A1A1AA] dark:text-[#71717A] font-mono">
+                      {notif.timestamp}
+                    </p>
+
+                    {hasLink && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleNavigate(e, notif)}
+                        className="text-[10px] font-semibold text-[#EA580C] hover:underline flex items-center gap-0.5 cursor-pointer ml-auto"
+                        title={notif.type === 'message' ? 'Open conversation' : 'View commission'}
+                      >
+                        <span>{notif.type === 'message' ? 'Open chat' : 'View'}</span>
+                        <ArrowRight className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -177,3 +328,4 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
     </div>
   );
 };
+

@@ -35,7 +35,7 @@ export const PortfolioView: React.FC = () => {
       project.category.toLowerCase() === selectedCategory.toLowerCase();
 
     // 2. Project Type Filter ('client' vs 'concept')
-    const projectType = project.projectType || 'client';
+    const projectType = project.projectType || 'concept';
     const matchesType = 
       typeFilter === 'all' || 
       projectType === typeFilter;
@@ -46,7 +46,7 @@ export const PortfolioView: React.FC = () => {
       !query ||
       project.title.toLowerCase().includes(query) ||
       project.shortDesc.toLowerCase().includes(query) ||
-      project.client.toLowerCase().includes(query) ||
+      (project.client || '').toLowerCase().includes(query) ||
       (project.tags && project.tags.some(t => t.toLowerCase().includes(query))) ||
       (project.tools && project.tools.some(tool => tool.toLowerCase().includes(query)));
 
@@ -167,28 +167,61 @@ export const PortfolioView: React.FC = () => {
 
       {/* Art-Directed Gallery Grid with Visual Rhythm */}
       {filteredProjects.length === 0 ? (
-        <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-16 text-center space-y-4 shadow-2xs max-w-xl mx-auto">
-          <Layers className="w-8 h-8 text-[#A1A1AA] mx-auto opacity-70" />
-          <div className="space-y-1">
-            <h3 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
-              No archived works found
-            </h3>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
-              No matching pieces were found matching your current filter criteria.
-            </p>
+        typeFilter === 'client' ? (
+          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-12 sm:p-16 text-center space-y-5 shadow-2xs max-w-xl mx-auto animate-in fade-in duration-200">
+            <div className="w-12 h-12 rounded-xl bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center mx-auto text-[#EA580C]">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                Client Commissions Currently Open
+              </h3>
+              <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-md mx-auto">
+                Brewster Creative is currently accepting its inaugural commissioned projects. Commercial client works will be archived here upon milestone delivery.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveView('commission-form')}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Start a Commission</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTypeFilter('all')}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] transition-colors cursor-pointer"
+              >
+                <span>View Concept Explorations</span>
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => { 
-              setSelectedCategory('All'); 
-              setTypeFilter('all');
-              setSearchQuery(''); 
-            }}
-            className="px-4 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] hover:bg-[#F4F2ED] dark:hover:bg-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] transition-colors cursor-pointer"
-          >
-            Reset All Filters
-          </button>
-        </div>
+        ) : (
+          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-16 text-center space-y-4 shadow-2xs max-w-xl mx-auto">
+            <Layers className="w-8 h-8 text-[#A1A1AA] mx-auto opacity-70" />
+            <div className="space-y-1">
+              <h3 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                No archived works found
+              </h3>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                No matching pieces were found matching your current filter criteria.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { 
+                setSelectedCategory('All'); 
+                setTypeFilter('all');
+                setSearchQuery(''); 
+              }}
+              className="px-4 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] hover:bg-[#F4F2ED] dark:hover:bg-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] transition-colors cursor-pointer"
+            >
+              Reset All Filters
+            </button>
+          </div>
+        )
       ) : (
         <div className="space-y-8 sm:space-y-12">
           {/* Asymmetric Exhibition Flow: Leading Piece is Featured if on All / no search */}

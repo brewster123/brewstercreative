@@ -73,6 +73,7 @@ import {
   recordPortfolioViewDebounced,
   fetchUserLikedProjectIds,
   extractCaseStudyIdFromHash,
+  normalizeNumericStat,
 } from '../lib/portfolio';
 
 export type AppView = 
@@ -109,7 +110,7 @@ interface AppContextType {
   openCaseStudy: (project: PortfolioProject) => void;
   closeCaseStudy: () => void;
   toggleProjectLikeInContext: (projectId: string) => Promise<{ liked: boolean; likesCount: number; error: string | null }>;
-  recordProjectViewInContext: (projectId: string) => Promise<{ viewsCount: number | null; error: string | null }>;
+  recordProjectViewInContext: (projectId: string) => Promise<{ viewed: boolean; viewsCount: number | null; error: string | null }>;
   preselectedService: string | null;
   setPreselectedService: (serviceName: string | null) => void;
   selectedShopProduct: ShopProduct | null;
@@ -213,7 +214,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   THEME: 'brewster_theme',
   PROFILE: 'cabando_studio_profile_v3',
   SERVICES: 'cabando_services_v3',
@@ -224,6 +225,7 @@ const STORAGE_KEYS = {
   TIMELINE: 'cabando_timeline_v3',
   FILES: 'cabando_files_v3',
   NOTIFICATIONS: 'cabando_notifications_v3',
+  COMMISSION_DRAFT: 'brewster_commission_form_draft_v1',
 };
 
 
@@ -303,7 +305,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (saved) {
             const list: PortfolioProject[] = JSON.parse(saved);
             const found = list.find((p) => p.id === caseStudyId);
-            if (found) return found;
+            if (found) {
+              const init = INITIAL_PORTFOLIO.find((ip) => ip.id === found.id);
+              if (init) {
+                return {
+                  ...found,
+                  projectType: init.projectType,
+                  client: init.client,
+                  fullDesc: init.fullDesc,
+                };
+              }
+              return found;
+            }
           }
         } catch {}
         const fallback = INITIAL_PORTFOLIO.find((p) => p.id === caseStudyId);
@@ -362,13 +375,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const parsed: PortfolioProject[] = JSON.parse(saved);
         return parsed.map((p) => {
           const init = INITIAL_PORTFOLIO.find((ip) => ip.id === p.id);
-          const rawLikes = p.likesCount != null ? Number(p.likesCount) : (init?.likesCount ?? 0);
-          const rawViews = p.viewsCount != null ? Number(p.viewsCount) : (init?.viewsCount ?? 0);
+          const rawLikes = p.likesCount ?? (p as any).likes_count ?? (p as any).likes ?? init?.likesCount ?? 0;
+          const rawViews = p.viewsCount ?? (p as any).views_count ?? (p as any).views ?? init?.viewsCount ?? 0;
+          const rawShares = p.sharesCount ?? (p as any).shares_count ?? (p as any).shares ?? (init as any)?.sharesCount ?? 0;
+          const likesCount = normalizeNumericStat(rawLikes, 0);
+          const viewsCount = normalizeNumericStat(rawViews, 0);
+          const sharesCount = normalizeNumericStat(rawShares, 0);
+
           const item: PortfolioProject = {
             ...p,
-            likesCount: !isNaN(rawLikes) ? rawLikes : 0,
-            viewsCount: !isNaN(rawViews) ? rawViews : 0,
-            projectType: p.projectType || init?.projectType || 'client',
+            likesCount,
+            viewsCount,
+            sharesCount,
+            likes_count: likesCount,
+            views_count: viewsCount,
+            shares_count: sharesCount,
+            projectType: (init ? init.projectType : p.projectType) || 'concept',
+            client: (init ? init.client : p.client) || 'Studio Concept',
+            fullDesc: init ? init.fullDesc : p.fullDesc,
           };
           if (init?.relatedShopProductIds && !p.relatedShopProductIds) {
             item.relatedShopProductIds = init.relatedShopProductIds;
@@ -564,10 +588,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fetchPortfolioProjectsFromDb().then(({ data, error }) => {
       if (!isMounted) return;
       if (!error && data && data.length > 0) {
-        setPortfolio(data);
-        try {
-          localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(data));
-        } catch {}
+        setPortfolio((prev) => {
+          const dbMap = new Map(data.map((p) => [p.id, p]));
+          const merged = prev.map((p) => {
+            const fromDb = dbMap.get(p.id);
+            if (!fromDb) return p;
+            const likesCount = normalizeNumericStat(
+              fromDb.likesCount ?? fromDb.likes_count ?? p.likesCount ?? (p as any).likes_count,
+              0
+            );
+            const viewsCount = normalizeNumericStat(
+              fromDb.viewsCount ?? fromDb.views_count ?? p.viewsCount ?? (p as any).views_count,
+              0
+            );
+            const sharesCount = normalizeNumericStat(
+              fromDb.sharesCount ?? fromDb.shares_count ?? (p as any).sharesCount ?? (p as any).shares_count,
+              0
+            );
+            return {
+              ...p,
+              ...fromDb,
+              likesCount,
+              viewsCount,
+              sharesCount,
+              likes_count: likesCount,
+              views_count: viewsCount,
+              shares_count: sharesCount,
+            };
+          });
+          // Include any projects present in DB that weren't in prev
+          data.forEach((p) => {
+            if (!prev.some((existing) => existing.id === p.id)) {
+              merged.push(p);
+            }
+          });
+          try {
+            localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
 
         resolveHashProject(data);
       } else {
@@ -592,13 +651,72 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       },
       onPortfolioChanged: () => {
-        fetchPortfolioProjectsFromDb().then(({ data }) => {
-          if (data && isMounted) {
-            setPortfolio(data);
+        fetchPortfolioProjectsFromDb().then(({ data, error }) => {
+          if (!error && data && data.length > 0 && isMounted) {
+            setPortfolio((prev) => {
+              const dbMap = new Map(data.map((p) => [p.id, p]));
+              const merged = prev.map((p) => {
+                const fromDb = dbMap.get(p.id);
+                if (!fromDb) return p;
+                const likesCount = normalizeNumericStat(
+                  fromDb.likesCount ?? fromDb.likes_count ?? p.likesCount ?? (p as any).likes_count,
+                  0
+                );
+                const viewsCount = normalizeNumericStat(
+                  fromDb.viewsCount ?? fromDb.views_count ?? p.viewsCount ?? (p as any).views_count,
+                  0
+                );
+                const sharesCount = normalizeNumericStat(
+                  fromDb.sharesCount ?? fromDb.shares_count ?? (p as any).sharesCount ?? (p as any).shares_count,
+                  0
+                );
+                return {
+                  ...p,
+                  ...fromDb,
+                  likesCount,
+                  viewsCount,
+                  sharesCount,
+                  likes_count: likesCount,
+                  views_count: viewsCount,
+                  shares_count: sharesCount,
+                };
+              });
+              data.forEach((p) => {
+                if (!prev.some((existing) => existing.id === p.id)) {
+                  merged.push(p);
+                }
+              });
+              try {
+                localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(merged));
+              } catch {}
+              return merged;
+            });
             setSelectedPortfolioProject((prev) => {
               if (!prev) return null;
               const refreshed = data.find((p) => p.id === prev.id);
-              return refreshed || prev;
+              if (!refreshed) return prev;
+              const likesCount = normalizeNumericStat(
+                refreshed.likesCount ?? refreshed.likes_count ?? prev.likesCount ?? (prev as any).likes_count,
+                0
+              );
+              const viewsCount = normalizeNumericStat(
+                refreshed.viewsCount ?? refreshed.views_count ?? prev.viewsCount ?? (prev as any).views_count,
+                0
+              );
+              const sharesCount = normalizeNumericStat(
+                refreshed.sharesCount ?? refreshed.shares_count ?? (prev as any).sharesCount ?? (prev as any).shares_count,
+                0
+              );
+              return {
+                ...prev,
+                ...refreshed,
+                likesCount,
+                viewsCount,
+                sharesCount,
+                likes_count: likesCount,
+                views_count: viewsCount,
+                shares_count: sharesCount,
+              };
             });
           }
         });
@@ -1078,9 +1196,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (profile.role === 'admin') {
         setActiveView('admin-dashboard');
       } else {
-        const clientComm = commissions.find(c => c.clientId === profile.id || c.clientEmail.toLowerCase() === cleanEmail);
-        if (clientComm) setSelectedCommissionId(clientComm.id);
-        setActiveView('client-dashboard');
+        let hasDraft = false;
+        try {
+          hasDraft = Boolean(typeof window !== 'undefined' && window.sessionStorage?.getItem(STORAGE_KEYS.COMMISSION_DRAFT));
+        } catch {}
+
+        if (hasDraft) {
+          setActiveView('commission-form');
+        } else {
+          const clientComm = commissions.find(c => c.clientId === profile.id || c.clientEmail.toLowerCase() === cleanEmail);
+          if (clientComm) setSelectedCommissionId(clientComm.id);
+          setActiveView('client-dashboard');
+        }
       }
 
       return { success: true, user: profile };
@@ -1193,9 +1320,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setCurrentUser(finalUser);
 
-      const clientComm = commissions.find(c => c.clientEmail.toLowerCase() === cleanEmail);
-      if (clientComm) setSelectedCommissionId(clientComm.id);
-      setActiveView('client-dashboard');
+      let hasDraft = false;
+      try {
+        hasDraft = Boolean(typeof window !== 'undefined' && window.sessionStorage?.getItem(STORAGE_KEYS.COMMISSION_DRAFT));
+      } catch {}
+
+      if (hasDraft) {
+        setActiveView('commission-form');
+      } else {
+        const clientComm = commissions.find(c => c.clientEmail.toLowerCase() === cleanEmail);
+        if (clientComm) setSelectedCommissionId(clientComm.id);
+        setActiveView('client-dashboard');
+      }
 
       return { success: true, user: finalUser };
     } catch (err: any) {
@@ -2476,13 +2612,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const recordProjectViewInContext = async (
     projectId: string
-  ): Promise<{ viewsCount: number | null; error: string | null }> => {
-    const res = await recordPortfolioViewDebounced(projectId);
-    if (!res.error && res.viewsCount !== null) {
+  ): Promise<{ viewed: boolean; viewsCount: number | null; error: string | null }> => {
+    if (!currentUser?.id) {
+      return { viewed: false, viewsCount: null, error: null };
+    }
+    const res = await recordPortfolioViewDebounced(projectId, currentUser.id);
+    if (!res.error && res.viewed && res.viewsCount !== null) {
+      const safeViews = normalizeNumericStat(res.viewsCount, 0);
       setPortfolio((prev) => {
         const next = prev.map((p) => {
           if (p.id === projectId) {
-            return { ...p, viewsCount: res.viewsCount! };
+            return { ...p, viewsCount: safeViews, views_count: safeViews };
           }
           return p;
         });
@@ -2493,7 +2633,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       setSelectedPortfolioProject((prev) => {
         if (prev && prev.id === projectId) {
-          return { ...prev, viewsCount: res.viewsCount! };
+          return { ...prev, viewsCount: safeViews, views_count: safeViews };
         }
         return prev;
       });

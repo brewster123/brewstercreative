@@ -355,6 +355,15 @@ export interface PortfolioProject {
   caseStudy?: CaseStudyContent;
   likesCount?: number;
   viewsCount?: number;
+  sharesCount?: number;
+
+  // Snake_case & alias database compatibility
+  likes_count?: number;
+  views_count?: number;
+  shares_count?: number;
+  views?: number;
+  likes?: number;
+  shares?: number;
 }
 
 export interface StudioProfile {

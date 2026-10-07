@@ -36,10 +36,6 @@ export const Footer: React.FC = () => {
             </p>
 
             <div className="flex items-center gap-4 pt-2 text-xs text-[#18181B] dark:text-[#F5F5F0]">
-              <div className="flex items-center gap-1.5 bg-white dark:bg-[#181818] px-2.5 py-1 rounded-md border border-[#E4E2DC] dark:border-[#2F2F2F] text-[#059669] dark:text-[#34D399] font-medium font-mono text-[11px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse"></span>
-                <span>{studioProfile.availableSlots} Commission Slots Open</span>
-              </div>
               <div className="flex items-center gap-1.5 text-[#71717A] dark:text-[#A1A1AA] font-medium">
                 <MapPin className="w-3.5 h-3.5 text-[#EA580C]" />
                 <span>{studioProfile.location}</span>

@@ -174,10 +174,10 @@ export const PortfolioView: React.FC = () => {
             </div>
             <div className="space-y-2">
               <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
-                Client Commissions Currently Open
+                No Client Commission Archives Yet
               </h3>
               <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-md mx-auto">
-                Brewster Creative is currently accepting its inaugural commissioned projects. Commercial client works will be archived here upon milestone delivery.
+                Brewster Creative is currently building its studio archive through self-initiated creative explorations and is accepting select commissions for 2026.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -187,7 +187,7 @@ export const PortfolioView: React.FC = () => {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>Start a Commission</span>
+                <span>Request a Commission</span>
               </button>
               <button
                 type="button"

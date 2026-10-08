@@ -2,8 +2,6 @@ import { supabase } from './supabase';
 import { StudioProfile } from '../types';
 import { INITIAL_STUDIO_PROFILE } from '../data/initialData';
 
-export const PORTFOLIO_MEDIA_BUCKET = 'portfolio-media';
-
 /**
  * Maps a Supabase database row from public.studio_profile to StudioProfile.
  */

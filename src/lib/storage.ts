@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { PORTFOLIO_MEDIA_BUCKET } from './studio';
+import { PORTFOLIO_MEDIA_BUCKET } from './portfolio';
 
 export const AVATARS_BUCKET = 'avatars';
 export const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB

@@ -310,7 +310,7 @@ export const AdminDashboardView: React.FC = () => {
     tools: ['Adobe Illustrator', 'Photoshop'],
     tags: ['Branding', 'Vector'],
     featured: false,
-    projectType: 'client',
+    projectType: 'concept',
     serviceId: '',
     caseStudy: {},
   });
@@ -422,7 +422,7 @@ export const AdminDashboardView: React.FC = () => {
       tools: ['Adobe Illustrator', 'Photoshop'],
       tags: ['Branding', 'Vector'],
       featured: false,
-      projectType: 'client',
+      projectType: 'concept',
       serviceId: '',
       caseStudy: {},
     });

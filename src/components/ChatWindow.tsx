@@ -283,7 +283,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const currentStageInfo = COMMISSION_STAGES.find(s => s.number === (commission.currentStage || 1)) || COMMISSION_STAGES[0];
 
   return (
-    <div className="bg-white dark:bg-[#121215] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl overflow-hidden flex flex-col h-[700px] lg:h-[750px] shadow-sm relative">
+    <div className="bg-white dark:bg-[#121215] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl overflow-hidden flex flex-col flex-1 h-full min-h-0 shadow-sm relative">
       
       {/* 1. Atelier Conversation Header */}
       <header className="px-5 py-3.5 bg-[#FAF9F6] dark:bg-[#18181B] border-b border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between shrink-0 z-20">

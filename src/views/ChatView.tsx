@@ -84,7 +84,7 @@ export const ChatView: React.FC = () => {
 
   if (!currentUser) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6 animate-in fade-in duration-300">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-6 text-center space-y-6 animate-in fade-in duration-300">
         <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
           <MessageSquare className="w-5 h-5 text-[#EA580C]" />
         </div>
@@ -108,10 +108,10 @@ export const ChatView: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-8 animate-in fade-in duration-300">
+    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex-1 min-h-0 flex flex-col animate-in fade-in duration-300">
       
       {/* Editorial Navigation Backlink & Header */}
-      <div className="space-y-4">
+      <div className="space-y-2 sm:space-y-3 shrink-0 mb-3 sm:mb-4">
         <button
           type="button"
           onClick={handleBack}
@@ -123,8 +123,8 @@ export const ChatView: React.FC = () => {
           </span>
         </button>
 
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[#E4E2DC] dark:border-[#27272A]">
-          <div className="space-y-1">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 sm:pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+          <div className="space-y-0.5 sm:space-y-1">
             <div className="flex items-center gap-2 font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
               <span>Brewster Creative</span>
               <span>·</span>
@@ -132,7 +132,7 @@ export const ChatView: React.FC = () => {
                 {isAdmin ? 'Client Conversations' : 'Project Conversation'}
               </span>
             </div>
-            <h1 className="font-display text-3xl sm:text-4xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+            <h1 className="font-display text-2xl sm:text-3xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
               {isAdmin ? 'Client Conversations' : 'Project Conversation'}
             </h1>
             <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA]">
@@ -202,7 +202,7 @@ export const ChatView: React.FC = () => {
 
       {/* Main Messaging Interface */}
       {activeComm ? (
-        <div className="animate-in fade-in duration-200">
+        <div className="flex-1 min-h-0 flex flex-col animate-in fade-in duration-200">
           <ChatWindow 
             commission={activeComm} 
             availableCommissions={isAdmin ? commissions : clientCommissionsList}
@@ -214,7 +214,7 @@ export const ChatView: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-12 text-center space-y-4">
+        <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-8 sm:p-12 text-center space-y-4 my-auto">
           <FolderArchive className="w-8 h-8 text-[#A1A1AA] mx-auto" />
           <div className="space-y-1">
             <h3 className="font-display font-bold text-lg text-[#18181B] dark:text-[#EDEDEC]">

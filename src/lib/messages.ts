@@ -170,12 +170,13 @@ export async function fetchCommissionMessages(
 export async function sendCommissionMessageToSupabase(
   commissionId: string,
   sender: User,
-  body: string
+  body: string,
+  attachment?: MessageAttachment
 ): Promise<{ data: Message | null; error: string | null }> {
   if (!commissionId?.trim()) {
     return { data: null, error: 'Commission ID is required.' };
   }
-  const cleanBody = body?.trim();
+  const cleanBody = body?.trim() || (attachment ? (attachment.name ? `Shared attachment: ${attachment.name}` : 'Shared an attachment') : '');
   if (!cleanBody) {
     return { data: null, error: 'Message cannot be empty.' };
   }
@@ -225,6 +226,9 @@ export async function sendCommissionMessageToSupabase(
     }
 
     const mapped = await mapDbRowToMessage(data as DbMessageRow, sender);
+    if (attachment) {
+      mapped.attachment = attachment;
+    }
     return { data: mapped, error: null };
   } catch (err: any) {
     return {

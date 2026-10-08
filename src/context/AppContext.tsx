@@ -2182,7 +2182,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     text: string,
     attachment?: MessageAttachment
   ): Promise<{ success: boolean; error?: string; message?: Message }> => {
-    const cleanText = text.trim();
+    const cleanText = text?.trim() || '';
     if (!cleanText && !attachment) {
       return { success: false, error: 'Message cannot be empty.' };
     }
@@ -2192,18 +2192,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: 'You must be signed in to send messages.' };
     }
 
+    const effectiveBody = cleanText || (attachment ? (attachment.name ? `Shared attachment: ${attachment.name}` : 'Shared an attachment') : '');
+    if (!effectiveBody) {
+      return { success: false, error: 'Message cannot be empty.' };
+    }
+
     // Real Supabase persistence when user has an active session
     if (isSupabaseConfigured() && currentUser) {
-      const { data, error } = await sendCommissionMessageToSupabase(commissionId, currentUser, cleanText);
+      const { data, error } = await sendCommissionMessageToSupabase(commissionId, currentUser, effectiveBody, attachment);
       if (error || !data) {
         console.error('[Supabase Messages] Send error:', error);
         return { success: false, error: error || 'Failed to deliver message to database.' };
       }
 
+      const messageWithAttachment: Message = attachment ? { ...data, attachment } : data;
+
       setMessages(prev => {
         // Prevent duplicate if realtime also delivered it
-        if (prev.some(m => m.id === data.id)) return prev;
-        return [...prev, data];
+        if (prev.some(m => m.id === data.id)) {
+          return prev.map(m => m.id === data.id ? { ...m, attachment: m.attachment || attachment } : m);
+        }
+        return [...prev, messageWithAttachment];
       });
 
       // Generate persistent in-app notification for recipient
@@ -2214,8 +2223,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const recipientId = isSenderAdmin ? comm.clientId : adminId;
           const notifTitle = isSenderAdmin ? 'Message from Brewster Creative' : `New message from ${sender.name}`;
           const notifMsg = isSenderAdmin
-            ? `${sender.name} sent you a message: "${cleanText.slice(0, 45)}..."`
-            : `New message on "${comm.projectName}": "${cleanText.slice(0, 45)}..."`;
+            ? `${sender.name} sent you a message: "${effectiveBody.slice(0, 45)}..."`
+            : `New message on "${comm.projectName}": "${effectiveBody.slice(0, 45)}..."`;
 
           dispatchNotification({
             recipientId,
@@ -2228,7 +2237,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       }
 
-      return { success: true, message: data };
+      return { success: true, message: messageWithAttachment };
     }
 
     // Local fallback for offline/demo preview
@@ -2242,8 +2251,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       senderName: sender.name,
       senderRole: sender.role,
       senderAvatar: sender.avatar,
-      message: cleanText,
-      body: cleanText,
+      message: effectiveBody,
+      body: effectiveBody,
       attachment,
       timestamp: `${todayStr} · ${timeStr}`,
       readStatus: false,

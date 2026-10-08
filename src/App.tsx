@@ -250,8 +250,10 @@ const MainLayout: React.FC = () => {
     }
   };
 
+  const isChatView = activeView === 'chat';
+
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative">
+    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen'} flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative`}>
       {/* Database Notice Banner */}
       <DatabaseErrorBanner />
 
@@ -259,12 +261,12 @@ const MainLayout: React.FC = () => {
       <Navbar />
 
       {/* Main Page Body View */}
-      <main className="flex-1">
+      <main className={`flex-1 ${isChatView ? 'min-h-0 flex flex-col overflow-hidden' : ''}`}>
         {renderCurrentView()}
       </main>
 
       {/* Studio Footer */}
-      <Footer />
+      {!isChatView && <Footer />}
       
     </div>
   );

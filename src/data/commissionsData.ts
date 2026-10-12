@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Commission, CommissionPriority, CommissionStatus, User } from '../types';
+import { Commission, CommissionPriority, CommissionStatus, User, UserRole } from '../types';
 
 export interface CreateCommissionInput {
   clientId: string;
@@ -171,13 +171,125 @@ export function normalizeCommissionPriority(rawPriority?: string | null): Commis
   return 'normal';
 }
 
+// In-memory cache for client profiles resolved by client_id to prevent redundant network lookups
+const clientProfileCache = new Map<string, User>();
+
+/**
+ * Primes the client profile cache with known user objects.
+ */
+export function cacheClientProfiles(profiles: (User | Partial<User>)[]): void {
+  for (const p of profiles) {
+    if (p && p.id) {
+      clientProfileCache.set(p.id, {
+        id: p.id,
+        name: p.name || (p.email ? p.email.split('@')[0] : 'Client'),
+        email: p.email || '',
+        role: (p.role as UserRole) || 'client',
+        avatar: p.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+        handle: p.handle,
+        contactMethod: p.contactMethod || 'Platform Chat',
+        bio: p.bio,
+        createdAt: p.createdAt,
+      });
+    }
+  }
+}
+
+/**
+ * Synchronously retrieves a cached client profile by client ID.
+ */
+export function getCachedClientProfile(clientId: string): User | undefined {
+  return clientProfileCache.get(clientId);
+}
+
+/**
+ * Resolves a batch of client profiles by their UUIDs from public.profiles in a single query.
+ * Eliminates N+1 queries by leveraging the in-memory cache and a single batch `.in('id', missingIds)` query.
+ */
+export async function fetchClientProfilesBatch(clientIds: string[]): Promise<Map<string, User>> {
+  const result = new Map<string, User>();
+  const missingIds: string[] = [];
+
+  for (const id of clientIds) {
+    if (!id) continue;
+    const cached = clientProfileCache.get(id);
+    if (cached) {
+      result.set(id, cached);
+    } else {
+      missingIds.push(id);
+    }
+  }
+
+  if (missingIds.length === 0) {
+    return result;
+  }
+
+  const uniqueMissing = Array.from(new Set(missingIds));
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, name, email, role, avatar, handle, contact_method, bio, created_at')
+      .in('id', uniqueMissing);
+
+    if (!error && data) {
+      for (const p of data) {
+        const user: User = {
+          id: p.id,
+          name: p.name || (p.email ? p.email.split('@')[0] : 'Client'),
+          email: p.email || '',
+          role: (p.role as UserRole) || 'client',
+          avatar: p.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+          handle: p.handle,
+          contactMethod: p.contact_method || 'Platform Chat',
+          bio: p.bio,
+          createdAt: p.created_at,
+        };
+        clientProfileCache.set(p.id, user);
+        result.set(p.id, user);
+      }
+    } else if (error) {
+      console.warn('[Supabase Commissions] Warning batch fetching client profiles:', error.message);
+    }
+  } catch (err) {
+    console.warn('[Supabase Commissions] Unexpected error batch fetching client profiles:', err);
+  }
+
+  return result;
+}
+
+/**
+ * Fetches and caches an individual client profile from public.profiles.
+ */
+export async function fetchClientProfile(clientId: string): Promise<User | null> {
+  if (!clientId) return null;
+  const cached = clientProfileCache.get(clientId);
+  if (cached) return cached;
+
+  const batch = await fetchClientProfilesBatch([clientId]);
+  return batch.get(clientId) || null;
+}
+
 /**
  * Maps a Supabase database row from public.commissions into the application's Commission domain model.
+ * Protects against admin profile substitution:
+ * - If clientUser is provided, verifies that clientUser.id strictly matches row.client_id (or has no mismatched ID).
+ * - If clientUser is mismatched (e.g. admin currentUser passed in), it rejects clientUser and checks the profile cache.
+ * - If no profile is available, safely falls back to standard client defaults without crashing.
  */
 export function mapDbCommissionToAppCommission(
   row: CommissionDbRow,
-  clientUser?: User | null
+  clientUser?: Partial<User> | null
 ): Commission {
+  // Guard against accidental substitution of admin or another user's identity:
+  // Strictly accept clientUser only if its ID matches row.client_id.
+  let resolvedClient: Partial<User> | null | undefined = null;
+  if (clientUser && clientUser.id === row.client_id) {
+    resolvedClient = clientUser;
+  } else {
+    // Check in-memory cache
+    resolvedClient = clientProfileCache.get(row.client_id) || null;
+  }
+
   const rawStatus = (row.status || 'pending').toLowerCase().trim();
   const canonicalValid = [
     'pending',
@@ -223,11 +335,11 @@ export function mapDbCommissionToAppCommission(
   return {
     id: row.id,
     clientId: row.client_id,
-    clientName: clientUser?.name || 'Client',
-    clientEmail: clientUser?.email || '',
-    clientAvatar: clientUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-    clientHandle: clientUser?.handle,
-    contactMethod: clientUser?.contactMethod || 'Platform Chat',
+    clientName: resolvedClient?.name || 'Client',
+    clientEmail: resolvedClient?.email || '',
+    clientAvatar: resolvedClient?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+    clientHandle: resolvedClient?.handle,
+    contactMethod: resolvedClient?.contactMethod || 'Platform Chat',
 
     // Project Details
     projectName: row.title,
@@ -408,6 +520,9 @@ export async function insertCommissionToSupabase(
 
 /**
  * Fetches commissions from the existing public.commissions table via Supabase RLS.
+ * For clients, securely scopes to client_id = auth.uid() and maps with client's authenticated profile.
+ * For admins, fetches all commissions and batch-resolves real client profiles by client_id in a single
+ * query, avoiding N+1 performance bottlenecks and never substituting the admin's identity for the client.
  */
 export async function fetchCommissionsFromSupabase(
   currentUser?: User | null
@@ -438,9 +553,26 @@ export async function fetchCommissionsFromSupabase(
       return { success: true, data: [] };
     }
 
-    const mapped = (data as CommissionDbRow[]).map(row =>
-      mapDbCommissionToAppCommission(row, currentUser)
-    );
+    const rows = data as CommissionDbRow[];
+
+    // If client is logged in, their own commissions belong to them; prime cache and map directly
+    if (currentUser.role !== 'admin') {
+      if (currentUser.id) {
+        clientProfileCache.set(currentUser.id, currentUser);
+      }
+      const mapped = rows.map(row => mapDbCommissionToAppCommission(row, currentUser));
+      return { success: true, data: mapped };
+    }
+
+    // When admin is logged in:
+    // Resolve real client profiles for all unique client_ids in a single batch query (avoiding N+1)
+    const clientIds = Array.from(new Set(rows.map(r => r.client_id).filter(Boolean)));
+    const profilesMap = await fetchClientProfilesBatch(clientIds);
+
+    const mapped = rows.map(row => {
+      const clientProfile = profilesMap.get(row.client_id) || clientProfileCache.get(row.client_id) || null;
+      return mapDbCommissionToAppCommission(row, clientProfile);
+    });
 
     return { success: true, data: mapped };
   } catch (err: any) {
@@ -745,8 +877,8 @@ export async function approveCommissionInSupabase(
  * Calls onInsert, onUpdate, and onDelete callbacks with mapped Commission models.
  */
 export function subscribeToCommissionsChange(callbacks: {
-  onInsert: (row: CommissionDbRow) => void;
-  onUpdate: (row: CommissionDbRow) => void;
+  onInsert: (row: CommissionDbRow) => void | Promise<void>;
+  onUpdate: (row: CommissionDbRow) => void | Promise<void>;
   onDelete: (id: string) => void;
 }): () => void {
   const channel = supabase

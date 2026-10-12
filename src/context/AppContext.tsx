@@ -42,6 +42,9 @@ import {
   mapDbCommissionToAppCommission,
   getStageAndProgressFromStatus,
   getLifecycleFromStage,
+  cacheClientProfiles,
+  getCachedClientProfile,
+  fetchClientProfile,
 } from '../data/commissionsData';
 import {
   fetchCommissionMessages,
@@ -1053,6 +1056,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               createdAt: p.created_at,
             }));
             setUsers(dbUsers);
+            cacheClientProfiles(dbUsers);
           }
         });
     }
@@ -1085,10 +1089,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Phase 5E-1: Centralized Realtime subscription for public.commissions
       const unsubscribe = subscribeToCommissionsChange({
-        onInsert: (row) => {
+        onInsert: async (row) => {
           // If admin, or if the inserted commission belongs to current authenticated client
           if (currentUser.role === 'admin' || row.client_id === currentUser.id) {
-            const mapped = mapDbCommissionToAppCommission(row, currentUser);
+            let clientProfile: User | undefined;
+            if (row.client_id === currentUser.id) {
+              clientProfile = currentUser;
+            } else if (currentUser.role === 'admin') {
+              clientProfile = (await fetchClientProfile(row.client_id)) || undefined;
+            }
+            const mapped = mapDbCommissionToAppCommission(row, clientProfile);
             setCommissions(prev => {
               if (prev.some(c => c.id === mapped.id)) return prev;
               return [mapped, ...prev];
@@ -1099,15 +1109,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (currentUser.role === 'admin' || row.client_id === currentUser.id) {
             setCommissions(prev => {
               const existing = prev.find(c => c.id === row.id);
-              const mapped = mapDbCommissionToAppCommission(row, existing ? {
-                id: existing.clientId,
-                name: existing.clientName,
-                email: existing.clientEmail,
-                avatar: existing.clientAvatar,
-                handle: existing.clientHandle,
-                contactMethod: existing.contactMethod,
-                role: 'client',
-              } : currentUser);
+              let clientProfile: Partial<User> | undefined;
+              if (row.client_id === currentUser.id) {
+                clientProfile = currentUser;
+              } else if (existing && existing.clientId === row.client_id) {
+                clientProfile = {
+                  id: existing.clientId,
+                  name: existing.clientName,
+                  email: existing.clientEmail,
+                  avatar: existing.clientAvatar,
+                  handle: existing.clientHandle,
+                  contactMethod: existing.contactMethod,
+                  role: 'client',
+                };
+              } else {
+                clientProfile = getCachedClientProfile(row.client_id);
+              }
+              const mapped = mapDbCommissionToAppCommission(row, clientProfile);
 
               // Preserve clientReviewData, timelineUpdates, and proofs from existing state if present
               const merged: Commission = {

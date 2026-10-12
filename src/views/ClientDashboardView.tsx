@@ -60,7 +60,6 @@ export const ClientDashboardView: React.FC = () => {
     activeCommission, 
     setActiveCommissionId, 
     setActiveView,
-    updatePaymentStatus,
     currentUser,
     authLoading,
     updateUserProfile,
@@ -495,21 +494,31 @@ export const ClientDashboardView: React.FC = () => {
                   {commission.paymentStatus === 'Paid' ? (
                     <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">✓ Settled in Full</span>
                   ) : commission.paymentStatus === 'Partial' ? (
-                    <button
-                      type="button"
-                      onClick={() => updatePaymentStatus(commission.id, 'Paid')}
-                      className="text-[11px] font-mono text-[#EA580C] hover:underline"
-                    >
-                      50% Deposit Received · Settle Balance →
-                    </button>
+                    <div className="space-y-1">
+                      <span className="block text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] font-medium">
+                        50% Deposit Received · Balance Pending
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveView('chat')}
+                        className="text-[11px] font-mono text-[#EA580C] hover:underline text-left block"
+                      >
+                        Message studio regarding balance payment →
+                      </button>
+                    </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => updatePaymentStatus(commission.id, 'Partial')}
-                      className="text-[11px] font-mono text-[#EA580C] hover:underline"
-                    >
-                      Awaiting Deposit · Settle 50% →
-                    </button>
+                    <div className="space-y-1">
+                      <span className="block text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] font-medium">
+                        Awaiting Deposit
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveView('chat')}
+                        className="text-[11px] font-mono text-[#EA580C] hover:underline text-left block"
+                      >
+                        Contact studio to submit payment proof →
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

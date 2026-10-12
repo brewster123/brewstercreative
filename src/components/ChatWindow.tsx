@@ -135,6 +135,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   
   const [inputText, setInputText] = useState('');
   const [attachment, setAttachment] = useState<MessageAttachment | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -146,6 +147,23 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+  const clearAttachment = useCallback(() => {
+    if (attachment?.url && attachment.url.startsWith('blob:')) {
+      URL.revokeObjectURL(attachment.url);
+    }
+    setAttachment(null);
+    setAttachmentFile(null);
+  }, [attachment]);
+
+  // Clean up any remaining blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (attachment?.url && attachment.url.startsWith('blob:')) {
+        URL.revokeObjectURL(attachment.url);
+      }
+    };
+  }, [attachment]);
 
   const commissionMessages = messages.filter(m => m.commissionId === commission.id);
 
@@ -218,18 +236,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const textToSend = inputText.trim();
-    if (!textToSend && !attachment) return;
+    if (!textToSend && !attachment && !attachmentFile) return;
 
     setIsSending(true);
     setSendError(null);
 
-    const result = await sendMessage(commission.id, textToSend, attachment || undefined);
+    const result = await sendMessage(commission.id, textToSend, attachment || undefined, attachmentFile || undefined);
 
     setIsSending(false);
 
     if (result.success) {
       setInputText('');
-      setAttachment(null);
+      clearAttachment();
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
@@ -264,14 +282,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Check 25MB limit immediately on client
+    if (file.size > 25 * 1024 * 1024) {
+      setSendError(`File "${file.name}" exceeds 25 MB limit.`);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Clean up previous blob URL if any
+    if (attachment?.url && attachment.url.startsWith('blob:')) {
+      URL.revokeObjectURL(attachment.url);
+    }
+
     const isImg = file.type.startsWith('image/');
     const fakeUrl = URL.createObjectURL(file);
 
+    setAttachmentFile(file);
     setAttachment({
       name: file.name,
       url: fakeUrl,
       type: isImg ? 'image' : 'file',
       size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+      mime: file.type,
     });
 
     if (fileInputRef.current) {
@@ -561,7 +595,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
               <button
                 type="button"
-                onClick={() => setAttachment(null)}
+                onClick={clearAttachment}
                 className="text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC] cursor-pointer p-1"
                 title="Discard attachment"
               >

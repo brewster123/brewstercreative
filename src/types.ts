@@ -213,6 +213,8 @@ export interface MessageAttachment {
   url: string;
   type: 'image' | 'file';
   size?: string;
+  path?: string;
+  mime?: string;
 }
 
 export interface Message {
@@ -233,6 +235,11 @@ export interface Message {
   commission_id?: string;
   sender_id?: string;
   created_at?: string;
+  attachment_name?: string | null;
+  attachment_path?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: string | null;
+  attachment_mime?: string | null;
 }
 
 export interface ProgressUpdate {

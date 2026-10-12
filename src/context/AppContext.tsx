@@ -181,7 +181,7 @@ interface AppContextType {
   uploadDesignReviewDraft: (commissionId: string, previewImages: string[], reviewNotes: string) => void;
   
   // Messaging
-  sendMessage: (commissionId: string, text: string, attachment?: MessageAttachment) => Promise<{ success: boolean; error?: string; message?: Message }>;
+  sendMessage: (commissionId: string, text: string, attachment?: MessageAttachment, attachmentFile?: File) => Promise<{ success: boolean; error?: string; message?: Message }>;
   fetchMessagesForCommission: (commissionId: string) => Promise<{ data: Message[] | null; error: string | null }>;
   markMessagesAsRead: (commissionId: string) => void;
   
@@ -2198,10 +2198,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const sendMessage = async (
     commissionId: string,
     text: string,
-    attachment?: MessageAttachment
+    attachment?: MessageAttachment,
+    attachmentFile?: File
   ): Promise<{ success: boolean; error?: string; message?: Message }> => {
     const cleanText = text?.trim() || '';
-    if (!cleanText && !attachment) {
+    if (!cleanText && !attachment && !attachmentFile) {
       return { success: false, error: 'Message cannot be empty.' };
     }
 
@@ -2210,25 +2211,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: 'You must be signed in to send messages.' };
     }
 
-    const effectiveBody = cleanText || (attachment ? (attachment.name ? `Shared attachment: ${attachment.name}` : 'Shared an attachment') : '');
+    const effectiveBody = cleanText || (attachment?.name ? `Shared attachment: ${attachment.name}` : (attachmentFile?.name ? `Shared attachment: ${attachmentFile.name}` : 'Shared an attachment'));
     if (!effectiveBody) {
       return { success: false, error: 'Message cannot be empty.' };
     }
 
     // Real Supabase persistence when user has an active session
     if (isSupabaseConfigured() && currentUser) {
-      const { data, error } = await sendCommissionMessageToSupabase(commissionId, currentUser, effectiveBody, attachment);
+      const { data, error } = await sendCommissionMessageToSupabase(
+        commissionId,
+        currentUser,
+        effectiveBody,
+        attachment,
+        attachmentFile
+      );
       if (error || !data) {
         console.error('[Supabase Messages] Send error:', error);
         return { success: false, error: error || 'Failed to deliver message to database.' };
       }
 
-      const messageWithAttachment: Message = attachment ? { ...data, attachment } : data;
+      const messageWithAttachment: Message = data;
 
       setMessages(prev => {
         // Prevent duplicate if realtime also delivered it
         if (prev.some(m => m.id === data.id)) {
-          return prev.map(m => m.id === data.id ? { ...m, attachment: m.attachment || attachment } : m);
+          return prev.map(m => m.id === data.id ? { ...m, attachment: m.attachment || data.attachment || attachment } : m);
         }
         return [...prev, messageWithAttachment];
       });

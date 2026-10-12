@@ -1,5 +1,10 @@
 import { supabase } from './supabase';
 import { Message, MessageAttachment, User, UserRole } from '../types';
+import {
+  getChatAttachmentSignedUrl,
+  uploadChatAttachmentFile,
+  deleteChatAttachmentObject,
+} from './chatAttachments';
 
 export interface DbMessageRow {
   id: string;
@@ -7,6 +12,11 @@ export interface DbMessageRow {
   sender_id: string;
   body?: string;
   message?: string;
+  attachment_name?: string | null;
+  attachment_path?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: string | null;
+  attachment_mime?: string | null;
   created_at: string;
   updated_at?: string;
 }
@@ -80,6 +90,7 @@ function formatMessageTimestamp(isoDate: string): string {
 
 /**
  * Maps a database message row to the client-facing Message interface.
+ * Resolves short-lived signed URLs for any attached files stored in Supabase Storage.
  */
 export async function mapDbRowToMessage(
   row: DbMessageRow,
@@ -87,6 +98,25 @@ export async function mapDbRowToMessage(
 ): Promise<Message> {
   const sender = await resolveSenderProfile(row.sender_id, currentUser);
   const textBody = row.body ?? row.message ?? '';
+
+  let resolvedAttachment: MessageAttachment | undefined = undefined;
+
+  if (row.attachment_name) {
+    let finalUrl = '';
+    if (row.attachment_path) {
+      const { signedUrl } = await getChatAttachmentSignedUrl(row.attachment_path, 3600);
+      finalUrl = signedUrl || '';
+    }
+
+    resolvedAttachment = {
+      name: row.attachment_name,
+      url: finalUrl,
+      type: (row.attachment_type === 'image' ? 'image' : 'file') as 'image' | 'file',
+      size: row.attachment_size || undefined,
+      path: row.attachment_path || undefined,
+      mime: row.attachment_mime || undefined,
+    };
+  }
 
   return {
     id: row.id,
@@ -97,12 +127,18 @@ export async function mapDbRowToMessage(
     senderAvatar: sender.avatar,
     message: textBody,
     body: textBody,
+    attachment: resolvedAttachment,
     timestamp: formatMessageTimestamp(row.created_at),
     readStatus: true,
     createdAt: row.created_at,
     commission_id: row.commission_id,
     sender_id: row.sender_id,
     created_at: row.created_at,
+    attachment_name: row.attachment_name,
+    attachment_path: row.attachment_path,
+    attachment_type: row.attachment_type,
+    attachment_size: row.attachment_size,
+    attachment_mime: row.attachment_mime,
   };
 }
 
@@ -166,27 +202,64 @@ export async function fetchCommissionMessages(
  * Sends a message attached to a commission in Supabase.
  * - Sender identity is enforced against the authenticated user (Step 4 Sender Security).
  * - Validates non-empty message body.
+ * - If an attachmentFile is provided, uploads it first to the private 'chat-attachments' bucket.
+ * - If the database insert fails, automatically attempts to delete the uploaded storage object (rollback).
  */
 export async function sendCommissionMessageToSupabase(
   commissionId: string,
   sender: User,
   body: string,
-  attachment?: MessageAttachment
+  attachment?: MessageAttachment,
+  attachmentFile?: File
 ): Promise<{ data: Message | null; error: string | null }> {
   if (!commissionId?.trim()) {
     return { data: null, error: 'Commission ID is required.' };
   }
-  const cleanBody = body?.trim() || (attachment ? (attachment.name ? `Shared attachment: ${attachment.name}` : 'Shared an attachment') : '');
-  if (!cleanBody) {
+
+  // Pre-determine attachment metadata
+  let uploadedPath: string | null = attachment?.path || null;
+  let attachmentName: string | null = attachment?.name || null;
+  let attachmentType: string | null = attachment?.type || null;
+  let attachmentSize: string | null = attachment?.size || null;
+  let attachmentMime: string | null = attachment?.mime || null;
+
+  // 1. Upload staged file if a real browser File is provided
+  if (attachmentFile) {
+    attachmentName = attachmentFile.name;
+    const isImage = attachmentFile.type.startsWith('image/');
+    attachmentType = isImage ? 'image' : 'file';
+    attachmentMime = attachmentFile.type || 'application/octet-stream';
+
+    const uploadRes = await uploadChatAttachmentFile(commissionId, attachmentFile);
+    if (uploadRes.error || !uploadRes.path) {
+      return {
+        data: null,
+        error: uploadRes.error || 'Failed to upload chat attachment.',
+      };
+    }
+    uploadedPath = uploadRes.path;
+    attachmentSize = uploadRes.size;
+  }
+
+  const cleanBody = body?.trim() || (attachmentName ? `Shared attachment: ${attachmentName}` : '');
+  if (!cleanBody && !uploadedPath && !attachmentName) {
+    if (uploadedPath) {
+      await deleteChatAttachmentObject(uploadedPath);
+    }
     return { data: null, error: 'Message cannot be empty.' };
   }
 
   try {
-    // Attempt insert on 'messages' table first
+    // Attempt insert on 'messages' table first (canonical Phase 5D table)
     const payload = {
       commission_id: commissionId,
       sender_id: sender.id,
-      body: cleanBody,
+      body: cleanBody || (attachmentName ? `Shared attachment: ${attachmentName}` : 'Shared an attachment'),
+      attachment_name: attachmentName,
+      attachment_path: uploadedPath,
+      attachment_type: attachmentType,
+      attachment_size: attachmentSize,
+      attachment_mime: attachmentMime,
     };
 
     let { data, error } = await supabase
@@ -195,23 +268,44 @@ export async function sendCommissionMessageToSupabase(
       .select()
       .single();
 
-    // Fallback if 'messages' table not found
-    if (error && error.code === 'PGRST205') {
-      const fallback = await supabase
-        .from('commission_messages')
-        .insert({
-          commission_id: commissionId,
-          sender_id: sender.id,
-          message: cleanBody,
-        })
-        .select()
-        .single();
+    // Fallback if 'messages' table has missing columns or not found
+    if (error) {
+      // If column doesn't exist yet, retry without attachment columns to avoid crashing before migration
+      if (error.code === '42703' || error.message?.includes('attachment_')) {
+        const fallbackBasic = await supabase
+          .from('messages')
+          .insert({
+            commission_id: commissionId,
+            sender_id: sender.id,
+            body: payload.body,
+          })
+          .select()
+          .single();
 
-      data = fallback.data;
-      error = fallback.error;
+        data = fallbackBasic.data;
+        error = fallbackBasic.error;
+      } else if (error.code === 'PGRST205') {
+        // Fallback to commission_messages table
+        const fallbackLegacy = await supabase
+          .from('commission_messages')
+          .insert({
+            commission_id: commissionId,
+            sender_id: sender.id,
+            message: payload.body,
+          })
+          .select()
+          .single();
+
+        data = fallbackLegacy.data;
+        error = fallbackLegacy.error;
+      }
     }
 
     if (error) {
+      // Rollback uploaded storage object if database row could not be created
+      if (uploadedPath) {
+        await deleteChatAttachmentObject(uploadedPath);
+      }
       return {
         data: null,
         error: error.message || 'Failed to deliver message to database.',
@@ -219,6 +313,9 @@ export async function sendCommissionMessageToSupabase(
     }
 
     if (!data) {
+      if (uploadedPath) {
+        await deleteChatAttachmentObject(uploadedPath);
+      }
       return {
         data: null,
         error: 'No message record returned after database insertion.',
@@ -226,11 +323,30 @@ export async function sendCommissionMessageToSupabase(
     }
 
     const mapped = await mapDbRowToMessage(data as DbMessageRow, sender);
-    if (attachment) {
-      mapped.attachment = attachment;
+    
+    // Ensure the mapped message carries the active attachment
+    if (uploadedPath || attachmentName) {
+      let finalUrl = attachment?.url || '';
+      if (uploadedPath) {
+        const { signedUrl } = await getChatAttachmentSignedUrl(uploadedPath, 3600);
+        if (signedUrl) finalUrl = signedUrl;
+      }
+
+      mapped.attachment = {
+        name: attachmentName || 'Attachment',
+        url: finalUrl,
+        type: (attachmentType === 'image' ? 'image' : 'file') as 'image' | 'file',
+        size: attachmentSize || undefined,
+        path: uploadedPath || undefined,
+        mime: attachmentMime || undefined,
+      };
     }
+
     return { data: mapped, error: null };
   } catch (err: any) {
+    if (uploadedPath) {
+      await deleteChatAttachmentObject(uploadedPath);
+    }
     return {
       data: null,
       error: err?.message || 'Unexpected error while sending message to server.',

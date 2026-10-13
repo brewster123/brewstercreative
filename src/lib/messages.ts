@@ -101,15 +101,19 @@ export async function mapDbRowToMessage(
 
   let resolvedAttachment: MessageAttachment | undefined = undefined;
 
-  if (row.attachment_name) {
+  if (row.attachment_path || row.attachment_name) {
     let finalUrl = '';
     if (row.attachment_path) {
       const { signedUrl } = await getChatAttachmentSignedUrl(row.attachment_path, 3600);
       finalUrl = signedUrl || '';
     }
 
+    const fallbackName = row.attachment_path
+      ? row.attachment_path.split('/').pop()?.replace(/^\d+_[a-z0-9]+_/, '') || 'Attachment'
+      : 'Attachment';
+
     resolvedAttachment = {
-      name: row.attachment_name,
+      name: row.attachment_name || fallbackName,
       url: finalUrl,
       type: (row.attachment_type === 'image' ? 'image' : 'file') as 'image' | 'file',
       size: row.attachment_size || undefined,
@@ -145,6 +149,7 @@ export async function mapDbRowToMessage(
 /**
  * Fetches all persistent messages for a specific commission from Supabase using Row-Level Security.
  * Enforces commission isolation: clients only receive messages for their own commissions.
+ * Primary table: 'commission_messages'
  */
 export async function fetchCommissionMessages(
   commissionId: string,
@@ -155,24 +160,12 @@ export async function fetchCommissionMessages(
   }
 
   try {
-    // Attempt query on 'messages' table first (canonical Phase 5A table)
-    let { data, error } = await supabase
-      .from('messages')
+    // Query confirmed 'commission_messages' table
+    const { data, error } = await supabase
+      .from('commission_messages')
       .select('*')
       .eq('commission_id', commissionId)
       .order('created_at', { ascending: true });
-
-    // Resilient fallback to 'commission_messages' if 'messages' is not yet present
-    if (error && error.code === 'PGRST205') {
-      const fallback = await supabase
-        .from('commission_messages')
-        .select('*')
-        .eq('commission_id', commissionId)
-        .order('created_at', { ascending: true });
-
-      data = fallback.data;
-      error = fallback.error;
-    }
 
     if (error) {
       return {
@@ -203,6 +196,8 @@ export async function fetchCommissionMessages(
  * - Sender identity is enforced against the authenticated user (Step 4 Sender Security).
  * - Validates non-empty message body.
  * - If an attachmentFile is provided, uploads it first to the private 'chat-attachments' bucket.
+ * - Targets public.commission_messages with fallback support.
+ * - Maps message text cleanly to the database 'message' column (and 'body' if schema supports both).
  * - If the database insert fails, automatically attempts to delete the uploaded storage object (rollback).
  */
 export async function sendCommissionMessageToSupabase(
@@ -249,12 +244,15 @@ export async function sendCommissionMessageToSupabase(
     return { data: null, error: 'Message cannot be empty.' };
   }
 
+  const messageText = cleanBody || (attachmentName ? `Shared attachment: ${attachmentName}` : 'Shared an attachment');
+
   try {
-    // Attempt insert on 'messages' table first (canonical Phase 5D table)
-    const payload = {
+    // Primary payload for commission_messages
+    // In commission_messages, the message column is 'message' (with optional 'body' for compatibility)
+    const payloadWithAttachments = {
       commission_id: commissionId,
       sender_id: sender.id,
-      body: cleanBody || (attachmentName ? `Shared attachment: ${attachmentName}` : 'Shared an attachment'),
+      message: messageText,
       attachment_name: attachmentName,
       attachment_path: uploadedPath,
       attachment_type: attachmentType,
@@ -263,42 +261,25 @@ export async function sendCommissionMessageToSupabase(
     };
 
     let { data, error } = await supabase
-      .from('messages')
-      .insert(payload)
+      .from('commission_messages')
+      .insert(payloadWithAttachments)
       .select()
       .single();
 
-    // Fallback if 'messages' table has missing columns or not found
-    if (error) {
-      // If column doesn't exist yet, retry without attachment columns to avoid crashing before migration
-      if (error.code === '42703' || error.message?.includes('attachment_')) {
-        const fallbackBasic = await supabase
-          .from('messages')
-          .insert({
-            commission_id: commissionId,
-            sender_id: sender.id,
-            body: payload.body,
-          })
-          .select()
-          .single();
+    // If commission_messages does not yet have attachment columns (e.g. migration pending)
+    if (error && (error.code === '42703' || error.message?.includes('attachment_'))) {
+      const basicInsert = await supabase
+        .from('commission_messages')
+        .insert({
+          commission_id: commissionId,
+          sender_id: sender.id,
+          message: messageText,
+        })
+        .select()
+        .single();
 
-        data = fallbackBasic.data;
-        error = fallbackBasic.error;
-      } else if (error.code === 'PGRST205') {
-        // Fallback to commission_messages table
-        const fallbackLegacy = await supabase
-          .from('commission_messages')
-          .insert({
-            commission_id: commissionId,
-            sender_id: sender.id,
-            message: payload.body,
-          })
-          .select()
-          .single();
-
-        data = fallbackLegacy.data;
-        error = fallbackLegacy.error;
-      }
+      data = basicInsert.data;
+      error = basicInsert.error;
     }
 
     if (error) {
@@ -357,6 +338,7 @@ export async function sendCommissionMessageToSupabase(
 /**
  * Subscribes to Realtime updates for a commission conversation.
  * Automatically triggers callback on new database row insertion.
+ * Listens on 'commission_messages' table.
  */
 export function subscribeToCommissionMessages(
   commissionId: string,
@@ -369,21 +351,6 @@ export function subscribeToCommissionMessages(
   const channel = supabase.channel(channelId);
 
   channel
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `commission_id=eq.${commissionId}`,
-      },
-      async (payload) => {
-        if (payload.new) {
-          const mapped = await mapDbRowToMessage(payload.new as DbMessageRow, currentUser);
-          onNewMessage(mapped);
-        }
-      }
-    )
     .on(
       'postgres_changes',
       {

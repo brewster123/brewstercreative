@@ -21,6 +21,7 @@ import {
   Maximize2
 } from 'lucide-react';
 import { subscribeToCommissionMessages } from '../lib/messages';
+import { CHAT_FILE_INPUT_ACCEPT, isAllowedAttachmentFile } from '../lib/chatAttachments';
 
 interface ChatWindowProps {
   commission: Commission;
@@ -285,6 +286,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     // Check 25MB limit immediately on client
     if (file.size > 25 * 1024 * 1024) {
       setSendError(`File "${file.name}" exceeds 25 MB limit.`);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Validate supported file format (rejects SVGs and unmapped binaries)
+    const fileValidation = isAllowedAttachmentFile(file);
+    if (!fileValidation.allowed) {
+      setSendError(fileValidation.reason || 'Unsupported file format.');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -651,7 +662,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="hidden"
-                accept="image/*,.pdf,.ai,.eps,.zip,.psd"
+                accept={CHAT_FILE_INPUT_ACCEPT}
               />
 
               {/* Action Buttons: [Attachment] + [Emoji] */}

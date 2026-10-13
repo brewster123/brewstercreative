@@ -4,6 +4,96 @@ export const CHAT_ATTACHMENTS_BUCKET = 'chat-attachments';
 export const MAX_ATTACHMENT_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
 
 /**
+ * Agreed, supported file formats for chat attachments across UI picker, client validator,
+ * and Supabase Storage bucket policy.
+ * Non-conforming or risky formats (including SVGs, executable formats, and unmapped binary blobs) are rejected.
+ */
+export const ALLOWED_CHAT_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+  'application/zip',
+  'application/x-zip-compressed',
+  'text/plain',
+  'text/markdown',
+  'text/csv',
+] as const;
+
+export const ALLOWED_CHAT_EXTENSIONS = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.pdf',
+  '.zip',
+  '.txt',
+  '.md',
+  '.csv',
+] as const;
+
+export const CHAT_FILE_INPUT_ACCEPT =
+  'image/jpeg,image/png,image/webp,image/gif,application/pdf,.zip,.txt,.md,.csv';
+
+/**
+ * Validates whether a file has an approved extension and MIME type.
+ */
+export function isAllowedAttachmentFile(file: File): { allowed: boolean; reason?: string } {
+  if (!file) return { allowed: false, reason: 'No file provided.' };
+
+  const lowerName = file.name.toLowerCase();
+
+  // Strict rejection of SVG
+  if (file.type === 'image/svg+xml' || lowerName.endsWith('.svg')) {
+    return {
+      allowed: false,
+      reason: 'SVG files are not supported as chat attachments to protect against script injection.',
+    };
+  }
+
+  const hasAllowedExt = ALLOWED_CHAT_EXTENSIONS.some(ext => lowerName.endsWith(ext));
+  if (!hasAllowedExt) {
+    return {
+      allowed: false,
+      reason: `File format not supported. Allowed formats: PNG, JPG, WebP, GIF, PDF, ZIP, TXT, MD, CSV.`,
+    };
+  }
+
+  // If browser resolved a MIME type, ensure it is in the allowlist
+  if (file.type && !(ALLOWED_CHAT_MIME_TYPES as readonly string[]).includes(file.type.toLowerCase())) {
+    return {
+      allowed: false,
+      reason: `File type "${file.type}" is not supported. Allowed formats: PNG, JPG, WebP, GIF, PDF, ZIP, TXT, MD, CSV.`,
+    };
+  }
+
+  return { allowed: true };
+}
+
+/**
+ * Determines appropriate contentType string when uploading to Supabase Storage.
+ */
+export function resolveAttachmentContentType(file: File): string {
+  if (file.type && (ALLOWED_CHAT_MIME_TYPES as readonly string[]).includes(file.type.toLowerCase())) {
+    return file.type;
+  }
+  const lowerName = file.name.toLowerCase();
+  if (lowerName.endsWith('.png')) return 'image/png';
+  if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) return 'image/jpeg';
+  if (lowerName.endsWith('.webp')) return 'image/webp';
+  if (lowerName.endsWith('.gif')) return 'image/gif';
+  if (lowerName.endsWith('.pdf')) return 'application/pdf';
+  if (lowerName.endsWith('.zip')) return 'application/zip';
+  if (lowerName.endsWith('.txt')) return 'text/plain';
+  if (lowerName.endsWith('.md')) return 'text/markdown';
+  if (lowerName.endsWith('.csv')) return 'text/csv';
+  return 'application/octet-stream';
+}
+
+/**
  * Sanitizes a filename to remove risky characters, directory traversals, and non-ASCII glyphs.
  */
 export function sanitizeFileName(fileName: string): string {
@@ -110,16 +200,31 @@ export async function uploadChatAttachmentFile(
     };
   }
 
+  // Validate allowed format and reject SVGs
+  const formatValidation = isAllowedAttachmentFile(file);
+  if (!formatValidation.allowed) {
+    return {
+      path: null,
+      name: file.name,
+      type: file.type.startsWith('image/') ? 'image' : 'file',
+      size: formatFileSize(file.size),
+      mime: file.type,
+      error: formatValidation.reason || 'Unsupported attachment format.',
+    };
+  }
+
   const sanitized = sanitizeFileName(file.name);
   const uniqueKey = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const storagePath = `${commissionId}/${uniqueKey}_${sanitized}`;
-  const isImage = file.type.startsWith('image/');
+  const contentType = resolveAttachmentContentType(file);
+  const isImage = contentType.startsWith('image/');
   const formattedSize = formatFileSize(file.size);
 
   try {
     const { error: uploadError } = await supabase.storage
       .from(CHAT_ATTACHMENTS_BUCKET)
       .upload(storagePath, file, {
+        contentType,
         cacheControl: '3600',
         upsert: false,
       });
@@ -130,7 +235,7 @@ export async function uploadChatAttachmentFile(
         name: file.name,
         type: isImage ? 'image' : 'file',
         size: formattedSize,
-        mime: file.type || 'application/octet-stream',
+        mime: contentType,
         error: uploadError.message || 'Failed to upload chat attachment file.',
       };
     }
@@ -140,7 +245,7 @@ export async function uploadChatAttachmentFile(
       name: file.name,
       type: isImage ? 'image' : 'file',
       size: formattedSize,
-      mime: file.type || 'application/octet-stream',
+      mime: contentType,
       error: null,
     };
   } catch (err: any) {
@@ -149,7 +254,7 @@ export async function uploadChatAttachmentFile(
       name: file.name,
       type: isImage ? 'image' : 'file',
       size: formattedSize,
-      mime: file.type || 'application/octet-stream',
+      mime: contentType,
       error: err?.message || 'Network error during attachment upload.',
     };
   }

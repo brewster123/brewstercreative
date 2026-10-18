@@ -19,6 +19,13 @@ export function mapDbToStudioProfile(row: any): StudioProfile {
     currencySymbol: row.currency_symbol || INITIAL_STUDIO_PROFILE.currencySymbol,
     commissionStatus: (row.commission_status as any) || INITIAL_STUDIO_PROFILE.commissionStatus,
     availableSlots: typeof row.available_slots === 'number' ? row.available_slots : INITIAL_STUDIO_PROFILE.availableSlots,
+    gcashDetails: {
+      accountName: row.gcash_account_name || INITIAL_STUDIO_PROFILE.gcashDetails?.accountName || 'Brewster A. Cabando',
+      accountNumber: row.gcash_account_number || INITIAL_STUDIO_PROFILE.gcashDetails?.accountNumber || '0917-829-4102',
+      instructions: row.gcash_instructions || INITIAL_STUDIO_PROFILE.gcashDetails?.instructions || 'Send money via GCash Express Send. Take a screenshot of the completed transaction receipt showing Reference No. and upload it for studio verification.',
+      qrCodeUrl: row.gcash_qr_url || INITIAL_STUDIO_PROFILE.gcashDetails?.qrCodeUrl || '',
+      depositPercentage: 50,
+    },
   };
 }
 
@@ -40,6 +47,10 @@ export function mapStudioProfileToDb(profile: StudioProfile): any {
     currency_symbol: profile.currencySymbol,
     commission_status: profile.commissionStatus,
     available_slots: profile.availableSlots,
+    gcash_account_name: profile.gcashDetails?.accountName,
+    gcash_account_number: profile.gcashDetails?.accountNumber,
+    gcash_instructions: profile.gcashDetails?.instructions,
+    gcash_qr_url: profile.gcashDetails?.qrCodeUrl,
     updated_at: new Date().toISOString(),
   };
 }

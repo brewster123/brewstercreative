@@ -115,18 +115,26 @@ export function mapDbToPortfolioProject(row: any): PortfolioProject {
     ? 'concept'
     : ((row.project_type || row.projectType) as ProjectType);
 
+  const defaultProjectImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80';
+  const resolvedImage = (row.image_url && String(row.image_url).trim()) || (row.image && String(row.image).trim()) || defaultProjectImage;
+  const rawGallery = Array.isArray(row.gallery_urls) && row.gallery_urls.length > 0 
+    ? row.gallery_urls 
+    : Array.isArray(row.gallery) && row.gallery.length > 0 
+      ? row.gallery 
+      : [resolvedImage];
+  const cleanGallery = rawGallery
+    .map((url: any) => (typeof url === 'string' ? url.trim() : ''))
+    .filter((url: string) => url.length > 0);
+  const finalGallery = cleanGallery.length > 0 ? cleanGallery : [resolvedImage];
+
   return {
     id: row.id,
     title: row.title,
     category: row.category,
     shortDesc: row.short_desc ?? row.shortDesc ?? '',
     fullDesc: row.full_desc ?? row.fullDesc ?? '',
-    image: row.image_url ?? row.image ?? '',
-    gallery: Array.isArray(row.gallery_urls) && row.gallery_urls.length > 0 
-      ? row.gallery_urls 
-      : Array.isArray(row.gallery) && row.gallery.length > 0 
-        ? row.gallery 
-        : [row.image_url || row.image || ''],
+    image: resolvedImage,
+    gallery: finalGallery,
     tools: Array.isArray(row.tools) ? row.tools : [],
     date: row.date || '2026',
     client: cleanClient,

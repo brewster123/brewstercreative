@@ -133,7 +133,12 @@ export const CaseStudyView: React.FC = () => {
     );
   }
 
-  const galleryImages = project.gallery?.length ? project.gallery : [project.image];
+  const fallbackCaseStudyImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80';
+  const rawGallery = project.gallery?.length ? project.gallery : [project.image];
+  const galleryImages = rawGallery
+    .map((img: any) => (typeof img === 'string' ? img.trim() : ''))
+    .filter((img: string) => img.length > 0);
+  if (galleryImages.length === 0) galleryImages.push(fallbackCaseStudyImage);
   const cs = project.caseStudy;
 
   // Resolve Associated Service
@@ -371,8 +376,8 @@ export const CaseStudyView: React.FC = () => {
         <div className="space-y-3">
           <div className="relative rounded-2xl overflow-hidden bg-black/5 dark:bg-black/40 border border-[#E4E2DC] dark:border-[#27272A] aspect-[16/10] sm:aspect-[16/9] shadow-lg group">
             <img
-              src={galleryImages[activeGalleryIndex]}
-              alt={project.title}
+              src={galleryImages[activeGalleryIndex] || fallbackCaseStudyImage}
+              alt={project.title || 'Exhibition artwork'}
               className="w-full h-full object-cover"
             />
             <button
@@ -399,7 +404,7 @@ export const CaseStudyView: React.FC = () => {
                       : 'border-[#E4E2DC] dark:border-[#27272A] opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={imgUrl || fallbackCaseStudyImage} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -737,8 +742,8 @@ export const CaseStudyView: React.FC = () => {
                   <div>
                     <div className="aspect-[16/10] overflow-hidden bg-[#FAF9F6] dark:bg-[#0F0F11]">
                       <img
-                        src={relProj.image}
-                        alt={relProj.title}
+                        src={relProj.image || fallbackCaseStudyImage}
+                        alt={relProj.title || 'Related project'}
                         className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
                         loading="lazy"
                       />
@@ -775,7 +780,7 @@ export const CaseStudyView: React.FC = () => {
       <ImageLightbox
         isOpen={isPreviewModalOpen}
         onClose={() => setIsPreviewModalOpen(false)}
-        imageUrl={galleryImages[activeGalleryIndex]}
+        imageUrl={galleryImages[activeGalleryIndex] || fallbackCaseStudyImage}
         altText={`${project.title} - Image ${(activeGalleryIndex + 1).toString()}`}
         title={project.title}
         images={galleryImages}

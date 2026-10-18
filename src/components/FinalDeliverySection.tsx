@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Commission, CommissionDeliverable } from '../types';
+import { useApp } from '../context/AppContext';
 import { 
   Download, 
   Check, 
@@ -8,23 +9,35 @@ import {
   ShieldCheck, 
   AlertTriangle,
   Clock,
-  Loader2
+  Loader2,
+  Lock,
+  CreditCard,
+  ArrowRight
 } from 'lucide-react';
 import { 
   fetchCommissionDeliverables, 
   getDeliverableSignedUrl, 
   formatDeliverableFileSize,
-  subscribeToCommissionDeliverables
+  subscribeToCommissionDeliverables,
+  DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
 } from '../lib/deliverables';
 
 interface FinalDeliverySectionProps {
   commission: Commission;
+  onNavigateToPayment?: () => void;
 }
 
-export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ commission }) => {
+export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ 
+  commission,
+  onNavigateToPayment 
+}) => {
+  const { currentUser } = useApp();
   const [deliverables, setDeliverables] = useState<CommissionDeliverable[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Deliverables are strictly locked for clients unless paymentStatus is 'Paid'
+  const isPaymentSettled = commission.paymentStatus === 'Paid' || currentUser?.role === 'admin';
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadSuccessId, setDownloadSuccessId] = useState<string | null>(null);
@@ -61,10 +74,17 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ comm
   }, [commission?.id]);
 
   const handleDownloadFile = async (deliverable: CommissionDeliverable) => {
+    if (!isPaymentSettled) {
+      setDownloadError('Deliverables are locked pending full payment verification. Please settle remaining balance via GCash.');
+      return;
+    }
     setDownloadingId(deliverable.id);
     setDownloadError(null);
     try {
-      const { signedUrl, error: signErr } = await getDeliverableSignedUrl(deliverable.filePath, 3600);
+      const { signedUrl, error: signErr } = await getDeliverableSignedUrl(
+        deliverable.filePath,
+        DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
+      );
       if (signErr || !signedUrl) {
         setDownloadError(signErr || 'Failed to acquire authorized download URL.');
         return;
@@ -89,13 +109,20 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ comm
   };
 
   const handleDownloadAll = async () => {
+    if (!isPaymentSettled) {
+      setDownloadError('Deliverables are locked pending full payment verification. Please settle remaining balance via GCash.');
+      return;
+    }
     if (deliverables.length === 0) return;
     setDownloadingId('all');
     setDownloadError(null);
 
     try {
       for (const item of deliverables) {
-        const { signedUrl } = await getDeliverableSignedUrl(item.filePath, 3600);
+        const { signedUrl } = await getDeliverableSignedUrl(
+          item.filePath,
+          DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
+        );
         if (signedUrl) {
           const a = document.createElement('a');
           a.href = signedUrl;
@@ -157,6 +184,41 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ comm
         </div>
       )}
 
+      {/* Payment Security Gating Alert when commission is not fully settled */}
+      {!isPaymentSettled && (
+        <div className="p-5 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 dark:text-amber-200 space-y-3">
+          <div className="flex items-start gap-3">
+            <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC]">
+                Deliverable Downloads Locked Pending Payment
+              </h4>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                Studio policy requires verified payment in full before final production master files, vector packages, and font assets can be downloaded. Your payment status is currently{' '}
+                <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono">
+                  {commission.paymentStatus === 'Partial' ? 'Partial (Deposit Paid · Balance Pending)' : 'Awaiting Payment'}
+                </span>
+                .
+              </p>
+            </div>
+          </div>
+
+          {onNavigateToPayment && (
+            <div className="pt-2 border-t border-amber-500/20 flex justify-end">
+              <button
+                type="button"
+                onClick={onNavigateToPayment}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Submit GCash Payment Proof</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Main Download Area */}
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-4">
@@ -170,7 +232,7 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ comm
             <button
               type="button"
               onClick={handleDownloadAll}
-              disabled={downloadingId !== null}
+              disabled={downloadingId !== null || !isPaymentSettled}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-50"
             >
               {downloadingId === 'all' ? (
@@ -182,6 +244,11 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ comm
                 <>
                   <Check className="w-3.5 h-3.5" />
                   <span>Package Downloaded</span>
+                </>
+              ) : !isPaymentSettled ? (
+                <>
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Downloads Locked</span>
                 </>
               ) : (
                 <>
@@ -243,14 +310,20 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({ comm
                   <button
                     type="button"
                     onClick={() => handleDownloadFile(item)}
-                    disabled={isDownloading}
+                    disabled={isDownloading || !isPaymentSettled}
                     className="p-2.5 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#18181B] dark:hover:border-[#EDEDEC] text-[#18181B] dark:text-[#EDEDEC] transition-all cursor-pointer shrink-0 disabled:opacity-50"
-                    title={`Download ${item.fileName}`}
+                    title={
+                      !isPaymentSettled
+                        ? 'Download locked pending full payment confirmation'
+                        : `Download ${item.fileName}`
+                    }
                   >
                     {isDownloading ? (
                       <Loader2 className="w-4 h-4 animate-spin text-[#EA580C]" />
                     ) : isDownloaded ? (
                       <Check className="w-4 h-4 text-emerald-600" />
+                    ) : !isPaymentSettled ? (
+                      <Lock className="w-4 h-4 text-[#A1A1AA]" />
                     ) : (
                       <Download className="w-4 h-4 text-[#EA580C]" />
                     )}

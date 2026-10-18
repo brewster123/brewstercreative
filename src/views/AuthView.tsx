@@ -271,8 +271,8 @@ export const AuthView: React.FC = () => {
         <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <img 
-              src={currentUser.avatar} 
-              alt={currentUser.name} 
+              src={currentUser.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'} 
+              alt={currentUser.name || 'User Profile'} 
               className="w-10 h-10 rounded-full object-cover ring-1 ring-[#E4E2DC] dark:ring-[#27272A] shrink-0"
             />
             <div className="min-w-0 space-y-0.5">

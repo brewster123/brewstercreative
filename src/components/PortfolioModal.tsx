@@ -23,7 +23,12 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const images = project.gallery?.length ? project.gallery : [project.image];
+  const fallbackModalImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80';
+  const rawImages = project.gallery?.length ? project.gallery : [project.image];
+  const images = rawImages
+    .map((img: any) => (typeof img === 'string' ? img.trim() : ''))
+    .filter((img: string) => img.length > 0);
+  if (images.length === 0) images.push(fallbackModalImage);
 
   // Cross-selling: Related Shop Products
   const relatedShopProducts: ShopProduct[] = (project.relatedShopProductIds || [])
@@ -103,8 +108,8 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
           <div className="space-y-3">
             <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-black/40 border border-[#E4E2DC] dark:border-[#27272A] aspect-[16/10] sm:aspect-[16/9] group cursor-pointer shadow-sm">
               <img
-                src={images[activeImageIndex]}
-                alt={project.title}
+                src={images[activeImageIndex] || fallbackModalImage}
+                alt={project.title || 'Artwork preview'}
                 onClick={() => setLightboxOpen(true)}
                 className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
               />
@@ -166,7 +171,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
                     }`}
                   >
                     <img 
-                      src={img} 
+                      src={img || fallbackModalImage} 
                       alt={`Thumbnail ${idx + 1}`} 
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
                     />
@@ -205,7 +210,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
                         className="group relative rounded-lg overflow-hidden bg-black/5 dark:bg-black/30 border border-[#E4E2DC] dark:border-[#27272A] aspect-[4/3] cursor-pointer"
                       >
                         <img 
-                          src={img} 
+                          src={img || fallbackModalImage} 
                           alt={`Study ${idx + 1}`} 
                           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                         />
@@ -386,8 +391,8 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
             <X className="w-6 h-6" />
           </button>
           <img
-            src={images[activeImageIndex]}
-            alt={project.title}
+            src={images[activeImageIndex] || fallbackModalImage}
+            alt={project.title || 'Enlarged artwork'}
             className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
           />
         </div>

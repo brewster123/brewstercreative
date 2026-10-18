@@ -542,11 +542,13 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
           >
             <X className="w-6 h-6" />
           </button>
-          <img
-            src={viewingProof.signedUrl}
-            alt={viewingProof.proof.file_name}
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
-          />
+          {Boolean(viewingProof.signedUrl && viewingProof.signedUrl.trim()) && (
+            <img
+              src={viewingProof.signedUrl}
+              alt={viewingProof.proof.file_name}
+              className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+            />
+          )}
         </div>
       )}
 

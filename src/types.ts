@@ -272,6 +272,9 @@ export type NotificationType =
   | 'proof_revision' 
   | 'proof_approved' 
   | 'commission_completed' 
+  | 'payment_submitted'
+  | 'payment_verified'
+  | 'payment_rejected'
   | 'system'
   // Legacy alias compatibility
   | 'status' 
@@ -392,6 +395,61 @@ export interface StudioProfile {
   currencySymbol: string;
   commissionStatus: 'open' | 'waitlist' | 'closed';
   availableSlots: number;
+  gcashDetails?: GCashDetails;
+}
+
+export interface GCashDetails {
+  accountName: string;
+  accountNumber: string;
+  qrCodeUrl?: string;
+  instructions: string;
+  depositPercentage?: number;
+}
+
+export type PaymentProofStatus = 'pending_verification' | 'confirmed' | 'rejected';
+export type PaymentProofType = 'deposit' | 'full' | 'balance';
+
+export interface CommissionPaymentProof {
+  id: string;
+  commissionId: string;
+  clientId: string;
+  amount: number;
+  currency: string;
+  paymentType: PaymentProofType;
+  filePath: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  referenceNumber?: string;
+  clientNotes?: string;
+  status: PaymentProofStatus;
+  adminNotes?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+
+  // Supabase snake_case alias compatibility
+  commission_id?: string;
+  client_id?: string;
+  payment_type?: PaymentProofType;
+  file_path?: string;
+  file_name?: string;
+  file_type?: string;
+  file_size?: number;
+  reference_number?: string;
+  client_notes?: string;
+  admin_notes?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  created_at?: string;
+  updated_at?: string;
+
+  // Resolved join metadata for display
+  clientName?: string;
+  clientEmail?: string;
+  clientAvatar?: string;
+  commissionTitle?: string;
 }
 
 export type ProofStatus = 'pending_review' | 'revision_requested' | 'approved';

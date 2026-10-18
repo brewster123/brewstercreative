@@ -377,8 +377,8 @@ export const HomeView: React.FC = () => {
             <div className="relative shrink-0">
               <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-xl overflow-hidden ring-1 ring-[#E4E2DC] dark:ring-[#27272A] shadow-xs">
                 <img
-                  src={studioProfile.avatar}
-                  alt={studioProfile.designerName}
+                  src={studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
+                  alt={studioProfile.designerName || 'Studio Lead'}
                   className="w-full h-full object-cover"
                 />
               </div>

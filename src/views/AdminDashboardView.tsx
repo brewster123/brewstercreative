@@ -31,6 +31,7 @@ import {
   Trash2, 
   Edit3, 
   ArrowRight,
+  ArrowLeft,
   ShieldCheck,
   FolderArchive,
   Clock,
@@ -51,13 +52,16 @@ import {
   ChevronDown,
   ChevronUp,
   BookOpen,
-  FileText
+  FileText,
+  CreditCard
 } from 'lucide-react';
 import { loadCustomFontFile, isFontLoaded } from '../utils/fontLoader';
 import { formatCommissionDate } from '../utils/dateUtils';
 import { isValidReferenceUrl } from '../utils/urlUtils';
 import { AdminCreativeProofsSection } from '../components/AdminCreativeProofsSection';
 import { AdminDeliverablesSection } from '../components/AdminDeliverablesSection';
+import { AdminPaymentVerificationSection } from '../components/AdminPaymentVerificationSection';
+import { fetchCommissionPaymentProofs, subscribeToPaymentProofs } from '../lib/payments';
 import { uploadPortfolioMedia } from '../lib/portfolio';
 
 export const AdminDashboardView: React.FC = () => {
@@ -91,10 +95,36 @@ export const AdminDashboardView: React.FC = () => {
   } = useApp();
 
   const [activeAdminTab, setActiveAdminTab] = useState<
-    'commissions' | 'clients' | 'website-info' | 'portfolio' | 'services' | 'proof-uploader' | 'typography' | 'admin-account'
+    'commissions' | 'payment-verification' | 'clients' | 'website-info' | 'portfolio' | 'services' | 'proof-uploader' | 'typography' | 'admin-account'
   >('commissions');
 
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState<number>(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPendingCount = async () => {
+      try {
+        const { data } = await fetchCommissionPaymentProofs();
+        if (data && isMounted) {
+          setPendingPaymentsCount(data.filter((p) => p.status === 'pending_verification').length);
+        }
+      } catch (err) {
+        // silent fallback
+      }
+    };
+    fetchPendingCount();
+    const unsub = subscribeToPaymentProofs(undefined, () => {
+      fetchPendingCount();
+    });
+    return () => {
+      isMounted = false;
+      unsub();
+    };
+  }, []);
+
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>(activeCommission?.id || commissions[0]?.id || '');
+  const [adminWorkspaceCommissionId, setAdminWorkspaceCommissionId] = useState<string | null>(null);
+  const [adminWorkspaceTab, setAdminWorkspaceTab] = useState<'proofs' | 'deliverables' | 'payments' | 'specifications'>('proofs');
   const [expandedProofsCommissionId, setExpandedProofsCommissionId] = useState<string | null>(null);
   const [expandedDeliverablesCommissionId, setExpandedDeliverablesCommissionId] = useState<string | null>(null);
   const [commissionSection, setCommissionSection] = useState<'active' | 'completed' | 'cancelled' | 'all'>('active');
@@ -336,6 +366,7 @@ export const AdminDashboardView: React.FC = () => {
   const [fontUploadMessage, setFontUploadMessage] = useState<string>('');
 
   const currentCommission = commissions.find(c => c.id === selectedCommissionId) || commissions[0];
+  const workspaceCommission = commissions.find(c => c.id === adminWorkspaceCommissionId) || null;
 
   const handleFontFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -756,8 +787,8 @@ export const AdminDashboardView: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
           <div className="flex items-start gap-4">
             <img
-              src={comm.clientAvatar}
-              alt={comm.clientName}
+              src={comm.clientAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
+              alt={comm.clientName || 'Client Avatar'}
               className="w-11 h-11 rounded-full object-cover ring-1 ring-[#E4E2DC] dark:ring-[#27272A] shrink-0"
             />
             <div className="space-y-1">
@@ -860,12 +891,31 @@ export const AdminDashboardView: React.FC = () => {
                 onClick={() => {
                   setSelectedCommissionId(comm.id);
                   setActiveCommissionId(comm.id);
-                  setActiveAdminTab('proof-uploader');
+                  setAdminWorkspaceCommissionId(comm.id);
+                  setAdminWorkspaceTab('payments');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold text-xs transition-opacity hover:opacity-90 cursor-pointer"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#EA580C] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-xs transition-colors cursor-pointer"
+                title="Verify GCash Payment Proofs"
               >
-                <UploadCloud className="w-3.5 h-3.5" />
-                <span>Proofs</span>
+                <CreditCard className="w-3.5 h-3.5 text-[#EA580C]" />
+                <span>Payment</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCommissionId(comm.id);
+                  setActiveCommissionId(comm.id);
+                  setAdminWorkspaceCommissionId(comm.id);
+                  setAdminWorkspaceTab('proofs');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-colors shadow-2xs cursor-pointer"
+                title="Open Dedicated Project Workspace"
+              >
+                <span>Open Workspace</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -901,27 +951,22 @@ export const AdminDashboardView: React.FC = () => {
           <ProgressBar commission={comm} interactiveAdmin={true} />
         </div>
 
-        {/* Expandable Proofs and Deliverables Accordion Controls */}
-        <div className="flex items-center justify-between pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setExpandedProofsCommissionId(prev => prev === comm.id ? null : comm.id)}
-              className="text-[#EA580C] hover:underline flex items-center gap-1 cursor-pointer font-semibold"
-            >
-              <Layers className="w-3 h-3" />
-              <span>{expandedProofsCommissionId === comm.id ? 'Hide Proofs' : 'Inspect Proofs'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setExpandedDeliverablesCommissionId(prev => prev === comm.id ? null : comm.id)}
-              className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] flex items-center gap-1 cursor-pointer"
-            >
-              <FolderArchive className="w-3 h-3" />
-              <span>{expandedDeliverablesCommissionId === comm.id ? 'Hide Deliverables' : 'Final Deliverables'}</span>
-            </button>
-          </div>
+        {/* Project Workspace Link & Settlement Toggles */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedCommissionId(comm.id);
+              setActiveCommissionId(comm.id);
+              setAdminWorkspaceCommissionId(comm.id);
+              setAdminWorkspaceTab('proofs');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="text-[#EA580C] hover:underline flex items-center gap-1 cursor-pointer font-semibold"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Open Dedicated Project Workspace →</span>
+          </button>
 
           {/* Payment Status Toggles */}
           <div className="flex items-center gap-2">
@@ -946,26 +991,6 @@ export const AdminDashboardView: React.FC = () => {
             ))}
           </div>
         </div>
-
-        {/* Expanded Proofs Subsection */}
-        {expandedProofsCommissionId === comm.id && (
-          <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] animate-in fade-in duration-200">
-            <AdminCreativeProofsSection
-              commission={comm}
-              currentUser={currentUser}
-            />
-          </div>
-        )}
-
-        {/* Expanded Deliverables Subsection */}
-        {expandedDeliverablesCommissionId === comm.id && (
-          <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] animate-in fade-in duration-200">
-            <AdminDeliverablesSection
-              commission={comm}
-              currentUser={currentUser}
-            />
-          </div>
-        )}
 
       </article>
     );
@@ -1063,6 +1088,12 @@ export const AdminDashboardView: React.FC = () => {
       <nav className="flex items-center gap-1 border-b border-[#E4E2DC] dark:border-[#27272A] pb-1 overflow-x-auto no-scrollbar" aria-label="Studio administration navigation">
         {[
           { id: 'commissions' as const, label: 'Production Ledger', icon: FolderArchive, count: commissions.length },
+          { 
+            id: 'payment-verification' as const, 
+            label: 'Payment Verification', 
+            icon: CreditCard, 
+            count: pendingPaymentsCount > 0 ? pendingPaymentsCount : undefined 
+          },
           { id: 'proof-uploader' as const, label: 'Creative Proofs', icon: UploadCloud },
           { id: 'clients' as const, label: 'Client Directory', icon: Users, count: clientList.length },
           { id: 'portfolio' as const, label: 'Portfolio Archive', icon: ImageIcon, count: portfolio.length },
@@ -1101,10 +1132,325 @@ export const AdminDashboardView: React.FC = () => {
       </nav>
 
       {/* ======================================================== */}
-      {/* TAB 1: PRODUCTION LEDGER (ALL COMMISSIONS)               */}
+      {/* TAB 1: PRODUCTION LEDGER & DEDICATED WORKSPACE           */}
       {/* ======================================================== */}
       {activeAdminTab === 'commissions' && (
-        <div className="space-y-8 animate-in fade-in duration-200">
+        <>
+          {adminWorkspaceCommissionId && workspaceCommission ? (
+            /* LEVEL 2: DEDICATED ADMIN COMMISSION WORKSPACE */
+            <div className="space-y-8 animate-in fade-in duration-200">
+              {/* Back to Ledger Navigation Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminWorkspaceCommissionId(null);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] bg-white dark:bg-[#18181B] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] text-xs font-mono font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer self-start"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-[#EA580C]" />
+                  <span>← Back to Production Ledger</span>
+                </button>
+
+                <div className="flex items-center gap-2 font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                  <span>Dedicated Workspace:</span>
+                  <strong className="text-[#18181B] dark:text-[#EDEDEC]">
+                    {workspaceCommission.projectName}
+                  </strong>
+                  <span>(#{workspaceCommission.id.slice(0, 8)})</span>
+                </div>
+              </div>
+
+              {/* Commission Header Card */}
+              <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                  <div className="flex items-start gap-4">
+                    <img
+                      src={workspaceCommission.clientAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
+                      alt={workspaceCommission.clientName || 'Client Avatar'}
+                      className="w-12 h-12 rounded-full object-cover ring-1 ring-[#E4E2DC] dark:ring-[#27272A] shrink-0"
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="font-display text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                          {workspaceCommission.projectName}
+                        </h2>
+                        <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                          #{workspaceCommission.id.slice(0, 8)}
+                        </span>
+                        <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] text-[#EA580C] font-semibold uppercase">
+                          {workspaceCommission.serviceType}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] flex-wrap">
+                        <span>Client: <strong className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{workspaceCommission.clientName}</strong></span>
+                        <span>·</span>
+                        <span>{workspaceCommission.clientEmail}</span>
+                        <span>·</span>
+                        <span>Budget: <strong className="text-[#18181B] dark:text-[#EDEDEC]">{workspaceCommission.budget}</strong></span>
+                        <span>·</span>
+                        <span>Deadline: {formatCommissionDate(workspaceCommission.deadline)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status, Priority & Chat */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-1.5 font-mono text-xs">
+                      <label htmlFor={`workspace-status-${workspaceCommission.id}`} className="text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA]">
+                        Status:
+                      </label>
+                      <select
+                        id={`workspace-status-${workspaceCommission.id}`}
+                        value={
+                          workspaceCommission.status === 'In Progress' ? 'in_progress' :
+                          workspaceCommission.status === 'Client Review' ? 'for_review' :
+                          workspaceCommission.status === 'Revision Requested' ? 'revision' :
+                          workspaceCommission.status === 'Final Approval' || workspaceCommission.status === 'final_approval' ? 'final_approval' :
+                          workspaceCommission.status === 'Rejected' ? 'cancelled' :
+                          workspaceCommission.status === 'Completed' ? 'completed' :
+                          workspaceCommission.status === 'Pending' ? 'pending' :
+                          workspaceCommission.status
+                        }
+                        disabled={statusUpdatingId === workspaceCommission.id}
+                        onChange={(e) => handleStatusChange(workspaceCommission.id, e.target.value as CommissionStatus)}
+                        className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-2.5 py-1 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] cursor-pointer"
+                      >
+                        {STATUS_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      {statusSuccessId === workspaceCommission.id && (
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400">✓ Saved</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 font-mono text-xs">
+                      <label htmlFor={`workspace-priority-${workspaceCommission.id}`} className="text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA]">
+                        Priority:
+                      </label>
+                      <select
+                        id={`workspace-priority-${workspaceCommission.id}`}
+                        value={(workspaceCommission.priority || 'normal').toLowerCase()}
+                        disabled={priorityUpdatingId === workspaceCommission.id}
+                        onChange={(e) => handlePriorityChange(workspaceCommission.id, e.target.value as CommissionPriority)}
+                        className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-md px-2.5 py-1 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] cursor-pointer"
+                      >
+                        {PRIORITY_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCommissionId(workspaceCommission.id);
+                        setActiveCommissionId(workspaceCommission.id);
+                        setActiveView('chat');
+                      }}
+                      title="Open Direct Client Conversation"
+                      className="p-1.5 rounded-md border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] transition-colors cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 8-Stage Interactive Milestone Bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-[#71717A] dark:text-[#A1A1AA]">
+                      Stage 0{workspaceCommission.currentStage || 1} of 08 · {COMMISSION_STAGES.find(s => s.number === (workspaceCommission.currentStage || 1))?.name}
+                    </span>
+                    <span className="font-bold text-[#EA580C]">
+                      Click any milestone to advance stage ({workspaceCommission.progress}%)
+                    </span>
+                  </div>
+                  <ProgressBar commission={workspaceCommission} interactiveAdmin={true} />
+                </div>
+
+                {/* Settlement Status Row */}
+                <div className="flex items-center justify-between pt-3 border-t border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Settlement Status:</span>
+                  <div className="flex items-center gap-2">
+                    {(['Unpaid', 'Partial', 'Paid'] as const).map((pStatus) => (
+                      <button
+                        key={pStatus}
+                        type="button"
+                        onClick={() => updatePaymentStatus(workspaceCommission.id, pStatus)}
+                        className={`px-3 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
+                          workspaceCommission.paymentStatus === pStatus
+                            ? pStatus === 'Paid'
+                              ? 'bg-emerald-600 text-white font-bold'
+                              : pStatus === 'Partial'
+                              ? 'bg-amber-600 text-white font-bold'
+                              : 'bg-red-600 text-white font-bold'
+                            : 'bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA]'
+                        }`}
+                      >
+                        {pStatus}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Workspace Navigation Tabs */}
+              <nav className="flex items-center gap-2 border-b border-[#E4E2DC] dark:border-[#27272A] pb-1 overflow-x-auto no-scrollbar" aria-label="Commission workspace sections">
+                {[
+                  { id: 'proofs' as const, label: 'Creative Proofs', icon: UploadCloud },
+                  { id: 'deliverables' as const, label: 'Final Deliverables', icon: FolderArchive },
+                  { id: 'payments' as const, label: 'Payment Verification', icon: CreditCard },
+                  { id: 'specifications' as const, label: 'Specifications & Brief', icon: FileText },
+                ].map(({ id, label, icon: TabIcon }) => {
+                  const isSelected = adminWorkspaceTab === id;
+
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setAdminWorkspaceTab(id)}
+                      className={`relative px-3.5 py-2 text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'text-[#18181B] dark:text-[#EDEDEC] font-bold'
+                          : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                      }`}
+                    >
+                      <TabIcon className="w-3.5 h-3.5" />
+                      <span>{label}</span>
+                      {isSelected && (
+                        <span className="absolute bottom-0 inset-x-3 h-0.5 bg-[#EA580C] rounded-full animate-in fade-in duration-200" />
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Tab 1: Creative Proofs */}
+              {adminWorkspaceTab === 'proofs' && (
+                <div className="animate-in fade-in duration-200">
+                  <AdminCreativeProofsSection
+                    commission={workspaceCommission}
+                    currentUser={currentUser}
+                  />
+                </div>
+              )}
+
+              {/* Tab 2: Final Deliverables */}
+              {adminWorkspaceTab === 'deliverables' && (
+                <div className="animate-in fade-in duration-200">
+                  <AdminDeliverablesSection
+                    commission={workspaceCommission}
+                    currentUser={currentUser}
+                  />
+                </div>
+              )}
+
+              {/* Tab 3: Payment Verification */}
+              {adminWorkspaceTab === 'payments' && (
+                <div className="animate-in fade-in duration-200">
+                  <AdminPaymentVerificationSection
+                    commissions={commissions}
+                    currentUser={currentUser}
+                    selectedCommissionId={workspaceCommission.id}
+                    onPaymentConfirmed={async (commissionId, targetStatus) => {
+                      await updatePaymentStatus(commissionId, targetStatus);
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Tab 4: Specifications & Brief */}
+              {adminWorkspaceTab === 'specifications' && (
+                <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
+                  <div className="space-y-1 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+                      Commission Specifications
+                    </span>
+                    <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                      Client Creative Directives & Requirements
+                    </h3>
+                  </div>
+
+                  <div className="space-y-4 text-xs sm:text-sm">
+                    <div>
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1">
+                        Scope Description
+                      </span>
+                      <p className="text-[#18181B] dark:text-[#EDEDEC] leading-relaxed bg-[#FAF9F6] dark:bg-[#0F0F11] p-4 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] whitespace-pre-line">
+                        {workspaceCommission.description || 'No detailed scope provided.'}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {workspaceCommission.purpose && (
+                        <div>
+                          <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1">
+                            Purpose & Context
+                          </span>
+                          <p className="text-[#18181B] dark:text-[#EDEDEC]">{workspaceCommission.purpose}</p>
+                        </div>
+                      )}
+
+                      {workspaceCommission.targetAudience && (
+                        <div>
+                          <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1">
+                            Target Audience
+                          </span>
+                          <p className="text-[#18181B] dark:text-[#EDEDEC]">{workspaceCommission.targetAudience}</p>
+                        </div>
+                      )}
+
+                      {workspaceCommission.preferredStyle && (
+                        <div>
+                          <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1">
+                            Aesthetic Direction
+                          </span>
+                          <p className="text-[#18181B] dark:text-[#EDEDEC]">{workspaceCommission.preferredStyle}</p>
+                        </div>
+                      )}
+
+                      {workspaceCommission.requiredDimensions && (
+                        <div>
+                          <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1">
+                            Required Formats & Dimensions
+                          </span>
+                          <p className="font-mono text-[#18181B] dark:text-[#EDEDEC]">{workspaceCommission.requiredDimensions}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {workspaceCommission.preferredColors && workspaceCommission.preferredColors.length > 0 && (
+                      <div className="pt-2">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1.5">
+                          Brand Palette
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {workspaceCommission.preferredColors.map((color, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono text-[#18181B] dark:text-[#EDEDEC]">
+                              {color.startsWith('#') && (
+                                <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: color }} />
+                              )}
+                              <span>{color}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* LEVEL 1: PRODUCTION LEDGER (ALL COMMISSIONS) */
+            <div className="space-y-8 animate-in fade-in duration-200">
           
           {/* Dynamic Summary Counters Banner */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1382,6 +1728,24 @@ export const AdminDashboardView: React.FC = () => {
           )}
 
         </div>
+          )}
+        </>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB: PAYMENT VERIFICATION (GCASH MANUAL AUDIT)           */}
+      {/* ======================================================== */}
+      {activeAdminTab === 'payment-verification' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <AdminPaymentVerificationSection
+            commissions={commissions}
+            currentUser={currentUser}
+            selectedCommissionId={selectedCommissionId !== 'all' ? selectedCommissionId : undefined}
+            onPaymentConfirmed={async (commissionId, targetStatus) => {
+              await updatePaymentStatus(commissionId, targetStatus);
+            }}
+          />
+        </div>
       )}
 
       {/* ======================================================== */}
@@ -1454,8 +1818,8 @@ export const AdminDashboardView: React.FC = () => {
               >
                 <div className="flex items-center gap-3">
                   <img
-                    src={client.avatar}
-                    alt={client.name}
+                    src={client.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
+                    alt={client.name || 'Client Avatar'}
                     className="w-10 h-10 rounded-full object-cover ring-1 ring-[#E4E2DC] dark:ring-[#27272A]"
                   />
                   <div className="min-w-0 flex-1">
@@ -1537,8 +1901,8 @@ export const AdminDashboardView: React.FC = () => {
                 <div>
                   <div className="aspect-[16/10] overflow-hidden bg-[#FAF9F6] dark:bg-[#0F0F11]">
                     <img
-                      src={proj.image}
-                      alt={proj.title}
+                      src={proj.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80'}
+                      alt={proj.title || 'Project Artwork'}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -2183,6 +2547,90 @@ export const AdminDashboardView: React.FC = () => {
                 onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
                 className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] leading-relaxed resize-none"
               />
+            </div>
+
+            {/* GCash Payment Instructions Configuration */}
+            <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-3">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-[#EA580C]" />
+                <h4 className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC]">
+                  GCash Payment Instructions
+                </h4>
+              </div>
+              <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                Configured details displayed to clients during direct GCash transfer and manual verification intake.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                    GCash Account Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.gcashDetails?.accountName || 'Brewster A. Cabando'}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        gcashDetails: {
+                          accountName: e.target.value,
+                          accountNumber: prev.gcashDetails?.accountNumber || '0917-829-4102',
+                          instructions: prev.gcashDetails?.instructions || '',
+                          depositPercentage: prev.gcashDetails?.depositPercentage || 50,
+                        },
+                      }))
+                    }
+                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                    GCash Mobile Number
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.gcashDetails?.accountNumber || '0917-829-4102'}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        gcashDetails: {
+                          accountName: prev.gcashDetails?.accountName || 'Brewster A. Cabando',
+                          accountNumber: e.target.value,
+                          instructions: prev.gcashDetails?.instructions || '',
+                          depositPercentage: prev.gcashDetails?.depositPercentage || 50,
+                        },
+                      }))
+                    }
+                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                  Client Transfer Instructions
+                </label>
+                <textarea
+                  rows={3}
+                  value={
+                    profileForm.gcashDetails?.instructions ||
+                    '1. Open your GCash app and tap "Send Money" > "Express Send".\n2. Enter the studio mobile number and the deposit amount.\n3. Complete transfer and screenshot the official receipt.\n4. Upload below with the Reference No. clearly visible.'
+                  }
+                  onChange={(e) =>
+                    setProfileForm((prev) => ({
+                      ...prev,
+                      gcashDetails: {
+                        accountName: prev.gcashDetails?.accountName || 'Brewster A. Cabando',
+                        accountNumber: prev.gcashDetails?.accountNumber || '0917-829-4102',
+                        instructions: e.target.value,
+                        depositPercentage: prev.gcashDetails?.depositPercentage || 50,
+                      },
+                    }))
+                  }
+                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] leading-relaxed resize-none"
+                />
+              </div>
             </div>
 
             <div className="pt-2 flex justify-end">

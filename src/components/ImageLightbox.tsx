@@ -116,11 +116,13 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
         className="relative max-w-full max-h-full flex items-center justify-center cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
-        <img
-          src={imageUrl}
-          alt={altText}
-          className="max-h-[85vh] max-w-[92vw] object-contain rounded-lg shadow-2xl transition-all select-none"
-        />
+        {Boolean(imageUrl && imageUrl.trim()) && (
+          <img
+            src={imageUrl}
+            alt={altText}
+            className="max-h-[85vh] max-w-[92vw] object-contain rounded-lg shadow-2xl transition-all select-none"
+          />
+        )}
       </div>
 
       {/* Optional next button */}

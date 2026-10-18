@@ -472,8 +472,8 @@ export const ProductDetailView: React.FC = () => {
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-[#FAF9F6] dark:bg-[#0F0F11]">
                   <img
-                    src={proj.image}
-                    alt={proj.title}
+                    src={(proj.image && proj.image.trim()) || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80'}
+                    alt={proj.title || 'Related Project Artwork'}
                     className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500 ease-out"
                     loading="lazy"
                   />

@@ -10,7 +10,8 @@ import {
   deleteCommissionDeliverable, 
   getDeliverableSignedUrl,
   formatDeliverableFileSize,
-  validateDeliverableFile
+  validateDeliverableFile,
+  DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
 } from '../lib/deliverables';
 import { useApp } from '../context/AppContext';
 import { 
@@ -174,7 +175,10 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
     setDownloadingId(item.id);
     setActionError(null);
     try {
-      const { signedUrl, error: signErr } = await getDeliverableSignedUrl(item.filePath, 3600);
+      const { signedUrl, error: signErr } = await getDeliverableSignedUrl(
+        item.filePath,
+        DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
+      );
       if (signErr || !signedUrl) {
         setActionError(signErr || 'Failed to acquire secure signed download URL.');
         return;

@@ -29,6 +29,12 @@ export const INITIAL_STUDIO_PROFILE: StudioProfile = {
   currencySymbol: '₱',
   commissionStatus: 'open',
   availableSlots: 3,
+  gcashDetails: {
+    accountName: 'Brewster A. Cabando',
+    accountNumber: '0917-829-4102',
+    instructions: '1. Open your GCash app and tap "Send Money" > "Express Send".\n2. Enter the studio mobile number and the deposit amount.\n3. Complete the transfer and save a screenshot of the official transaction receipt.\n4. Ensure the Reference No. and Date/Time are clearly visible.\n5. Upload the screenshot below to initiate manual verification.',
+    depositPercentage: 50,
+  },
 };
 
 export const INITIAL_SERVICES: ServiceItem[] = [

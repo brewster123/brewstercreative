@@ -124,8 +124,8 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
         }`}
       >
         <img
-          src={project.image}
-          alt={project.title}
+          src={project.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80'}
+          alt={project.title || 'Portfolio artwork'}
           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-103"
           loading="lazy"
         />

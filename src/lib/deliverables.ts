@@ -4,6 +4,13 @@ import { CommissionDeliverable } from '../types';
 export const FINAL_DELIVERABLES_BUCKET = 'final-deliverables';
 
 /**
+ * Standard expiration duration for final deliverable download signed URLs:
+ * 600 seconds (10 minutes).
+ * Shortened from 3600 seconds to minimize exposure window after payment status revocation.
+ */
+export const DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS = 600;
+
+/**
  * Validates deliverable files before upload.
  * Enforces maximum size (100MB) and non-empty filename.
  */
@@ -122,10 +129,11 @@ export async function fetchCommissionDeliverables(
 /**
  * Generates a short-lived signed URL for a deliverable file in the private 'final-deliverables' bucket.
  * Never constructs or exposes public storage URLs.
+ * Default validity duration: 600 seconds (10 minutes).
  */
 export async function getDeliverableSignedUrl(
   filePath: string,
-  expiresInSeconds: number = 3600
+  expiresInSeconds: number = DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
 ): Promise<{ signedUrl: string | null; error: string | null }> {
   if (!filePath) {
     return { signedUrl: null, error: 'Deliverable file path is missing.' };

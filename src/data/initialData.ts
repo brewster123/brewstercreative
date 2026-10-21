@@ -12,9 +12,9 @@ import {
 
 export const INITIAL_STUDIO_PROFILE: StudioProfile = {
   designerName: 'Brewster A. Cabando',
-  studioName: 'Brewster Creative',
+  studioName: 'DESTALION',
   title: 'Multimedia Artist & Brand Designer',
-  bio: 'Specializing in distinctive visual identities, conceptual poster art, typographic systems, and high-impact digital illustration for innovative brands, creators, and indie studios worldwide.',
+  bio: 'Experimental multimedia design studio specializing in distinctive visual identities, conceptual poster art, typographic systems, and high-impact digital releases. Make noise. Make meaning.',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
   email: 'brewstercreates@gmail.com',
   location: 'Manila / Remote Worldwide',
@@ -30,8 +30,8 @@ export const INITIAL_STUDIO_PROFILE: StudioProfile = {
   commissionStatus: 'open',
   availableSlots: 3,
   gcashDetails: {
-    accountName: 'Brewster A. Cabando',
-    accountNumber: '0917-829-4102',
+    accountName: 'Brewster Cabando',
+    accountNumber: '0965-706-4331',
     instructions: '1. Open your GCash app and tap "Send Money" > "Express Send".\n2. Enter the studio mobile number and the deposit amount.\n3. Complete the transfer and save a screenshot of the official transaction receipt.\n4. Ensure the Reference No. and Date/Time are clearly visible.\n5. Upload the screenshot below to initiate manual verification.',
     depositPercentage: 50,
   },

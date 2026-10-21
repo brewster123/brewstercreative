@@ -217,7 +217,7 @@ export async function uploadAdminCreativeProof({
   if (currentUser.role !== 'admin') {
     return {
       success: false,
-      error: 'Permission denied: Only Brewster Creative administrators are authorized to upload creative proofs.',
+      error: 'Permission denied: Only DESTALION administrators are authorized to upload creative proofs.',
     };
   }
 

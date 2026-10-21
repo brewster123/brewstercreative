@@ -62,7 +62,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         </div>
 
         {service.popular && (
-          <span className="font-mono text-[10px] uppercase tracking-wider font-semibold text-[#EA580C] dark:text-[#FBBF24] bg-[#FFF7ED] dark:bg-[#78350F]/30 px-2.5 py-0.5 rounded border border-[#FFEDD5] dark:border-[#92400E]">
+          <span className="font-mono text-xs uppercase tracking-wider font-semibold text-[#EA580C]">
             Core Offering
           </span>
         )}
@@ -79,7 +79,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           </h3>
 
           <div className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] self-baseline">
-            Starting from <span className="text-sm sm:text-base font-bold text-[#18181B] dark:text-[#EDEDEC] font-display">{studioProfile.currencySymbol}{service.startingPrice.toLocaleString()}</span>
+            Starting from <span className="text-sm sm:text-base font-bold text-[#18181B] dark:text-[#EDEDEC] font-display tabular-nums">{studioProfile.currencySymbol}{service.startingPrice.toLocaleString()}</span>
           </div>
         </div>
 

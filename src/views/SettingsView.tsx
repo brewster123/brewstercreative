@@ -346,7 +346,7 @@ export const SettingsView: React.FC = () => {
                   rows={3}
                   value={profileBio}
                   onChange={(e) => setProfileBio(e.target.value)}
-                  placeholder="Tell Brewster about your organization, aesthetic values, or ongoing creative initiatives."
+                  placeholder="Tell DESTALION about your organization, aesthetic values, or ongoing creative initiatives."
                   className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors resize-none leading-relaxed"
                 />
               </div>

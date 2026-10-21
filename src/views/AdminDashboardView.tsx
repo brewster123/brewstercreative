@@ -1004,7 +1004,7 @@ export const AdminDashboardView: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2 font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
-              <span>Brewster Creative — Studio</span>
+              <span>{studioProfile.studioName || 'DESTALION'} — Studio</span>
               <span>·</span>
               <span className="text-[#EA580C] font-semibold">Production Desk</span>
               <span>·</span>
@@ -2568,13 +2568,13 @@ export const AdminDashboardView: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={profileForm.gcashDetails?.accountName || 'Brewster A. Cabando'}
+                    value={profileForm.gcashDetails?.accountName || 'Brewster Cabando'}
                     onChange={(e) =>
                       setProfileForm((prev) => ({
                         ...prev,
                         gcashDetails: {
                           accountName: e.target.value,
-                          accountNumber: prev.gcashDetails?.accountNumber || '0917-829-4102',
+                          accountNumber: prev.gcashDetails?.accountNumber || '0965-706-4331',
                           instructions: prev.gcashDetails?.instructions || '',
                           depositPercentage: prev.gcashDetails?.depositPercentage || 50,
                         },
@@ -2590,12 +2590,12 @@ export const AdminDashboardView: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={profileForm.gcashDetails?.accountNumber || '0917-829-4102'}
+                    value={profileForm.gcashDetails?.accountNumber || '0965-706-4331'}
                     onChange={(e) =>
                       setProfileForm((prev) => ({
                         ...prev,
                         gcashDetails: {
-                          accountName: prev.gcashDetails?.accountName || 'Brewster A. Cabando',
+                          accountName: prev.gcashDetails?.accountName || 'Brewster Cabando',
                           accountNumber: e.target.value,
                           instructions: prev.gcashDetails?.instructions || '',
                           depositPercentage: prev.gcashDetails?.depositPercentage || 50,
@@ -2621,8 +2621,8 @@ export const AdminDashboardView: React.FC = () => {
                     setProfileForm((prev) => ({
                       ...prev,
                       gcashDetails: {
-                        accountName: prev.gcashDetails?.accountName || 'Brewster A. Cabando',
-                        accountNumber: prev.gcashDetails?.accountNumber || '0917-829-4102',
+                        accountName: prev.gcashDetails?.accountName || 'Brewster Cabando',
+                        accountNumber: prev.gcashDetails?.accountNumber || '0965-706-4331',
                         instructions: e.target.value,
                         depositPercentage: prev.gcashDetails?.depositPercentage || 50,
                       },
@@ -2630,6 +2630,105 @@ export const AdminDashboardView: React.FC = () => {
                   }
                   className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] leading-relaxed resize-none"
                 />
+              </div>
+            </div>
+
+            {/* Social Media & External Profiles Configuration */}
+            <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-3">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-[#EA580C]" />
+                <h4 className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC]">
+                  Social & External Profiles
+                </h4>
+              </div>
+              <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                Official studio handles and profiles displayed dynamically across website footers and contact areas.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                    Instagram Handle / URL
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.socialLinks?.instagram || ''}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        socialLinks: {
+                          ...prev.socialLinks,
+                          instagram: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="e.g. instagram.com/brewster.cabando"
+                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                    Behance Portfolio / URL
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.socialLinks?.behance || ''}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        socialLinks: {
+                          ...prev.socialLinks,
+                          behance: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="e.g. behance.net/brewstercabando"
+                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                    Dribbble Profile / URL
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.socialLinks?.dribbble || ''}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        socialLinks: {
+                          ...prev.socialLinks,
+                          dribbble: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="e.g. dribbble.com/brewstercabando"
+                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                    Twitter / X Profile / URL
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.socialLinks?.twitter || ''}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        socialLinks: {
+                          ...prev.socialLinks,
+                          twitter: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="e.g. x.com/brewstercabando"
+                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                  />
+                </div>
               </div>
             </div>
 

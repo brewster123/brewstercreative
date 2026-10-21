@@ -85,16 +85,13 @@ export const HomeView: React.FC = () => {
           {/* Left Column: Editorial Statement (Span 7) */}
           <div className="lg:col-span-7 space-y-7">
             
-            {/* Status & Identity Indicator */}
-            <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-md bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
-              <span className="font-mono uppercase font-semibold text-[#18181B] dark:text-[#EDEDEC] text-[11px] tracking-wider">
-                {studioProfile.studioName}
-              </span>
-              <span className="text-[#A1A1AA]">•</span>
-              <span className="text-[#71717A] dark:text-[#A1A1AA] font-medium">
-                {studioProfile.designerName}
-              </span>
+            {/* Editorial Kicker */}
+            <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA]">
+              <span className="font-bold text-[#EA580C]">{studioProfile.studioName}</span>
+              <span aria-hidden="true" className="text-[#A1A1AA]">/</span>
+              <span>{studioProfile.designerName}</span>
+              <span aria-hidden="true" className="text-[#A1A1AA]">·</span>
+              <span>Design Atelier</span>
             </div>
 
             {/* Main Headline */}
@@ -104,7 +101,7 @@ export const HomeView: React.FC = () => {
               </h1>
 
               <p className="text-base sm:text-lg text-[#71717A] dark:text-[#A1A1AA] max-w-xl leading-relaxed font-normal">
-                An independent design practice crafting distinctive brand identities, immersive poster artworks, and digital illustrations with uncompromising custom craftsmanship.
+                An independent experimental multimedia design studio crafting distinctive brand identities, immersive poster artworks, and digital illustrations. Make noise. Make meaning.
               </p>
             </div>
 
@@ -114,7 +111,7 @@ export const HomeView: React.FC = () => {
                 id="hero-btn-start-commission"
                 type="button"
                 onClick={() => setActiveView('commission-form')}
-                className="px-6 py-3.5 rounded-lg bg-[#18181B] dark:bg-[#27272A] hover:bg-[#27272A] dark:hover:bg-[#3F3F46] text-white font-semibold text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer group"
+                className="px-6 py-3.5 rounded-lg bg-[#18181B] dark:bg-[#27272A] hover:bg-[#27272A] dark:hover:bg-[#3F3F46] text-white font-semibold text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer group btn-tactile"
               >
                 <Send className="w-4 h-4 text-[#EA580C] group-hover:translate-x-0.5 transition-transform" />
                 <span>Start a Commission</span>
@@ -124,27 +121,20 @@ export const HomeView: React.FC = () => {
                 id="hero-btn-view-portfolio"
                 type="button"
                 onClick={() => setActiveView('portfolio')}
-                className="px-6 py-3.5 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-sm transition-all border border-[#E4E2DC] dark:border-[#27272A] shadow-2xs flex items-center justify-center gap-2 cursor-pointer"
+                className="px-6 py-3.5 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-sm transition-all border border-[#E4E2DC] dark:border-[#27272A] shadow-2xs flex items-center justify-center gap-2 cursor-pointer btn-tactile"
               >
                 <span>View Selected Works</span>
                 <ArrowRight className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
               </button>
             </div>
 
-            {/* Studio Pillars Ribbon */}
-            <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-[#71717A] dark:text-[#A1A1AA] font-medium">
-              <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
-                <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">100% Custom Artistry</span>
-              </div>
-              <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#71717A] dark:bg-[#A1A1AA]" />
-                <span>Direct 1-on-1 Studio Collaboration</span>
-              </div>
-              <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#71717A] dark:bg-[#A1A1AA]" />
-                <span>300 DPI Print & Vector Masters</span>
-              </div>
+            {/* Studio Pillars Ribbon — Clean Unboxed Metadata */}
+            <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] flex flex-wrap items-center gap-y-2 gap-x-4 text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+              <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">100% Custom Artistry</span>
+              <span aria-hidden="true" className="text-[#A1A1AA]">·</span>
+              <span>Direct 1-on-1 Studio Collaboration</span>
+              <span aria-hidden="true" className="text-[#A1A1AA]">·</span>
+              <span>300 DPI Print & Vector Masters</span>
             </div>
 
           </div>
@@ -157,7 +147,7 @@ export const HomeView: React.FC = () => {
               <div className="relative aspect-[4/5] overflow-hidden bg-[#FAF9F6] dark:bg-[#0F0F11]">
                 <img
                   src={featuredPortfolio[0]?.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80'}
-                  alt={featuredPortfolio[0]?.title || 'Signature Brewster Creative Artwork'}
+                  alt={featuredPortfolio[0]?.title || 'Signature DESTALION Artwork'}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
@@ -213,7 +203,7 @@ export const HomeView: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
             <div className="space-y-1.5">
               <span className="font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold block">
-                01 / Practice
+                01. Practice & Disciplines
               </span>
               <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
                 Design Services & Disciplines
@@ -223,7 +213,7 @@ export const HomeView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveView('services')}
-              className="text-xs sm:text-sm text-[#EA580C] font-semibold hover:underline flex items-center gap-1 cursor-pointer self-start md:self-auto"
+              className="text-xs sm:text-sm text-[#EA580C] font-semibold hover:underline flex items-center gap-1 cursor-pointer self-start md:self-auto btn-tactile"
             >
               <span>Explore All Packages & Rates</span>
               <ChevronRight className="w-4 h-4" />
@@ -235,11 +225,11 @@ export const HomeView: React.FC = () => {
             {capabilities.map((cap, i) => (
               <div 
                 key={i}
-                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-7 flex flex-col justify-between shadow-2xs hover:border-[#D4D2CA] dark:hover:border-[#3F3F46] transition-colors"
+                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-7 flex flex-col justify-between shadow-2xs hover:border-[#D4D2CA] dark:hover:border-[#3F3F46] hover:shadow-xs transition-all duration-200"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold bg-[#FFF7ED] dark:bg-[#78350F]/30 px-2.5 py-0.5 rounded border border-[#FFEDD5] dark:border-[#92400E]">
+                    <span className="font-mono text-xs uppercase tracking-wider text-[#EA580C] font-semibold">
                       {cap.tag}
                     </span>
                     <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
@@ -260,7 +250,7 @@ export const HomeView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveView('services')}
-                    className="text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:text-[#EA580C] flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:text-[#EA580C] flex items-center gap-1.5 transition-colors cursor-pointer btn-tactile"
                   >
                     <span>View deliverables & timeline</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -282,7 +272,7 @@ export const HomeView: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
             <div className="space-y-1.5">
               <span className="font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold block">
-                02 / Portfolio
+                02. Selected Works
               </span>
               <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
                 Selected Works & Case Studies
@@ -292,7 +282,7 @@ export const HomeView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveView('portfolio')}
-              className="px-4 py-2 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] text-xs sm:text-sm font-semibold transition-all border border-[#E4E2DC] dark:border-[#27272A] shadow-2xs flex items-center gap-2 cursor-pointer self-start md:self-auto"
+              className="px-4 py-2 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] text-xs sm:text-sm font-semibold transition-all border border-[#E4E2DC] dark:border-[#27272A] shadow-2xs flex items-center gap-2 cursor-pointer self-start md:self-auto btn-tactile"
             >
               <span>Explore Complete Archive ({portfolio.length})</span>
               <ArrowRight className="w-4 h-4 text-[#EA580C]" />
@@ -321,7 +311,7 @@ export const HomeView: React.FC = () => {
           
           <div className="space-y-2 mb-10 max-w-xl">
             <span className="font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold block">
-              03 / Method
+              03. The Process
             </span>
             <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
               The Commission Journey
@@ -335,7 +325,7 @@ export const HomeView: React.FC = () => {
             {processStages.map((step, i) => (
               <div
                 key={i}
-                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 flex flex-col justify-between shadow-2xs space-y-4"
+                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 flex flex-col justify-between shadow-2xs space-y-4 hover:border-[#D4D2CA] dark:hover:border-[#3F3F46] hover:shadow-xs transition-all duration-200"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
@@ -389,7 +379,7 @@ export const HomeView: React.FC = () => {
 
             <div className="space-y-4 text-center lg:text-left flex-1">
               <span className="font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold block">
-                04 / The Designer
+                04. The Designer
               </span>
 
               <h3 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
@@ -427,7 +417,7 @@ export const HomeView: React.FC = () => {
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="bg-[#18181B] dark:bg-[#18181B] text-white rounded-xl p-10 sm:p-14 shadow-md space-y-6 relative overflow-hidden border border-transparent dark:border-[#27272A]">
           
-          <span className="px-3 py-0.5 rounded-md bg-white/10 text-[#EA580C] text-[10px] font-mono uppercase tracking-widest font-semibold border border-white/10 inline-block">
+          <span className="text-xs font-mono uppercase tracking-widest text-[#EA580C] font-semibold block">
             Initiate Project
           </span>
 
@@ -445,7 +435,7 @@ export const HomeView: React.FC = () => {
               id="cta-btn-start-commission"
               type="button"
               onClick={() => setActiveView('commission-form')}
-              className="px-8 py-3.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-sm transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer"
+              className="px-8 py-3.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-sm transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer btn-tactile"
             >
               <Send className="w-4 h-4" />
               <span>Start a Commission</span>

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { CommissionDeliverable } from '../types';
+import { resolveAdminUserId } from './notifications';
 
 export const FINAL_DELIVERABLES_BUCKET = 'final-deliverables';
 
@@ -130,10 +131,12 @@ export async function fetchCommissionDeliverables(
  * Generates a short-lived signed URL for a deliverable file in the private 'final-deliverables' bucket.
  * Never constructs or exposes public storage URLs.
  * Default validity duration: 600 seconds (10 minutes).
+ * Supports { download: true | filename } to enforce Content-Disposition: attachment for downloads.
  */
 export async function getDeliverableSignedUrl(
   filePath: string,
-  expiresInSeconds: number = DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
+  expiresInSeconds: number = DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS,
+  downloadFilename?: string | boolean
 ): Promise<{ signedUrl: string | null; error: string | null }> {
   if (!filePath) {
     return { signedUrl: null, error: 'Deliverable file path is missing.' };
@@ -147,10 +150,17 @@ export async function getDeliverableSignedUrl(
     cleanPath = cleanPath.slice(1);
   }
 
+  const options: { download?: string | boolean } = {};
+  if (downloadFilename) {
+    options.download = typeof downloadFilename === 'string'
+      ? sanitizeDeliverableFileName(downloadFilename)
+      : true;
+  }
+
   try {
     const { data, error } = await supabase.storage
       .from(FINAL_DELIVERABLES_BUCKET)
-      .createSignedUrl(cleanPath, expiresInSeconds);
+      .createSignedUrl(cleanPath, expiresInSeconds, options);
 
     if (error || !data?.signedUrl) {
       return {
@@ -165,6 +175,96 @@ export async function getDeliverableSignedUrl(
       signedUrl: null,
       error: err?.message || 'An unexpected error occurred while signing deliverable URL.',
     };
+  }
+}
+
+/**
+ * Initiates an authentic device file download for a deliverable.
+ * Guarantees direct file saving instead of opening the file in a new browser tab.
+ * 
+ * Order of execution:
+ * 1. Sanitizes fileName to prevent illegal file paths while strictly preserving extension (.png, .pdf, .zip, etc.).
+ * 2. Requests signed download URL with 600-second expiration and download attachment header.
+ * 3. Fetches the authorized file stream as a Blob and downloads via a same-origin temporary object URL.
+ * 4. Falls back to direct anchor download on the signed URL without target="_blank" if fetch/blob is restricted.
+ * 5. Automatically revokes the temporary object URL after download initiation.
+ */
+export async function downloadDeliverableFile(
+  filePath: string,
+  fileName: string
+): Promise<{ success: boolean; error: string | null }> {
+  if (!filePath) {
+    return { success: false, error: 'Deliverable file path is missing.' };
+  }
+
+  const safeFileName = sanitizeDeliverableFileName(fileName || 'deliverable');
+
+  // Step 1: Obtain a signed download URL (600s validity) with attachment header
+  const { signedUrl, error: signError } = await getDeliverableSignedUrl(
+    filePath,
+    DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS,
+    safeFileName
+  );
+
+  if (signError || !signedUrl) {
+    return {
+      success: false,
+      error: signError || 'Failed to acquire secure download authorization.',
+    };
+  }
+
+  // Step 2: Preferred mechanism — Fetch as Blob & download via same-origin ObjectURL
+  // This guarantees browser downloads the file directly to device without opening in a new tab.
+  try {
+    const response = await fetch(signedUrl);
+    if (!response.ok) {
+      throw new Error(`Download HTTP error ${response.status}: ${response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = safeFileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+
+    // Revoke temporary object URL and remove DOM element after delay
+    setTimeout(() => {
+      if (link.parentNode) {
+        link.parentNode.removeChild(link);
+      }
+      window.URL.revokeObjectURL(objectUrl);
+    }, 1500);
+
+    return { success: true, error: null };
+  } catch (blobErr: any) {
+    console.warn('[Deliverables] Blob fetch fallback to direct signed anchor download:', blobErr?.message);
+
+    // Step 3: Fallback — Trigger signed download URL directly on anchor without target="_blank"
+    try {
+      const link = document.createElement('a');
+      link.href = signedUrl;
+      link.download = safeFileName;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+
+      setTimeout(() => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      }, 1500);
+
+      return { success: true, error: null };
+    } catch (fallbackErr: any) {
+      return {
+        success: false,
+        error: fallbackErr?.message || blobErr?.message || 'Unable to initiate file download.',
+      };
+    }
   }
 }
 
@@ -210,11 +310,34 @@ export async function uploadCommissionDeliverable(params: {
   }
 
   const safeFileName = sanitizeDeliverableFileName(fileName);
-  const deliverableId = crypto.randomUUID ? crypto.randomUUID() : `deliv-${Date.now()}`;
+
+  // Generate a valid RFC4122 v4 UUID for PostgreSQL uuid compatibility
+  const generateUuid = (): string => {
+    if (typeof window !== 'undefined' && window.crypto?.randomUUID) {
+      return window.crypto.randomUUID();
+    }
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  };
+
+  const deliverableId = generateUuid();
   // Enforce secure path structure: {commission_id}/{deliverable_id}/{safe_filename}
   const storagePath = `${commissionId}/${deliverableId}/${safeFileName}`;
 
   const resolvedMime = fileType || (file as File).type || 'application/octet-stream';
+
+  // Ensure adminUserId conforms to UUID foreign key constraint on public.profiles(id)
+  let effectiveAdminId = adminUserId;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(adminUserId);
+  if (!isUuid) {
+    effectiveAdminId = await resolveAdminUserId();
+  }
 
   try {
     // Step 1: Upload to private storage
@@ -236,7 +359,7 @@ export async function uploadCommissionDeliverable(params: {
     const insertPayload: any = {
       id: deliverableId,
       commission_id: commissionId,
-      uploaded_by: adminUserId,
+      uploaded_by: effectiveAdminId,
       file_name: safeFileName,
       file_path: storagePath,
       file_type: resolvedMime,

@@ -81,6 +81,22 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
     if (n.linkTab || n.link_tab) {
       setActiveDashboardTab?.(n.linkTab || n.link_tab!);
     }
+    const isChatMessage = n.type === 'message' || n.linkTab === 'chat' || n.link_tab === 'chat';
+
+    if (currentUser?.role === 'admin') {
+      if (isChatMessage) {
+        setActiveView('chat');
+      } else {
+        setActiveView('admin-dashboard');
+      }
+    } else {
+      if (isChatMessage) {
+        setActiveView('chat');
+      } else {
+        setActiveView('client-dashboard');
+      }
+    }
+    onClose();
   };
 
   const handleNavigate = (e: React.MouseEvent, n: AppNotification) => {

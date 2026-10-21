@@ -326,7 +326,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   // Partner presentation details
-  const partnerName = isAdmin ? commission.clientName : 'Brewster Creative';
+  const partnerName = isAdmin ? commission.clientName : (studioProfile.studioName || 'DESTALION');
   const partnerAvatar = isAdmin 
     ? (commission.clientAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80')
     : (studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80');
@@ -727,7 +727,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   onChange={handleTextChange}
                   onKeyDown={handleKeyDown}
                   rows={1}
-                  placeholder={isAdmin ? "Reply to client as Brewster Creative..." : "Aa"}
+                  placeholder={isAdmin ? "Reply to client as DESTALION..." : "Aa"}
                   className="w-full bg-[#242526] hover:bg-[#2A2B2D] focus:bg-[#2A2B2D] border border-transparent focus:border-[#3A3B3C] rounded-2xl px-4 py-2.5 text-sm text-[#E4E6EB] placeholder-[#8E9297] focus:outline-none transition-colors resize-none leading-relaxed max-h-32"
                 />
               </div>

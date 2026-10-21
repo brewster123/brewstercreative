@@ -337,8 +337,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem(STORAGE_KEYS.PROFILE);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.studioName === 'Cabando Studio' || !parsed.studioName) {
-        parsed.studioName = 'Brewster Creative';
+      if (parsed.studioName === 'Cabando Studio' || parsed.studioName === 'Brewster Creative' || !parsed.studioName) {
+        parsed.studioName = 'DESTALION';
       }
       if (parsed.email?.toLowerCase().includes('cabandobrewster') || !parsed.email) {
         parsed.email = 'brewstercreates@gmail.com';
@@ -2246,7 +2246,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const isSenderAdmin = sender.role === 'admin';
         resolveAdminUserId().then(adminId => {
           const recipientId = isSenderAdmin ? comm.clientId : adminId;
-          const notifTitle = isSenderAdmin ? 'Message from Brewster Creative' : `New message from ${sender.name}`;
+          const notifTitle = isSenderAdmin ? 'Message from DESTALION' : `New message from ${sender.name}`;
           const notifMsg = isSenderAdmin
             ? `${sender.name} sent you a message: "${effectiveBody.slice(0, 45)}..."`
             : `New message on "${comm.projectName}": "${effectiveBody.slice(0, 45)}..."`;
@@ -2290,7 +2290,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (comm) {
       const isSenderAdmin = sender.role === 'admin';
       const recipientId = isSenderAdmin ? comm.clientId : 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69';
-      const notifTitle = isSenderAdmin ? 'Message from Brewster Creative' : `New message from ${sender.name}`;
+      const notifTitle = isSenderAdmin ? 'Message from DESTALION' : `New message from ${sender.name}`;
       const notifMsg = isSenderAdmin 
         ? `${sender.name} sent you a message: "${cleanText.slice(0, 45)}..."` 
         : `New message from ${sender.name} on "${comm.projectName}"`;

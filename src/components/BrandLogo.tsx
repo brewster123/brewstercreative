@@ -6,7 +6,7 @@ interface BrandLogoProps {
 }
 
 /**
- * Brewster Creative — Official Logo Mark
+ * DESTALION — Official Logo Mark
  *
  * Renders the exact paths from the official `Asset 3.svg` (also preserved,
  * unmodified, at /public/assets/brand/Asset_3.svg for reference). The path
@@ -31,7 +31,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     <svg
       id="brand-official-logo"
       role="img"
-      aria-label="Brewster Creative logo"
+      aria-label="DESTALION logo"
       viewBox="0 0 154 154"
       className={`shrink-0 block select-none ${sizeMap[size]} ${className}`}
       xmlns="http://www.w3.org/2000/svg"

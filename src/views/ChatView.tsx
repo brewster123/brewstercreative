@@ -170,7 +170,7 @@ export const ChatView: React.FC = () => {
       }
 
       // Display name and avatar
-      const displayName = isAdmin ? c.clientName : (c.projectName || 'Brewster Creative');
+      const displayName = isAdmin ? c.clientName : (c.projectName || studioProfile.studioName || 'DESTALION');
       const avatarUrl = isAdmin 
         ? (c.clientAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80')
         : (studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80');
@@ -224,7 +224,7 @@ export const ChatView: React.FC = () => {
             Studio Chats
           </h2>
           <p className="text-sm text-[#B0B3B8] leading-relaxed">
-            Please sign in to access your direct, encrypted conversations with Brewster Creative.
+            Please sign in to access your direct, encrypted conversations with DESTALION.
           </p>
         </div>
         <button
@@ -416,7 +416,7 @@ export const ChatView: React.FC = () => {
 
         {/* Footer Channel Note */}
         <div className="p-3 border-t border-[#27272A] text-center text-[11px] font-mono text-[#71717A] shrink-0">
-          <span>Brewster Creative Studio Portal</span>
+          <span>{studioProfile.studioName || 'DESTALION'} Studio Portal</span>
         </div>
       </aside>
 
@@ -451,7 +451,7 @@ export const ChatView: React.FC = () => {
               <p className="text-xs sm:text-sm text-[#8E9297] leading-relaxed">
                 {isAdmin
                   ? 'Client conversations will appear here as soon as commission requests are submitted.'
-                  : 'Start a design inquiry or project commission to open a direct dialogue with Brewster.'}
+                  : 'Start a design inquiry or project commission to open a direct dialogue with DESTALION.'}
               </p>
             </div>
             {!isAdmin && (

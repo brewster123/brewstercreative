@@ -1,5 +1,5 @@
 /**
- * URL validation and sanitization utility for Brewster Creative commission reference links.
+ * URL validation and sanitization utility for DESTALION commission reference links.
  * Ensures only authentic web URLs (with http:// or https:// scheme and valid domain)
  * are accepted and rendered as clickable links, preventing arbitrary text from being
  * converted into malformed URLs.
@@ -120,4 +120,66 @@ export function isProductCheckoutAvailable(product?: {
   }
 
   return true;
+}
+
+/**
+ * Normalizes user-entered social media values (handles, domain paths, or full URLs)
+ * into safe, verified HTTPS external destinations.
+ * Returns null if the value is missing, empty, or unresolvable.
+ */
+export function normalizeSocialMediaUrl(
+  platform: 'instagram' | 'behance' | 'dribbble' | 'twitter' | 'discord',
+  rawInput?: string | null
+): string | null {
+  if (!rawInput || typeof rawInput !== 'string') return null;
+  const trimmed = rawInput.trim();
+  if (!trimmed) return null;
+
+  // Discord handling: user tags (like user#1234) are not web links
+  if (platform === 'discord') {
+    if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+      return trimmed;
+    }
+    if (trimmed.includes('discord.gg/') || trimmed.includes('discord.com/')) {
+      return `https://${trimmed.replace(/^https?:\/\//, '')}`;
+    }
+    return null;
+  }
+
+  // If already a full HTTP or HTTPS URL
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return trimmed;
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  // If starts with domain e.g. "instagram.com/user", "x.com/user"
+  const domainPrefixes = ['instagram.com', 'behance.net', 'dribbble.com', 'x.com', 'twitter.com'];
+  for (const domain of domainPrefixes) {
+    if (trimmed.toLowerCase().startsWith(domain)) {
+      return `https://${trimmed}`;
+    }
+  }
+
+  // Handle format with leading @ or naked handle
+  const cleanHandle = trimmed.replace(/^@+/, '').trim();
+  if (!cleanHandle) return null;
+
+  switch (platform) {
+    case 'instagram':
+      return `https://instagram.com/${cleanHandle}`;
+    case 'behance':
+      return `https://behance.net/${cleanHandle}`;
+    case 'dribbble':
+      return `https://dribbble.com/${cleanHandle}`;
+    case 'twitter':
+      return `https://x.com/${cleanHandle}`;
+    default:
+      return null;
+  }
 }

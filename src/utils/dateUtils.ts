@@ -1,5 +1,5 @@
 /**
- * Date formatting utility for Brewster Creative commission records.
+ * Date formatting utility for DESTALION commission records.
  * Ensures consistent, human-readable date presentation (e.g. "September 16, 2026")
  * without unwanted timezone shifting for date-only or UTC midnight strings.
  */

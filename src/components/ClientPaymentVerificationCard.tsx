@@ -225,8 +225,8 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
   };
 
   const gcashDetails = studioProfile.gcashDetails || {
-    accountName: 'Brewster A. Cabando',
-    accountNumber: '0917-829-4102',
+    accountName: 'Brewster Cabando',
+    accountNumber: '0965-706-4331',
     instructions: '1. Open GCash > Send Money > Express Send.\n2. Send required deposit to the studio number.\n3. Save transaction receipt screenshot with Reference No.\n4. Upload below for manual verification.',
   };
 
@@ -290,7 +290,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
             Direct GCash Transfer Notice
           </p>
           <p>
-            Brewster Creative operates on a personalized, direct studio payment model. Payments are sent directly to the artist's registered GCash account—there is no automated card gateway or instant charging. Once you upload your transfer receipt, the studio director manually verifies the transaction and confirms your production milestone.
+            DESTALION operates on a personalized, direct studio payment model. Payments are sent directly to the artist's registered GCash account—there is no automated card gateway or instant charging. Once you upload your transfer receipt, the studio director manually verifies the transaction and confirms your production milestone.
           </p>
         </div>
       </div>

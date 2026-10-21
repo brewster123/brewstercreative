@@ -8,6 +8,7 @@ import {
   fetchCommissionDeliverables, 
   uploadCommissionDeliverable, 
   deleteCommissionDeliverable, 
+  downloadDeliverableFile,
   getDeliverableSignedUrl,
   formatDeliverableFileSize,
   validateDeliverableFile,
@@ -172,27 +173,18 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
   };
 
   const handleDownload = async (item: CommissionDeliverable) => {
+    if (downloadingId) return; // Prevent duplicate clicks during active download
     setDownloadingId(item.id);
     setActionError(null);
     try {
-      const { signedUrl, error: signErr } = await getDeliverableSignedUrl(
+      const { success, error: downloadErr } = await downloadDeliverableFile(
         item.filePath,
-        DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
+        item.fileName
       );
-      if (signErr || !signedUrl) {
-        setActionError(signErr || 'Failed to acquire secure signed download URL.');
+      if (!success || downloadErr) {
+        setActionError(downloadErr || 'Failed to download deliverable file.');
         return;
       }
-
-      // Open signed URL or trigger download
-      const a = document.createElement('a');
-      a.href = signedUrl;
-      a.download = item.fileName;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
     } catch (err: any) {
       setActionError(err?.message || 'Download attempt failed.');
     } finally {

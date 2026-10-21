@@ -20,7 +20,7 @@ export interface UploadAvatarResult {
 }
 
 /**
- * Validates file type and size according to Brewster Creative storage constraints.
+ * Validates file type and size according to DESTALION storage constraints.
  */
 export function validateAvatarFile(file: File | Blob, fileName = 'photo.jpg'): { valid: boolean; error?: string } {
   if (!file) {

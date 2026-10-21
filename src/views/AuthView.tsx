@@ -158,7 +158,7 @@ export const AuthView: React.FC = () => {
           setMode('signin');
           setSignInEmail(email);
         } else if (result.user) {
-          setAuthSuccess(`Account created. Welcome to Brewster Creative, ${result.user.name}.`);
+          setAuthSuccess(`Account created. Welcome to DESTALION, ${result.user.name}.`);
         }
       } else {
         setAuthError(result.error || 'Failed to create account. Please check your details and try again.');

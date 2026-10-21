@@ -61,7 +61,6 @@ export const PortfolioView: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
             <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
               <span>Exhibition Archive & Case Studies</span>
             </div>
 
@@ -75,7 +74,7 @@ export const PortfolioView: React.FC = () => {
           </div>
 
           <div className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] self-start md:self-end">
-            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{filteredProjects.length}</span> Works Documented
+            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold tabular-nums">{filteredProjects.length}</span> Works Documented
           </div>
         </div>
       </div>
@@ -91,7 +90,7 @@ export const PortfolioView: React.FC = () => {
             <button
               type="button"
               onClick={() => setTypeFilter('all')}
-              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer btn-tactile ${
                 typeFilter === 'all'
                   ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-bold'
                   : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
@@ -102,7 +101,7 @@ export const PortfolioView: React.FC = () => {
             <button
               type="button"
               onClick={() => setTypeFilter('client')}
-              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer btn-tactile ${
                 typeFilter === 'client'
                   ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs font-bold border border-emerald-200 dark:border-emerald-800/40'
                   : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
@@ -113,9 +112,9 @@ export const PortfolioView: React.FC = () => {
             <button
               type="button"
               onClick={() => setTypeFilter('concept')}
-              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer btn-tactile ${
                 typeFilter === 'concept'
-                  ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 shadow-2xs font-bold border border-purple-200 dark:border-purple-800/40'
+                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 shadow-2xs font-bold border border-amber-200 dark:border-amber-800/40'
                   : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
               }`}
             >
@@ -177,7 +176,7 @@ export const PortfolioView: React.FC = () => {
                 No Client Commission Archives Yet
               </h3>
               <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-md mx-auto">
-                Brewster Creative is currently building its studio archive through self-initiated creative explorations and is accepting select commissions for 2026.
+                DESTALION is currently building its studio archive through self-initiated creative explorations and is accepting select commissions for 2026.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">

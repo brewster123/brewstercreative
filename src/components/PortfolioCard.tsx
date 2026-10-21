@@ -87,7 +87,7 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: `${project.title} — Brewster Creative`,
+          title: `${project.title} — DESTALION`,
           text: project.shortDesc,
           url: shareUrl,
         });
@@ -131,18 +131,12 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-40 group-hover:opacity-20 transition-opacity duration-300" />
 
-        {/* Quiet Category & Project Type Eyebrow */}
-        <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 flex-wrap">
-          <span className="font-mono text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded bg-white/90 dark:bg-[#18181B]/90 text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] backdrop-blur-xs shadow-2xs">
-            {project.category}
-          </span>
-
-          <span className={`font-mono text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded backdrop-blur-xs shadow-2xs border ${
-            project.projectType === 'concept' || !project.projectType
-              ? 'bg-purple-950/80 text-purple-200 border-purple-800/60'
-              : 'bg-emerald-950/80 text-emerald-200 border-emerald-800/60'
-          }`}>
-            {project.projectType === 'concept' || !project.projectType ? 'Concept Exploration' : 'Client Commission'}
+        {/* Quiet Category & Project Type Eyebrow — Clean Unboxed Metadata */}
+        <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-xs border border-white/10 text-white font-mono text-[10px] uppercase tracking-wider font-semibold">
+          <span>{project.category}</span>
+          <span aria-hidden="true" className="text-zinc-400">·</span>
+          <span className={project.projectType === 'client' ? 'text-emerald-300' : 'text-amber-300'}>
+            {project.projectType === 'client' ? 'Commission' : 'Concept'}
           </span>
         </div>
 

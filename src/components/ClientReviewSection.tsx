@@ -115,11 +115,7 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
       lowerName.endsWith('.gif') ||
       lowerName.endsWith('.svg');
 
-    if (isImage) {
-      setViewingProof({ proof, signedUrl, isImage: true });
-    } else {
-      window.open(signedUrl, '_blank', 'noopener,noreferrer');
-    }
+    setViewingProof({ proof, signedUrl, isImage });
   };
 
   const handleOpenApproveModal = (proof: CommissionProof) => {
@@ -533,21 +529,47 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
       {viewingProof && (
         <div 
           onClick={() => setViewingProof(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Proof preview: ${viewingProof.proof.file_name}`}
           className="fixed inset-0 z-60 bg-black/95 flex items-center justify-center p-4 sm:p-8 cursor-zoom-out animate-in fade-in duration-200"
         >
           <button
             type="button"
             onClick={() => setViewingProof(null)}
-            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors z-20 cursor-pointer"
+            aria-label="Close preview"
           >
             <X className="w-6 h-6" />
           </button>
           {Boolean(viewingProof.signedUrl && viewingProof.signedUrl.trim()) && (
-            <img
-              src={viewingProof.signedUrl}
-              alt={viewingProof.proof.file_name}
-              className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
-            />
+            <div onClick={(e) => e.stopPropagation()} className="max-h-[90vh] max-w-[90vw] flex flex-col items-center cursor-default">
+              {viewingProof.isImage ? (
+                <img
+                  src={viewingProof.signedUrl}
+                  alt={viewingProof.proof.file_name}
+                  className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+                />
+              ) : (
+                <div className="w-[85vw] max-w-4xl h-[80vh] bg-zinc-950 rounded-xl overflow-hidden border border-zinc-800 flex flex-col shadow-2xl">
+                  <div className="px-4 py-2.5 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">
+                    <span className="text-xs font-mono text-zinc-300 truncate max-w-md">{viewingProof.proof.file_name}</span>
+                    <a
+                      href={viewingProof.signedUrl}
+                      download={viewingProof.proof.file_name}
+                      className="text-xs text-orange-400 hover:text-orange-300 font-semibold underline"
+                    >
+                      Download Document
+                    </a>
+                  </div>
+                  <iframe
+                    src={viewingProof.signedUrl}
+                    title={viewingProof.proof.file_name}
+                    className="w-full flex-1 bg-white"
+                  />
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

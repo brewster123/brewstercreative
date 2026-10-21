@@ -405,7 +405,7 @@ export const ProductDetailView: React.FC = () => {
                 Need Something Custom?
               </h3>
               <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-                Commission Brewster for a bespoke identity system, typography, or custom deliverables inspired by {product.name}.
+                Commission DESTALION for a bespoke identity system, typography, or custom deliverables inspired by {product.name}.
               </p>
             </div>
 

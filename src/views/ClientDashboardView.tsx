@@ -236,7 +236,7 @@ export const ClientDashboardView: React.FC = () => {
             Private Studio Workspace
           </h2>
           <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
-            Sign in with your client account to inspect project sheets, review design proofs, and converse directly with Brewster.
+            Sign in with your client account to inspect project sheets, review design proofs, and converse directly with DESTALION.
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -270,7 +270,7 @@ export const ClientDashboardView: React.FC = () => {
             No commissions yet
           </h2>
           <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
-            Your commissioned projects will appear here once initiated. Start your first bespoke design commission with Brewster Creative.
+            Your commissioned projects will appear here once initiated. Start your first bespoke design commission with DESTALION.
           </p>
         </div>
         <button
@@ -429,7 +429,7 @@ export const ClientDashboardView: React.FC = () => {
                 {searchQuery ? 'No matching commissions' : 'No commissions in this view'}
               </h4>
               <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
-                {searchQuery ? 'Try adjusting your search criteria.' : 'Start a new project consultation with Brewster.'}
+                {searchQuery ? 'Try adjusting your search criteria.' : 'Start a new project consultation with DESTALION.'}
               </p>
             </div>
           ) : (
@@ -913,7 +913,7 @@ export const ClientDashboardView: React.FC = () => {
                         GCash Account Name
                       </span>
                       <span className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC]">
-                        {studioProfile?.gcashDetails?.accountName || 'Brewster A. Cabando'}
+                        {studioProfile?.gcashDetails?.accountName || 'Brewster Cabando'}
                       </span>
                     </div>
 
@@ -922,7 +922,7 @@ export const ClientDashboardView: React.FC = () => {
                         GCash Mobile Number
                       </span>
                       <span className="font-mono font-bold text-sm text-[#EA580C]">
-                        {studioProfile?.gcashDetails?.accountNumber || '0995 979 2858'}
+                        {studioProfile?.gcashDetails?.accountNumber || '0965-706-4331'}
                       </span>
                     </div>
                   </div>

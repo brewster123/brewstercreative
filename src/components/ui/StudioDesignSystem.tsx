@@ -2,7 +2,7 @@ import React from 'react';
 import { CommissionStatus } from '../../types';
 
 /**
- * Brewster Creative — Global Design System Tokens & Base Helper Components (UI-1A)
+ * DESTALION — Global Design System Tokens & Base Helper Components (UI-1A)
  * Establishes a cohesive visual language:
  * - Color foundations: Warm Alabaster Canvas, Surface White, Carbon Ink, Hairline Rules, Terracotta Accent.
  * - Single typography standard: Plus Jakarta Sans across all headings, UI, body copy, and metadata.

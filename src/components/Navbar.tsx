@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Commission } from '../types';
 import { 
@@ -8,11 +8,13 @@ import {
   Menu, 
   X, 
   ShieldCheck, 
-  LogOut,
-  ChevronDown,
-  MessageSquare,
-  Settings,
-  Layers
+  LogOut, 
+  ChevronDown, 
+  MessageSquare, 
+  Settings, 
+  Layers,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { NotificationPanel } from './NotificationPanel';
 import { BrandLogo } from './BrandLogo';
@@ -27,12 +29,65 @@ export const Navbar: React.FC = () => {
     notifications,
     commissions,
     messages,
-    setActiveDashboardTab
+    setActiveDashboardTab,
+    theme,
+    setTheme
   } = useApp();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  const toggleTheme = () => {
+    setTheme(isDarkMode ? 'light' : 'dark');
+  };
+
+  // Close menus on Escape or outside click
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowNotifications(false);
+        setShowUserDropdown(false);
+        setMobileMenuOpen(false);
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(e.target as Node)
+      ) {
+        setShowNotifications(false);
+      }
+      if (
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(e.target as Node)
+      ) {
+        setShowUserDropdown(false);
+      }
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(e.target as Node) &&
+        !document.getElementById('btn-mobile-menu')?.contains(e.target as Node)
+      ) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Unread notifications count
   const unreadCount = notifications.filter(n => 
@@ -81,23 +136,17 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
-          {/* Studio Brand Logo */}
+          {/* Studio Brand Logo — Clean Zone 1 Architectural Wordmark */}
           <button
             id="nav-brand-logo"
             type="button"
             onClick={() => setActiveView('home')}
-            className="flex items-center gap-3 group text-left focus:outline-none cursor-pointer"
+            className="flex items-center gap-2.5 group text-left focus:outline-hidden cursor-pointer whitespace-nowrap shrink-0"
           >
             <BrandLogo size="md" className="group-hover:scale-105 transition-transform" />
-            <div>
-              <span className="font-display font-bold text-lg text-[#18181B] dark:text-[#EDEDEC] tracking-tight flex items-center gap-1.5">
-                {studioProfile.studioName}
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C] inline-block"></span>
-              </span>
-              <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] block -mt-0.5 tracking-wider uppercase font-mono">
-                Multimedia & Graphic Design
-              </span>
-            </div>
+            <span className="font-display font-black text-xl text-[#18181B] dark:text-[#EDEDEC] tracking-tight whitespace-nowrap">
+              {studioProfile.studioName}
+            </span>
           </button>
 
           {/* Desktop Navigation Links — Refined Editorial Group */}
@@ -143,18 +192,22 @@ export const Navbar: React.FC = () => {
             )}
 
             {/* 2. Notifications Bell (Both Client and Admin) */}
-            <div className="relative">
+            <div className="relative" ref={notificationsRef}>
               <button
                 id="btn-notifications-toggle"
                 type="button"
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] transition-colors relative border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#27272A] cursor-pointer"
+                onClick={() => {
+                  setShowNotifications(prev => !prev);
+                  setShowUserDropdown(false);
+                }}
+                className="p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] transition-colors relative border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#27272A] cursor-pointer btn-tactile"
                 title="Notifications"
                 aria-label="View notifications"
+                aria-expanded={showNotifications}
               >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#EA580C] rounded-full animate-pulse" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#EA580C] rounded-full" />
                 )}
               </button>
 
@@ -166,14 +219,31 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
+            {/* Quick Theme Toggle Button */}
+            <button
+              id="btn-nav-theme-toggle"
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] transition-colors border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#27272A] cursor-pointer btn-tactile"
+              title={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
+              aria-label={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
+            >
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-700" />}
+            </button>
+
             {/* 3. Account / Settings Dropdown */}
             {currentUser ? (
-              <div className="relative">
+              <div className="relative" ref={userDropdownRef}>
                 <button
                   id="btn-user-profile-menu"
                   type="button"
-                  onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] transition-all text-sm cursor-pointer shadow-2xs"
+                  onClick={() => {
+                    setShowUserDropdown(prev => !prev);
+                    setShowNotifications(false);
+                  }}
+                  className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] transition-all text-sm cursor-pointer shadow-2xs btn-tactile"
+                  aria-expanded={showUserDropdown}
+                  aria-haspopup="true"
                 >
                   <img
                     src={currentUser.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
@@ -281,9 +351,9 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveView('client-dashboard')}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#FFF7ED] dark:bg-[#78350F]/40 hover:bg-[#FFEDD5] text-[#EA580C] dark:text-[#FBBF24] border border-[#FDBA74] dark:border-[#92400E] text-xs font-semibold transition-all cursor-pointer font-mono"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#FFF7ED] dark:bg-[#78350F]/40 hover:bg-[#FFEDD5] text-[#EA580C] dark:text-[#FBBF24] border border-[#FDBA74] dark:border-[#92400E] text-xs font-semibold transition-all cursor-pointer font-mono btn-tactile"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C] animate-pulse"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]"></span>
                 <span>Active Project ({clientCommission.progress ?? 0}%)</span>
               </button>
             )}
@@ -317,7 +387,10 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white dark:bg-[#18181B] border-b border-[#E4E2DC] dark:border-[#27272A] px-4 pt-2 pb-6 space-y-3 shadow-lg animate-in fade-in duration-150">
+        <div 
+          ref={mobileMenuRef}
+          className="md:hidden bg-white dark:bg-[#18181B] border-b border-[#E4E2DC] dark:border-[#27272A] px-4 pt-2 pb-6 space-y-3 shadow-lg animate-in fade-in duration-150"
+        >
           <div className="space-y-1">
             {navLinks.map((link) => (
               <button
@@ -336,6 +409,30 @@ export const Navbar: React.FC = () => {
                 <span>{link.label}</span>
               </button>
             ))}
+          </div>
+
+          {/* Mobile Theme Toggle Row */}
+          <div className="flex items-center justify-between px-3.5 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A]">
+            <span className="text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] font-semibold">Theme</span>
+            <button
+              id="btn-mobile-theme-toggle"
+              type="button"
+              onClick={toggleTheme}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] shadow-2xs cursor-pointer btn-tactile"
+              aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDarkMode ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-zinc-700" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </button>
           </div>
 
           <div className="pt-3 border-t border-[#E4E2DC] dark:border-[#27272A] flex flex-col gap-2">

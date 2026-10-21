@@ -192,7 +192,7 @@ export const CaseStudyView: React.FC = () => {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: `${project.title} — Brewster Creative Case Study`,
+          title: `${project.title} — DESTALION Case Study`,
           text: project.shortDesc,
           url: shareUrl,
         });

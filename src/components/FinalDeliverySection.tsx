@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { 
   fetchCommissionDeliverables, 
+  downloadDeliverableFile,
   getDeliverableSignedUrl, 
   formatDeliverableFileSize,
   subscribeToCommissionDeliverables,
@@ -78,26 +79,18 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({
       setDownloadError('Deliverables are locked pending full payment verification. Please settle remaining balance via GCash.');
       return;
     }
+    if (downloadingId) return; // Prevent duplicate clicks during active download
     setDownloadingId(deliverable.id);
     setDownloadError(null);
     try {
-      const { signedUrl, error: signErr } = await getDeliverableSignedUrl(
+      const { success, error } = await downloadDeliverableFile(
         deliverable.filePath,
-        DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
+        deliverable.fileName
       );
-      if (signErr || !signedUrl) {
-        setDownloadError(signErr || 'Failed to acquire authorized download URL.');
+      if (!success || error) {
+        setDownloadError(error || 'Failed to acquire authorized download.');
         return;
       }
-
-      const a = document.createElement('a');
-      a.href = signedUrl;
-      a.download = deliverable.fileName;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
 
       setDownloadSuccessId(deliverable.id);
       setTimeout(() => setDownloadSuccessId(null), 3000);
@@ -113,32 +106,25 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({
       setDownloadError('Deliverables are locked pending full payment verification. Please settle remaining balance via GCash.');
       return;
     }
-    if (deliverables.length === 0) return;
+    if (deliverables.length === 0 || downloadingId) return; // Prevent duplicate clicks
     setDownloadingId('all');
     setDownloadError(null);
 
     try {
       for (const item of deliverables) {
-        const { signedUrl } = await getDeliverableSignedUrl(
+        const { success, error } = await downloadDeliverableFile(
           item.filePath,
-          DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
+          item.fileName
         );
-        if (signedUrl) {
-          const a = document.createElement('a');
-          a.href = signedUrl;
-          a.download = item.fileName;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          await new Promise(r => setTimeout(r, 350));
+        if (!success || error) {
+          console.warn(`[Deliverables] Notice during bulk download for ${item.fileName}:`, error);
         }
+        await new Promise(r => setTimeout(r, 400));
       }
       setDownloadSuccessId('all');
       setTimeout(() => setDownloadSuccessId(null), 3000);
     } catch (err: any) {
-      setDownloadError(err?.message || 'Error occurred while preparing file links.');
+      setDownloadError(err?.message || 'Error occurred while downloading files.');
     } finally {
       setDownloadingId(null);
     }

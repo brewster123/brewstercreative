@@ -228,7 +228,7 @@ export const ShopView: React.FC = () => {
             Crafted for Rigorous Creative Workflows
           </h2>
           <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
-            Every digital asset and tactile print release is calibrated to the strict aesthetic and technical criteria of Brewster Creative.
+            Every digital asset and tactile print release is calibrated to the strict aesthetic and technical criteria of DESTALION.
           </p>
         </div>
 
@@ -266,7 +266,7 @@ export const ShopView: React.FC = () => {
               Need a custom asset crafted exclusively for your brand?
             </h3>
             <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
-              While studio templates provide immediate utility, Brewster specializes in one-of-a-kind visual identities, brand systems, and multimedia campaigns with interactive client reviews.
+              While studio templates provide immediate utility, DESTALION specializes in one-of-a-kind visual identities, brand systems, and multimedia campaigns with interactive client reviews.
             </p>
           </div>
 

@@ -8,7 +8,10 @@ import { INITIAL_STUDIO_PROFILE } from '../data/initialData';
 export function mapDbToStudioProfile(row: any): StudioProfile {
   return {
     designerName: row.designer_name || INITIAL_STUDIO_PROFILE.designerName,
-    studioName: row.studio_name || INITIAL_STUDIO_PROFILE.studioName,
+    studioName:
+      row.studio_name === 'Brewster Creative' || row.studio_name === 'Cabando Studio' || !row.studio_name
+        ? 'DESTALION'
+        : row.studio_name,
     title: row.title || INITIAL_STUDIO_PROFILE.title,
     bio: row.bio || INITIAL_STUDIO_PROFILE.bio,
     avatar: row.avatar || INITIAL_STUDIO_PROFILE.avatar,
@@ -20,8 +23,17 @@ export function mapDbToStudioProfile(row: any): StudioProfile {
     commissionStatus: (row.commission_status as any) || INITIAL_STUDIO_PROFILE.commissionStatus,
     availableSlots: typeof row.available_slots === 'number' ? row.available_slots : INITIAL_STUDIO_PROFILE.availableSlots,
     gcashDetails: {
-      accountName: row.gcash_account_name || INITIAL_STUDIO_PROFILE.gcashDetails?.accountName || 'Brewster A. Cabando',
-      accountNumber: row.gcash_account_number || INITIAL_STUDIO_PROFILE.gcashDetails?.accountNumber || '0917-829-4102',
+      accountName:
+        row.gcash_account_name === 'Brewster A. Cabando' || !row.gcash_account_name
+          ? 'Brewster Cabando'
+          : row.gcash_account_name,
+      accountNumber:
+        row.gcash_account_number === '+63  965-706-43331' ||
+        row.gcash_account_number === '0917-829-4102' ||
+        row.gcash_account_number === '0995 979 2858' ||
+        !row.gcash_account_number
+          ? '0965-706-4331'
+          : row.gcash_account_number,
       instructions: row.gcash_instructions || INITIAL_STUDIO_PROFILE.gcashDetails?.instructions || 'Send money via GCash Express Send. Take a screenshot of the completed transaction receipt showing Reference No. and upload it for studio verification.',
       qrCodeUrl: row.gcash_qr_url || INITIAL_STUDIO_PROFILE.gcashDetails?.qrCodeUrl || '',
       depositPercentage: 50,

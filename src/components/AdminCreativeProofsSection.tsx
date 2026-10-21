@@ -57,6 +57,11 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
   // Signed URL Viewing State
   const [openingProofId, setOpeningProofId] = useState<string | null>(null);
   const [viewError, setViewError] = useState<string | null>(null);
+  const [lightboxProof, setLightboxProof] = useState<{
+    proof: CommissionProof;
+    signedUrl: string;
+    isImage: boolean;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -174,7 +179,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
     if (isUploading) return; // Prevent duplicate submissions
 
     if (!currentUser || currentUser.role !== 'admin') {
-      setUploadError('Permission denied: Only Brewster Creative administrators can upload proofs.');
+      setUploadError('Permission denied: Only DESTALION administrators can upload proofs.');
       return;
     }
 
@@ -252,7 +257,18 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
       const result = await getProofSignedUrl(proof.filePath, 300);
 
       if (result.success && result.signedUrl) {
-        window.open(result.signedUrl, '_blank', 'noopener,noreferrer');
+        const lowerName = (proof.fileName || '').toLowerCase();
+        const lowerType = (proof.fileType || '').toLowerCase();
+        const isImage =
+          lowerType.startsWith('image/') ||
+          lowerName.endsWith('.png') ||
+          lowerName.endsWith('.jpg') ||
+          lowerName.endsWith('.jpeg') ||
+          lowerName.endsWith('.webp') ||
+          lowerName.endsWith('.gif') ||
+          lowerName.endsWith('.svg');
+
+        setLightboxProof({ proof, signedUrl: result.signedUrl, isImage });
       } else {
         setViewError(result.error || 'Failed to generate secure link for this proof.');
       }
@@ -634,6 +650,59 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
           </div>
         </form>
       </div>
+
+      {/* Admin Creative Proof Lightbox Modal */}
+      {lightboxProof && (
+        <div 
+          onClick={() => setLightboxProof(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Proof preview: ${lightboxProof.proof.fileName}`}
+          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-xs flex items-center justify-center p-4 sm:p-8 cursor-zoom-out animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()} 
+            className="relative max-w-5xl w-full max-h-[92vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden cursor-default shadow-2xl"
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/80 backdrop-blur-xs shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-orange-600/20 text-orange-400 border border-orange-500/30">
+                  v{lightboxProof.proof.version}
+                </span>
+                <span className="text-white text-xs sm:text-sm font-semibold truncate max-w-xs sm:max-w-md">
+                  {lightboxProof.proof.fileName}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLightboxProof(null)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                aria-label="Close preview"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Viewport */}
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center min-h-[300px]">
+              {lightboxProof.isImage ? (
+                <img
+                  src={lightboxProof.signedUrl}
+                  alt={lightboxProof.proof.fileName}
+                  className="max-h-[75vh] max-w-full object-contain rounded-lg shadow-xl"
+                />
+              ) : (
+                <iframe
+                  src={lightboxProof.signedUrl}
+                  title={lightboxProof.proof.fileName}
+                  className="w-full h-[75vh] rounded-lg bg-white border border-zinc-800"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

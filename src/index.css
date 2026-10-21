@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Brewster Creative Theme Tokens — Light Mode */
+  /* DESTALION Theme Tokens — Light Mode */
   --bg-canvas: #FAF9F6;
   --bg-surface: #FFFFFF;
   --bg-surface-secondary: #F4F2ED;
@@ -12,6 +12,13 @@
   --border-subtle: #E4E2DC;
   --accent: #EA580C;
   --accent-hover: #D94814;
+
+  /* Elevation Shadows — Light */
+  --shadow-2xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-xs: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.07), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 
   /* Semantic - Light */
   --color-success-text: #047857;
@@ -30,15 +37,22 @@
 .dark {
   color-scheme: dark;
 
-  /* Brewster Creative Theme Tokens — Dark Mode */
-  --bg-canvas: #0F0F11;
-  --bg-surface: #18181B;
-  --bg-surface-secondary: #232327;
-  --text-primary: #EDEDEC;
+  /* DESTALION Theme Tokens — Dark Mode (Deep Studio Atelier Depth) */
+  --bg-canvas: #0C0C0E;
+  --bg-surface: #16161A;
+  --bg-surface-secondary: #202026;
+  --text-primary: #F4F4F5;
   --text-muted: #A1A1AA;
-  --border-subtle: #27272A;
+  --border-subtle: #27272F;
   --accent: #EA580C;
   --accent-hover: #D94814;
+
+  /* Elevation Shadows — Dark */
+  --shadow-2xs: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-xs: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 8px 10px -6px rgba(0, 0, 0, 0.7);
 
   /* Semantic - Dark */
   --color-success-text: #34D399;
@@ -76,13 +90,14 @@
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background-color: var(--bg-canvas);
     color: var(--text-primary);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   h1, h2, h3, h4, h5, h6, .font-display {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     word-spacing: normal;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
   }
 
   .font-mono, .font-mono-code {
@@ -95,6 +110,12 @@
   textarea,
   select {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Accessible, High-Contrast Focus Ring */
+  :focus-visible {
+    outline: 2px solid #EA580C;
+    outline-offset: 2px;
   }
 }
 
@@ -314,4 +335,29 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Micro-interaction & Tactile Feedback Utilities */
+.btn-tactile {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-tactile:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reduced Motion Compliance */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

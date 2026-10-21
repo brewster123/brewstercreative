@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { Sparkles, Send, ShieldCheck, Instagram, Dribbble, Twitter, ArrowUp, Mail, MapPin } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
+import { normalizeSocialMediaUrl } from '../utils/urlUtils';
 
 export const Footer: React.FC = () => {
   const { studioProfile, setActiveView } = useApp();
@@ -151,35 +152,68 @@ export const Footer: React.FC = () => {
               {studioProfile.email}
             </a>
 
-            <div className="flex items-center gap-2.5 pt-2">
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer"
-                className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-4 h-4" />
-              </a>
-              <a
-                href="https://dribbble.com"
-                target="_blank"
-                rel="noreferrer"
-                className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
-                aria-label="Dribbble"
-              >
-                <Dribbble className="w-4 h-4" />
-              </a>
-              <a
-                href="https://x.com"
-                target="_blank"
-                rel="noreferrer"
-                className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
-                aria-label="Twitter / X"
-              >
-                <Twitter className="w-4 h-4" />
-              </a>
-            </div>
+            {/* Dynamic Social Links */}
+            {(() => {
+              const instagramUrl = normalizeSocialMediaUrl('instagram', studioProfile.socialLinks?.instagram);
+              const behanceUrl = normalizeSocialMediaUrl('behance', studioProfile.socialLinks?.behance);
+              const dribbbleUrl = normalizeSocialMediaUrl('dribbble', studioProfile.socialLinks?.dribbble);
+              const twitterUrl = normalizeSocialMediaUrl('twitter', studioProfile.socialLinks?.twitter);
+
+              const hasAnySocial = Boolean(instagramUrl || behanceUrl || dribbbleUrl || twitterUrl);
+              if (!hasAnySocial) return null;
+
+              return (
+                <div className="flex items-center gap-2.5 pt-2">
+                  {instagramUrl && (
+                    <a
+                      href={instagramUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
+                      aria-label="Instagram Profile"
+                    >
+                      <Instagram className="w-4 h-4" />
+                    </a>
+                  )}
+
+                  {behanceUrl && (
+                    <a
+                      href={behanceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
+                      aria-label="Behance Portfolio"
+                    >
+                      <span className="font-display font-bold text-[12px] leading-none select-none tracking-tighter">Bē</span>
+                    </a>
+                  )}
+
+                  {dribbbleUrl && (
+                    <a
+                      href={dribbbleUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
+                      aria-label="Dribbble Portfolio"
+                    >
+                      <Dribbble className="w-4 h-4" />
+                    </a>
+                  )}
+
+                  {twitterUrl && (
+                    <a
+                      href={twitterUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
+                      aria-label="Twitter / X Profile"
+                    >
+                      <Twitter className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
         </div>

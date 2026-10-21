@@ -94,7 +94,7 @@ drop policy if exists "Admins can insert commission deliverables" on public.comm
 drop policy if exists "Admins can update commission deliverables" on public.commission_deliverables;
 drop policy if exists "Admins can delete commission deliverables" on public.commission_deliverables;
 
--- Client Policy: Can view deliverables ONLY for commissions where they are the client
+-- Client Policy: Can view deliverables ONLY for commissions where they are the client and payment is confirmed
 create policy "Clients can view deliverables for their commissions"
   on public.commission_deliverables for select
   using (
@@ -102,6 +102,7 @@ create policy "Clients can view deliverables for their commissions"
       select 1 from public.commissions c
       where c.id = commission_deliverables.commission_id
         and c.client_id = auth.uid()
+        and (c.payment_status = 'Paid' or c.total_paid = true)
     )
   );
 
@@ -177,8 +178,10 @@ create policy "Admins can delete final deliverables"
     and public.is_admin()
   );
 
--- Client Storage Policy: Clients can only download/view deliverable objects where the top-level path
--- matches a commission belonging to them: final-deliverables/{commission_id}/{deliverable_id}/filename
+-- Client Storage Policy: Clients can only download/view deliverable objects when:
+-- 1. Object is in 'final-deliverables'
+-- 2. First path segment matches a commission they own
+-- 3. Commission payment is confirmed (payment_status = 'Paid' or total_paid = true)
 create policy "Clients can view final deliverables for own commissions"
   on storage.objects for select
   using (
@@ -187,6 +190,7 @@ create policy "Clients can view final deliverables for own commissions"
       select 1 from public.commissions c
       where c.id::text = split_part(ltrim(name, '/'), '/', 1)
         and c.client_id = auth.uid()
+        and (c.payment_status = 'Paid' or c.total_paid = true)
     )
   );
 
@@ -203,3 +207,6 @@ exception
   when others then
     raise notice 'Realtime publication setup notice: %', sqlerrm;
 end $$;
+
+-- 9. Refresh PostgREST Schema Cache
+notify pgrst, 'reload schema';

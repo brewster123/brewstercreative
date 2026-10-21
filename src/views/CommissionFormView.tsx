@@ -151,9 +151,9 @@ export const CommissionFormView: React.FC = () => {
   // Tomorrow's date string for input min attribute
   const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
-  // Sync preselectedService if passed from Portfolio or Services page, UNLESS an existing draft was restored
+  // Sync preselectedService if passed from Portfolio or Services page
   useEffect(() => {
-    if (preselectedService && !initialDraft) {
+    if (preselectedService) {
       const matchingService = services.find(
         s => s.name.toLowerCase() === preselectedService.toLowerCase() ||
              s.category.toLowerCase() === preselectedService.toLowerCase()
@@ -165,7 +165,7 @@ export const CommissionFormView: React.FC = () => {
         setServiceType(preselectedService);
       }
     }
-  }, [preselectedService, services, initialDraft]);
+  }, [preselectedService, services]);
 
   // Update sessionStorage draft whenever user edits any form field
   useEffect(() => {
@@ -369,7 +369,7 @@ export const CommissionFormView: React.FC = () => {
           </h1>
 
           <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-2xl font-normal">
-            Your creative specifications have been securely recorded. Brewster will review your scope, verify scheduling, and initiate preliminary concept boards.
+            Your creative specifications have been securely recorded. The DESTALION studio team will review your scope, verify scheduling, and initiate preliminary concept boards.
           </p>
         </div>
 
@@ -508,7 +508,7 @@ export const CommissionFormView: React.FC = () => {
             Collaborative Dialogue & Proof Delivery
           </h3>
           <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
-            Brewster will review your project requirements and confirm milestone scheduling. You can track progress, exchange messages, and review proofs directly through your <strong>Client Dashboard</strong>.
+            The DESTALION studio team will review your project requirements and confirm milestone scheduling. You can track progress, exchange messages, and review proofs directly through your <strong>Client Dashboard</strong>.
           </p>
         </div>
 
@@ -556,7 +556,7 @@ export const CommissionFormView: React.FC = () => {
           </h1>
 
           <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
-            A structured brief to align vision, scope, and technical deliverables with the studio. Every inquiry receives personalized creative direction from Brewster.
+            A structured brief to align vision, scope, and technical deliverables with the studio. Every inquiry receives personalized creative direction from DESTALION.
           </p>
         </div>
       </div>

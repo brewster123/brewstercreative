@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PortfolioProject, ShopProduct } from '../types';
 import { useApp } from '../context/AppContext';
 import { SHOP_PRODUCTS } from '../data/shopData';
@@ -30,6 +30,32 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
     .filter((img: string) => img.length > 0);
   if (images.length === 0) images.push(fallbackModalImage);
 
+  // Close modal on Escape, arrow navigation across images, and lock background scroll
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (lightboxOpen) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === 'ArrowLeft' && images.length > 1) {
+        e.preventDefault();
+        setActiveImageIndex(prev => (prev > 0 ? prev - 1 : images.length - 1));
+      } else if (e.key === 'ArrowRight' && images.length > 1) {
+        e.preventDefault();
+        setActiveImageIndex(prev => (prev < images.length - 1 ? prev + 1 : 0));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [lightboxOpen, onClose, images.length]);
+
   // Cross-selling: Related Shop Products
   const relatedShopProducts: ShopProduct[] = (project.relatedShopProductIds || [])
     .map((id) => SHOP_PRODUCTS.find((p) => p.id === id))
@@ -50,8 +76,17 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6 overflow-y-auto">
-      <div className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 my-auto">
+    <div 
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Project: ${project.title}`}
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6 overflow-y-auto cursor-zoom-out"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()} 
+        className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 my-auto cursor-default"
+      >
         
         {/* Editorial Top Navigation Strip */}
         <div className="px-6 sm:px-8 py-4 bg-white/90 dark:bg-[#18181B]/90 backdrop-blur-md border-b border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between z-10 shrink-0">

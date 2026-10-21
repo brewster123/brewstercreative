@@ -64,7 +64,6 @@ export const ServicesView: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
             <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
               <span>Studio Practice & Menu</span>
             </div>
 
@@ -78,7 +77,7 @@ export const ServicesView: React.FC = () => {
           </div>
 
           <div className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] self-start md:self-end">
-            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{services.length}</span> Active Practices
+            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold tabular-nums">{services.length}</span> Active Practices
           </div>
         </div>
       </div>
@@ -199,7 +198,7 @@ export const ServicesView: React.FC = () => {
               Require a custom scope not listed above?
             </h3>
             <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
-              Brewster regularly directs bespoke multimedia installations, experimental typographic releases, and one-off publication editions.
+              DESTALION regularly directs bespoke multimedia installations, experimental typographic releases, and one-off publication editions.
             </p>
           </div>
 

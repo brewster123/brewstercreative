@@ -101,6 +101,17 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
     setUploadSuccess(null);
   }, [commission?.id]);
 
+  // Handle Escape key to dismiss proof lightbox modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && lightboxProof) {
+        setLightboxProof(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxProof]);
+
   // Clean up object URL on file change or unmount
   useEffect(() => {
     if (!selectedFile) {

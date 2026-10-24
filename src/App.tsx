@@ -15,6 +15,7 @@ import { ProductDetailView } from './views/ProductDetailView';
 import { SettingsView } from './views/SettingsView';
 import { ChatView } from './views/ChatView';
 import { CaseStudyView } from './views/CaseStudyView';
+import { CreativeStudioView } from './views/CreativeStudioView';
 
 const DatabaseErrorBanner: React.FC = () => {
   const { databaseError, clearDatabaseError, refreshCurrentUserProfile, currentUser } = useApp();
@@ -245,12 +246,71 @@ const MainLayout: React.FC = () => {
         return <ChatView />;
       case 'case-study':
         return <CaseStudyView />;
+      case 'creative-studio':
+        if (authLoading) {
+          return (
+            <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
+              <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                Verifying studio director credentials...
+              </p>
+            </div>
+          );
+        }
+        if (currentUser?.role !== 'admin') {
+          return (
+            <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
+              <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
+                <ShieldCheck className="w-5 h-5 text-[#EA580C]" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  Studio Director Access Required
+                </h2>
+                <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+                  DESTALION Creative Studio is an administrative design application reserved exclusively for authorized studio directors. Client accounts and unauthenticated visitors do not have access.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                {currentUser ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('client-dashboard')}
+                    className="px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-all cursor-pointer"
+                  >
+                    Go to My Client Workspace
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('auth')}
+                    className="px-6 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] hover:opacity-90 text-white dark:text-[#18181B] font-semibold text-xs transition-all cursor-pointer"
+                  >
+                    Sign In to Studio
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        }
+        return <CreativeStudioView />;
       default:
         return <HomeView />;
     }
   };
 
+  const isStudioApp = activeView === 'creative-studio' && currentUser?.role === 'admin';
   const isChatView = activeView === 'chat';
+
+  if (isStudioApp) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-[#09090B] text-[#EDEDEC]">
+        <DatabaseErrorBanner />
+        <CreativeStudioView />
+      </div>
+    );
+  }
 
   return (
     <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen'} flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative`}>

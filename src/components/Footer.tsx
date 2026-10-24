@@ -12,11 +12,11 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-[#FAF9F6] dark:bg-[#111111] border-t border-[#E4E2DC] dark:border-[#2F2F2F] text-[#71717A] dark:text-[#A1A1AA] text-sm mt-20 relative overflow-hidden transition-colors">
-      <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none"></div>
+    <footer className="bg-[#FAF9F6] dark:bg-[#09090B] border-t border-[#E4E2DC] dark:border-[#1C1C1F] text-[#71717A] dark:text-[#A1A1AA] text-sm mt-20 relative overflow-hidden transition-colors">
+      <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none"></div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 mb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10 lg:gap-8 mb-10 sm:mb-12">
           
           {/* Studio Brand & Bio */}
           <div className="lg:col-span-2 space-y-4">
@@ -169,7 +169,7 @@ export const Footer: React.FC = () => {
                       href={instagramUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
                       aria-label="Instagram Profile"
                     >
                       <Instagram className="w-4 h-4" />
@@ -181,7 +181,7 @@ export const Footer: React.FC = () => {
                       href={behanceUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
                       aria-label="Behance Portfolio"
                     >
                       <span className="font-display font-bold text-[12px] leading-none select-none tracking-tighter">Bē</span>
@@ -193,7 +193,7 @@ export const Footer: React.FC = () => {
                       href={dribbbleUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
                       aria-label="Dribbble Portfolio"
                     >
                       <Dribbble className="w-4 h-4" />
@@ -205,7 +205,7 @@ export const Footer: React.FC = () => {
                       href={twitterUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#181818] hover:bg-[#F4F2ED] dark:hover:bg-[#222222] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#2F2F2F] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
                       aria-label="Twitter / X Profile"
                     >
                       <Twitter className="w-4 h-4" />
@@ -219,12 +219,11 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Bottom copyright & back to top */}
-        <div className="pt-8 border-t border-[#E4E2DC] dark:border-[#2F2F2F] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#71717A] dark:text-[#A1A1AA]">
+        <div className="pt-8 border-t border-[#E4E2DC] dark:border-[#1C1C1F] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#71717A] dark:text-[#A1A1AA]">
           <p>
             © {new Date().getFullYear()} {studioProfile.studioName} ({studioProfile.designerName}). All rights reserved. Graphic design & multimedia art.
           </p>
           <div className="flex items-center gap-4">
-            <span className="text-[11px] font-mono text-[#A1A1AA] dark:text-[#71717A] font-medium">Bento Suite Architecture</span>
             <button
               type="button"
               onClick={scrollToTop}

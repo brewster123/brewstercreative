@@ -444,12 +444,22 @@ export const ClientDashboardView: React.FC = () => {
                 return (
                   <article
                     key={proj.id}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveCommissionId(proj.id);
+                        setViewMode('workspace');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
                     onClick={() => {
                       setActiveCommissionId(proj.id);
                       setViewMode('workspace');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="group relative p-6 sm:p-7 rounded-xl border border-[#E4E2DC] dark:border-[#27272A] bg-white dark:bg-[#18181B] hover:border-[#EA580C] hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col gap-4"
+                    className="group relative p-6 sm:p-7 rounded-xl border border-[#E4E2DC] dark:border-[#27272A] bg-white dark:bg-[#18181B] hover:border-[#EA580C] hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col gap-4 focus-visible:outline-2 focus-visible:outline-[#EA580C]"
                   >
                     {/* Top Meta Row */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4E2DC]/60 dark:border-[#27272A]/60">

@@ -115,11 +115,11 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
           onSelect(project);
         }
       }}
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46] transition-all duration-300 cursor-pointer shadow-2xs hover:shadow-xs focus-visible:outline-2 focus-visible:outline-[#EA580C] ${className}`}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#D4D2CA] dark:hover:border-[#333338] transition-all duration-300 cursor-pointer shadow-2xs hover:shadow-xs focus-visible:outline-2 focus-visible:outline-[#EA580C] ${className}`}
     >
       {/* Artwork Viewport — High-Fidelity Breathing Room */}
       <div 
-        className={`relative overflow-hidden bg-[#FAF9F6] dark:bg-[#0F0F11] ${
+        className={`relative overflow-hidden bg-[#FAF9F6] dark:bg-[#09090B] ${
           isFeatured ? 'aspect-[16/10] sm:aspect-[16/9]' : isWide ? 'aspect-[16/9]' : 'aspect-[4/3]'
         }`}
       >
@@ -206,7 +206,7 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
         </div>
 
         {/* Footer Ledger: Social Engagement Counters & Case Study Link */}
-        <div className="pt-3.5 border-t border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between gap-3">
+        <div className="pt-3.5 border-t border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between gap-3">
           
           {/* Social Stats Strip */}
           <div className="flex items-center gap-3">

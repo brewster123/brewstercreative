@@ -91,6 +91,23 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
     }
   }, [successMsg]);
 
+  // Handle Escape key to dismiss modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (viewingProof) {
+          setViewingProof(null);
+        } else if (revisionModalProof && submittingProofId === null) {
+          setRevisionModalProof(null);
+        } else if (approveModalProof && submittingProofId === null) {
+          setApproveModalProof(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewingProof, revisionModalProof, approveModalProof, submittingProofId]);
+
   // Handle generating short-lived signed URL for private bucket
   const handleViewProof = async (proof: CommissionProof) => {
     setActionError(null);

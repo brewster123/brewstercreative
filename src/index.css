@@ -38,12 +38,12 @@
   color-scheme: dark;
 
   /* DESTALION Theme Tokens — Dark Mode (Deep Studio Atelier Depth) */
-  --bg-canvas: #0C0C0E;
-  --bg-surface: #16161A;
-  --bg-surface-secondary: #202026;
-  --text-primary: #F4F4F5;
+  --bg-canvas: #09090B;
+  --bg-surface: #121214;
+  --bg-surface-secondary: #18181B;
+  --text-primary: #FFFFFF;
   --text-muted: #A1A1AA;
-  --border-subtle: #27272F;
+  --border-subtle: #222225;
   --accent: #EA580C;
   --accent-hover: #D94814;
 

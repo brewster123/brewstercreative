@@ -553,3 +553,112 @@ export interface ShopProductVariant {
 }
 
 export type UpcomingShopRelease = ShopProduct;
+
+// ============================================================================
+// DESTALION Creative Studio — Design Token Engine Types (Milestone 1)
+// ============================================================================
+
+export type ThemeVariant = 'default' | 'high-contrast' | 'editorial-minimal';
+
+export interface ThemeColors {
+  bgCanvas: string;
+  bgSurface: string;
+  bgSurfaceSecondary: string;
+  textPrimary: string;
+  textMuted: string;
+  borderSubtle: string;
+  accent: string;
+  accentHover: string;
+}
+
+export interface TypographyTokens {
+  fontFamily: string;
+  headingFontFamily: string;
+  baseFontSizePx: number;
+  headingScale: number;
+  bodyLineHeight: number;
+  headingLetterSpacing: string;
+}
+
+export interface SpacingTokens {
+  sectionPaddingY: number; // in px
+  containerPaddingX: number; // in px
+  gridGap: number; // in px
+}
+
+export interface BorderTokens {
+  radiusSm: number; // in px
+  radiusMd: number; // in px
+  radiusLg: number; // in px
+  radiusXl: number; // in px
+  borderWidth: number; // in px
+}
+
+export interface StudioDesignConfig {
+  version: number;
+  id: string;
+  name: string;
+  updatedAt: string;
+  themeVariant: ThemeVariant;
+  maxContentWidthPx: number;
+  light: ThemeColors;
+  dark: ThemeColors;
+  typography: TypographyTokens;
+  spacing: SpacingTokens;
+  borders: BorderTokens;
+}
+
+export type ViewportMode = 'desktop' | 'tablet' | 'mobile';
+
+export interface ViewportDefinition {
+  id: ViewportMode;
+  label: string;
+  width: number;
+  height: number;
+  iconName: 'Monitor' | 'Tablet' | 'Smartphone';
+}
+
+export type StudioWorkspaceMode = 'dashboard' | 'design-workspace' | 'website-workspace';
+
+export type StudioElementType = 'rectangle' | 'text' | 'frame' | 'vector-badge';
+
+export interface StudioElement {
+  id: string;
+  name: string;
+  type: StudioElementType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  borderRadius?: number;
+  opacity?: number;
+  text?: string;
+  fontSize?: number;
+  fontWeight?: string;
+  color?: string;
+  visible: boolean;
+  locked: boolean;
+}
+
+export interface StudioArtboard {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  backgroundColor: string;
+  elements: StudioElement[];
+}
+
+export interface StudioDesignDocument {
+  id: string;
+  title: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  activeArtboardId: string;
+  artboards: StudioArtboard[];
+  designConfig: StudioDesignConfig;
+}

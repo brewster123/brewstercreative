@@ -235,6 +235,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     };
   }, [showEmojiPicker]);
 
+  // Handle Escape key to dismiss previewImage or emoji picker
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (previewImage) {
+          setPreviewImage(null);
+        } else if (showEmojiPicker) {
+          setShowEmojiPicker(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [previewImage, showEmojiPicker]);
+
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const textToSend = inputText.trim();

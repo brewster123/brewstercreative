@@ -105,6 +105,21 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
     }
   }, [initialSelectedCommissionId]);
 
+  // Handle Escape key to dismiss review dialog or receipt lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (lightboxProof) {
+          handleCloseLightbox();
+        } else if (reviewingProof && !isSubmittingReview) {
+          handleCloseReview();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxProof, reviewingProof, isSubmittingReview]);
+
   // Open Lightbox
   const handleOpenLightbox = async (proof: CommissionPaymentProof) => {
     setLightboxProof(proof);

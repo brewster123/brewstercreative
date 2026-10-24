@@ -63,6 +63,8 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
   // Signed URL downloading state
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [deliverableToDelete, setDeliverableToDelete] = useState<CommissionDeliverable | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   // Load deliverables for commission
   const loadDeliverables = async () => {
@@ -86,6 +88,17 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
   useEffect(() => {
     loadDeliverables();
   }, [commission?.id]);
+
+  // Handle Escape key to dismiss delete confirmation modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && deliverableToDelete && !isDeleting) {
+        setDeliverableToDelete(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [deliverableToDelete, isDeleting]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadError(null);
@@ -192,22 +205,28 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
     }
   };
 
-  const handleDelete = async (item: CommissionDeliverable) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete deliverable "${item.fileName}"? This will permanently remove the file from private Storage and the database.`
-    );
-    if (!confirmDelete) return;
+  const handleRequestDelete = (item: CommissionDeliverable) => {
+    setActionError(null);
+    setDeliverableToDelete(item);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deliverableToDelete) return;
+
+    setIsDeleting(true);
     setActionError(null);
     try {
-      const { success, error: delErr } = await deleteCommissionDeliverable(item);
+      const { success, error: delErr } = await deleteCommissionDeliverable(deliverableToDelete);
       if (!success) {
         setActionError(delErr || 'Failed to remove deliverable.');
         return;
       }
-      setDeliverables(prev => prev.filter(d => d.id !== item.id));
+      setDeliverables(prev => prev.filter(d => d.id !== deliverableToDelete.id));
+      setDeliverableToDelete(null);
     } catch (err: any) {
       setActionError(err?.message || 'Error occurred while deleting deliverable.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -564,7 +583,7 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
 
                     <button
                       type="button"
-                      onClick={() => handleDelete(item)}
+                      onClick={() => handleRequestDelete(item)}
                       className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                       title="Delete deliverable"
                     >
@@ -604,6 +623,61 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
           </div>
         )}
       </div>
+
+      {/* Delete Deliverable Confirmation Modal */}
+      {deliverableToDelete && (
+        <div 
+          onClick={() => !isDeleting && setDeliverableToDelete(null)}
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-60 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-white">Delete Deliverable</h4>
+                <p className="text-xs text-zinc-400">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Are you sure you want to permanently remove <strong className="text-white">"{deliverableToDelete.fileName}"</strong>? The file will be removed from private Storage and the project ledger.
+            </p>
+
+            <div className="pt-2 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeliverableToDelete(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl border border-zinc-800 text-xs font-semibold text-zinc-400 hover:text-white cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Delete File</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -118,6 +118,17 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
     };
   }, [filePreviewUrl]);
 
+  // Handle Escape key to dismiss receipt preview lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && activeProofSignedUrl) {
+        setActiveProofSignedUrl(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeProofSignedUrl]);
+
   // Determine latest proof status
   const latestProof = proofs.length > 0 ? proofs[0] : null;
 

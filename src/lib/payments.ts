@@ -56,8 +56,11 @@ export function validatePaymentReceiptFile(
  */
 export function sanitizePaymentFileName(rawName: string): string {
   const trimmed = (rawName || 'gcash_receipt.jpg').trim();
-  const base = trimmed.replace(/[\/\\]/g, '_').replace(/\0/g, '');
-  const clean = base.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+  // Strip path traversal prefixes (directory separators)
+  const base = trimmed.replace(/^.*[\\\/]/, '').replace(/\0/g, '');
+  // Eliminate any remaining dot-dot sequences and non-safe filename characters
+  const safeDots = base.replace(/\.{2,}/g, '_');
+  const clean = safeDots.replace(/[^a-zA-Z0-9.\-_]/g, '_');
   return clean || `receipt_${Date.now()}.jpg`;
 }
 

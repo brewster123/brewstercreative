@@ -13,7 +13,8 @@ import {
   Sparkles,
   Layers,
   CheckCircle2,
-  Lock
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
@@ -113,6 +114,45 @@ export const SettingsView: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* ADMIN-ONLY DEDICATED WORKSPACE: DESTALION CREATIVE STUDIO */}
+      {currentUser?.role === 'admin' && (
+        <section className="p-6 rounded-xl border border-[#EA580C]/40 bg-gradient-to-r from-orange-500/10 via-[#FAF9F6] to-transparent dark:from-orange-950/20 dark:via-[#18181B] dark:to-transparent shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-[#EA580C] text-white flex items-center justify-center shrink-0 shadow-sm">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold">
+                    Studio Director Tool
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                    Separate Application
+                  </span>
+                </div>
+                <h2 className="font-display text-lg sm:text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  DESTALION Creative Studio
+                </h2>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] max-w-lg leading-relaxed">
+                  Open the visual website design workspace to edit design tokens, customize layout artboards, and preview desktop and mobile live components.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setActiveView('creative-studio')}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold font-mono uppercase tracking-wider shadow-sm transition-all cursor-pointer shrink-0 self-start sm:self-auto"
+              title="Launch DESTALION Creative Studio"
+            >
+              <span>Edit Website</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* SECTION 1: APPEARANCE (Light / Dark / System) */}
       <section className="space-y-6">

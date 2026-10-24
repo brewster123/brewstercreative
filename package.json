@@ -9,7 +9,8 @@
     "start": "vite preview --port=3000 --host=0.0.0.0",
     "preview": "vite preview --port=3000 --host=0.0.0.0",
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist', {recursive: true, force: true}); fs.rmSync('build', {recursive: true, force: true});\"",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:acceptance": "tsx scripts/test-acceptance.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

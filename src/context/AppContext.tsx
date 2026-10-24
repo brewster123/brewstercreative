@@ -21,7 +21,6 @@ import {
 import {
   INITIAL_STUDIO_PROFILE,
   INITIAL_SERVICES,
-  INITIAL_PORTFOLIO,
   INITIAL_USERS,
   INITIAL_COMMISSIONS,
   INITIAL_MESSAGES,
@@ -91,7 +90,8 @@ export type AppView =
   | 'product-detail'
   | 'settings'
   | 'chat'
-  | 'case-study';
+  | 'case-study'
+  | 'creative-studio';
 
 export type AppTheme = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
@@ -291,6 +291,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [activeView, setActiveView] = useState<AppView>(() => {
     if (typeof window !== 'undefined') {
+      const hash = (window.location.hash || '').toLowerCase();
+      const pathname = (window.location.pathname || '').toLowerCase();
+      if (hash === '#creative-studio' || hash === '#admin-creative-studio' || pathname === '/admin/creative-studio') {
+        return 'creative-studio';
+      }
       const caseStudyId = extractCaseStudyIdFromHash(window.location.hash);
       if (caseStudyId) {
         return 'case-study';
@@ -308,22 +313,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (saved) {
             const list: PortfolioProject[] = JSON.parse(saved);
             const found = list.find((p) => p.id === caseStudyId);
-            if (found) {
-              const init = INITIAL_PORTFOLIO.find((ip) => ip.id === found.id);
-              if (init) {
-                return {
-                  ...found,
-                  projectType: init.projectType,
-                  client: init.client,
-                  fullDesc: init.fullDesc,
-                };
-              }
-              return found;
-            }
+            if (found) return found;
           }
         } catch {}
-        const fallback = INITIAL_PORTFOLIO.find((p) => p.id === caseStudyId);
-        if (fallback) return fallback;
       }
     }
     return null;
@@ -376,37 +368,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try {
         const parsed: PortfolioProject[] = JSON.parse(saved);
-        return parsed.map((p) => {
-          const init = INITIAL_PORTFOLIO.find((ip) => ip.id === p.id);
-          const rawLikes = p.likesCount ?? (p as any).likes_count ?? (p as any).likes ?? init?.likesCount ?? 0;
-          const rawViews = p.viewsCount ?? (p as any).views_count ?? (p as any).views ?? init?.viewsCount ?? 0;
-          const rawShares = p.sharesCount ?? (p as any).shares_count ?? (p as any).shares ?? (init as any)?.sharesCount ?? 0;
-          const likesCount = normalizeNumericStat(rawLikes, 0);
-          const viewsCount = normalizeNumericStat(rawViews, 0);
-          const sharesCount = normalizeNumericStat(rawShares, 0);
+        if (Array.isArray(parsed)) {
+          // Permanently eliminate legacy demo IDs (proj-1 through proj-6)
+          const demoIds = new Set(['proj-1', 'proj-2', 'proj-3', 'proj-4', 'proj-5', 'proj-6']);
+          const cleaned = parsed.filter((p) => !demoIds.has(p.id));
+          return cleaned.map((p) => {
+            const rawLikes = p.likesCount ?? (p as any).likes_count ?? (p as any).likes ?? 0;
+            const rawViews = p.viewsCount ?? (p as any).views_count ?? (p as any).views ?? 0;
+            const rawShares = p.sharesCount ?? (p as any).shares_count ?? (p as any).shares ?? 0;
+            const likesCount = normalizeNumericStat(rawLikes, 0);
+            const viewsCount = normalizeNumericStat(rawViews, 0);
+            const sharesCount = normalizeNumericStat(rawShares, 0);
 
-          const item: PortfolioProject = {
-            ...p,
-            likesCount,
-            viewsCount,
-            sharesCount,
-            likes_count: likesCount,
-            views_count: viewsCount,
-            shares_count: sharesCount,
-            projectType: (init ? init.projectType : p.projectType) || 'concept',
-            client: (init ? init.client : p.client) || 'Studio Concept',
-            fullDesc: init ? init.fullDesc : p.fullDesc,
-          };
-          if (init?.relatedShopProductIds && !p.relatedShopProductIds) {
-            item.relatedShopProductIds = init.relatedShopProductIds;
-          }
-          return item;
-        });
+            const item: PortfolioProject = {
+              ...p,
+              likesCount,
+              viewsCount,
+              sharesCount,
+              likes_count: likesCount,
+              views_count: viewsCount,
+              shares_count: sharesCount,
+              projectType: p.projectType || 'concept',
+              client: p.client || 'Studio Concept',
+              fullDesc: p.fullDesc,
+            };
+            return item;
+          });
+        }
       } catch (e) {
-        return INITIAL_PORTFOLIO;
+        return [];
       }
     }
-    return INITIAL_PORTFOLIO;
+    return [];
   });
 
   const [users, setUsers] = useState<User[]>(() => {
@@ -555,8 +548,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const requestedId = extractCaseStudyIdFromHash(window.location.hash);
       if (!requestedId) return;
 
-      const found = projects.find((p) => p.id === requestedId) ||
-                    INITIAL_PORTFOLIO.find((p) => p.id === requestedId);
+      const found = projects.find((p) => p.id === requestedId);
       if (found) {
         setSelectedPortfolioProject(found);
         setActiveView('case-study');
@@ -568,7 +560,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     if (!isSupabaseConfigured()) {
-      // Offline / unconfigured environment: resolve hash against local/initial portfolio
+      // Offline / unconfigured environment: resolve hash against local portfolio
       resolveHashProject(portfolio);
       return;
     }
@@ -590,50 +582,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // 3. Fetch Portfolio Projects
     fetchPortfolioProjectsFromDb().then(({ data, error }) => {
       if (!isMounted) return;
-      if (!error && data && data.length > 0) {
-        setPortfolio((prev) => {
-          const dbMap = new Map(data.map((p) => [p.id, p]));
-          const merged = prev.map((p) => {
-            const fromDb = dbMap.get(p.id);
-            if (!fromDb) return p;
-            const likesCount = normalizeNumericStat(
-              fromDb.likesCount ?? fromDb.likes_count ?? p.likesCount ?? (p as any).likes_count,
-              0
-            );
-            const viewsCount = normalizeNumericStat(
-              fromDb.viewsCount ?? fromDb.views_count ?? p.viewsCount ?? (p as any).views_count,
-              0
-            );
-            const sharesCount = normalizeNumericStat(
-              fromDb.sharesCount ?? fromDb.shares_count ?? (p as any).sharesCount ?? (p as any).shares_count,
-              0
-            );
-            return {
-              ...p,
-              ...fromDb,
-              likesCount,
-              viewsCount,
-              sharesCount,
-              likes_count: likesCount,
-              views_count: viewsCount,
-              shares_count: sharesCount,
-            };
-          });
-          // Include any projects present in DB that weren't in prev
-          data.forEach((p) => {
-            if (!prev.some((existing) => existing.id === p.id)) {
-              merged.push(p);
-            }
-          });
-          try {
-            localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(merged));
-          } catch {}
-          return merged;
+      if (!error && data !== null && data !== undefined) {
+        const demoIds = new Set(['proj-1', 'proj-2', 'proj-3', 'proj-4', 'proj-5', 'proj-6']);
+        const cleaned = data.filter((p) => !demoIds.has(p.id)).map((fromDb) => {
+          const likesCount = normalizeNumericStat(
+            fromDb.likesCount ?? fromDb.likes_count,
+            0
+          );
+          const viewsCount = normalizeNumericStat(
+            fromDb.viewsCount ?? fromDb.views_count,
+            0
+          );
+          const sharesCount = normalizeNumericStat(
+            fromDb.sharesCount ?? fromDb.shares_count,
+            0
+          );
+          return {
+            ...fromDb,
+            likesCount,
+            viewsCount,
+            sharesCount,
+            likes_count: likesCount,
+            views_count: viewsCount,
+            shares_count: sharesCount,
+          };
         });
-
-        resolveHashProject(data);
+        setPortfolio(cleaned);
+        try {
+          localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(cleaned));
+        } catch {}
+        resolveHashProject(cleaned);
       } else {
-        // Fallback to local portfolio / INITIAL_PORTFOLIO
+        // Fallback to local portfolio without demo resurrection
         resolveHashProject(portfolio);
       }
     });
@@ -655,64 +635,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       },
       onPortfolioChanged: () => {
         fetchPortfolioProjectsFromDb().then(({ data, error }) => {
-          if (!error && data && data.length > 0 && isMounted) {
-            setPortfolio((prev) => {
-              const dbMap = new Map(data.map((p) => [p.id, p]));
-              const merged = prev.map((p) => {
-                const fromDb = dbMap.get(p.id);
-                if (!fromDb) return p;
-                const likesCount = normalizeNumericStat(
-                  fromDb.likesCount ?? fromDb.likes_count ?? p.likesCount ?? (p as any).likes_count,
-                  0
-                );
-                const viewsCount = normalizeNumericStat(
-                  fromDb.viewsCount ?? fromDb.views_count ?? p.viewsCount ?? (p as any).views_count,
-                  0
-                );
-                const sharesCount = normalizeNumericStat(
-                  fromDb.sharesCount ?? fromDb.shares_count ?? (p as any).sharesCount ?? (p as any).shares_count,
-                  0
-                );
-                return {
-                  ...p,
-                  ...fromDb,
-                  likesCount,
-                  viewsCount,
-                  sharesCount,
-                  likes_count: likesCount,
-                  views_count: viewsCount,
-                  shares_count: sharesCount,
-                };
-              });
-              data.forEach((p) => {
-                if (!prev.some((existing) => existing.id === p.id)) {
-                  merged.push(p);
-                }
-              });
-              try {
-                localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(merged));
-              } catch {}
-              return merged;
-            });
-            setSelectedPortfolioProject((prev) => {
-              if (!prev) return null;
-              const refreshed = data.find((p) => p.id === prev.id);
-              if (!refreshed) return prev;
+          if (!error && data !== null && data !== undefined && isMounted) {
+            const demoIds = new Set(['proj-1', 'proj-2', 'proj-3', 'proj-4', 'proj-5', 'proj-6']);
+            const cleaned = data.filter((p) => !demoIds.has(p.id)).map((fromDb) => {
               const likesCount = normalizeNumericStat(
-                refreshed.likesCount ?? refreshed.likes_count ?? prev.likesCount ?? (prev as any).likes_count,
+                fromDb.likesCount ?? fromDb.likes_count,
                 0
               );
               const viewsCount = normalizeNumericStat(
-                refreshed.viewsCount ?? refreshed.views_count ?? prev.viewsCount ?? (prev as any).views_count,
+                fromDb.viewsCount ?? fromDb.views_count,
                 0
               );
               const sharesCount = normalizeNumericStat(
-                refreshed.sharesCount ?? refreshed.shares_count ?? (prev as any).sharesCount ?? (prev as any).shares_count,
+                fromDb.sharesCount ?? fromDb.shares_count,
                 0
               );
               return {
-                ...prev,
-                ...refreshed,
+                ...fromDb,
                 likesCount,
                 viewsCount,
                 sharesCount,
@@ -720,6 +659,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 views_count: viewsCount,
                 shares_count: sharesCount,
               };
+            });
+            setPortfolio(cleaned);
+            try {
+              localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(cleaned));
+            } catch {}
+            setSelectedPortfolioProject((prev) => {
+              if (!prev) return null;
+              const refreshed = cleaned.find((p) => p.id === prev.id);
+              if (!refreshed) return null;
+              return refreshed;
             });
           }
         });
@@ -2549,7 +2498,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deletePortfolioProject = async (projectId: string): Promise<{ success: boolean; error?: string }> => {
-    setPortfolio(prev => prev.filter(p => p.id !== projectId));
+    setPortfolio(prev => {
+      const updated = prev.filter(p => p.id !== projectId);
+      try {
+        localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
 
     if (isSupabaseConfigured()) {
       const { success, error } = await deletePortfolioProjectFromDb(projectId);
@@ -2562,15 +2517,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetAllData = () => {
     localStorage.clear();
-    // Re-hydrate from Supabase if configured, otherwise reset to fallback
+    // Re-hydrate from Supabase if configured, otherwise reset to empty portfolio
     if (isSupabaseConfigured()) {
       fetchStudioProfileFromDb().then(({ data }) => data && setStudioProfile(data));
       fetchServicesFromDb().then(({ data }) => data && setServices(data));
-      fetchPortfolioProjectsFromDb().then(({ data }) => data && setPortfolio(data));
+      fetchPortfolioProjectsFromDb().then(({ data }) => {
+        if (data) {
+          const demoIds = new Set(['proj-1', 'proj-2', 'proj-3', 'proj-4', 'proj-5', 'proj-6']);
+          setPortfolio(data.filter((p) => !demoIds.has(p.id)));
+        } else {
+          setPortfolio([]);
+        }
+      });
     } else {
       setStudioProfile(INITIAL_STUDIO_PROFILE);
       setServices(INITIAL_SERVICES);
-      setPortfolio(INITIAL_PORTFOLIO);
+      setPortfolio([]);
     }
     setUsers([]);
     setCurrentUser(null);
@@ -2682,9 +2644,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const hash = window.location.hash || '';
       const projId = extractCaseStudyIdFromHash(hash);
       if (projId) {
-        const found =
-          portfolio.find((p) => p.id === projId) ||
-          INITIAL_PORTFOLIO.find((p) => p.id === projId);
+        const found = portfolio.find((p) => p.id === projId);
         if (found) {
           setSelectedPortfolioProject(found);
           setActiveView('case-study');

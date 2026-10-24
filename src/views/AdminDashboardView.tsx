@@ -348,6 +348,8 @@ export const AdminDashboardView: React.FC = () => {
   // Services Management State
   const [isAddingService, setIsAddingService] = useState(false);
   const [editingService, setEditingService] = useState<ServiceItem | null>(null);
+  const [serviceToDelete, setServiceToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeletingService, setIsDeletingService] = useState(false);
   const [serviceForm, setServiceForm] = useState<Partial<ServiceItem>>({
     name: '',
     category: 'Branding',
@@ -552,6 +554,27 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
+  // Handle Escape key to dismiss modals in AdminDashboardView
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (projectToDelete && !isDeletingProject) {
+          setProjectToDelete(null);
+        } else if (serviceToDelete && !isDeletingService) {
+          setServiceToDelete(null);
+        } else if (isAddingProject && !isSavingProject) {
+          setIsAddingProject(false);
+          setEditingProject(null);
+        } else if (isAddingService && !isSavingService) {
+          setIsAddingService(false);
+          setEditingService(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [projectToDelete, isDeletingProject, serviceToDelete, isDeletingService, isAddingProject, isSavingProject, isAddingService, isSavingService]);
+
   // Portfolio Media Upload Handler
   const handlePortfolioMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -650,9 +673,18 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  const handleDeleteService = async (id: string, name: string) => {
-    if (window.confirm(`Delete service package "${name}" from the website?`)) {
-      await deleteServiceItem(id);
+  const handleDeleteService = (id: string, name: string) => {
+    setServiceToDelete({ id, name });
+  };
+
+  const handleConfirmDeleteService = async () => {
+    if (!serviceToDelete) return;
+    setIsDeletingService(true);
+    try {
+      await deleteServiceItem(serviceToDelete.id);
+      setServiceToDelete(null);
+    } finally {
+      setIsDeletingService(false);
     }
   };
 
@@ -2478,6 +2510,60 @@ export const AdminDashboardView: React.FC = () => {
             </div>
           )}
 
+          {/* In-App Confirmation Dialog for Service Deletion */}
+          {serviceToDelete && (
+            <div 
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-service-title"
+              className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+            >
+              <div 
+                className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150"
+              >
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900/50 flex items-center justify-center shrink-0 text-red-600 dark:text-red-400">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 id="delete-service-title" className="font-display text-base sm:text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                      Delete Service Package
+                    </h3>
+                    <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                      Are you sure you want to delete service package <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">"{serviceToDelete.name}"</span> from the website?
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setServiceToDelete(null)}
+                    disabled={isDeletingService}
+                    className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDeleteService}
+                    disabled={isDeletingService}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+                  >
+                    {isDeletingService ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <span>Delete Service</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
 
@@ -2494,6 +2580,43 @@ export const AdminDashboardView: React.FC = () => {
               Public Studio Profile
             </h3>
           </div>
+
+          {/* Dedicated Creative Studio — Edit Website Entry Point */}
+          {currentUser?.role === 'admin' && (
+            <div className="p-5 rounded-xl border border-[#EA580C]/40 bg-gradient-to-r from-orange-500/10 via-[#FAF9F6] to-transparent dark:from-orange-950/20 dark:via-[#18181B] dark:to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-lg bg-[#EA580C] text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold">
+                      Dedicated Application
+                    </span>
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                      Visual Editor
+                    </span>
+                  </div>
+                  <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                    DESTALION Creative Studio
+                  </h4>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] max-w-md">
+                    Open the visual website design workspace to edit design tokens, customize layout artboards, and preview desktop and mobile live components.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveView('creative-studio')}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold font-mono uppercase tracking-wider shadow-sm transition-all cursor-pointer shrink-0 self-start sm:self-auto"
+                title="Launch DESTALION Creative Studio Application"
+              >
+                <span>Edit Website</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {profileSaveSuccess && (
             <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-xs rounded-lg border border-emerald-200">

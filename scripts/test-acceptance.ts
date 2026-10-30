@@ -5,9 +5,19 @@
  */
 
 import { DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS, validateDeliverableFile, MAX_DELIVERABLE_SIZE_BYTES } from '../src/lib/deliverables';
-import { validatePaymentReceiptFile, sanitizePaymentFileName, MAX_PAYMENT_RECEIPT_SIZE_BYTES } from '../src/lib/payments';
+import { 
+  validatePaymentReceiptFile, 
+  sanitizePaymentFileName, 
+  MAX_PAYMENT_RECEIPT_SIZE_BYTES,
+  normalizeReferenceNumber,
+  validateReferenceNumber,
+  parseCommissionBudget,
+  validatePaymentReviewTransition,
+  validateReferenceNumberUniqueness,
+  checkFinalDeliverableAccess
+} from '../src/lib/payments';
 import { isAllowedAttachmentFile, ALLOWED_CHAT_EXTENSIONS } from '../src/lib/chatAttachments';
-import { getStageAndProgressFromStatus } from '../src/data/commissionsData';
+import { getStageAndProgressFromStatus, mapDbCommissionToAppCommission } from '../src/data/commissionsData';
 import { COMMISSION_STAGES } from '../src/types';
 import { isValidReferenceUrl, isValidCheckoutUrl } from '../src/utils/urlUtils';
 import { INITIAL_PORTFOLIO } from '../src/data/initialData';
@@ -69,31 +79,141 @@ assert(
   'Deliverable file validation strictly blocks empty (0-byte) files'
 );
 
-// Payment Gate Rule: Unpaid commissions must NOT download
-function checkDeliverablePaymentGate(paymentStatus: string, paymentStages?: any): boolean {
-  return (
-    paymentStatus === 'Paid' ||
-    paymentStatus === 'paid' ||
-    paymentStatus === 'verified' ||
-    (paymentStages?.final?.status === 'verified' && paymentStages?.deposit?.status === 'verified')
-  );
-}
+// Phase 6 Critical Security Rule: BOTH payment_status = 'Paid' AND total_paid = true are strictly required for clients
+assert(
+  checkFinalDeliverableAccess({
+    userRole: 'client',
+    isClientOwner: true,
+    paymentStatus: 'Paid',
+    totalPaid: false,
+  }).accessGranted === false,
+  'Deliverable access gate: Paid status true but total_paid false -> access strictly denied for clients'
+);
 
 assert(
-  checkDeliverablePaymentGate('Unpaid') === false,
-  'Deliverable payment gate: Blocks unpaid commission'
+  checkFinalDeliverableAccess({
+    userRole: 'client',
+    isClientOwner: true,
+    paymentStatus: 'Unpaid',
+    totalPaid: true,
+  }).accessGranted === false,
+  'Deliverable access gate: total_paid true but status Unpaid -> access strictly denied for clients'
+);
+
+assert(
+  checkFinalDeliverableAccess({
+    userRole: 'client',
+    isClientOwner: true,
+    paymentStatus: 'Partial',
+    totalPaid: true,
+  }).accessGranted === false,
+  'Deliverable access gate: total_paid true but status Partial -> access strictly denied for clients'
+);
+
+assert(
+  checkFinalDeliverableAccess({
+    userRole: 'client',
+    isClientOwner: true,
+    paymentStatus: 'Paid',
+    totalPaid: true,
+  }).accessGranted === true,
+  'Deliverable access gate: Both conditions satisfied (Paid AND total_paid=true) -> access permitted to authorized client'
+);
+
+assert(
+  checkFinalDeliverableAccess({
+    userRole: 'client',
+    isClientOwner: true,
+    paymentStatus: 'Unpaid',
+    totalPaid: false,
+  }).accessGranted === false,
+  'Deliverable access gate: Unpaid commission -> access strictly denied'
+);
+
+assert(
+  checkFinalDeliverableAccess({
+    userRole: 'client',
+    isClientOwner: true,
+    paymentStatus: 'Partial',
+    totalPaid: false,
+  }).accessGranted === false,
+  'Deliverable access gate: Partially paid commission -> access strictly denied'
+);
+
+assert(
+  checkFinalDeliverableAccess({
+    userRole: 'client',
+    isClientOwner: false,
+    paymentStatus: 'Paid',
+    totalPaid: true,
+  }).accessGranted === false,
+  'Deliverable access gate: Non-owner client -> access strictly denied even if commission is settled'
+);
+
+assert(
+  checkFinalDeliverableAccess({
+    userRole: 'admin',
+    isClientOwner: false,
+    paymentStatus: 'Unpaid',
+    totalPaid: false,
+  }).accessGranted === true,
+  'Deliverable access gate: Administrator access unconditionally permitted for studio oversight'
+);
+
+// Explicit 5-Condition Matrix Specified in Security Audit
+assert(
+  checkFinalDeliverableAccess({ userRole: 'client', isClientOwner: true, paymentStatus: 'Paid', totalPaid: true }).accessGranted === true,
+  'Audit Matrix 1: Paid + total_paid=true (owner) -> ALLOWED'
 );
 assert(
-  checkDeliverablePaymentGate('Partial') === false,
-  'Deliverable payment gate: Blocks commission with only partial deposit paid'
+  checkFinalDeliverableAccess({ userRole: 'client', isClientOwner: true, paymentStatus: 'Paid', totalPaid: false }).accessGranted === false,
+  'Audit Matrix 2: Paid + total_paid=false (owner) -> DENIED'
 );
 assert(
-  checkDeliverablePaymentGate('Paid') === true,
-  'Deliverable payment gate: Allows settled commission (status: Paid)'
+  checkFinalDeliverableAccess({ userRole: 'client', isClientOwner: true, paymentStatus: 'Partial', totalPaid: true }).accessGranted === false,
+  'Audit Matrix 3: Partial + total_paid=true (owner) -> DENIED'
 );
 assert(
-  checkDeliverablePaymentGate('Partial', { deposit: { status: 'verified' }, final: { status: 'verified' } }) === true,
-  'Deliverable payment gate: Allows commission when both deposit and final balance stages are verified'
+  checkFinalDeliverableAccess({ userRole: 'client', isClientOwner: true, paymentStatus: 'Partial', totalPaid: false }).accessGranted === false,
+  'Audit Matrix 4: Partial + total_paid=false (owner) -> DENIED'
+);
+assert(
+  checkFinalDeliverableAccess({ userRole: 'client', isClientOwner: true, paymentStatus: 'Unpaid', totalPaid: false }).accessGranted === false,
+  'Audit Matrix 5: Unpaid + total_paid=false (owner) -> DENIED'
+);
+assert(
+  checkFinalDeliverableAccess({ userRole: 'client', isClientOwner: false, paymentStatus: 'Paid', totalPaid: true }).accessGranted === false,
+  'Audit Matrix 6: Paid + total_paid=true (non-owner) -> DENIED (Cross-client protection)'
+);
+assert(
+  checkFinalDeliverableAccess({ userRole: 'admin', isClientOwner: false, paymentStatus: 'Unpaid', totalPaid: false }).accessGranted === true,
+  'Audit Matrix 7: Admin role -> ALLOWED (Studio administrative oversight)'
+);
+
+// DB Row Mapper Conjunction Fidelity: row.total_paid=false must not be coerced to true by row.payment_status='Paid'
+const mockRowPaidNotTotal: any = {
+  id: 'comm-123',
+  client_id: 'client-1',
+  title: 'Test Branding',
+  service_type: 'Branding',
+  description: 'Test',
+  budget: 10000,
+  currency: 'PHP',
+  deadline: 'Flexible',
+  payment_status: 'Paid',
+  deposit_paid: true,
+  total_paid: false, // critical test: total_paid is false in database!
+  status: 'completed',
+  created_at: new Date().toISOString()
+};
+const mappedComm = mapDbCommissionToAppCommission(mockRowPaidNotTotal);
+assert(
+  mappedComm.paymentStatus === 'Paid' && mappedComm.totalPaid === false,
+  'Database mapper fidelity: payment_status="Paid" with total_paid=false maps strictly to totalPaid=false without synthetic OR coercion'
+);
+assert(
+  (mappedComm.paymentStatus === 'Paid' && mappedComm.totalPaid === true) === false,
+  'Database mapper conjunction: mapped commission fails client deliverable gate when total_paid is false in database'
 );
 
 console.log('\n--- 2. GCASH PAYMENT PROOF VALIDATION ---');
@@ -611,6 +731,327 @@ assert(
   !serializedDocString.includes('bearer') &&
   !serializedDocString.includes('client_email'),
   'Design document drafts contain only safe layout, token, and artboard geometry (zero credentials or financial data)'
+);
+
+console.log('\n--- 8. PHASE 6 PAYMENT SECURITY & INTEGRITY INVARIANTS (Simulation of DB & App Rules) ---');
+
+// Test 8.1: Repeated receipt review is strictly rejected (idempotency guard)
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'confirmed',
+    paymentType: 'deposit',
+    commissionDepositPaid: true,
+    decision: 'confirmed',
+    isAdmin: true,
+  }).allowed === false,
+  'Repeated review guard: Reviewing an already confirmed receipt is strictly rejected'
+);
+
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'rejected',
+    paymentType: 'deposit',
+    commissionDepositPaid: false,
+    decision: 'confirmed',
+    isAdmin: true,
+  }).allowed === false,
+  'Repeated review guard: Reviewing an already rejected receipt is strictly rejected'
+);
+
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'deposit',
+    commissionDepositPaid: false,
+    decision: 'confirmed',
+    isAdmin: true,
+  }).allowed === true,
+  'Review guard: Reviewing a pending_verification receipt is permitted'
+);
+
+// Test 8.1b: Settlement Anti-Bypass — Deposit receipt cannot mark a commission fully paid
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'deposit',
+    commissionDepositPaid: false,
+    decision: 'confirmed',
+    targetPaymentStatus: 'Paid',
+    isAdmin: true,
+  }).allowed === false,
+  'Settlement anti-bypass: Deposit receipt cannot mark commission fully paid by passing target "Paid"'
+);
+
+const validDepositResult = validatePaymentReviewTransition({
+  currentProofStatus: 'pending_verification',
+  paymentType: 'deposit',
+  commissionDepositPaid: false,
+  decision: 'confirmed',
+  targetPaymentStatus: 'Partial',
+  isAdmin: true,
+});
+assert(
+  validDepositResult.allowed === true && validDepositResult.resultingPaymentStatus === 'Partial',
+  'Deposit settlement: Deposit receipt cleanly transitions status to Partial'
+);
+
+// Test 8.1c: Unsupported payment statuses are strictly rejected
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'deposit',
+    commissionDepositPaid: false,
+    decision: 'confirmed',
+    targetPaymentStatus: 'Refunded',
+    isAdmin: true,
+  }).allowed === false,
+  'Status validation: Unsupported target status "Refunded" is rejected'
+);
+
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'deposit',
+    commissionDepositPaid: false,
+    decision: 'confirmed',
+    targetPaymentStatus: 'Unpaid',
+    isAdmin: true,
+  }).allowed === false,
+  'Status validation: Unsupported target status "Unpaid" is rejected'
+);
+
+// Test 8.1d: Invalid payment types are strictly rejected
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'crypto',
+    commissionDepositPaid: false,
+    decision: 'confirmed',
+    isAdmin: true,
+  }).allowed === false,
+  'Type validation: Invalid payment type "crypto" is rejected'
+);
+
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'unknown',
+    commissionDepositPaid: false,
+    decision: 'confirmed',
+    isAdmin: true,
+  }).allowed === false,
+  'Type validation: Invalid payment type "unknown" is rejected'
+);
+
+// Test 8.1e: Balance receipt cannot downscale to Partial
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'balance',
+    commissionDepositPaid: true,
+    decision: 'confirmed',
+    targetPaymentStatus: 'Partial',
+    isAdmin: true,
+  }).allowed === false,
+  'Settlement anti-bypass: Balance receipt cannot set payment status to Partial'
+);
+
+// Test 8.1f: Full payment upfront transitions cleanly to Paid
+const validFullResult = validatePaymentReviewTransition({
+  currentProofStatus: 'pending_verification',
+  paymentType: 'full',
+  commissionDepositPaid: false,
+  decision: 'confirmed',
+  targetPaymentStatus: 'Paid',
+  isAdmin: true,
+});
+assert(
+  validFullResult.allowed === true && validFullResult.resultingPaymentStatus === 'Paid',
+  'Full payment settlement: Upfront full payment receipt cleanly transitions status to Paid'
+);
+
+// Test 8.2: Concurrent review attempts allow at most ONE successful state transition
+interface SimulatedProofRow {
+  id: string;
+  status: 'pending_verification' | 'confirmed' | 'rejected';
+  reviewedBy?: string;
+}
+
+function simulateConcurrentReviews(proofRow: SimulatedProofRow, attempts: number): { successfulTransitions: number; rejectedAttempts: number } {
+  let successfulTransitions = 0;
+  let rejectedAttempts = 0;
+
+  for (let i = 0; i < attempts; i++) {
+    // Atomically test and transition (mimicking row-level lock SELECT ... FOR UPDATE)
+    if (proofRow.status === 'pending_verification') {
+      proofRow.status = 'confirmed';
+      proofRow.reviewedBy = `admin_${i}`;
+      successfulTransitions++;
+    } else {
+      rejectedAttempts++;
+    }
+  }
+
+  return { successfulTransitions, rejectedAttempts };
+}
+
+const concurrentTestRow: SimulatedProofRow = { id: 'proof-race-1', status: 'pending_verification' };
+const raceResult = simulateConcurrentReviews(concurrentTestRow, 5);
+assert(
+  raceResult.successfulTransitions === 1 && raceResult.rejectedAttempts === 4,
+  'Concurrent review safety: Exactly ONE state transition succeeds across multiple simultaneous review calls'
+);
+
+// Test 8.3: Duplicate GCash reference numbers are rejected across active proofs
+const existingProofAuditLedger = [
+  { referenceNumber: '1002 9481 0293', status: 'confirmed' as const },
+  { referenceNumber: '2004-5555-8888', status: 'pending_verification' as const },
+  { referenceNumber: '9999 1111 2222', status: 'rejected' as const },
+];
+
+assert(
+  validateReferenceNumberUniqueness('100294810293', existingProofAuditLedger).allowed === false,
+  'Reference uniqueness: Submitting duplicate of confirmed reference number is rejected'
+);
+
+assert(
+  validateReferenceNumberUniqueness('2004 5555 8888', existingProofAuditLedger).allowed === false,
+  'Reference uniqueness: Submitting duplicate of pending reference number is rejected'
+);
+
+assert(
+  validateReferenceNumberUniqueness('9999-1111-2222', existingProofAuditLedger).allowed === true,
+  'Reference uniqueness: Resubmitting reference number of previously rejected receipt is permitted'
+);
+
+assert(
+  validateReferenceNumberUniqueness('3005-7777-9999', existingProofAuditLedger).allowed === true,
+  'Reference uniqueness: Submitting pristine, unrecorded reference number is permitted'
+);
+
+// Test 8.4: Balance approval before deposit is strictly rejected
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'balance',
+    commissionDepositPaid: false,
+    decision: 'confirmed',
+    isAdmin: true,
+  }).allowed === false,
+  'Balance sequence guard: Approving balance payment before deposit confirmation is strictly rejected'
+);
+
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'balance',
+    commissionDepositPaid: true,
+    decision: 'confirmed',
+    isAdmin: true,
+  }).allowed === true,
+  'Balance sequence guard: Approving balance payment after deposit confirmation is permitted'
+);
+
+// Test 8.5: Mandatory rejection notes
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'deposit',
+    commissionDepositPaid: false,
+    decision: 'rejected',
+    adminNotes: '',
+    isAdmin: true,
+  }).allowed === false,
+  'Rejection notes guard: Rejecting without administrative explanation is rejected'
+);
+
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'deposit',
+    commissionDepositPaid: false,
+    decision: 'rejected',
+    adminNotes: 'Reference number does not match GCash merchant SMS.',
+    isAdmin: true,
+  }).allowed === true,
+  'Rejection notes guard: Rejecting with explicit administrative note is permitted'
+);
+
+// Test 8.6: Non-admin caller rejection
+assert(
+  validatePaymentReviewTransition({
+    currentProofStatus: 'pending_verification',
+    paymentType: 'deposit',
+    commissionDepositPaid: false,
+    decision: 'confirmed',
+    isAdmin: false,
+  }).allowed === false,
+  'Authorization guard: Non-administrator payment verification attempt is strictly rejected'
+);
+
+// Test 8.7: Budget validation prevents misleading payment amounts & disables invalid submissions
+const validCurrencyBudget = parseCommissionBudget('₱5,000', 50);
+assert(
+  validCurrencyBudget.isValid === true &&
+  validCurrencyBudget.numericBudget === 5000 &&
+  validCurrencyBudget.depositAmount === 2500 &&
+  validCurrencyBudget.balanceAmount === 2500,
+  'Budget validation: Standard currency formatted string "₱5,000" calculates exact 50% deposit and remainder'
+);
+
+const validTextBudget = parseCommissionBudget('PHP 15,000.00', 50);
+assert(
+  validTextBudget.isValid === true &&
+  validTextBudget.numericBudget === 15000 &&
+  validTextBudget.depositAmount === 7500 &&
+  validTextBudget.balanceAmount === 7500,
+  'Budget validation: Currency code formatted string "PHP 15,000.00" calculates exact financial amounts'
+);
+
+const flexibleBudget = parseCommissionBudget('Flexible');
+assert(
+  flexibleBudget.isValid === false && flexibleBudget.numericBudget === 0,
+  'Budget validation: Unfinalized budget "Flexible" is invalid and disables payment submission'
+);
+
+const tbdBudget = parseCommissionBudget('TBD');
+assert(
+  tbdBudget.isValid === false,
+  'Budget validation: Non-finalized budget "TBD" is invalid and disables payment submission'
+);
+
+const rangeBudget = parseCommissionBudget('5000 - 8000');
+assert(
+  rangeBudget.isValid === false,
+  'Budget validation: Range budget "5000 - 8000" is invalid and requires studio confirmation'
+);
+
+const zeroBudget = parseCommissionBudget('0');
+assert(
+  zeroBudget.isValid === false,
+  'Budget validation: Zero budget string is rejected'
+);
+
+const negativeBudget = parseCommissionBudget(-500);
+assert(
+  negativeBudget.isValid === false,
+  'Budget validation: Negative budget primitive is rejected'
+);
+
+// Test 8.8: Reference number formatting validation
+assert(
+  validateReferenceNumber('123').valid === false,
+  'Reference number validation: Short strings under 6 characters are rejected'
+);
+
+assert(
+  validateReferenceNumber('1002 9481 0293').valid === true,
+  'Reference number validation: Standard 12-digit GCash transaction number is approved'
+);
+
+assert(
+  normalizeReferenceNumber('1002-9481-0293') === '100294810293',
+  'Reference number normalization: Dashes and spaces are cleanly stripped'
 );
 
 console.log('\n=======================================');

@@ -129,9 +129,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
   };
 
   return (
-    <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl shadow-xl overflow-hidden backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 w-80 sm:w-96">
+    <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl shadow-xl overflow-hidden backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 w-80 sm:w-96">
       {/* Header */}
-      <div className="px-4 py-3 bg-[#FAF9F6] dark:bg-[#232327] border-b border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between">
+      <div className="px-4 py-3 bg-[#FAF9F6] dark:bg-[#18181B] border-b border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bell className="w-4 h-4 text-[#EA580C]" />
           <h4 className="text-xs font-bold text-[#18181B] dark:text-[#EDEDEC] uppercase tracking-wider">
@@ -140,12 +140,12 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
           {unreadCount > 0 ? (
             <span 
               id="notifications-unread-counter"
-              className="px-1.5 py-0.5 rounded-full bg-[#EA580C]/10 border border-[#EA580C]/20 text-[10px] text-[#EA580C] font-mono font-bold"
+              className="px-1.5 py-0.5 rounded-md bg-[#EA580C]/10 border border-[#EA580C]/20 text-[10px] text-[#EA580C] font-mono font-bold"
             >
               {unreadCount} unread
             </span>
           ) : (
-            <span className="px-1.5 py-0.5 rounded-full bg-[#F4F2ED] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-mono font-medium">
+            <span className="px-1.5 py-0.5 rounded-md bg-[#F4F2ED] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-mono font-medium">
               All caught up
             </span>
           )}
@@ -177,20 +177,20 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
       </div>
 
       {/* Tabs Toolbar: All vs Unread */}
-      <div className="px-4 py-2 bg-[#FAF9F6]/80 dark:bg-[#202024] border-b border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 bg-[#F4F2ED] dark:bg-[#18181B] p-1 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] w-full">
+      <div className="px-4 py-2 bg-[#FAF9F6]/80 dark:bg-[#121214] border-b border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 bg-[#F4F2ED] dark:bg-[#18181B] p-1 rounded-lg border border-[#E4E2DC] dark:border-[#222225] w-full">
           <button
             id="tab-notifications-all"
             type="button"
             onClick={() => setActiveTab('all')}
             className={`flex-1 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === 'all'
-                ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-semibold'
+                ? 'bg-white dark:bg-[#222225] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-semibold'
                 : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
             }`}
           >
             <span>All</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-[#E4E2DC]/60 dark:bg-[#3F3F46]/60 text-[#71717A] dark:text-[#A1A1AA]">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#E4E2DC]/60 dark:bg-[#333338] text-[#71717A] dark:text-[#A1A1AA]">
               {userNotifications.length}
             </span>
           </button>
@@ -201,15 +201,15 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
             onClick={() => setActiveTab('unread')}
             className={`flex-1 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === 'unread'
-                ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-semibold'
+                ? 'bg-white dark:bg-[#222225] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-semibold'
                 : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
             }`}
           >
             <span>Unread</span>
-            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
               unreadCount > 0
                 ? 'bg-[#EA580C] text-white font-bold'
-                : 'bg-[#E4E2DC]/60 dark:bg-[#3F3F46]/60 text-[#71717A] dark:text-[#A1A1AA]'
+                : 'bg-[#E4E2DC]/60 dark:bg-[#333338] text-[#71717A] dark:text-[#A1A1AA]'
             }`}>
               {unreadCount}
             </span>
@@ -218,7 +218,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
       </div>
 
       {/* Notifications List */}
-      <div className="max-h-80 overflow-y-auto divide-y divide-[#E4E2DC] dark:divide-[#27272A]">
+      <div className="max-h-80 overflow-y-auto divide-y divide-[#E4E2DC] dark:divide-[#222225]">
         {displayedNotifications.length === 0 ? (
           <div className="py-8 px-4 text-center">
             {activeTab === 'unread' ? (
@@ -258,13 +258,13 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
                 className={`p-3.5 transition-all cursor-pointer flex items-start gap-3 group relative ${
                   isUnread 
                     ? 'bg-[#FFF7ED] dark:bg-[#78350F]/20 hover:bg-[#FFEDD5]/60 dark:hover:bg-[#78350F]/30 border-l-[3px] border-l-[#EA580C]' 
-                    : 'bg-white dark:bg-[#18181B] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] border-l-[3px] border-l-transparent'
+                    : 'bg-white dark:bg-[#121214] hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] border-l-[3px] border-l-transparent'
                 }`}
               >
                 <div className={`mt-0.5 p-2 rounded-lg shrink-0 border ${
                   isUnread
                     ? 'bg-white dark:bg-[#18181B] border-[#FDBA74] dark:border-[#9A3412]/50'
-                    : 'bg-[#FAF9F6] dark:bg-[#232327] border-[#E4E2DC] dark:border-[#27272A]'
+                    : 'bg-[#FAF9F6] dark:bg-[#18181B] border-[#E4E2DC] dark:border-[#222225]'
                 }`}>
                   {getIcon(notif.type)}
                 </div>
@@ -294,7 +294,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
                             e.stopPropagation();
                             markNotificationAsRead(notif.id);
                           }}
-                          className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] hover:bg-white/80 dark:hover:bg-[#27272A] opacity-70 group-hover:opacity-100 transition-all cursor-pointer"
+                          className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] hover:bg-white/80 dark:hover:bg-[#18181B] opacity-70 group-hover:opacity-100 transition-all cursor-pointer"
                           title="Mark as read"
                           aria-label="Mark as read"
                         >
@@ -336,7 +336,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
         )}
       </div>
 
-      <div className="p-2.5 bg-[#FAF9F6] dark:bg-[#232327] border-t border-[#E4E2DC] dark:border-[#27272A] text-center">
+      <div className="p-2.5 bg-[#FAF9F6] dark:bg-[#18181B] border-t border-[#E4E2DC] dark:border-[#222225] text-center">
         <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-medium font-mono">
           Persistent client-designer alerts and live milestones
         </p>

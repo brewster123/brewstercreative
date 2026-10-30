@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PortfolioProject, ShopProduct } from '../types';
 import { useApp } from '../context/AppContext';
 import { SHOP_PRODUCTS } from '../data/shopData';
@@ -22,6 +22,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
   const { setActiveView, setPreselectedService, setSelectedShopProduct } = useApp();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const fallbackModalImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80';
   const rawImages = project.gallery?.length ? project.gallery : [project.image];
@@ -30,8 +31,11 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
     .filter((img: string) => img.length > 0);
   if (images.length === 0) images.push(fallbackModalImage);
 
-  // Close modal on Escape, arrow navigation across images, and lock background scroll
+  // Focus trap / restoration and keyboard shortcuts
   useEffect(() => {
+    const previousActiveElement = (document.activeElement as HTMLElement) || null;
+    closeButtonRef.current?.focus();
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (lightboxOpen) return;
       if (e.key === 'Escape') {
@@ -53,6 +57,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = originalOverflow;
+      previousActiveElement?.focus();
     };
   }, [lightboxOpen, onClose, images.length]);
 
@@ -81,31 +86,32 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
       role="dialog"
       aria-modal="true"
       aria-label={`Project: ${project.title}`}
-      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6 overflow-y-auto cursor-zoom-out"
+      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-6 overflow-y-auto cursor-zoom-out"
     >
       <div 
         onClick={(e) => e.stopPropagation()} 
-        className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 my-auto cursor-default"
+        className="bg-[#FAF9F6] dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-2xl max-w-5xl w-full max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 my-auto cursor-default"
       >
         
         {/* Editorial Top Navigation Strip */}
-        <div className="px-6 sm:px-8 py-4 bg-white/90 dark:bg-[#18181B]/90 backdrop-blur-md border-b border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between z-10 shrink-0">
-          <div className="flex items-center gap-3">
+        <div className="px-4 sm:px-8 py-3 sm:py-4 bg-white/90 dark:bg-[#121214]/90 backdrop-blur-md border-b border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between z-10 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
               Archive Reference
             </span>
             <span className="text-[#A1A1AA]" aria-hidden="true">/</span>
-            <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider truncate max-w-[200px] sm:max-w-xs">
+            <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider truncate max-w-[160px] sm:max-w-xs">
               {project.category}
             </span>
           </div>
 
           <div className="flex items-center gap-3">
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={onClose}
               aria-label="Close modal"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-lg text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
             >
               <span>Close</span>
               <X className="w-4 h-4" />
@@ -141,7 +147,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
 
           {/* 2. Large Hero Artwork with Subtle Hover Motion */}
           <div className="space-y-3">
-            <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-black/40 border border-[#E4E2DC] dark:border-[#27272A] aspect-[16/10] sm:aspect-[16/9] group cursor-pointer shadow-sm">
+            <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-black/40 border border-[#E4E2DC] dark:border-[#222225] aspect-[16/10] sm:aspect-[16/9] group cursor-pointer shadow-sm">
               <img
                 src={images[activeImageIndex] || fallbackModalImage}
                 alt={project.title || 'Artwork preview'}
@@ -202,7 +208,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
                     className={`relative w-24 h-16 rounded-lg overflow-hidden shrink-0 border transition-all duration-300 cursor-pointer group ${
                       activeImageIndex === idx 
                         ? 'border-[#EA580C] ring-1 ring-[#EA580C] opacity-100 scale-[1.02]' 
-                        : 'border-[#E4E2DC] dark:border-[#27272A] opacity-60 hover:opacity-100 hover:scale-[1.02]'
+                        : 'border-[#E4E2DC] dark:border-[#222225] opacity-60 hover:opacity-100 hover:scale-[1.02]'
                     }`}
                   >
                     <img 
@@ -217,7 +223,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
           </div>
 
           {/* 3. Project Narrative & Case Study Body (No heavy cards!) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 pt-4 border-t border-[#E4E2DC] dark:border-[#27272A]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 pt-4 border-t border-[#E4E2DC] dark:border-[#222225]">
             
             {/* Left 8 columns: Narrative & Design Strategy */}
             <div className="lg:col-span-8 space-y-6">
@@ -242,7 +248,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
                       <div 
                         key={idx}
                         onClick={() => { setActiveImageIndex(idx); setLightboxOpen(true); }}
-                        className="group relative rounded-lg overflow-hidden bg-black/5 dark:bg-black/30 border border-[#E4E2DC] dark:border-[#27272A] aspect-[4/3] cursor-pointer"
+                        className="group relative rounded-lg overflow-hidden bg-black/5 dark:bg-black/30 border border-[#E4E2DC] dark:border-[#222225] aspect-[4/3] cursor-pointer"
                       >
                         <img 
                           src={img || fallbackModalImage} 
@@ -260,10 +266,10 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
             </div>
 
             {/* Right 4 columns: Creative Details & Production Specs (Clean Ledger) */}
-            <div className="lg:col-span-4 space-y-6 lg:border-l lg:border-[#E4E2DC] dark:lg:border-[#27272A] lg:pl-8">
+            <div className="lg:col-span-4 space-y-6 lg:border-l lg:border-[#E4E2DC] dark:lg:border-[#222225] lg:pl-8">
               
               {/* Project Client & Year */}
-              <div className="space-y-1.5 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+              <div className="space-y-1.5 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold">
                   {project.projectType === 'concept' || !project.projectType ? 'Project Origin' : 'Commission Client'}
                 </span>
@@ -278,7 +284,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
               </div>
 
               {/* Tools & Production Stack */}
-              <div className="space-y-2 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+              <div className="space-y-2 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold">
                   Tools & Mediums
                 </span>
@@ -286,7 +292,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
                   {project.tools.map((tool, i) => (
                     <span 
                       key={i} 
-                      className="px-2.5 py-1 rounded text-[11px] font-mono bg-[#F4F2ED] dark:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A]"
+                      className="px-2.5 py-1 rounded text-[11px] font-mono bg-[#F4F2ED] dark:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#222225]"
                     >
                       {tool}
                     </span>
@@ -295,7 +301,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
               </div>
 
               {/* Color Palette System */}
-              <div className="space-y-2 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+              <div className="space-y-2 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold">
                   Color Harmony
                 </span>
@@ -337,7 +343,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
 
           {/* 4. Related Studio Storefront Assets */}
           {relatedShopProducts.length > 0 && (
-            <div className="pt-8 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-6">
+            <div className="pt-8 border-t border-[#E4E2DC] dark:border-[#222225] space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <div className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold mb-1">
@@ -378,7 +384,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
           )}
 
           {/* 5. Closing Case Study Navigation & Inquiry */}
-          <div className="pt-8 border-t border-[#E4E2DC] dark:border-[#27272A] flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="pt-8 border-t border-[#E4E2DC] dark:border-[#222225] flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="space-y-1 text-center sm:text-left">
               <h4 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
                 Inspired by this project?
@@ -392,7 +398,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-lg text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] transition-colors cursor-pointer"
+                className="px-4 py-2.5 rounded-lg text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
               >
                 Return to Archive
               </button>
@@ -400,7 +406,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
                 id="btn-modal-commission-this"
                 type="button"
                 onClick={handleCommissionThisType}
-                className="flex-1 sm:flex-none px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 sm:flex-none px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] active:bg-[#C23E0E] text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF9F6] dark:focus-visible:ring-offset-[#121214] motion-reduce:transition-none"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Commission Similar Work</span>
@@ -416,14 +422,15 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
       {lightboxOpen && (
         <div 
           onClick={() => setLightboxOpen(false)}
-          className="fixed inset-0 z-60 bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200 cursor-zoom-out"
+          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200 cursor-zoom-out"
         >
           <button
             type="button"
             onClick={() => setLightboxOpen(false)}
-            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            aria-label="Close image viewer"
+            className="absolute top-4 sm:top-6 right-4 sm:right-6 p-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-[#18181B]/90 hover:bg-[#222225] text-white border border-[#222225] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] cursor-pointer"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
           <img
             src={images[activeImageIndex] || fallbackModalImage}

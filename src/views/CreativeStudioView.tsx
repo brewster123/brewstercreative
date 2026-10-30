@@ -211,7 +211,7 @@ export const CreativeStudioView: React.FC = () => {
     <div className="min-h-screen h-screen flex flex-col bg-[#09090B] text-[#EDEDEC] font-sans overflow-hidden select-none">
       {/* Toast notification banner */}
       {toastMessage && (
-        <div className="fixed top-16 right-6 z-50 px-4 py-2 bg-[#18181B] border border-[#27272A] text-white text-xs font-mono rounded-lg shadow-xl flex items-center gap-2 animate-in slide-in-from-top-2">
+        <div className="fixed top-16 right-6 z-50 px-4 py-2 bg-[#18181B] border border-[#222225] text-white text-xs font-mono rounded-lg shadow-xl flex items-center gap-2 animate-in slide-in-from-top-2">
           <Check className="w-3.5 h-3.5 text-[#EA580C]" />
           <span>{toastMessage}</span>
         </div>
@@ -220,7 +220,7 @@ export const CreativeStudioView: React.FC = () => {
       {/* Unsaved Changes Confirmation Dialog */}
       {showExitConfirm && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#121214] border border-[#27272A] rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-[#121214] border border-[#222225] rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center gap-3 text-amber-500">
               <div className="p-2 rounded-lg bg-amber-500/10">
                 <AlertTriangle className="w-5 h-5" />
@@ -281,7 +281,7 @@ export const CreativeStudioView: React.FC = () => {
                 nextDoc.title = e.target.value;
                 commitDocChange(nextDoc);
               }}
-              className="bg-transparent text-xs text-[#A1A1AA] hover:text-white focus:text-white focus:bg-[#18181B] px-2 py-0.5 rounded border border-transparent focus:border-[#27272A] focus:outline-none transition-colors max-w-xs font-mono"
+              className="bg-transparent text-xs text-[#A1A1AA] hover:text-white focus:text-white focus:bg-[#18181B] px-2 py-0.5 rounded border border-transparent focus:border-[#222225] focus:outline-none transition-colors max-w-xs font-mono"
             />
           </div>
 
@@ -300,7 +300,7 @@ export const CreativeStudioView: React.FC = () => {
         </div>
 
         {/* Center Mode Switcher Tabs */}
-        <div className="flex items-center gap-1 bg-[#18181B] p-1 rounded-lg border border-[#27272A]">
+        <div className="flex items-center gap-1 bg-[#18181B] p-1 rounded-lg border border-[#222225]">
           {[
             { id: 'dashboard' as const, label: 'Studio Home', icon: FolderOpen },
             { id: 'design-workspace' as const, label: 'Design Canvas', icon: Layers },
@@ -349,13 +349,13 @@ export const CreativeStudioView: React.FC = () => {
           <button
             type="button"
             onClick={handleSaveDraft}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181B] hover:bg-[#232327] border border-[#27272A] text-xs font-mono text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181B] hover:bg-[#222225] border border-[#222225] text-xs font-mono text-white transition-colors cursor-pointer"
           >
             <Save className="w-3 h-3 text-[#EA580C]" />
             <span className="hidden sm:inline">Save Draft</span>
           </button>
 
-          <div className="h-4 w-px bg-[#27272A] mx-1" />
+          <div className="h-4 w-px bg-[#222225] mx-1" />
 
           {/* Return to Admin Dashboard Button */}
           <button
@@ -393,7 +393,7 @@ export const CreativeStudioView: React.FC = () => {
               onClick={() => setWorkspaceMode('design-workspace')}
               className="p-6 rounded-xl border border-[#222225] bg-[#121214] hover:border-[#EA580C] transition-all cursor-pointer space-y-4 group"
             >
-              <div className="w-10 h-10 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center text-[#EA580C] group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-lg bg-[#18181B] border border-[#222225] flex items-center justify-center text-[#EA580C] group-hover:scale-105 transition-transform">
                 <Layers className="w-5 h-5" />
               </div>
               <div className="space-y-1">
@@ -414,7 +414,7 @@ export const CreativeStudioView: React.FC = () => {
               onClick={() => setWorkspaceMode('website-workspace')}
               className="p-6 rounded-xl border border-[#222225] bg-[#121214] hover:border-[#EA580C] transition-all cursor-pointer space-y-4 group"
             >
-              <div className="w-10 h-10 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center text-[#EA580C] group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-lg bg-[#18181B] border border-[#222225] flex items-center justify-center text-[#EA580C] group-hover:scale-105 transition-transform">
                 <Monitor className="w-5 h-5" />
               </div>
               <div className="space-y-1">
@@ -444,7 +444,7 @@ export const CreativeStudioView: React.FC = () => {
                   handleAddArtboard();
                   setWorkspaceMode('design-workspace');
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181B] hover:bg-[#222225] border border-[#27272A] text-xs font-mono text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181B] hover:bg-[#222225] border border-[#222225] text-xs font-mono text-white transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 text-[#EA580C]" />
                 <span>Add Artboard</span>
@@ -465,7 +465,7 @@ export const CreativeStudioView: React.FC = () => {
                     <span className="font-mono text-[10px] text-[#A1A1AA] uppercase">
                       {artboard.width} × {artboard.height} px
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#18181B] text-[#EA580C] border border-[#27272A]">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#18181B] text-[#EA580C] border border-[#222225]">
                       {artboard.elements.length} layers
                     </span>
                   </div>
@@ -483,7 +483,7 @@ export const CreativeStudioView: React.FC = () => {
           </div>
 
           {/* Architecture Roadmap Note */}
-          <div className="p-4 rounded-xl border border-[#27272A] bg-[#121214] flex items-start gap-3 text-xs text-[#A1A1AA]">
+          <div className="p-4 rounded-xl border border-[#222225] bg-[#121214] flex items-start gap-3 text-xs text-[#A1A1AA]">
             <ShieldCheck className="w-5 h-5 text-[#EA580C] shrink-0 mt-0.5" />
             <div className="space-y-1">
               <span className="font-bold text-white block">
@@ -538,7 +538,7 @@ export const CreativeStudioView: React.FC = () => {
               >
                 <Frame className="w-4 h-4" />
               </button>
-              <div className="h-4 w-px bg-[#27272A]" />
+              <div className="h-4 w-px bg-[#222225]" />
               <button
                 type="button"
                 onClick={handleAddArtboard}
@@ -560,7 +560,7 @@ export const CreativeStudioView: React.FC = () => {
                   setActiveArtboardId(e.target.value);
                   setSelectedElementId(null);
                 }}
-                className="w-full bg-[#18181B] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#EA580C] cursor-pointer"
+                className="w-full bg-[#18181B] border border-[#222225] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#EA580C] cursor-pointer"
               >
                 {doc.artboards.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -640,7 +640,7 @@ export const CreativeStudioView: React.FC = () => {
           {/* Center Freeform Canvas Stage */}
           <main className="flex-1 bg-[#0B0B0E] overflow-auto p-12 flex flex-col items-center relative">
             {/* Zoom / Stage Controls */}
-            <div className="sticky top-4 z-20 bg-[#121214]/90 backdrop-blur-xs border border-[#27272A] rounded-lg p-1.5 flex items-center gap-2 text-xs font-mono text-[#A1A1AA] shadow-xl">
+            <div className="sticky top-4 z-20 bg-[#121214]/90 backdrop-blur-xs border border-[#222225] rounded-lg p-1.5 flex items-center gap-2 text-xs font-mono text-[#A1A1AA] shadow-xl">
               <button
                 type="button"
                 onClick={() => setCanvasZoom((z) => Math.max(0.25, z - 0.1))}
@@ -658,7 +658,7 @@ export const CreativeStudioView: React.FC = () => {
               >
                 <ZoomIn className="w-3.5 h-3.5" />
               </button>
-              <div className="h-3 w-px bg-[#27272A]" />
+              <div className="h-3 w-px bg-[#222225]" />
               <button
                 type="button"
                 onClick={() => setCanvasZoom(0.75)}
@@ -769,7 +769,7 @@ export const CreativeStudioView: React.FC = () => {
                       type="text"
                       value={selectedElement.name}
                       onChange={(e) => handleUpdateSelectedElement({ name: e.target.value })}
-                      className="w-full bg-[#18181B] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#EA580C]"
+                      className="w-full bg-[#18181B] border border-[#222225] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#EA580C]"
                     />
                   </div>
 
@@ -785,7 +785,7 @@ export const CreativeStudioView: React.FC = () => {
                           type="number"
                           value={selectedElement.x}
                           onChange={(e) => handleUpdateSelectedElement({ x: parseInt(e.target.value, 10) || 0 })}
-                          className="w-full bg-[#18181B] border border-[#27272A] rounded px-2 py-1 text-white"
+                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white"
                         />
                       </div>
                       <div>
@@ -794,7 +794,7 @@ export const CreativeStudioView: React.FC = () => {
                           type="number"
                           value={selectedElement.y}
                           onChange={(e) => handleUpdateSelectedElement({ y: parseInt(e.target.value, 10) || 0 })}
-                          className="w-full bg-[#18181B] border border-[#27272A] rounded px-2 py-1 text-white"
+                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white"
                         />
                       </div>
                       <div>
@@ -803,7 +803,7 @@ export const CreativeStudioView: React.FC = () => {
                           type="number"
                           value={selectedElement.width}
                           onChange={(e) => handleUpdateSelectedElement({ width: parseInt(e.target.value, 10) || 10 })}
-                          className="w-full bg-[#18181B] border border-[#27272A] rounded px-2 py-1 text-white"
+                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white"
                         />
                       </div>
                       <div>
@@ -812,7 +812,7 @@ export const CreativeStudioView: React.FC = () => {
                           type="number"
                           value={selectedElement.height}
                           onChange={(e) => handleUpdateSelectedElement({ height: parseInt(e.target.value, 10) || 10 })}
-                          className="w-full bg-[#18181B] border border-[#27272A] rounded px-2 py-1 text-white"
+                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white"
                         />
                       </div>
                     </div>
@@ -830,7 +830,7 @@ export const CreativeStudioView: React.FC = () => {
                           type="color"
                           value={selectedElement.fill}
                           onChange={(e) => handleUpdateSelectedElement({ fill: e.target.value })}
-                          className="w-7 h-7 rounded border border-[#27272A] cursor-pointer bg-transparent"
+                          className="w-7 h-7 rounded border border-[#222225] cursor-pointer bg-transparent"
                         />
                       </div>
                     )}
@@ -862,7 +862,7 @@ export const CreativeStudioView: React.FC = () => {
                         rows={3}
                         value={selectedElement.text || ''}
                         onChange={(e) => handleUpdateSelectedElement({ text: e.target.value })}
-                        className="w-full bg-[#18181B] border border-[#27272A] rounded p-2 text-xs text-white focus:outline-none focus:border-[#EA580C] resize-none"
+                        className="w-full bg-[#18181B] border border-[#222225] rounded p-2 text-xs text-white focus:outline-none focus:border-[#EA580C] resize-none"
                       />
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs font-mono">

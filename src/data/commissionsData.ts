@@ -376,8 +376,8 @@ export function mapDbCommissionToAppCommission(
 
     // Metadata
     assignedDesigner: row.assigned_designer || 'Brewster A. Cabando',
-    depositPaid: Boolean(row.deposit_paid || row.payment_status === 'Partial' || row.payment_status === 'Paid'),
-    totalPaid: Boolean(row.total_paid || row.payment_status === 'Paid'),
+    depositPaid: Boolean(row.deposit_paid),
+    totalPaid: Boolean(row.total_paid),
     revisionsAllowed: typeof row.revisions_allowed === 'number' ? row.revisions_allowed : 2,
     revisionsUsed: typeof row.revisions_used === 'number' ? row.revisions_used : 0,
 

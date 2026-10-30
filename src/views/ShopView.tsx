@@ -65,7 +65,7 @@ export const ShopView: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 sm:space-y-20">
       
       {/* Editorial Shop Header */}
-      <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-8 sm:pb-12">
+      <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-8 sm:pb-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
             <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
@@ -88,7 +88,7 @@ export const ShopView: React.FC = () => {
         </div>
 
         {/* Storefront Preparation Notice Strip */}
-        <div className="mt-8 p-4 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+        <div className="mt-8 p-4 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-2.5">
             <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-pulse shrink-0" />
             <p className="text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-medium">
@@ -111,7 +111,7 @@ export const ShopView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveView('portfolio')}
-              className="px-3.5 py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] hover:bg-[#F4F2ED] dark:hover:bg-[#27272A] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-xs border border-[#E4E2DC] dark:border-[#27272A] flex items-center gap-1 transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#222225] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-xs border border-[#E4E2DC] dark:border-[#222225] flex items-center gap-1 transition-colors cursor-pointer"
             >
               <span>Exhibitions</span>
               <ArrowRight className="w-3 h-3 text-[#A1A1AA]" />
@@ -124,7 +124,7 @@ export const ShopView: React.FC = () => {
       <div className="space-y-8">
         
         {/* Simple Text Navigation Category Filter */}
-        <div className="flex items-center justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#27272A] pb-3">
+        <div className="flex items-center justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#222225] pb-3">
           <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-1" aria-label="Shop categories">
             {SHOP_CATEGORIES.map((cat) => {
               const isSelected = selectedShopCategory === cat.name;
@@ -173,8 +173,8 @@ export const ShopView: React.FC = () => {
           </div>
         ) : (
           /* Empty State */
-          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-12 sm:p-16 text-center space-y-4 max-w-xl mx-auto shadow-2xs">
-            <div className="w-12 h-12 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-[#EA580C] flex items-center justify-center mx-auto">
+          <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-12 sm:p-16 text-center space-y-4 max-w-xl mx-auto shadow-2xs">
+            <div className="w-12 h-12 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#EA580C] flex items-center justify-center mx-auto">
               {selectedShopCategory === 'Typography' ? (
                 <Type className="w-6 h-6" />
               ) : selectedShopCategory === 'Digital Mockups' ? (
@@ -208,7 +208,7 @@ export const ShopView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveView('commission-form')}
-                className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-[#18181B] dark:text-[#EDEDEC] text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 hover:bg-[#F4F2ED] dark:hover:bg-[#232327]"
+                className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-[#18181B] dark:text-[#EDEDEC] text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 hover:bg-[#F4F2ED] dark:hover:bg-[#18181B]"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Request Custom {selectedShopCategory}</span>
@@ -219,7 +219,7 @@ export const ShopView: React.FC = () => {
       </div>
 
       {/* Studio Production Standards & Quality Highlights */}
-      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-10">
+      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#222225] space-y-10">
         <div className="max-w-2xl space-y-2">
           <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
             Quality & Specifications
@@ -238,9 +238,9 @@ export const ShopView: React.FC = () => {
             return (
               <div 
                 key={idx} 
-                className="space-y-3 pb-6 border-b border-[#E4E2DC] dark:border-[#27272A] sm:border-b-0"
+                className="space-y-3 pb-6 border-b border-[#E4E2DC] dark:border-[#222225] sm:border-b-0"
               >
-                <div className="w-9 h-9 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-[#EA580C] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#EA580C] flex items-center justify-center">
                   <Icon className="w-4 h-4" />
                 </div>
                 <h3 className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC]">
@@ -257,7 +257,7 @@ export const ShopView: React.FC = () => {
 
       {/* Commission Bridge Banner */}
       <section className="pt-6">
-        <div className="bg-[#18181B] dark:bg-[#18181B] text-white rounded-xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-transparent dark:border-[#27272A]">
+        <div className="bg-[#121214] text-white rounded-xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-[#222225]">
           <div className="space-y-2 max-w-xl">
             <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
               Bespoke Studio Directives
@@ -265,7 +265,7 @@ export const ShopView: React.FC = () => {
             <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
               Need a custom asset crafted exclusively for your brand?
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
+            <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed font-normal">
               While studio templates provide immediate utility, DESTALION specializes in one-of-a-kind visual identities, brand systems, and multimedia campaigns with interactive client reviews.
             </p>
           </div>

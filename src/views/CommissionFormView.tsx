@@ -630,8 +630,8 @@ export const CommissionFormView: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-10 sm:space-y-12">
 
         {/* SECTION 1: PROJECT OVERVIEW */}
-        <section className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
-          <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-4 space-y-1">
+        <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-4 space-y-1">
             <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
               01 / PROJECT SCOPE & CONTEXT
             </span>
@@ -655,7 +655,7 @@ export const CommissionFormView: React.FC = () => {
                 placeholder="e.g. Solis Labs Brand Identity System"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
+                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
             </div>
 
@@ -667,7 +667,7 @@ export const CommissionFormView: React.FC = () => {
                 id="select-commission-service"
                 value={serviceType}
                 onChange={(e) => handleServiceChange(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors cursor-pointer"
+                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors cursor-pointer"
               >
                 {services.map((srv) => (
                   <option key={srv.id} value={srv.name}>
@@ -678,7 +678,7 @@ export const CommissionFormView: React.FC = () => {
               </select>
 
               {selectedServiceItem && (
-                <div className="mt-2.5 p-3 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                <div className="mt-2.5 p-3 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
                   <span className="text-[#71717A] dark:text-[#A1A1AA]">
                     {selectedServiceItem.shortDesc}
                   </span>
@@ -702,7 +702,7 @@ export const CommissionFormView: React.FC = () => {
                 placeholder="Describe your design needs, deliverables, key themes, and primary goals for this project..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none leading-relaxed"
+                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg p-3.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none leading-relaxed"
               />
             </div>
 
@@ -716,15 +716,15 @@ export const CommissionFormView: React.FC = () => {
                 placeholder="e.g. Launching a new tech startup, rebranding an artisan roastery, album release..."
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
+                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
             </div>
           </div>
         </section>
 
         {/* SECTION 2: AUDIENCE & CREATIVE DIRECTION */}
-        <section className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
-          <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-4 space-y-1">
+        <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-4 space-y-1">
             <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
               02 / AESTHETIC DIRECTION & REFERENCES
             </span>
@@ -747,7 +747,7 @@ export const CommissionFormView: React.FC = () => {
                 placeholder="e.g. Art collectors, early-stage founders, design-minded consumers..."
                 value={targetAudience}
                 onChange={(e) => setTargetAudience(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
+                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
             </div>
 
@@ -761,7 +761,7 @@ export const CommissionFormView: React.FC = () => {
                 placeholder="e.g. Swiss typographic minimalism, warm editorial, brutalist..."
                 value={preferredStyle}
                 onChange={(e) => setPreferredStyle(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
+                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
             </div>
 
@@ -775,7 +775,7 @@ export const CommissionFormView: React.FC = () => {
                 placeholder="e.g. #0F172A, #F97316, warm sand, charcoal black (comma-separated)"
                 value={colorsInput}
                 onChange={(e) => setColorsInput(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
+                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
             </div>
 
@@ -792,8 +792,8 @@ export const CommissionFormView: React.FC = () => {
                   setReferenceLinksInput(e.target.value);
                   if (referenceLinksError) setReferenceLinksError(null);
                 }}
-                className={`w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border ${
-                  referenceLinksError ? 'border-red-500 ring-1 ring-red-500' : 'border-[#E4E2DC] dark:border-[#27272A]'
+                className={`w-full bg-[#FAF9F6] dark:bg-[#18181B] border ${
+                  referenceLinksError ? 'border-red-500 ring-1 ring-red-500' : 'border-[#E4E2DC] dark:border-[#222225]'
                 } rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none`}
               />
               {referenceLinksError && (
@@ -807,8 +807,8 @@ export const CommissionFormView: React.FC = () => {
         </section>
 
         {/* SECTION 3: TECHNICAL REQUIREMENTS */}
-        <section className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
-          <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-4 space-y-1">
+        <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-4 space-y-1">
             <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
               03 / TECHNICAL SPECIFICATIONS & PRODUCTION
             </span>
@@ -831,7 +831,7 @@ export const CommissionFormView: React.FC = () => {
                 placeholder="e.g. Scalable SVG + Vector AI, A2 300 DPI print poster, 1920x1080 horizontal..."
                 value={requiredDimensions}
                 onChange={(e) => setRequiredDimensions(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
+                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
               />
             </div>
 
@@ -845,15 +845,15 @@ export const CommissionFormView: React.FC = () => {
                 placeholder="e.g. Special spot-color considerations, existing brand typography to respect, specific copy to embed..."
                 value={additionalNotes}
                 onChange={(e) => setAdditionalNotes(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none leading-relaxed"
+                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none leading-relaxed"
               />
             </div>
           </div>
         </section>
 
         {/* SECTION 4: BUDGET & TIMELINE */}
-        <section className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
-          <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-4 space-y-1">
+        <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-4 space-y-1">
             <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
               04 / INVESTMENT & TIMELINE
             </span>
@@ -883,7 +883,7 @@ export const CommissionFormView: React.FC = () => {
                   placeholder="5000"
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}
-                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-8 pr-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors font-mono font-bold"
+                  className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg pl-8 pr-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors font-mono font-bold"
                 />
               </div>
               <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 block">
@@ -902,7 +902,7 @@ export const CommissionFormView: React.FC = () => {
                 min={tomorrowStr}
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors cursor-pointer"
+                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors cursor-pointer"
               />
               <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 block">
                 Committed delivery target for final approved assets.
@@ -912,8 +912,8 @@ export const CommissionFormView: React.FC = () => {
         </section>
 
         {/* SUBMISSION FOOTER */}
-        <div className="bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#71717A] dark:text-[#A1A1AA] pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+        <div className="bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#71717A] dark:text-[#A1A1AA] pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#EA580C]" />
               <span>Initial Status: <strong className="text-[#18181B] dark:text-[#EDEDEC]">Pending Designer Review</strong></span>
@@ -930,7 +930,7 @@ export const CommissionFormView: React.FC = () => {
               id="btn-submit-commission-form"
               type="submit"
               disabled={isSubmitting || !currentUser}
-              className="w-full sm:w-auto px-7 py-3 rounded-lg bg-[#EA580C] hover:bg-[#D94814] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              className="w-full sm:w-auto px-7 py-3 min-h-[44px] rounded-lg bg-[#EA580C] hover:bg-[#D94814] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
             >
               {isSubmitting ? (
                 <>

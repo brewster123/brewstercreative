@@ -12,7 +12,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-[#FAF9F6] dark:bg-[#09090B] border-t border-[#E4E2DC] dark:border-[#1C1C1F] text-[#71717A] dark:text-[#A1A1AA] text-sm mt-20 relative overflow-hidden transition-colors">
+    <footer className="bg-[#FAF9F6] dark:bg-[#09090B] border-t border-[#E4E2DC] dark:border-[#222225] text-[#71717A] dark:text-[#A1A1AA] text-sm mt-20 relative overflow-hidden transition-colors">
       <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 relative z-10">
@@ -23,7 +23,7 @@ export const Footer: React.FC = () => {
             <div className="flex items-center gap-3">
               <BrandLogo size="md" />
               <div>
-                <span className="font-display font-bold text-lg text-[#18181B] dark:text-[#F5F5F0] tracking-tight">
+                <span className="font-display font-bold text-lg text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
                   {studioProfile.studioName}
                 </span>
                 <p className="text-xs text-[#EA580C] font-mono -mt-0.5 font-medium">
@@ -32,11 +32,15 @@ export const Footer: React.FC = () => {
               </div>
             </div>
 
+            <div className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+              Make noise. Make meaning.
+            </div>
+
             <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-sm">
               {studioProfile.bio}
             </p>
 
-            <div className="flex items-center gap-4 pt-2 text-xs text-[#18181B] dark:text-[#F5F5F0]">
+            <div className="flex items-center gap-4 pt-2 text-xs text-[#18181B] dark:text-[#EDEDEC]">
               <div className="flex items-center gap-1.5 text-[#71717A] dark:text-[#A1A1AA] font-medium">
                 <MapPin className="w-3.5 h-3.5 text-[#EA580C]" />
                 <span>{studioProfile.location}</span>
@@ -46,7 +50,7 @@ export const Footer: React.FC = () => {
 
           {/* Navigation Links */}
           <div className="space-y-3">
-            <h4 className="font-display font-bold text-[#18181B] dark:text-[#F5F5F0] text-xs uppercase tracking-wider">
+            <h4 className="font-display font-bold text-[#18181B] dark:text-[#EDEDEC] text-xs uppercase tracking-wider">
               Studio Explore
             </h4>
             <ul className="space-y-2 text-xs sm:text-sm">
@@ -100,7 +104,7 @@ export const Footer: React.FC = () => {
 
           {/* Client & Portals */}
           <div className="space-y-3">
-            <h4 className="font-display font-bold text-[#18181B] dark:text-[#F5F5F0] text-xs uppercase tracking-wider">
+            <h4 className="font-display font-bold text-[#18181B] dark:text-[#EDEDEC] text-xs uppercase tracking-wider">
               Client Portal
             </h4>
             <ul className="space-y-2 text-xs sm:text-sm">
@@ -138,7 +142,7 @@ export const Footer: React.FC = () => {
 
           {/* Contact & Socials */}
           <div className="space-y-3">
-            <h4 className="font-display font-bold text-[#18181B] dark:text-[#F5F5F0] text-xs uppercase tracking-wider">
+            <h4 className="font-display font-bold text-[#18181B] dark:text-[#EDEDEC] text-xs uppercase tracking-wider">
               Inquiries & Social
             </h4>
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
@@ -169,7 +173,7 @@ export const Footer: React.FC = () => {
                       href={instagramUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
                       aria-label="Instagram Profile"
                     >
                       <Instagram className="w-4 h-4" />
@@ -181,7 +185,7 @@ export const Footer: React.FC = () => {
                       href={behanceUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
                       aria-label="Behance Portfolio"
                     >
                       <span className="font-display font-bold text-[12px] leading-none select-none tracking-tighter">Bē</span>
@@ -193,7 +197,7 @@ export const Footer: React.FC = () => {
                       href={dribbbleUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
                       aria-label="Dribbble Portfolio"
                     >
                       <Dribbble className="w-4 h-4" />
@@ -205,7 +209,7 @@ export const Footer: React.FC = () => {
                       href={twitterUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
                       aria-label="Twitter / X Profile"
                     >
                       <Twitter className="w-4 h-4" />
@@ -219,7 +223,7 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Bottom copyright & back to top */}
-        <div className="pt-8 border-t border-[#E4E2DC] dark:border-[#1C1C1F] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#71717A] dark:text-[#A1A1AA]">
+        <div className="pt-8 border-t border-[#E4E2DC] dark:border-[#222225] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#71717A] dark:text-[#A1A1AA]">
           <p>
             © {new Date().getFullYear()} {studioProfile.studioName} ({studioProfile.designerName}). All rights reserved. Graphic design & multimedia art.
           </p>
@@ -227,7 +231,7 @@ export const Footer: React.FC = () => {
             <button
               type="button"
               onClick={scrollToTop}
-              className="flex items-center gap-1 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F5F5F0] transition-colors font-medium cursor-pointer"
+              className="flex items-center gap-1 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors font-medium cursor-pointer"
             >
               <span>Back to top</span>
               <ArrowUp className="w-3.5 h-3.5" />

@@ -10,10 +10,10 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({ updates = []
   const safeUpdates = updates || [];
 
   return (
-    <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+    <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
       
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+      <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
         <div>
           <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
             Production Ledger
@@ -33,7 +33,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({ updates = []
           No milestones recorded yet. Production entries will appear as the project advances.
         </div>
       ) : (
-        <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-[#E4E2DC] dark:before:bg-[#27272A]">
+        <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-[#E4E2DC] dark:before:bg-[#222225]">
           {safeUpdates.map((update, index) => {
             const isLatest = index === safeUpdates.length - 1;
 
@@ -41,10 +41,10 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({ updates = []
               <div key={update.id} className="relative group">
                 {/* Marker */}
                 <div 
-                  className={`absolute -left-6 top-1 w-4 h-4 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-[#18181B] ${
+                  className={`absolute -left-6 top-1 w-4 h-4 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-[#121214] ${
                     isLatest
                       ? 'bg-[#EA580C] text-white shadow-xs'
-                      : 'bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA]'
+                      : 'bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#71717A] dark:text-[#A1A1AA]'
                   }`}
                 >
                   {isLatest ? (
@@ -55,7 +55,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({ updates = []
                 </div>
 
                 {/* Content */}
-                <div className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-4 space-y-2">
+                <div className="bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg p-4 space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-[#18181B] dark:text-[#EDEDEC]">
@@ -76,7 +76,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({ updates = []
                     {update.note}
                   </p>
 
-                  <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                  <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
                     <span className="flex items-center gap-1">
                       <UserCheck className="w-3 h-3" />
                       <span>Recorded by {update.updatedBy}</span>

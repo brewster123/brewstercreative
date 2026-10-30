@@ -143,7 +143,7 @@ export const Navbar: React.FC = () => {
             id="nav-brand-logo"
             type="button"
             onClick={() => setActiveView('home')}
-            className="flex items-center gap-2.5 group text-left focus:outline-hidden cursor-pointer whitespace-nowrap shrink-0"
+            className="flex items-center gap-2.5 group text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded-lg cursor-pointer whitespace-nowrap shrink-0"
           >
             <BrandLogo size="md" className="group-hover:scale-105 transition-transform" />
             <span className="font-display font-black text-xl text-[#18181B] dark:text-white tracking-tight whitespace-nowrap">
@@ -162,10 +162,10 @@ export const Navbar: React.FC = () => {
                   setActiveView(link.view);
                   setMobileMenuOpen(false);
                 }}
-                className={`px-2.5 lg:px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-2.5 lg:px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
                   activeView === link.view || (link.view === 'shop' && activeView === 'product-detail')
-                    ? 'text-[#18181B] dark:text-white bg-white dark:bg-[#1C1C20] shadow-2xs font-semibold'
-                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-white hover:bg-white/60 dark:hover:bg-[#18181B]/60'
+                    ? 'text-[#18181B] dark:text-[#EDEDEC] bg-white dark:bg-[#18181B] shadow-2xs font-semibold'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-white/60 dark:hover:bg-[#18181B]/60'
                 }`}
               >
                 {link.label}
@@ -182,7 +182,7 @@ export const Navbar: React.FC = () => {
                 id="btn-chat-navbar"
                 type="button"
                 onClick={handleOpenChat}
-                className="hidden sm:flex p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-white hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] transition-colors relative border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer"
+                className="hidden sm:flex p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors relative border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer"
                 title={currentUser.role === 'admin' ? "Client Conversations" : "Project Conversation"}
                 aria-label={currentUser.role === 'admin' ? "Open client conversations" : "Open project conversation"}
               >
@@ -202,7 +202,7 @@ export const Navbar: React.FC = () => {
                   setShowNotifications(prev => !prev);
                   setShowUserDropdown(false);
                 }}
-                className="p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-white hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] transition-colors relative border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer btn-tactile"
+                className="p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors relative border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer btn-tactile"
                 title="Notifications"
                 aria-label="View notifications"
                 aria-expanded={showNotifications}
@@ -226,7 +226,7 @@ export const Navbar: React.FC = () => {
               id="btn-nav-theme-toggle"
               type="button"
               onClick={toggleTheme}
-              className="hidden sm:flex p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-white hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] transition-colors border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer btn-tactile"
+              className="hidden sm:flex p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer btn-tactile"
               title={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
               aria-label={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
             >
@@ -243,7 +243,7 @@ export const Navbar: React.FC = () => {
                     setShowUserDropdown(prev => !prev);
                     setShowNotifications(false);
                   }}
-                  className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-lg bg-white dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] border border-[#E4E2DC] dark:border-[#222225] transition-all text-sm cursor-pointer shadow-2xs btn-tactile"
+                  className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-lg bg-white dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] transition-all text-sm cursor-pointer shadow-2xs btn-tactile"
                   aria-expanded={showUserDropdown}
                   aria-haspopup="true"
                 >
@@ -252,7 +252,7 @@ export const Navbar: React.FC = () => {
                     alt={currentUser.name || 'User Profile'}
                     className="w-6 h-6 rounded-md object-cover ring-1 ring-[#EA580C]/40"
                   />
-                  <span className="font-semibold text-[#18181B] dark:text-white text-xs hidden sm:inline max-w-[110px] truncate">
+                  <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC] text-xs hidden sm:inline max-w-[110px] truncate">
                     {currentUser.name}
                   </span>
                   <ChevronDown className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA]" />
@@ -260,11 +260,11 @@ export const Navbar: React.FC = () => {
 
                 {showUserDropdown && (
                   <div 
-                    className="absolute right-0 mt-2 w-60 bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl shadow-lg py-1.5 z-50 animate-in fade-in duration-150"
+                    className="absolute right-0 mt-2 w-60 bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl shadow-lg py-1.5 z-50 animate-in fade-in duration-150"
                     onClick={() => setShowUserDropdown(false)}
                   >
                     {/* User Identity Header */}
-                    <div className="px-3.5 py-2.5 border-b border-[#E4E2DC] dark:border-[#27272A] space-y-0.5">
+                    <div className="px-3.5 py-2.5 border-b border-[#E4E2DC] dark:border-[#222225] space-y-0.5">
                       <p className="text-xs font-bold text-[#18181B] dark:text-[#EDEDEC] truncate">
                         {currentUser.name}
                       </p>
@@ -305,7 +305,7 @@ export const Navbar: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActiveView('settings')}
-                        className="w-full text-left px-3.5 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] flex items-center gap-2 cursor-pointer transition-colors"
+                        className="w-full text-left px-3.5 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] flex items-center gap-2 cursor-pointer transition-colors"
                       >
                         <Settings className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA]" />
                         <span>Settings</span>
@@ -313,7 +313,7 @@ export const Navbar: React.FC = () => {
                     </div>
 
                     {/* Sign Out Action */}
-                    <div className="border-t border-[#E4E2DC] dark:border-[#27272A] pt-1">
+                    <div className="border-t border-[#E4E2DC] dark:border-[#222225] pt-1">
                       <button
                         type="button"
                         onClick={logout}
@@ -381,8 +381,8 @@ export const Navbar: React.FC = () => {
                 setMobileMenuOpen(!mobileMenuOpen);
                 setMobileNotificationsOpen(false);
               }}
-              className="lg:hidden p-2.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-white hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E] transition-colors cursor-pointer relative min-h-[44px] min-w-[44px] flex items-center justify-center btn-tactile"
-              aria-label="Open menu"
+              className="lg:hidden p-2.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors cursor-pointer relative min-h-[44px] min-w-[44px] flex items-center justify-center btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -403,7 +403,7 @@ export const Navbar: React.FC = () => {
         >
           {/* User Profile Header in Mobile Drawer if Authenticated */}
           {currentUser && (
-            <div className="p-3 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
                 <img
                   src={currentUser.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
@@ -441,8 +441,8 @@ export const Navbar: React.FC = () => {
                 }}
                 className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-between cursor-pointer min-h-[44px] ${
                   activeView === link.view || (link.view === 'shop' && activeView === 'product-detail')
-                    ? 'text-[#EA580C] bg-[#FFF7ED] dark:bg-[#1C1C20] font-bold'
-                    : 'text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#1A1A1E]'
+                    ? 'text-[#EA580C] bg-[#FFF7ED] dark:bg-[#18181B] font-bold'
+                    : 'text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B]'
                 }`}
               >
                 <span>{link.label}</span>
@@ -452,7 +452,7 @@ export const Navbar: React.FC = () => {
 
           {/* Account, Communication & Theme Controls */}
           {currentUser ? (
-            <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-2">
+            <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#222225] space-y-2">
               {/* Primary Dashboard Destination */}
               {currentUser.role === 'admin' ? (
                 <button
@@ -485,14 +485,14 @@ export const Navbar: React.FC = () => {
                 type="button"
                 id={currentUser.role === 'admin' ? "btn-admin-mobile-chat" : "btn-client-mobile-chat"}
                 onClick={handleOpenChat}
-                className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] text-sm font-semibold flex items-center justify-between cursor-pointer btn-tactile"
+                className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#121214] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#222225] text-sm font-semibold flex items-center justify-between cursor-pointer btn-tactile"
               >
                 <div className="flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-[#EA580C]" />
                   <span>{currentUser.role === 'admin' ? 'Client Conversations' : 'Project Conversation'}</span>
                 </div>
                 {unreadMessagesCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#EA580C] text-white">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#EA580C] text-white">
                     {unreadMessagesCount} unread
                   </span>
                 )}
@@ -503,14 +503,14 @@ export const Navbar: React.FC = () => {
                 type="button"
                 id="btn-mobile-notifications"
                 onClick={() => setMobileNotificationsOpen(prev => !prev)}
-                className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] text-sm font-semibold flex items-center justify-between cursor-pointer btn-tactile"
+                className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#121214] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#222225] text-sm font-semibold flex items-center justify-between cursor-pointer btn-tactile"
               >
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-[#EA580C]" />
                   <span>Notifications</span>
                 </div>
                 {unreadCount > 0 ? (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#EA580C] text-white">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#EA580C] text-white">
                     {unreadCount} new
                   </span>
                 ) : (
@@ -520,7 +520,7 @@ export const Navbar: React.FC = () => {
 
               {/* Collapsible Mobile Notifications Panel */}
               {mobileNotificationsOpen && (
-                <div className="border border-[#E4E2DC] dark:border-[#27272A] rounded-xl overflow-hidden shadow-xs">
+                <div className="border border-[#E4E2DC] dark:border-[#222225] rounded-xl overflow-hidden shadow-xs">
                   <NotificationPanel onClose={() => setMobileNotificationsOpen(false)} />
                 </div>
               )}
@@ -532,14 +532,14 @@ export const Navbar: React.FC = () => {
                   setActiveView('settings');
                   setMobileMenuOpen(false);
                 }}
-                className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer btn-tactile"
+                className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#121214] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#222225] text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer btn-tactile"
               >
                 <Settings className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
                 <span>Settings</span>
               </button>
 
               {/* Theme Toggle Row */}
-              <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A]">
+              <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225]">
                 <span className="text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] font-semibold">Theme</span>
                 <button
                   type="button"
@@ -577,7 +577,7 @@ export const Navbar: React.FC = () => {
             </div>
           ) : (
             /* Unauthenticated Mobile Actions */
-            <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-2">
+            <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#222225] space-y-2">
               <button
                 type="button"
                 id="btn-mobile-start-commission"
@@ -598,14 +598,14 @@ export const Navbar: React.FC = () => {
                   setActiveView('auth');
                   setMobileMenuOpen(false);
                 }}
-                className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer btn-tactile"
+                className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#121214] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#222225] text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer btn-tactile"
               >
                 <UserIcon className="w-4 h-4" />
                 <span>Sign In / Register</span>
               </button>
 
               {/* Theme Toggle Row */}
-              <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A]">
+              <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225]">
                 <span className="text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] font-semibold">Theme</span>
                 <button
                   type="button"

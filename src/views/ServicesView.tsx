@@ -60,18 +60,20 @@ export const ServicesView: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 sm:space-y-20">
       
       {/* Editorial Services Header */}
-      <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-8 sm:pb-12">
+      <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-8 sm:pb-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
-              <span>Studio Practice & Menu</span>
+          <div className="space-y-3.5 max-w-2xl">
+            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-bold">
+              <span>Studio Practice &amp; Menu</span>
+              <span aria-hidden="true" className="text-[#A1A1AA]">·</span>
+              <span>Make noise. Make meaning.</span>
             </div>
 
-            <h1 className="font-display text-3xl sm:text-5xl lg:text-5.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
-              Commission Services & Capabilities
+            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tighter leading-[1.04]">
+              Commission Services &amp; Capabilities
             </h1>
 
-            <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
+            <p className="text-sm sm:text-base text-[#52525B] dark:text-[#A1A1AA] leading-relaxed font-normal">
               Transparent starting rates, committed delivery windows, and iterative milestone reviews tracked directly through your private client portal.
             </p>
           </div>
@@ -84,7 +86,7 @@ export const ServicesView: React.FC = () => {
 
       {/* Admin Notice */}
       {currentUser?.role === 'admin' && (
-        <div className="bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+        <div className="bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-2.5 text-[#18181B] dark:text-[#EDEDEC] font-medium">
             <ShieldCheck className="w-4 h-4 text-[#EA580C] shrink-0" />
             <span>Studio Director Portal: You can modify service deliverables, rates, or add new disciplines.</span>
@@ -92,7 +94,7 @@ export const ServicesView: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveView('admin-dashboard')}
-            className="px-3.5 py-1.5 bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold rounded-lg text-xs transition-colors hover:opacity-90 cursor-pointer"
+            className="px-4 py-2 bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold rounded-lg text-xs transition-colors hover:opacity-90 cursor-pointer min-h-[44px] inline-flex items-center"
           >
             Manage Services in Admin Portal →
           </button>
@@ -101,12 +103,12 @@ export const ServicesView: React.FC = () => {
 
       {/* Editorial Service Menu */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#27272A] pb-3">
-          <span className="font-mono text-xs uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold">
-            Service Menu & Scope of Practice
+        <div className="flex items-center justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#222225] pb-3">
+          <span className="font-mono text-xs uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-bold">
+            Service Menu &amp; Scope of Practice
           </span>
           <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
-            Select a service to initiate brief
+            Select a practice to initiate brief
           </span>
         </div>
 
@@ -122,10 +124,10 @@ export const ServicesView: React.FC = () => {
       </section>
 
       {/* Studio Standards Section (Editorial Ledger, Not SaaS Cards) */}
-      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-10">
+      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#222225] space-y-10">
         <div className="max-w-2xl space-y-2">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
-            Commitments & Rigor
+          <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+            Commitments &amp; Rigor
           </span>
           <h2 className="font-display text-2xl sm:text-3xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
             The {studioProfile.studioName} Production Standards
@@ -141,15 +143,15 @@ export const ServicesView: React.FC = () => {
             return (
               <div 
                 key={idx} 
-                className="space-y-3 pb-6 border-b border-[#E4E2DC] dark:border-[#27272A] sm:border-b-0"
+                className="space-y-3 pb-6 border-b border-[#E4E2DC] dark:border-[#222225] sm:border-b-0"
               >
-                <div className="w-9 h-9 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-[#EA580C] flex items-center justify-center">
-                  <Icon className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#EA580C] flex items-center justify-center shadow-2xs">
+                  <Icon className="w-5 h-5" />
                 </div>
                 <h3 className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC]">
                   {std.title}
                 </h3>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
                   {std.desc}
                 </p>
               </div>
@@ -159,10 +161,10 @@ export const ServicesView: React.FC = () => {
       </section>
 
       {/* Frequently Asked Questions (Editorial Format) */}
-      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-10">
+      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#222225] space-y-10">
         <div className="max-w-2xl space-y-2">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
-            Clarity & Guidance
+          <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+            Clarity &amp; Guidance
           </span>
           <h2 className="font-display text-2xl sm:text-3xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
             Frequently Discussed Questions
@@ -174,9 +176,9 @@ export const ServicesView: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           {faqs.map((faq, idx) => (
-            <div key={idx} className="space-y-2 pb-6 border-b border-[#E4E2DC] dark:border-[#27272A]">
+            <div key={idx} className="space-y-2 pb-6 border-b border-[#E4E2DC] dark:border-[#222225]">
               <h3 className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC] flex items-baseline gap-2">
-                <span className="text-[#EA580C] font-mono text-xs font-semibold">0{idx + 1}.</span>
+                <span className="text-[#EA580C] font-mono text-xs font-bold">0{idx + 1}.</span>
                 <span>{faq.q}</span>
               </h3>
               <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed pl-6 font-normal">
@@ -189,15 +191,15 @@ export const ServicesView: React.FC = () => {
 
       {/* Editorial Closing Banner */}
       <section className="pt-6">
-        <div className="bg-[#18181B] dark:bg-[#18181B] text-white rounded-xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-transparent dark:border-[#27272A]">
+        <div className="bg-[#121214] text-white rounded-2xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-[#222225]">
           <div className="space-y-2 max-w-xl">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
-              Creative Dialogue
+            <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+              Creative Dialogue · Make noise. Make meaning.
             </span>
             <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
               Require a custom scope not listed above?
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
+            <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed font-normal">
               DESTALION regularly directs bespoke multimedia installations, experimental typographic releases, and one-off publication editions.
             </p>
           </div>
@@ -208,7 +210,7 @@ export const ServicesView: React.FC = () => {
               setActiveView('commission-form');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="px-6 py-3.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs sm:text-sm font-semibold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer shrink-0"
+            className="px-6 py-3.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] active:bg-[#C23E0E] text-white text-xs sm:text-sm font-semibold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px]"
           >
             <Send className="w-4 h-4" />
             <span>Submit Custom Project Brief</span>

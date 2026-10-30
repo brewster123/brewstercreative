@@ -22,7 +22,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
     <div className="space-y-6">
       
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
         <div className="space-y-1">
           <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
             Stage 0{commission.currentStage} of 08 · {currentStageInfo.name}
@@ -41,7 +41,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
       </div>
 
       {/* Hairline Progress Rule */}
-      <div className="h-0.5 w-full bg-[#E4E2DC] dark:bg-[#27272A] rounded-full overflow-hidden">
+      <div className="h-0.5 w-full bg-[#E4E2DC] dark:bg-[#222225] rounded-full overflow-hidden">
         <div
           className="h-full bg-[#EA580C] transition-all duration-500 ease-out"
           style={{ width: `${commission.progress}%` }}
@@ -69,7 +69,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
                 isCurrent
                   ? 'border-[#EA580C] bg-[#FFF7ED] dark:bg-[#78350F]/20'
                   : isCompleted
-                  ? 'border-[#E4E2DC] dark:border-[#27272A] bg-[#FAF9F6] dark:bg-[#0F0F11]'
+                  ? 'border-[#E4E2DC] dark:border-[#222225] bg-[#FAF9F6] dark:bg-[#18181B]'
                   : 'border-transparent bg-transparent opacity-40'
               } ${isAdmin && interactiveAdmin ? 'cursor-pointer hover:border-[#EA580C]' : ''}`}
             >
@@ -86,7 +86,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
                   ) : isCurrent ? (
                     <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-pulse" />
                   ) : (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E4E2DC] dark:bg-[#27272A]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E4E2DC] dark:bg-[#222225]" />
                   )}
                 </div>
               </div>

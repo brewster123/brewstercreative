@@ -57,11 +57,13 @@ export const PortfolioView: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10 sm:space-y-14">
       
       {/* Editorial Exhibition Header */}
-      <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-8 sm:pb-12">
+      <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-8 sm:pb-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
-            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
-              <span>Exhibition Archive & Case Studies</span>
+            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-bold">
+              <span>Exhibition Archive &amp; Case Studies</span>
+              <span aria-hidden="true" className="text-[#A1A1AA]">·</span>
+              <span>Make noise. Make meaning.</span>
             </div>
 
             <h1 className="font-display text-3xl sm:text-5xl lg:text-5.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
@@ -80,19 +82,19 @@ export const PortfolioView: React.FC = () => {
       </div>
 
       {/* Filter Control Ribbon: Project Type Toggles + Category Navigation + Search */}
-      <div className="space-y-4 border-b border-[#E4E2DC] dark:border-[#27272A] pb-5">
+      <div className="space-y-4 border-b border-[#E4E2DC] dark:border-[#222225] pb-5">
         
         {/* Row 1: Project Type Tabs & Search */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           
           {/* Classification Toggles */}
-          <div className="inline-flex p-1 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] self-start">
+          <div className="inline-flex p-1 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] self-start">
             <button
               type="button"
               onClick={() => setTypeFilter('all')}
-              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer btn-tactile ${
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
                 typeFilter === 'all'
-                  ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-bold'
+                  ? 'bg-white dark:bg-[#222225] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-bold'
                   : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
               }`}
             >
@@ -101,7 +103,7 @@ export const PortfolioView: React.FC = () => {
             <button
               type="button"
               onClick={() => setTypeFilter('client')}
-              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer btn-tactile ${
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
                 typeFilter === 'client'
                   ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs font-bold border border-emerald-200 dark:border-emerald-800/40'
                   : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
@@ -112,7 +114,7 @@ export const PortfolioView: React.FC = () => {
             <button
               type="button"
               onClick={() => setTypeFilter('concept')}
-              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer btn-tactile ${
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
                 typeFilter === 'concept'
                   ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 shadow-2xs font-bold border border-amber-200 dark:border-amber-800/40'
                   : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
@@ -131,7 +133,7 @@ export const PortfolioView: React.FC = () => {
               placeholder="Search archive, tools, client..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
+              className="w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors"
             />
           </div>
 
@@ -147,7 +149,7 @@ export const PortfolioView: React.FC = () => {
                 id={`filter-cat-${cat.toLowerCase().replace(/\s+/g, '-')}`}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`relative px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                className={`relative px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
                   isSelected
                     ? 'text-[#18181B] dark:text-[#EDEDEC] font-bold'
                     : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
@@ -155,7 +157,7 @@ export const PortfolioView: React.FC = () => {
               >
                 <span>{cat}</span>
                 {isSelected && (
-                  <span className="absolute bottom-0 inset-x-3 h-0.5 bg-[#EA580C] rounded-full animate-in fade-in duration-200" />
+                  <span className="absolute bottom-0 inset-x-3 h-0.5 bg-[#EA580C] rounded-full animate-in fade-in duration-200 motion-reduce:animate-none" />
                 )}
               </button>
             );
@@ -167,8 +169,8 @@ export const PortfolioView: React.FC = () => {
       {/* Art-Directed Gallery Grid with Visual Rhythm */}
       {filteredProjects.length === 0 ? (
         typeFilter === 'client' ? (
-          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-12 sm:p-16 text-center space-y-5 shadow-2xs max-w-xl mx-auto animate-in fade-in duration-200">
-            <div className="w-12 h-12 rounded-xl bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center mx-auto text-[#EA580C]">
+          <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-12 sm:p-16 text-center space-y-5 shadow-2xs max-w-xl mx-auto animate-in fade-in duration-200">
+            <div className="w-12 h-12 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-center mx-auto text-[#EA580C]">
               <Sparkles className="w-5 h-5" />
             </div>
             <div className="space-y-2">
@@ -191,14 +193,14 @@ export const PortfolioView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setTypeFilter('all')}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#232327] transition-colors cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] transition-colors cursor-pointer"
               >
                 <span>View Concept Explorations</span>
               </button>
             </div>
           </div>
         ) : (
-          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-16 text-center space-y-4 shadow-2xs max-w-xl mx-auto">
+          <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-16 text-center space-y-4 shadow-2xs max-w-xl mx-auto">
             <Layers className="w-8 h-8 text-[#A1A1AA] mx-auto opacity-70" />
             <div className="space-y-1">
               <h3 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
@@ -215,7 +217,7 @@ export const PortfolioView: React.FC = () => {
                 setTypeFilter('all');
                 setSearchQuery(''); 
               }}
-              className="px-4 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#232327] hover:bg-[#F4F2ED] dark:hover:bg-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#222225] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
             >
               Reset All Filters
             </button>
@@ -301,8 +303,8 @@ export const PortfolioView: React.FC = () => {
       )}
 
       {/* Editorial Closing Invitation */}
-      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#27272A]">
-        <div className="bg-[#18181B] dark:bg-[#18181B] text-white rounded-xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-transparent dark:border-[#27272A]">
+      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#222225]">
+        <div className="bg-[#121214] text-white rounded-xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-[#222225]">
           <div className="space-y-2 max-w-xl">
             <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
               Bespoke Inquiries
@@ -310,7 +312,7 @@ export const PortfolioView: React.FC = () => {
             <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
               Have a visionary project in mind?
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
+            <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed font-normal">
               Every commission begins with an open dialogue about your aesthetic ambitions, target deliverables, and deadlines.
             </p>
           </div>

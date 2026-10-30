@@ -37,8 +37,10 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Deliverables are strictly locked for clients unless paymentStatus is 'Paid'
-  const isPaymentSettled = commission.paymentStatus === 'Paid' || currentUser?.role === 'admin';
+  // Deliverables are strictly locked for clients unless BOTH paymentStatus is 'Paid' AND totalPaid is true
+  const isPaymentSettled = currentUser?.role === 'admin' || (
+    commission.paymentStatus === 'Paid' && commission.totalPaid === true
+  );
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadSuccessId, setDownloadSuccessId] = useState<string | null>(null);
@@ -138,10 +140,10 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({
   const totalSizeFormatted = formatDeliverableFileSize(totalSizeBytes);
 
   return (
-    <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-10 space-y-8">
+    <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-10 space-y-8">
       
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[#E4E2DC] dark:border-[#27272A]">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[#E4E2DC] dark:border-[#222225]">
         <div className="space-y-1.5 max-w-2xl">
           <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
@@ -273,10 +275,10 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({
               return (
                 <article
                   key={item.id}
-                  className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-5 flex items-center justify-between gap-4 transition-all hover:border-[#D4D2CA]"
+                  className="bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-5 flex items-center justify-between gap-4 transition-all hover:border-[#D4D2CA] dark:hover:border-[#333338]"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-center shrink-0">
                       <FileText className="w-5 h-5 text-[#EA580C]" />
                     </div>
 
@@ -297,7 +299,7 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({
                     type="button"
                     onClick={() => handleDownloadFile(item)}
                     disabled={isDownloading || !isPaymentSettled}
-                    className="p-2.5 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#18181B] dark:hover:border-[#EDEDEC] text-[#18181B] dark:text-[#EDEDEC] transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                    className="p-2.5 rounded-lg bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#18181B] dark:hover:border-[#EDEDEC] text-[#18181B] dark:text-[#EDEDEC] transition-all cursor-pointer shrink-0 disabled:opacity-50"
                     title={
                       !isPaymentSettled
                         ? 'Download locked pending full payment confirmation'
@@ -322,7 +324,7 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({
       </div>
 
       {/* Commercial Licensing Ledger */}
-      <div className="pt-6 border-t border-[#E4E2DC] dark:border-[#27272A] flex items-start gap-3">
+      <div className="pt-6 border-t border-[#E4E2DC] dark:border-[#222225] flex items-start gap-3">
         <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
         <div className="space-y-0.5 text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
           <strong className="text-[#18181B] dark:text-[#EDEDEC] block font-display">

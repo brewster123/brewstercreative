@@ -28,7 +28,7 @@ export const DEFAULT_DESIGN_CONFIG: StudioDesignConfig = {
     bgCanvas: '#09090B',
     bgSurface: '#121214',
     bgSurfaceSecondary: '#18181B',
-    textPrimary: '#FFFFFF',
+    textPrimary: '#EDEDEC',
     textMuted: '#A1A1AA',
     borderSubtle: '#222225',
     accent: '#EA580C',

@@ -105,7 +105,7 @@ export const SettingsView: React.FC = () => {
           </span>
         </button>
 
-        <div className="border-b border-[#E4E2DC] dark:border-[#27272A] pb-6">
+        <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-6">
           <h1 className="font-display text-3xl sm:text-4xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
             Settings
           </h1>
@@ -175,8 +175,8 @@ export const SettingsView: React.FC = () => {
             onClick={() => setTheme('light')}
             className={`p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between h-32 ${
               theme === 'light'
-                ? 'border-[#EA580C] bg-white dark:bg-[#18181B] shadow-2xs'
-                : 'border-[#E4E2DC] dark:border-[#27272A] bg-[#FAF9F6] dark:bg-[#0F0F11] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46]'
+                ? 'border-[#EA580C] bg-white dark:bg-[#121214] shadow-2xs'
+                : 'border-[#E4E2DC] dark:border-[#222225] bg-[#FAF9F6] dark:bg-[#18181B] hover:border-[#D4D2CA] dark:hover:border-[#333338]'
             }`}
           >
             <div className="flex items-center justify-between w-full">
@@ -203,8 +203,8 @@ export const SettingsView: React.FC = () => {
             onClick={() => setTheme('dark')}
             className={`p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between h-32 ${
               theme === 'dark'
-                ? 'border-[#EA580C] bg-white dark:bg-[#18181B] shadow-2xs'
-                : 'border-[#E4E2DC] dark:border-[#27272A] bg-[#FAF9F6] dark:bg-[#0F0F11] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46]'
+                ? 'border-[#EA580C] bg-white dark:bg-[#121214] shadow-2xs'
+                : 'border-[#E4E2DC] dark:border-[#222225] bg-[#FAF9F6] dark:bg-[#18181B] hover:border-[#D4D2CA] dark:hover:border-[#333338]'
             }`}
           >
             <div className="flex items-center justify-between w-full">
@@ -231,12 +231,12 @@ export const SettingsView: React.FC = () => {
             onClick={() => setTheme('system')}
             className={`p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between h-32 ${
               theme === 'system'
-                ? 'border-[#EA580C] bg-white dark:bg-[#18181B] shadow-2xs'
-                : 'border-[#E4E2DC] dark:border-[#27272A] bg-[#FAF9F6] dark:bg-[#0F0F11] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46]'
+                ? 'border-[#EA580C] bg-white dark:bg-[#121214] shadow-2xs'
+                : 'border-[#E4E2DC] dark:border-[#222225] bg-[#FAF9F6] dark:bg-[#18181B] hover:border-[#D4D2CA] dark:hover:border-[#333338]'
             }`}
           >
             <div className="flex items-center justify-between w-full">
-              <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40">
+              <div className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                 <Monitor className="w-4 h-4" />
               </div>
               {theme === 'system' && (
@@ -260,7 +260,7 @@ export const SettingsView: React.FC = () => {
         </div>
       </section>
 
-      <div className="border-t border-[#E4E2DC] dark:border-[#27272A]" />
+      <div className="border-t border-[#E4E2DC] dark:border-[#222225]" />
 
       {/* SECTION 2: PROFILE (If user is signed in) */}
       {currentUser ? (
@@ -284,7 +284,7 @@ export const SettingsView: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+          <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
             {/* Avatar uploader */}
             <ProfilePhotoUploader
               userId={currentUser.id}
@@ -307,7 +307,7 @@ export const SettingsView: React.FC = () => {
                     required
                     value={profileName}
                     onChange={(e) => setProfileName(e.target.value)}
-                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors"
+                    className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors"
                   />
                 </div>
 
@@ -322,7 +322,7 @@ export const SettingsView: React.FC = () => {
                       type="email"
                       disabled
                       value={currentUser.email}
-                      className="w-full bg-[#F4F2ED] dark:bg-[#18181B]/60 border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3.5 py-2 text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] font-mono cursor-not-allowed opacity-75"
+                      className="w-full bg-[#F4F2ED] dark:bg-[#18181B]/60 border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3.5 py-2 text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] font-mono cursor-not-allowed opacity-75"
                     />
                     <Lock className="w-3.5 h-3.5 text-[#A1A1AA] absolute right-3 top-1/2 -translate-y-1/2" />
                   </div>
@@ -340,7 +340,7 @@ export const SettingsView: React.FC = () => {
                     value={profileHandle}
                     onChange={(e) => setProfileHandle(e.target.value)}
                     placeholder="@company or studio"
-                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors"
+                    className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors"
                   />
                 </div>
 
@@ -354,7 +354,7 @@ export const SettingsView: React.FC = () => {
                     value={profilePhone}
                     onChange={(e) => setProfilePhone(e.target.value)}
                     placeholder="+1 (555) 019-2834"
-                    className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors"
+                    className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3.5 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors"
                   />
                 </div>
               </div>
@@ -367,7 +367,7 @@ export const SettingsView: React.FC = () => {
                   id="settings-profile-contact"
                   value={profileContact}
                   onChange={(e) => setProfileContact(e.target.value)}
-                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors cursor-pointer"
+                  className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors cursor-pointer"
                 >
                   <option value="Email & Platform Chat">Email & Platform Chat (Recommended)</option>
                   <option value="Email Only">Email Only</option>
@@ -387,7 +387,7 @@ export const SettingsView: React.FC = () => {
                   value={profileBio}
                   onChange={(e) => setProfileBio(e.target.value)}
                   placeholder="Tell DESTALION about your organization, aesthetic values, or ongoing creative initiatives."
-                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors resize-none leading-relaxed"
+                  className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] transition-colors resize-none leading-relaxed"
                 />
               </div>
 
@@ -395,7 +395,7 @@ export const SettingsView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-5 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] disabled:opacity-50 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                  className="px-5 py-2.5 min-h-[44px] rounded-lg bg-[#EA580C] hover:bg-[#D94814] disabled:opacity-50 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
                 >
                   {isSaving ? 'Saving Changes...' : 'Save Profile Preferences'}
                 </button>
@@ -404,7 +404,7 @@ export const SettingsView: React.FC = () => {
           </div>
         </section>
       ) : (
-        <section className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 text-center space-y-3">
+        <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 text-center space-y-3">
           <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
             Sign in to view and personalize your client profile.
           </p>
@@ -418,7 +418,7 @@ export const SettingsView: React.FC = () => {
         </section>
       )}
 
-      <div className="border-t border-[#E4E2DC] dark:border-[#27272A]" />
+      <div className="border-t border-[#E4E2DC] dark:border-[#222225]" />
 
       {/* SECTION 3: ACCOUNT & SESSION */}
       <section className="space-y-6">
@@ -434,7 +434,7 @@ export const SettingsView: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {currentUser ? (
             <>
               <div className="space-y-0.5">

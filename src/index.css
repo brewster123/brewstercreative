@@ -41,7 +41,7 @@
   --bg-canvas: #09090B;
   --bg-surface: #121214;
   --bg-surface-secondary: #18181B;
-  --text-primary: #FFFFFF;
+  --text-primary: #EDEDEC;
   --text-muted: #A1A1AA;
   --border-subtle: #222225;
   --accent: #EA580C;
@@ -77,10 +77,14 @@
   /* Centralized Theme Palette Tokens */
   --color-canvas: var(--bg-canvas);
   --color-surface: var(--bg-surface);
+  --color-surface-secondary: var(--bg-surface-secondary);
   --color-surface-muted: var(--bg-surface-secondary);
   --color-carbon: var(--text-primary);
   --color-graphite: var(--text-muted);
   --color-hairline: var(--border-subtle);
+  --color-border-subtle: var(--border-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --color-terracotta: #EA580C;
   --color-terracotta-dark: #D94814;
 }
@@ -157,16 +161,19 @@
   background-color: var(--bg-surface-secondary) !important;
 }
 
-.dark .bg-zinc-100 {
-  background-color: #232327 !important;
+.dark .bg-zinc-100,
+.dark .bg-\[\#0F0F11\],
+.dark .bg-\[\#0f0f11\],
+.dark .bg-\[\#232327\] {
+  background-color: var(--bg-surface-secondary) !important;
 }
 
 .dark .bg-zinc-100\/90 {
-  background-color: rgba(35, 35, 39, 0.9) !important;
+  background-color: rgba(24, 24, 27, 0.9) !important;
 }
 
 .dark .bg-zinc-200 {
-  background-color: #2A2A2E !important;
+  background-color: #222225 !important;
 }
 
 /* Borders */
@@ -174,6 +181,8 @@
 .dark .border-\[\#e4e2dc\],
 .dark .border-\[\#E5E5E5\],
 .dark .border-\[\#e5e5e5\],
+.dark .border-\[\#27272A\],
+.dark .border-\[\#27272a\],
 .dark .border-zinc-200,
 .dark .border-zinc-200\/90,
 .dark .border-zinc-200\/80,

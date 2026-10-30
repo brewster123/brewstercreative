@@ -8,15 +8,17 @@ import {
   Clock, 
   AlertTriangle, 
   XCircle, 
+  X,
   Copy, 
   Check, 
   Eye, 
   FileText, 
   Loader2, 
-  ArrowRight,
-  ShieldCheck,
-  RefreshCw,
-  Info
+  ArrowRight, 
+  ShieldCheck, 
+  RefreshCw, 
+  Info, 
+  Lock
 } from 'lucide-react';
 import { 
   fetchCommissionPaymentProofs, 
@@ -24,7 +26,9 @@ import {
   getPaymentProofSignedUrl, 
   validatePaymentReceiptFile,
   formatPaymentFileSize,
-  subscribeToPaymentProofs
+  subscribeToPaymentProofs,
+  parseCommissionBudget,
+  validateReferenceNumber
 } from '../lib/payments';
 
 interface ClientPaymentVerificationCardProps {
@@ -68,15 +72,22 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Financial calculations
-  const rawBudget = commission.budget || '₱0';
-  const numericBudget = parseFloat(rawBudget.replace(/[^0-9.]/g, '')) || 0;
+  // Financial calculations with strict budget validation
   const depositPercent = studioProfile.gcashDetails?.depositPercentage || 50;
-  const depositAmount = Math.round(numericBudget * (depositPercent / 100));
-  const balanceAmount = numericBudget - depositAmount;
-
   const currencySymbol = studioProfile.currencySymbol || '₱';
   const currencyCode = commission.currency || studioProfile.currency || 'PHP';
+
+  const budgetAnalysis = parseCommissionBudget(
+    commission.budget,
+    depositPercent,
+    currencySymbol,
+    currencyCode
+  );
+
+  const numericBudget = budgetAnalysis.numericBudget;
+  const depositAmount = budgetAnalysis.depositAmount;
+  const balanceAmount = budgetAnalysis.balanceAmount;
+  const isBudgetValid = budgetAnalysis.isValid;
 
   // Load existing proofs for this commission
   const loadProofs = async () => {
@@ -159,9 +170,22 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
   // Submit payment proof
   const handleSubmitProof = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isBudgetValid) {
+      setUploadError(budgetAnalysis.errorMessage || 'Commission budget must be finalized with the studio before submitting payments.');
+      return;
+    }
+
     if (!selectedFile) {
       setUploadError('Please select a screenshot or image of your GCash receipt.');
       return;
+    }
+
+    if (referenceNumber && referenceNumber.trim()) {
+      const refCheck = validateReferenceNumber(referenceNumber);
+      if (!refCheck.valid) {
+        setUploadError(refCheck.error || 'Invalid GCash reference number.');
+        return;
+      }
     }
 
     setIsUploading(true);
@@ -242,10 +266,10 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
   };
 
   return (
-    <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6 shadow-2xs">
+    <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6 shadow-2xs">
       
       {/* 1. Header & Financial Overview */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#E4E2DC] dark:border-[#27272A]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#E4E2DC] dark:border-[#222225]">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
@@ -264,28 +288,28 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
 
         {/* Current Settlement Status Badge */}
         <div className="flex items-center gap-2 self-start sm:self-center">
-          {commission.paymentStatus === 'Paid' || commission.totalPaid ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-mono font-bold">
+          {commission.paymentStatus === 'Paid' && commission.totalPaid ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Confirmed: Settled in Full</span>
             </span>
           ) : commission.paymentStatus === 'Partial' || commission.depositPaid ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-mono font-bold">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[11px] font-mono font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Deposit Confirmed · Balance Due</span>
             </span>
           ) : latestProof?.status === 'pending_verification' ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-mono font-bold animate-pulse">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[11px] font-mono font-semibold animate-pulse">
               <Clock className="w-3.5 h-3.5" />
               <span>Receipt Pending Studio Verification</span>
             </span>
           ) : latestProof?.status === 'rejected' ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-mono font-bold">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 text-[11px] font-mono font-semibold">
               <XCircle className="w-3.5 h-3.5" />
               <span>Receipt Rejected · Action Required</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF9F6] dark:bg-[#232327] text-[#71717A] dark:text-[#A1A1AA] border border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono font-semibold">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FAF9F6] dark:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] border border-[#E4E2DC] dark:border-[#222225] text-[11px] font-mono font-semibold">
               <Clock className="w-3.5 h-3.5 text-[#EA580C]" />
               <span>Awaiting Deposit</span>
             </span>
@@ -294,7 +318,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
       </div>
 
       {/* 2. Clear Direct Studio Payment Policy Explanation */}
-      <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] flex items-start gap-3">
+      <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-start gap-3">
         <Info className="w-5 h-5 text-[#EA580C] shrink-0 mt-0.5" />
         <div className="space-y-1 text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
           <p className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">
@@ -306,38 +330,53 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
         </div>
       </div>
 
+      {/* 2.5 Budget Pending Notice if budget is unfinalized or invalid */}
+      {!isBudgetValid && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+            <p className="font-semibold text-amber-900 dark:text-amber-200">
+              Budget Pending Final Studio Confirmation
+            </p>
+            <p>
+              {budgetAnalysis.errorMessage || 'Commission budget requires scope confirmation.'} Payment calculation and GCash receipt uploads will unlock once Brewster verifies your project scope and confirms the fixed budget.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 3. Financial Breakdown Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] space-y-1">
+        <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1">
           <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
             Total Project Investment
           </span>
           <p className="font-mono text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
-            {commission.budget || `${currencySymbol}0`}
+            {isBudgetValid ? `${currencySymbol}${numericBudget.toLocaleString()} ${currencyCode}` : (commission.budget || 'Pending Confirmation')}
           </p>
           <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
-            Contracted amount
+            {isBudgetValid ? 'Contracted amount' : 'Awaiting scope confirmation'}
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] space-y-1">
+        <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1">
           <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
             50% Initial Deposit
           </span>
           <p className="font-mono text-lg font-bold text-[#EA580C]">
-            {currencySymbol}{depositAmount.toLocaleString()} {currencyCode}
+            {isBudgetValid ? `${currencySymbol}${depositAmount.toLocaleString()} ${currencyCode}` : 'Awaiting Final Budget'}
           </p>
           <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
             Required to initiate production
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] space-y-1">
+        <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1">
           <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
             50% Final Settlement
           </span>
           <p className="font-mono text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
-            {currencySymbol}{balanceAmount.toLocaleString()} {currencyCode}
+            {isBudgetValid ? `${currencySymbol}${balanceAmount.toLocaleString()} ${currencyCode}` : 'Awaiting Final Budget'}
           </p>
           <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
             Unlocks master deliverables
@@ -361,14 +400,14 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
               </p>
             </div>
           </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold uppercase tracking-wider">
             Verified Studio Account
           </span>
         </div>
 
         {/* Account Details Copy Blocks */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-          <div className="p-3.5 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between gap-3">
+          <div className="p-3.5 rounded-lg bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between gap-3">
             <div className="min-w-0">
               <span className="text-[10px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] block">
                 Account Name
@@ -380,14 +419,15 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
             <button
               type="button"
               onClick={() => handleCopy(gcashDetails.accountName, 'accountName')}
-              className="p-1.5 rounded-md hover:bg-[#FAF9F6] dark:hover:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer shrink-0"
+              className="p-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer shrink-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
               title="Copy account name"
+              aria-label="Copy account name"
             >
               {copiedField === 'accountName' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between gap-3">
+          <div className="p-3.5 rounded-lg bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between gap-3">
             <div className="min-w-0">
               <span className="text-[10px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] block">
                 GCash Mobile Number
@@ -399,8 +439,9 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
             <button
               type="button"
               onClick={() => handleCopy(gcashDetails.accountNumber, 'accountNumber')}
-              className="p-1.5 rounded-md hover:bg-[#FAF9F6] dark:hover:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer shrink-0"
+              className="p-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer shrink-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
               title="Copy mobile number"
+              aria-label="Copy mobile number"
             >
               {copiedField === 'accountNumber' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
             </button>
@@ -408,7 +449,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
         </div>
 
         {/* Step-by-step instructions text */}
-        <div className="pt-2 text-xs text-[#71717A] dark:text-[#A1A1AA] whitespace-pre-line leading-relaxed font-sans bg-white/60 dark:bg-black/30 p-3.5 rounded-lg border border-[#E4E2DC]/80 dark:border-[#27272A]/80">
+        <div className="pt-2 text-xs text-[#71717A] dark:text-[#A1A1AA] whitespace-pre-line leading-relaxed font-sans bg-white/60 dark:bg-black/30 p-3.5 rounded-lg border border-[#E4E2DC]/80 dark:border-[#222225]/80">
           {gcashDetails.instructions}
         </div>
       </div>
@@ -440,9 +481,9 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
 
       {/* 6. Pending Verification Banner */}
       {latestProof && latestProof.status === 'pending_verification' && (
-        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-900 dark:text-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
           <div className="space-y-0.5">
-            <div className="flex items-center gap-1.5 font-bold text-xs text-blue-600 dark:text-blue-400">
+            <div className="flex items-center gap-1.5 font-bold text-xs text-amber-600 dark:text-amber-400">
               <Clock className="w-3.5 h-3.5 animate-spin" />
               <span>Verification In Progress</span>
             </div>
@@ -454,7 +495,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
             type="button"
             onClick={() => handleViewReceipt(latestProof)}
             disabled={loadingSignedUrl}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#FAF9F6] border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] transition-colors cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] transition-colors cursor-pointer self-start sm:self-auto"
           >
             <Eye className="w-3.5 h-3.5 text-[#EA580C]" />
             <span>View Submitted Receipt</span>
@@ -466,22 +507,34 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
       {!showUploadForm && (commission.paymentStatus !== 'Paid' && !commission.totalPaid) && (
         <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-            Have you completed your GCash transfer? Submit your screenshot to confirm your production slot.
+            {isBudgetValid 
+              ? 'Have you completed your GCash transfer? Submit your screenshot to confirm your production slot.'
+              : 'Payment submission is temporarily disabled pending studio budget confirmation.'}
           </p>
-          <button
-            type="button"
-            onClick={() => setShowUploadForm(true)}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs shadow-xs transition-all cursor-pointer shrink-0"
-          >
-            <UploadCloud className="w-4 h-4" />
-            <span>{latestProof ? 'Submit Another Receipt' : 'Upload GCash Receipt'}</span>
-          </button>
+          {isBudgetValid ? (
+            <button
+              type="button"
+              onClick={() => setShowUploadForm(true)}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs shadow-xs transition-all cursor-pointer shrink-0"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>{latestProof ? 'Submit Another Receipt' : 'Upload GCash Receipt'}</span>
+            </button>
+          ) : (
+            <div 
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 text-xs font-mono cursor-not-allowed select-none"
+              title="Awaiting studio budget scope confirmation before accepting receipts"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Awaiting Budget Confirmation</span>
+            </div>
+          )}
         </div>
       )}
 
       {/* 8. Upload Form */}
       {showUploadForm && (
-        <form onSubmit={handleSubmitProof} className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-5 animate-in fade-in">
+        <form onSubmit={handleSubmitProof} className="pt-4 border-t border-[#E4E2DC] dark:border-[#222225] space-y-5 animate-in fade-in">
           <div className="flex items-center justify-between">
             <h4 className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC]">
               Submit GCash Payment Proof
@@ -517,7 +570,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
                   className={`p-3 rounded-lg border text-left text-xs font-mono transition-all cursor-pointer ${
                     paymentType === id
                       ? 'border-[#EA580C] bg-[#EA580C]/10 text-[#EA580C] font-bold'
-                      : 'border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA] hover:border-[#D4D2CA]'
+                      : 'border-[#E4E2DC] dark:border-[#222225] text-[#71717A] dark:text-[#A1A1AA] hover:border-[#D4D2CA]'
                   }`}
                 >
                   {label}
@@ -533,7 +586,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
             </label>
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-[#E4E2DC] dark:border-[#27272A] hover:border-[#EA580C] dark:hover:border-[#EA580C] rounded-xl p-6 text-center cursor-pointer transition-colors bg-[#FAF9F6] dark:bg-[#0F0F11]"
+              className="border-2 border-dashed border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C] dark:hover:border-[#EA580C] rounded-xl p-6 text-center cursor-pointer transition-colors bg-[#FAF9F6] dark:bg-[#18181B]"
             >
               <input
                 ref={fileInputRef}
@@ -554,12 +607,12 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
 
           {/* Local Preview if chosen */}
           {Boolean(filePreviewUrl && filePreviewUrl.trim()) && (
-            <div className="p-3 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between gap-3">
+            <div className="p-3 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <img
                   src={filePreviewUrl!}
                   alt="Selected receipt preview"
-                  className="w-14 h-14 object-cover rounded-lg border border-[#E4E2DC] dark:border-[#27272A] shrink-0"
+                  className="w-14 h-14 object-cover rounded-lg border border-[#E4E2DC] dark:border-[#222225] shrink-0"
                 />
                 <div className="min-w-0">
                   <span className="text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] block truncate">
@@ -596,7 +649,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
                 value={referenceNumber}
                 onChange={(e) => setReferenceNumber(e.target.value)}
                 placeholder="e.g. 9012 3456 7890"
-                className="w-full px-3 py-2 text-xs rounded-lg border border-[#E4E2DC] dark:border-[#27272A] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:ring-1 focus:ring-[#EA580C]"
+                className="w-full px-3 py-2 text-xs rounded-lg border border-[#E4E2DC] dark:border-[#222225] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:ring-1 focus:ring-[#EA580C]"
               />
             </div>
 
@@ -610,7 +663,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
                 value={clientNotes}
                 onChange={(e) => setClientNotes(e.target.value)}
                 placeholder="e.g. Sent from Juan D. GCash account"
-                className="w-full px-3 py-2 text-xs rounded-lg border border-[#E4E2DC] dark:border-[#27272A] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:ring-1 focus:ring-[#EA580C]"
+                className="w-full px-3 py-2 text-xs rounded-lg border border-[#E4E2DC] dark:border-[#222225] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:ring-1 focus:ring-[#EA580C]"
               />
             </div>
           </div>
@@ -667,7 +720,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
 
       {/* 9. Historical Receipts Manifest (if multiple exists) */}
       {proofs.length > 0 && (
-        <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-3">
+        <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#222225] space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold">
               Payment Submission History ({proofs.length})
@@ -686,7 +739,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
             {proofs.map((proof) => (
               <div
                 key={proof.id}
-                className="p-3 rounded-lg bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-between gap-3 text-xs"
+                className="p-3.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <FileText className="w-4 h-4 text-[#EA580C] shrink-0" />
@@ -700,7 +753,7 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#E4E2DC]/60 dark:border-[#222225]/60">
                   {proof.status === 'confirmed' ? (
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                       Confirmed
@@ -717,8 +770,9 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
                   <button
                     type="button"
                     onClick={() => handleViewReceipt(proof)}
-                    className="p-1 rounded text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC] cursor-pointer"
+                    className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
                     title="View Receipt"
+                    aria-label="View Receipt"
                   >
                     <Eye className="w-4 h-4" />
                   </button>
@@ -733,28 +787,29 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
       {activeProofSignedUrl && (
         <div 
           onClick={() => setActiveProofSignedUrl(null)}
-          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-xs flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in"
+          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 cursor-zoom-out animate-in fade-in"
         >
           <div 
             onClick={(e) => e.stopPropagation()} 
-            className="relative max-w-xl max-h-[85vh] bg-[#18181B] border border-white/10 rounded-2xl p-4 flex flex-col items-center cursor-default"
+            className="relative max-w-xl max-h-[90dvh] w-full bg-[#121214] border border-[#222225] rounded-xl p-4 flex flex-col items-center cursor-default shadow-2xl"
           >
-            <div className="w-full flex items-center justify-between pb-3 border-b border-white/10 text-white text-xs font-mono">
-              <span className="truncate max-w-xs">{activeProofName}</span>
+            <div className="w-full flex items-center justify-between pb-3 border-b border-[#222225] text-white text-xs font-mono">
+              <span className="truncate max-w-[200px] sm:max-w-xs">{activeProofName}</span>
               <button
                 type="button"
                 onClick={() => setActiveProofSignedUrl(null)}
-                className="text-white/70 hover:text-white cursor-pointer"
+                className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                aria-label="Close receipt preview"
               >
-                Close (✕)
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="py-3 max-h-[70vh] overflow-auto flex items-center justify-center">
+            <div className="py-3 max-h-[72dvh] overflow-auto flex items-center justify-center w-full">
               {Boolean(activeProofSignedUrl && activeProofSignedUrl.trim()) && (
                 <img
                   src={activeProofSignedUrl!}
                   alt="GCash Receipt Screenshot"
-                  className="max-h-[65vh] w-auto object-contain rounded-lg shadow-2xl"
+                  className="max-h-[65dvh] w-auto object-contain rounded-lg shadow-2xl"
                 />
               )}
             </div>

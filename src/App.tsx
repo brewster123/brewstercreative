@@ -37,7 +37,7 @@ const DatabaseErrorBanner: React.FC = () => {
   // Public visitors receive a clean, friendly fallback without database internals, raw errors, or SQL statements
   if (!isDevOrAdmin) {
     return (
-      <aside aria-label="Studio Notice" className="bg-[#18181B] text-white border-b border-[#27272A] px-4 py-3 text-xs z-50">
+      <aside aria-label="Studio Notice" className="bg-[#18181B] text-white border-b border-[#222225] px-4 py-3 text-xs z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="w-4 h-4 text-[#EA580C] shrink-0" />
@@ -50,7 +50,7 @@ const DatabaseErrorBanner: React.FC = () => {
               type="button"
               onClick={handleRetry}
               disabled={retrying}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#27272A] hover:bg-[#3F3F46] text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#222225] hover:bg-[#333338] text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
             >
               <RotateCcw className={`w-3.5 h-3.5 text-zinc-300 ${retrying ? 'animate-spin' : ''}`} />
               <span>{retrying ? 'Checking...' : 'Retry'}</span>
@@ -189,7 +189,7 @@ const MainLayout: React.FC = () => {
         if (currentUser?.role !== 'admin') {
           return (
             <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
-              <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
+              <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
                 <ShieldCheck className="w-5 h-5 text-[#EA580C]" />
               </div>
               <div className="space-y-2">
@@ -260,7 +260,7 @@ const MainLayout: React.FC = () => {
         if (currentUser?.role !== 'admin') {
           return (
             <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
-              <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
+              <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
                 <ShieldCheck className="w-5 h-5 text-[#EA580C]" />
               </div>
               <div className="space-y-2">
@@ -313,7 +313,7 @@ const MainLayout: React.FC = () => {
   }
 
   return (
-    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen'} flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative`}>
+    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-clip'} flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative`}>
       {/* Database Notice Banner */}
       <DatabaseErrorBanner />
 

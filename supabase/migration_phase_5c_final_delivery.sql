@@ -102,7 +102,8 @@ create policy "Clients can view deliverables for their commissions"
       select 1 from public.commissions c
       where c.id = commission_deliverables.commission_id
         and c.client_id = auth.uid()
-        and (c.payment_status = 'Paid' or c.total_paid = true)
+        and c.payment_status = 'Paid'
+        and c.total_paid = true
     )
   );
 
@@ -181,7 +182,7 @@ create policy "Admins can delete final deliverables"
 -- Client Storage Policy: Clients can only download/view deliverable objects when:
 -- 1. Object is in 'final-deliverables'
 -- 2. First path segment matches a commission they own
--- 3. Commission payment is confirmed (payment_status = 'Paid' or total_paid = true)
+-- 3. Commission payment is confirmed (payment_status = 'Paid' AND total_paid = true)
 create policy "Clients can view final deliverables for own commissions"
   on storage.objects for select
   using (
@@ -190,7 +191,8 @@ create policy "Clients can view final deliverables for own commissions"
       select 1 from public.commissions c
       where c.id::text = split_part(ltrim(name, '/'), '/', 1)
         and c.client_id = auth.uid()
-        and (c.payment_status = 'Paid' or c.total_paid = true)
+        and c.payment_status = 'Paid'
+        and c.total_paid = true
     )
   );
 

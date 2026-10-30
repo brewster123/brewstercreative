@@ -304,6 +304,52 @@
   color: #60A5FA !important;
 }
 
+/* Handmade Editorial Aesthetic Utilities (Reference Inspired) */
+.font-handwriting {
+  font-family: 'Caveat', cursive, sans-serif;
+}
+
+/* Outer architectural graph paper frame */
+.bg-graph-outer {
+  background-color: #DCD9D0;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.dark .bg-graph-outer {
+  background-color: #070709;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Notebook ruled paper lines */
+.bg-notebook-ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 31px,
+    rgba(0, 0, 0, 0.035) 32px
+  );
+}
+
+.dark .bg-notebook-ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 31px,
+    rgba(255, 255, 255, 0.03) 32px
+  );
+}
+
+/* Notched Folder Tab */
+.notched-tab {
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 100%, 0 100%);
+}
+
 /* Noise & Grid textures */
 .bg-noise {
   background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0);

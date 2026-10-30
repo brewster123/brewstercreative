@@ -151,26 +151,32 @@ export const Navbar: React.FC = () => {
             </span>
           </button>
 
-          {/* Desktop Navigation Links — Floating Pill (Visible at lg: 1024px+) */}
-          <nav className="hidden lg:flex items-center gap-0.5 lg:gap-1 bg-[#F4F2ED] dark:bg-[#121214] p-1 rounded-xl border border-[#E4E2DC] dark:border-[#222225]">
-            {navLinks.map((link) => (
-              <button
-                key={link.view}
-                id={`nav-link-${link.view}`}
-                type="button"
-                onClick={() => {
-                  setActiveView(link.view);
-                  setMobileMenuOpen(false);
-                }}
-                className={`px-2.5 lg:px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
-                  activeView === link.view || (link.view === 'shop' && activeView === 'product-detail')
-                    ? 'text-[#18181B] dark:text-[#EDEDEC] bg-white dark:bg-[#18181B] shadow-2xs font-semibold'
-                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-white/60 dark:hover:bg-[#18181B]/60'
-                }`}
-              >
-                {link.label}
-              </button>
-            ))}
+          {/* Desktop Navigation Links — Editorial Segmented Bar (Visible at lg: 1024px+) */}
+          <nav className="hidden lg:flex items-center gap-1 bg-[#F4F2ED] dark:bg-[#18181B] p-1.5 rounded-xl border border-[#E4E2DC] dark:border-[#222225]">
+            {navLinks.map((link) => {
+              const isActive = activeView === link.view || (link.view === 'shop' && activeView === 'product-detail');
+              const isHome = link.view === 'home';
+              return (
+                <button
+                  key={link.view}
+                  id={`nav-link-${link.view}`}
+                  type="button"
+                  onClick={() => {
+                    setActiveView(link.view);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`px-3 lg:px-3.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer whitespace-nowrap focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
+                    isActive
+                      ? isHome
+                        ? 'bg-[#FDE047] text-zinc-950 font-bold border border-[#EAB308] shadow-2xs'
+                        : 'text-[#18181B] dark:text-[#EDEDEC] bg-white dark:bg-[#222225] shadow-2xs font-bold border border-[#E4E2DC] dark:border-[#333338]'
+                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-white/60 dark:hover:bg-[#222225]/60 font-medium'
+                  }`}
+                >
+                  {isHome && isActive ? `★ ${link.label}` : link.label}
+                </button>
+              );
+            })}
           </nav>
 
           {/* Right Action Group: Desktop controls (>640px) + Single Mobile Menu Button (<640px) */}

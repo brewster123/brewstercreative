@@ -103,6 +103,11 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
     }
   };
 
+  const defaultProjectImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80';
+  const resolvedImage = (project.image && typeof project.image === 'string' && project.image.trim()) 
+    ? project.image.trim() 
+    : defaultProjectImage;
+
   return (
     <article
       onClick={(e) => {
@@ -112,28 +117,29 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
       }}
       className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#D4D2CA] dark:hover:border-[#333338] transition-all duration-300 cursor-pointer shadow-2xs hover:shadow-xs motion-reduce:transition-none ${className}`}
     >
+      {/* Subtle washi tape corner mount */}
+      <div className="absolute -top-2.5 right-6 w-12 h-4 bg-[#BAE6FD]/75 dark:bg-[#0369A1]/50 rotate-3 border border-white/50 shadow-2xs z-20 pointer-events-none group-hover:rotate-6 transition-transform" />
+
       {/* Artwork Viewport — High-Fidelity Breathing Room */}
       <div 
-        className={`relative overflow-hidden bg-[#FAF9F6] dark:bg-[#09090B] ${
+        className={`relative overflow-hidden bg-[#FAF9F6] dark:bg-[#09090B] w-full min-h-[190px] ${
           isFeatured ? 'aspect-[16/10] sm:aspect-[16/9]' : isWide ? 'aspect-[16/9]' : 'aspect-[4/3]'
         }`}
       >
         <img
-          src={project.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80'}
+          src={resolvedImage}
           alt={project.title || 'Portfolio artwork'}
-          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-103 motion-reduce:transform-none"
-          loading="lazy"
+          loading="eager"
+          decoding="async"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (target.src !== defaultProjectImage) {
+              target.src = defaultProjectImage;
+            }
+          }}
+          className="w-full h-full object-cover block transition-transform duration-500 ease-out group-hover:scale-103 motion-reduce:transform-none"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-40 group-hover:opacity-20 transition-opacity duration-300" />
-
-        {/* Quiet Category & Project Type Eyebrow — Clean Unboxed Metadata */}
-        <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/75 backdrop-blur-xs border border-white/10 text-white font-mono text-[10px] uppercase tracking-wider font-semibold">
-          <span>{project.category}</span>
-          <span aria-hidden="true" className="text-zinc-400">·</span>
-          <span className={project.projectType === 'client' ? 'text-emerald-300 font-bold' : 'text-amber-300 font-bold'}>
-            {project.projectType === 'client' ? 'Commission' : 'Concept'}
-          </span>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-40 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none" />
 
         {/* Top-Right Quick Actions: Preview / Share / Hover Inspect */}
         <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 z-10">
@@ -180,15 +186,17 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
       {/* Editorial Content */}
       <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
         <div className="space-y-2.5">
-          {/* Metadata String */}
-          <div className="flex items-center gap-2 text-[11px] text-[#71717A] dark:text-[#A1A1AA] font-mono tracking-wider uppercase font-semibold">
-            <span>
-              {project.projectType === 'concept' || !project.projectType
-                ? (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Studio Concept')
-                : (project.client || 'Client Commission')}
+          {/* Editorial Unboxed Metadata String */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-mono tracking-wider uppercase font-semibold">
+            <span className="text-[#EA580C]">{project.category}</span>
+            <span aria-hidden="true" className="text-[#A1A1AA] dark:text-[#52525B]">·</span>
+            <span className={project.projectType === 'client' ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#71717A] dark:text-[#A1A1AA]'}>
+              {project.projectType === 'client'
+                ? (project.client || 'Client Commission')
+                : (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Studio Concept')}
             </span>
-            <span aria-hidden="true" className="text-[#A1A1AA]">•</span>
-            <span>{project.date}</span>
+            <span aria-hidden="true" className="text-[#A1A1AA] dark:text-[#52525B]">·</span>
+            <span className="text-[#71717A] dark:text-[#71717A]">{project.date}</span>
           </div>
 
           <h3 className="font-display text-xl sm:text-2xl font-bold leading-snug">

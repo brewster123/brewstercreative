@@ -313,20 +313,36 @@ const MainLayout: React.FC = () => {
   }
 
   return (
-    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-clip'} flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative`}>
+    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'} flex flex-col bg-graph-outer text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative`}>
+      {/* Accessible Skip Link */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#EA580C] focus:text-white focus:font-semibold focus:rounded-md focus:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-white transition-all motion-reduce:transition-none"
+      >
+        Skip to main content
+      </a>
+
       {/* Database Notice Banner */}
       <DatabaseErrorBanner />
 
-      {/* Primary Sticky Navigation Header */}
-      <Navbar />
+      {/* Main Notebook Canvas Frame (Architectural Sheet Inspired by Reference) */}
+      <div className={`w-full ${isChatView ? 'h-full flex flex-col' : 'max-w-[1360px] mx-auto min-h-screen xl:border-x xl:border-[#D0CDC4] dark:xl:border-[#222225] xl:shadow-2xl'} bg-[#FAF8F5] dark:bg-[#121214] flex flex-col relative`}>
+        {/* Primary Sticky Navigation Header */}
+        <Navbar />
 
-      {/* Main Page Body View */}
-      <main className={`flex-1 ${isChatView ? 'min-h-0 flex flex-col overflow-hidden' : ''}`}>
-        {renderCurrentView()}
-      </main>
+        {/* Main Page Body View with Subtle View Transition */}
+        <main 
+          id="main-content"
+          tabIndex={-1}
+          key={activeView}
+          className={`flex-1 ${isChatView ? 'min-h-0 flex flex-col overflow-hidden' : ''} outline-hidden animate-in fade-in duration-200 motion-reduce:animate-none`}
+        >
+          {renderCurrentView()}
+        </main>
 
-      {/* Studio Footer */}
-      {!isChatView && <Footer />}
+        {/* Studio Footer */}
+        {!isChatView && <Footer />}
+      </div>
       
     </div>
   );

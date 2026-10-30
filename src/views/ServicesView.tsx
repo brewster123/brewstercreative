@@ -57,16 +57,17 @@ export const ServicesView: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 sm:space-y-20">
+    <div className="bg-notebook-ruled min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 sm:space-y-20">
       
       {/* Editorial Services Header */}
       <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-8 sm:pb-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-3.5 max-w-2xl">
-            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-bold">
-              <span>Studio Practice &amp; Menu</span>
-              <span aria-hidden="true" className="text-[#A1A1AA]">·</span>
-              <span>Make noise. Make meaning.</span>
+            <div className="flex items-center gap-2">
+              <span className="font-handwriting text-2xl text-[#EA580C]">the catalogue</span>
+              <span className="font-mono text-[11px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-bold">
+                · Studio Practice &amp; Menu
+              </span>
             </div>
 
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tighter leading-[1.04]">

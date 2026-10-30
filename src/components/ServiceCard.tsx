@@ -45,8 +45,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const formattedIndex = String(index + 1).padStart(2, '0');
-
   return (
     <article
       onClick={(e) => {
@@ -56,17 +54,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       }}
       className="group relative bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#D4D2CA] dark:hover:border-[#333338] rounded-2xl p-6 sm:p-8 lg:p-10 transition-all duration-300 cursor-pointer shadow-2xs hover:shadow-xs space-y-6 motion-reduce:transition-none"
     >
-      {/* Top Editorial Index & Meta Bar */}
+      {/* Subtle washi tape accent */}
+      <div className="absolute -top-2.5 right-8 w-12 h-4 bg-[#FEF08A]/75 dark:bg-[#CA8A04]/40 rotate-3 border border-white/50 shadow-2xs pointer-events-none group-hover:rotate-6 transition-transform" />
+
+      {/* Top Editorial Category & Meta Bar */}
       <div className="flex items-center justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#222225] pb-4">
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
-            PRACTICE {formattedIndex}
-          </span>
-          <span className="text-[#A1A1AA]" aria-hidden="true">/</span>
-          <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider font-semibold">
-            {service.category}
-          </span>
-        </div>
+        <span className="font-mono text-xs text-[#EA580C] uppercase tracking-wider font-bold">
+          {service.category}
+        </span>
         {service.popular && (
           <span className="font-mono text-[11px] uppercase tracking-wider font-bold text-[#EA580C] bg-[#FFF7ED] dark:bg-[#78350F]/30 px-2.5 py-0.5 rounded border border-[#FFEDD5] dark:border-[#92400E]">
             Core Offering

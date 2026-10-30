@@ -4,15 +4,17 @@ import {
   Send, 
   ArrowRight, 
   CheckCircle2, 
-  ChevronRight,
-  Layers,
-  Sparkles,
-  Compass,
-  Sliders,
-  Palette
+  Layers, 
+  Sparkles, 
+  Compass, 
+  Sliders, 
+  Palette,
+  ExternalLink,
+  Eye,
+  Heart
 } from 'lucide-react';
-import { PortfolioCard } from '../components/PortfolioCard';
 import { PortfolioModal } from '../components/PortfolioModal';
+import { getProjectLikes, getProjectViews } from '../lib/portfolio';
 
 export const HomeView: React.FC = () => {
   const { 
@@ -25,7 +27,7 @@ export const HomeView: React.FC = () => {
   } = useApp();
 
   const explicitFeatured = portfolio.filter(p => p.featured);
-  const featuredPortfolio = explicitFeatured.length > 0 ? explicitFeatured.slice(0, 4) : portfolio.slice(0, 4);
+  const featuredPortfolio = explicitFeatured.length > 0 ? explicitFeatured.slice(0, 3) : portfolio.slice(0, 3);
   const featuredPiece = featuredPortfolio[0] || portfolio[0];
 
   // Creative process stages matching design specification
@@ -33,13 +35,13 @@ export const HomeView: React.FC = () => {
     {
       step: '01',
       title: 'Consultation & Brief',
-      desc: 'Submit your project parameters, creative vision, target dimensions, reference moodboards, and deadline through the studio intake.',
+      desc: 'Submit your creative parameters, dimensions, moodboard references, and deadlines through the studio intake.',
       detail: 'Online Briefing & Alignment'
     },
     {
       step: '02',
       title: 'Scope Alignment & Deposit',
-      desc: 'Connect in the real-time client workspace to finalize deliverables, secure the 50% project deposit, and reserve your studio production slot.',
+      desc: 'Connect in the real-time client workspace to finalize deliverables, secure the 50% deposit, and reserve your production slot.',
       detail: '50% Secured Reservation'
     },
     {
@@ -51,412 +53,382 @@ export const HomeView: React.FC = () => {
     {
       step: '04',
       title: 'Archival Master Delivery',
-      desc: 'Receive master production files (scalable vector AI/SVG, 300 DPI print-ready PDFs, layered source packages) with full commercial rights.',
+      desc: 'Receive master production files (scalable vector AI/SVG, 300 DPI print-ready PDFs, layered source packages) with commercial rights.',
       detail: 'Archival Master Packages'
     },
   ];
 
-  // Core capabilities overview with editorial broadsheet structure
-  const capabilities = [
-    {
-      tag: 'IDENTITY SYSTEMS',
-      num: '01',
-      title: 'Visual Identity & Brand Systems',
-      desc: 'Distinctive brand marks, typographic lockups, comprehensive visual guidelines, and vector asset libraries crafted for lasting presence.',
-      deliverables: ['Custom Vector Marks', 'Typography Guidelines', 'Color Specifications', 'Master Asset Kits'],
-      icon: Compass
-    },
-    {
-      tag: 'PRINT & MERCHANDISE',
-      num: '02',
-      title: 'Poster Art, Covers & Merchandise',
-      desc: 'Exhibition-grade poster illustrations, album covers, apparel graphics, and packaging with obsessive attention to ink and print aesthetics.',
-      deliverables: ['300 DPI Print Masters', 'Silk-Screen Separations', 'Packaging Dielines', 'Merch Vector Specs'],
-      icon: Palette
-    },
-    {
-      tag: 'DIGITAL MEDIA',
-      num: '03',
-      title: 'Digital Art & Creative Campaigns',
-      desc: 'High-contrast multimedia visual storytelling, marketing assets, and bespoke illustrations tailored for modern digital ecosystems.',
-      deliverables: ['Multi-Ratio Exports', 'Campaign Key Art', 'Social Toolkits', 'Vector Art Archives'],
-      icon: Sliders
-    },
-  ];
+  const defaultProjectImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80';
+  const heroFeaturedImage = (featuredPiece?.image && typeof featuredPiece.image === 'string' && featuredPiece.image.trim())
+    ? featuredPiece.image.trim()
+    : defaultProjectImage;
 
   return (
-    <div className="space-y-16 sm:space-y-24 lg:space-y-32 pb-20 sm:pb-24 pt-3 sm:pt-6 lg:pt-10">
+    <div className="bg-notebook-ruled min-h-screen space-y-16 sm:space-y-24 lg:space-y-32 pb-20 sm:pb-28 pt-6 sm:pt-10">
       
       {/* ======================================================== */}
-      {/* 1. HERO SECTION (Editorial Studio Atelier Presentation)   */}
+      {/* 1. HERO SECTION (Editorial Reference Composition)        */}
       {/* ======================================================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col items-center text-center space-y-6 sm:space-y-8">
           
-          {/* Left Column: Expressive Typography, Tagline, CTAs & Studio Status */}
-          <div className="lg:col-span-7 space-y-6 sm:space-y-8">
+          {/* Top Tape Badges & "my name is" Annotation */}
+          <div className="w-full flex items-center justify-between max-w-2xl px-2">
+            <span className="px-3 py-1 rounded bg-[#D1FAE5] text-[#065F46] dark:bg-[#064E3B]/80 dark:text-[#A7F3D0] border border-[#6EE7B7]/70 text-[11px] font-mono font-bold tracking-wider uppercase rotate-[-2deg] shadow-2xs">
+              MADE THINGS
+            </span>
             
-            {/* Studio Status Eyebrow with Active Commission Indicator */}
-            <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-[#FAF9F6] dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] shadow-2xs">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EA580C] opacity-75 motion-reduce:hidden" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#EA580C]" />
+            <div className="flex flex-col items-center">
+              <span className="font-handwriting text-2xl sm:text-3xl text-[#52525B] dark:text-[#A1A1AA] select-none">
+                my name is
               </span>
-              <span className="font-mono text-[11px] sm:text-xs uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold">
-                Studio Commission Slots Open · 1-on-1 Collaboration
-              </span>
+              <svg className="w-16 h-2 text-[#71717A] dark:text-[#A1A1AA]" viewBox="0 0 64 8" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M2 4 Q 16 1 32 4 T 62 4" />
+                <path d="M6 7 Q 20 5 36 7 T 58 7" />
+              </svg>
             </div>
 
-            {/* Oversized Expressive Headline & Tagline Placement */}
-            <div className="space-y-4 sm:space-y-5">
-              <h1 className="font-display text-4xl min-[380px]:text-5xl sm:text-6xl md:text-6xl lg:text-7xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tighter leading-[1.02] sm:leading-[0.98] text-balance">
-                Visual Systems &amp;{' '}
-                <span className="block sm:inline">Bespoke Artistry </span>
-                <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-[#18181B] via-[#EA580C] to-[#18181B] dark:from-[#EDEDEC] dark:via-[#EA580C] dark:to-[#EDEDEC]">
-                  for Visionary Projects.
-                </span>
+            <span className="px-3 py-1 rounded bg-[#FEF3C7] text-[#92400E] dark:bg-[#78350F]/70 dark:text-[#FDE68A] border border-[#FCD34D]/70 text-[11px] font-mono font-bold tracking-wider uppercase rotate-[2.5deg] shadow-2xs">
+              SWEAT THE DETAILS
+            </span>
+          </div>
+
+          {/* Central Sketched Box with the Studio Wordmark */}
+          <div className="relative inline-block my-2 sm:my-3">
+            {/* The imperfect hand-drawn box */}
+            <div className="relative px-6 sm:px-14 py-4 sm:py-7 border-2 sm:border-3 border-[#EA580C] rounded-xl -rotate-0.5 shadow-sm bg-white/80 dark:bg-[#18181B]/90 backdrop-blur-xs">
+              <h1 className="font-display text-4xl min-[380px]:text-5xl sm:text-7xl lg:text-8.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tighter leading-none select-none uppercase">
+                {studioProfile.studioName || 'DESTALION'}
               </h1>
-
-              {/* High-Impact Tagline Placement */}
-              <div className="flex items-center gap-3">
-                <span className="h-px w-8 bg-[#EA580C]" aria-hidden="true" />
-                <p className="font-mono text-sm sm:text-base font-bold text-[#EA580C] uppercase tracking-widest">
-                  Make noise. Make meaning.
-                </p>
-              </div>
-
-              <p className="text-sm sm:text-base lg:text-lg text-[#52525B] dark:text-[#A1A1AA] max-w-xl leading-relaxed font-normal">
-                DESTALION is an independent experimental multimedia design studio crafting distinctive brand marks, screen-print posters, and bespoke digital illustrations with obsessive craftsmanship.
-              </p>
             </div>
 
-            {/* Primary & Secondary Action Triggers */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-              <button
-                id="hero-btn-start-commission"
-                type="button"
-                onClick={() => setActiveView('commission-form')}
-                className="w-full sm:w-auto min-h-[44px] h-12 px-6 sm:px-7 rounded-lg bg-[#EA580C] hover:bg-[#D94814] active:bg-[#C23E0E] text-white font-semibold text-sm transition-all shadow-xs flex items-center justify-center gap-2.5 cursor-pointer group btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF9F6] dark:focus-visible:ring-offset-[#09090B] motion-reduce:transition-none"
-              >
-                <Send className="w-4 h-4 group-hover:translate-x-0.5 transition-transform motion-reduce:transform-none" />
-                <span>Start a Commission</span>
-              </button>
-
-              <button
-                id="hero-btn-view-portfolio"
-                type="button"
-                onClick={() => setActiveView('portfolio')}
-                className="w-full sm:w-auto min-h-[44px] h-12 px-6 sm:px-7 rounded-lg bg-white dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-sm transition-all border border-[#E4E2DC] dark:border-[#222225] shadow-2xs flex items-center justify-center gap-2 cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF9F6] dark:focus-visible:ring-offset-[#09090B] motion-reduce:transition-none"
-              >
-                <span>Explore Selected Works</span>
-                <ArrowRight className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
-              </button>
-            </div>
-
-            {/* Studio Guarantees Ledger */}
-            <div className="pt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C] shrink-0" />
-                <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">100% Original Craft</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]/50 shrink-0" />
-                <span>Direct Studio Lead Access</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]/50 shrink-0" />
-                <span>Scalable Vectors &amp; 300 DPI Masters</span>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Right Column: Featured Exhibition Frame */}
-          <div className="lg:col-span-5 relative mt-4 lg:mt-0">
-            {featuredPiece ? (
-              <div className="relative rounded-2xl overflow-hidden bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] shadow-xs group">
-                {/* Artwork Viewport */}
-                <div className="relative aspect-[4/5] sm:aspect-[16/10] lg:aspect-[4/5] overflow-hidden bg-[#FAF9F6] dark:bg-[#09090B]">
-                  <img
-                    src={featuredPiece.image}
-                    alt={featuredPiece.title}
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-103 motion-reduce:transform-none"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                  
-                  {/* Top Floating Badge */}
-                  <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#EA580C] bg-black/80 backdrop-blur-xs px-2.5 py-1 rounded border border-white/10 font-bold">
-                      Curated Exhibition Piece
-                    </span>
-                  </div>
-
-                  {/* Artwork Meta Overlay */}
-                  <div className="absolute bottom-4 left-4 right-4 text-white space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] font-mono text-zinc-300">
-                      <span>{featuredPiece.category || 'Visual System'}</span>
-                      <span className={featuredPiece.projectType === 'client' ? 'text-emerald-300 font-semibold' : 'text-amber-300 font-semibold'}>
-                        {featuredPiece.projectType === 'client' ? 'Client Commission' : 'Studio Concept'}
-                      </span>
-                    </div>
-
-                    <h3 className="font-display font-black text-xl sm:text-2xl text-white leading-tight">
-                      {featuredPiece.title}
-                    </h3>
-
-                    {featuredPiece.shortDesc && (
-                      <p className="text-xs text-zinc-300 line-clamp-2 font-normal leading-relaxed">
-                        {featuredPiece.shortDesc}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Exhibition Footer Inspection */}
-                <div className="p-4 bg-white dark:bg-[#121214] flex items-center justify-between text-xs border-t border-[#E4E2DC] dark:border-[#222225]">
-                  <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider font-semibold">
-                    Studio Archive · Case Study
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => openCaseStudy(featuredPiece)}
-                    className="text-xs font-semibold text-[#EA580C] hover:text-[#D94814] flex items-center gap-1.5 cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded px-1.5 py-1 group/btn"
-                  >
-                    <span>Inspect Case Study</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="relative rounded-2xl overflow-hidden bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] shadow-xs flex flex-col justify-between">
-                {/* Standby Visual Frame */}
-                <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-[#FAF9F6] via-white to-[#F4F3EF] dark:from-[#0E0E10] dark:via-[#121214] dark:to-[#18181B] flex flex-col items-center justify-center p-8 text-center">
-                  <div className="absolute inset-0 bg-[radial-gradient(#EA580C_1px,transparent_1px)] [background-size:16px_16px] opacity-15" />
-                  
-                  <div className="relative z-10 space-y-4 max-w-xs">
-                    <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#1A1A1E] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center mx-auto text-[#EA580C] shadow-xs">
-                      <Layers className="w-7 h-7" />
-                    </div>
-                    
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-[#EA580C] font-bold block">
-                        Studio Archive · Standby
-                      </span>
-                      <h3 className="font-display font-bold text-lg text-[#18181B] dark:text-white">
-                        Curating Studio Exhibition
-                      </h3>
-                      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
-                        New commissioned identities and studio case studies will be featured here upon release.
-                      </p>
-                    </div>
-
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setActiveView('commission-form')}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer min-h-[44px]"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Commission Work</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-white dark:bg-[#121214] flex items-center justify-between text-xs border-t border-[#E4E2DC] dark:border-[#222225]">
-                  <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider font-semibold">
-                    Studio Exhibition
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setActiveView('services')}
-                    className="text-xs font-semibold text-[#EA580C] hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Explore Disciplines</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-        </div>
-      </section>
-
-      {/* ======================================================== */}
-      {/* 2. STUDIO MANIFESTO TICKER RIBBON (Editorial Identity)    */}
-      {/* ======================================================== */}
-      <section className="border-y border-[#E4E2DC] dark:border-[#222225] bg-white dark:bg-[#121214] py-4 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-6 overflow-x-auto no-scrollbar font-mono text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap uppercase tracking-widest font-semibold">
-            <span className="text-[#EA580C] font-bold">MAKE NOISE. MAKE MEANING.</span>
-            <span className="text-[#A1A1AA]" aria-hidden="true">·</span>
-            <span>BESPOKE VISUAL SYSTEMS</span>
-            <span className="text-[#A1A1AA]" aria-hidden="true">·</span>
-            <span>OBSESSIVE VECTOR PRECISION</span>
-            <span className="text-[#A1A1AA]" aria-hidden="true">·</span>
-            <span>300 DPI ARCHIVAL MASTERS</span>
-            <span className="text-[#A1A1AA]" aria-hidden="true">·</span>
-            <span>DIRECT 1-ON-1 ART DIRECTION</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ======================================================== */}
-      {/* 3. DESIGN SERVICES & DISCIPLINES (Editorial Broadsheet)    */}
-      {/* ======================================================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-8 sm:space-y-12">
-          
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#222225] pb-6">
-            <div className="space-y-2 max-w-xl">
-              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold block">
-                01. DISCIPLINES &amp; CRAFT
+            {/* Bottom-Left Sticker Tag with Hand-Drawn Arrow */}
+            <div className="absolute -bottom-5 -left-2 sm:-left-8 flex items-center gap-1.5 rotate-[-3.5deg] z-10">
+              <span className="px-2.5 py-1 rounded bg-[#FDE047] text-zinc-950 border border-[#EAB308] text-[10px] sm:text-[11px] font-mono font-bold uppercase shadow-2xs whitespace-nowrap">
+                Multimedia Studio
               </span>
-              <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-                Design Services &amp; Disciplines
+              <svg className="w-5 h-4 text-[#EA580C] hidden sm:block" viewBox="0 0 20 16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M2 14 Q 10 14 16 4 M 16 4 L 11 4 M 16 4 L 16 9" />
+              </svg>
+            </div>
+
+            {/* Bottom-Right Sticker Tag with Hand-Drawn Arrow */}
+            <div className="absolute -bottom-5 -right-2 sm:-right-8 flex items-center gap-1.5 rotate-[3deg] z-10">
+              <svg className="w-5 h-4 text-[#EA580C] hidden sm:block" viewBox="0 0 20 16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 14 Q 10 14 4 4 M 4 4 L 9 4 M 4 4 L 4 9" />
+              </svg>
+              <span className="px-2.5 py-1 rounded bg-[#CFFAFE] text-[#155E75] dark:bg-[#164E63] dark:text-[#A5F3FC] border border-[#67E8F9] text-[10px] sm:text-[11px] font-mono font-bold uppercase shadow-2xs whitespace-nowrap">
+                {studioProfile.location || 'Cebu City / Worldwide'}
+              </span>
+            </div>
+          </div>
+
+          {/* Availability Status Bar */}
+          <div className="pt-3 sm:pt-4 flex items-center justify-center gap-2 text-xs font-mono tracking-widest text-[#18181B] dark:text-[#EDEDEC] uppercase font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>OPEN TO COMMISSIONS &amp; VISIONARY COLLABORATION</span>
+          </div>
+
+          {/* Statement Headline Flanked by Avatar Badges */}
+          <div className="flex items-center justify-center gap-4 sm:gap-8 max-w-4xl mx-auto pt-3 sm:pt-5">
+            {/* Left Circular Avatar Stamp */}
+            <div className="hidden sm:block shrink-0 w-14 h-14 rounded-full p-1 ring-2 ring-[#EA580C] bg-white dark:bg-[#18181B] shadow-sm rotate-[-6deg]">
+              <img
+                src={studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
+                alt={studioProfile.designerName}
+                className="w-full h-full object-cover rounded-full"
+              />
+            </div>
+
+            <div className="space-y-3 max-w-2xl px-2">
+              <h2 className="font-display text-2xl min-[400px]:text-3xl sm:text-4.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-snug">
+                Visual systems &amp; bespoke artistry that make noise and make meaning.
               </h2>
-              <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
-                Structured practices from single-release key visuals to comprehensive multi-touchpoint brand identities.
+              <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-lg mx-auto leading-relaxed font-normal">
+                {studioProfile.bio}
               </p>
             </div>
-            
+
+            {/* Right Circular Avatar Stamp */}
+            <div className="hidden sm:block shrink-0 w-14 h-14 rounded-full p-1 ring-2 ring-[#EA580C] bg-white dark:bg-[#18181B] shadow-sm rotate-[6deg]">
+              <img
+                src={studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
+                alt="Studio Lead"
+                className="w-full h-full object-cover rounded-full"
+              />
+            </div>
+          </div>
+
+          {/* Primary Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 w-full max-w-md sm:max-w-none">
             <button
+              id="hero-btn-start-commission"
               type="button"
-              onClick={() => setActiveView('services')}
-              className="text-xs sm:text-sm text-[#EA580C] hover:text-[#D94814] font-semibold hover:underline flex items-center gap-1.5 cursor-pointer self-start sm:self-auto btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded px-1.5 py-1 min-h-[44px]"
+              onClick={() => setActiveView('commission-form')}
+              className="w-full sm:w-auto min-h-[44px] h-11 sm:h-12 px-7 rounded-lg bg-[#EA580C] hover:bg-[#D94814] active:bg-[#C23E0E] text-white font-semibold text-sm transition-all shadow-xs flex items-center justify-center gap-2.5 cursor-pointer btn-tactile border border-[#C23E0E] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
             >
-              <span>Explore All Packages &amp; Rates</span>
-              <ChevronRight className="w-4 h-4" />
+              <Send className="w-4 h-4" />
+              <span>Start a Commission</span>
+            </button>
+
+            <button
+              id="hero-btn-view-portfolio"
+              type="button"
+              onClick={() => setActiveView('portfolio')}
+              className="w-full sm:w-auto min-h-[44px] h-11 sm:h-12 px-7 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#222225] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-sm transition-all border border-[#E4E2DC] dark:border-[#333338] shadow-2xs flex items-center justify-center gap-2 cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+            >
+              <span>Explore Selected Works</span>
+              <ArrowRight className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
             </button>
           </div>
 
-          {/* Editorial Broadsheet List Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-            {capabilities.map((cap, i) => {
-              const Icon = cap.icon;
-              return (
-                <article 
-                  key={i}
-                  className="group bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#D4D2CA] dark:hover:border-[#333338] rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-2xs hover:shadow-xs transition-all duration-300 space-y-6 motion-reduce:transition-none"
-                >
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
-                      <span className="font-mono text-xs uppercase tracking-wider text-[#EA580C] font-bold">
-                        {cap.tag}
-                      </span>
-                      <span className="font-mono text-sm text-[#71717A] dark:text-[#A1A1AA] font-semibold">
-                        /{cap.num}
-                      </span>
-                    </div>
+        </div>
+      </section>
 
-                    <div className="w-10 h-10 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-center text-[#EA580C] shadow-2xs group-hover:scale-105 transition-transform">
-                      <Icon className="w-5 h-5" />
-                    </div>
+      {/* ======================================================== */}
+      {/* 2. THE ATELIER ("what's up" Editorial Monograph)          */}
+      {/* ======================================================== */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative pt-6">
+          {/* Hand-Drawn Dividing Wave Rule */}
+          <div className="w-full flex items-center justify-center mb-8 sm:mb-12">
+            <svg className="w-full max-w-3xl h-4 text-[#E4E2DC] dark:text-[#333338]" viewBox="0 0 800 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M0 8 Q 200 2 400 8 T 800 8" />
+            </svg>
+          </div>
 
-                    <h3 className="font-display font-black text-xl sm:text-2xl text-[#18181B] dark:text-[#EDEDEC] group-hover:text-[#EA580C] transition-colors">
-                      {cap.title}
-                    </h3>
+          {/* Section Eyebrow Annotation & Boxed Badge */}
+          <div className="flex flex-col items-center space-y-3 mb-8 sm:mb-12">
+            <span className="font-handwriting text-2xl sm:text-3xl text-[#52525B] dark:text-[#A1A1AA] self-start sm:self-center -ml-4 sm:ml-0">
+              about the studio!
+            </span>
+            <div className="px-4 py-1 rounded border border-[#18181B] dark:border-[#EDEDEC] text-xs font-mono uppercase font-bold tracking-widest bg-white dark:bg-[#18181B] shadow-2xs">
+              what's up
+            </div>
+          </div>
 
-                    <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
-                      {cap.desc}
-                    </p>
+          {/* Monograph Spread: Polaroid on Left, Bio in Center, Workspace on Right */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Polaroid: Brewster Cabando */}
+            <div className="lg:col-span-3 flex justify-center order-2 lg:order-1">
+              <div className="relative bg-white dark:bg-[#18181B] p-3 pb-5 rounded-sm shadow-md border border-[#E4E2DC] dark:border-[#27272A] max-w-[210px] rotate-[-3.5deg] hover:rotate-0 transition-transform duration-300">
+                {/* Washi Tape Strip across top left */}
+                <div className="absolute -top-3 -left-3 w-14 h-5 bg-[#BFDBFE]/80 dark:bg-[#1E3A8A]/60 -rotate-25 border border-white/50 shadow-2xs pointer-events-none" />
+                <div className="aspect-square overflow-hidden bg-zinc-100 dark:bg-zinc-800 rounded-2xs mb-2">
+                  <img
+                    src={studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
+                    alt="Brewster Cabando"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <p className="font-handwriting text-lg text-center text-[#52525B] dark:text-[#A1A1AA] pt-1">
+                  director · 2026
+                </p>
+              </div>
+            </div>
 
-                    {/* Deliverable Tags */}
-                    <div className="pt-2 flex flex-wrap gap-1.5">
-                      {cap.deliverables.map((item, idx) => (
-                        <span 
-                          key={idx}
-                          className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#52525B] dark:text-[#A1A1AA]"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+            {/* Center Story & Creative Philosophy */}
+            <div className="lg:col-span-6 space-y-6 text-center order-1 lg:order-2 px-2">
+              <p className="font-handwriting text-2xl sm:text-3.5xl text-[#18181B] dark:text-[#EDEDEC] leading-relaxed max-w-xl mx-auto">
+                I'm Brewster Cabando — a brand designer and multimedia artist who gets a little too excited about making complex things feel clear, bold, and resonant. ✨ I care about the small details, the edge cases everyone forgets, and shipping work that genuinely leaves a mark. 🎨
+              </p>
 
-                  <div className="pt-6 border-t border-[#E4E2DC] dark:border-[#222225]">
-                    <button
-                      type="button"
-                      onClick={() => setActiveView('services')}
-                      className="w-full text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:text-[#EA580C] dark:hover:text-[#EA580C] flex items-center justify-between transition-colors cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded p-1 min-h-[44px]"
-                    >
-                      <span>View deliverables &amp; timeline</span>
-                      <ArrowRight className="w-4 h-4 text-[#EA580C]" />
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
+              {/* Colorful Tactile Discipline Stamps (Matching Reference Style) */}
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 pt-2">
+                <span className="px-3.5 py-1.5 rounded-lg bg-[#FDE047] text-zinc-950 border border-[#EAB308] text-xs font-bold font-mono tracking-wide shadow-2xs rotate-[-1deg]">
+                  Brand Identity Systems ✦
+                </span>
+                <span className="px-3.5 py-1.5 rounded-lg bg-[#10B981] text-white border border-[#059669] text-xs font-bold font-mono tracking-wide shadow-2xs rotate-[1.5deg]">
+                  Screen-print Posters 🎨
+                </span>
+                <span className="px-3.5 py-1.5 rounded-lg bg-[#F43F5E] text-white border border-[#E11D48] text-xs font-bold font-mono tracking-wide shadow-2xs rotate-[-1.5deg]">
+                  Digital Illustration 🧩
+                </span>
+                <span className="px-3.5 py-1.5 rounded-lg bg-[#2563EB] text-white border border-[#1D4ED8] text-xs font-bold font-mono tracking-wide shadow-2xs rotate-[1deg]">
+                  Custom Vector Systems 👀
+                </span>
+              </div>
+            </div>
+
+            {/* Right Polaroid: Workspace / Print Bench */}
+            <div className="lg:col-span-3 flex justify-center order-3">
+              <div className="relative bg-white dark:bg-[#18181B] p-3 pb-5 rounded-sm shadow-md border border-[#E4E2DC] dark:border-[#27272A] max-w-[210px] rotate-[3.5deg] hover:rotate-0 transition-transform duration-300">
+                {/* Washi Tape Strip across top right */}
+                <div className="absolute -top-3 -right-3 w-14 h-5 bg-[#FDE68A]/85 dark:bg-[#854D0E]/60 rotate-25 border border-white/50 shadow-2xs pointer-events-none" />
+                <div className="aspect-square overflow-hidden bg-zinc-100 dark:bg-zinc-800 rounded-2xs mb-2">
+                  <img
+                    src="https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=600&auto=format&fit=crop&q=80"
+                    alt="The atelier workspace"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <p className="font-handwriting text-lg text-center text-[#52525B] dark:text-[#A1A1AA] pt-1">
+                  the workspace
+                </p>
+              </div>
+            </div>
+
           </div>
 
         </div>
       </section>
 
       {/* ======================================================== */}
-      {/* 4. SELECTED WORKS & CASE STUDIES (Asymmetrical Flow)     */}
+      {/* 3. SELECTED WORKS (Folder-Tab Editorial Presentation)     */}
       {/* ======================================================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-8 sm:space-y-12">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-10 sm:space-y-14">
           
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#222225] pb-6">
             <div className="space-y-2 max-w-xl">
-              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold block">
-                02. SELECTED WORKS
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-handwriting text-2xl text-[#EA580C]">curated works</span>
+                <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider font-semibold">
+                  · Case Studies &amp; Concept Archives
+                </span>
+              </div>
               <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-                Selected Works &amp; Case Studies
+                Selected Works &amp; Explorations
               </h2>
-              <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
-                Curated identity systems, editorial artworks, and commission archives from the DESTALION catalog.
-              </p>
             </div>
 
             <button
               type="button"
               onClick={() => setActiveView('portfolio')}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-white dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] text-xs sm:text-sm font-semibold transition-all border border-[#E4E2DC] dark:border-[#222225] shadow-2xs flex items-center justify-center sm:justify-start gap-2 cursor-pointer btn-tactile min-h-[44px] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] motion-reduce:transition-none"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#222225] text-[#18181B] dark:text-[#EDEDEC] text-xs sm:text-sm font-semibold transition-all border border-[#E4E2DC] dark:border-[#333338] shadow-2xs flex items-center justify-center gap-2 cursor-pointer btn-tactile min-h-[44px]"
             >
-              <span>Explore Complete Archive ({portfolio.length})</span>
+              <span>Explore Complete Catalog ({portfolio.length})</span>
               <ArrowRight className="w-4 h-4 text-[#EA580C]" />
             </button>
           </div>
 
-          {/* Exhibition Grid */}
+          {/* Folder Tabbed Projects Stack (Inspired by Reference Screenshot) */}
           {featuredPortfolio.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
-              {featuredPortfolio.map((project, idx) => (
-                <PortfolioCard
-                  key={project.id}
-                  project={project}
-                  variant={idx === 0 ? 'featured' : 'standard'}
-                  onSelect={(p) => openCaseStudy(p)}
-                />
-              ))}
+            <div className="space-y-12 sm:space-y-16">
+              {featuredPortfolio.map((project, idx) => {
+                const projectLikes = getProjectLikes(project);
+                const projectViews = getProjectViews(project);
+                const isFirst = idx === 0;
+                const isSecond = idx === 1;
+
+                // Alternate between folder color blocks (Charcoal, Amber, Terracotta)
+                const folderTabBg = isFirst 
+                  ? 'bg-[#2563EB] text-white' 
+                  : isSecond 
+                    ? 'bg-[#F59E0B] text-zinc-950 font-bold' 
+                    : 'bg-[#EA580C] text-white';
+
+                const cardBg = isFirst
+                  ? 'bg-[#121214] text-white border-[#27272A]'
+                  : isSecond
+                    ? 'bg-[#FEF3C7] dark:bg-[#291E0A] text-zinc-900 dark:text-amber-50 border-[#FDE68A] dark:border-[#92400E]'
+                    : 'bg-white dark:bg-[#18181B] text-zinc-900 dark:text-[#EDEDEC] border-[#E4E2DC] dark:border-[#27272A]';
+
+                const isClient = project.projectType === 'client';
+                const clientLabel = isClient ? (project.client || 'Client Commission') : 'Studio Concept';
+
+                return (
+                  <article 
+                    key={project.id}
+                    className="relative transition-all duration-300"
+                  >
+                    {/* Notched Folder Tab on Top */}
+                    <div className="flex items-center gap-2">
+                      <div className={`notched-tab px-5 py-2 text-xs font-mono font-bold tracking-wider uppercase inline-flex items-center gap-2 shadow-xs ${folderTabBg}`}>
+                        <span>+ PROJECT 0{idx + 1}</span>
+                      </div>
+                      <span className="font-mono text-[11px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider pl-2">
+                        {project.category}
+                      </span>
+                    </div>
+
+                    {/* Main Folder Card Body */}
+                    <div className={`rounded-xl rounded-tl-none p-6 sm:p-10 lg:p-12 border shadow-md ${cardBg}`}>
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 items-center">
+                        
+                        {/* Left Side: Metadata, Title, Description, and View Action */}
+                        <div className="lg:col-span-5 space-y-5">
+                          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider">
+                            <span className="w-2 h-2 rounded-full bg-[#EA580C]" />
+                            <span className="opacity-80 font-semibold">{project.date}</span>
+                            <span aria-hidden="true" className="opacity-40">·</span>
+                            <span className={isClient ? 'text-emerald-500 font-bold' : 'text-amber-500 dark:text-amber-400 font-bold'}>
+                              {clientLabel}
+                            </span>
+                          </div>
+
+                          <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+                            {project.title}
+                          </h3>
+
+                          <p className="text-xs sm:text-sm lg:text-base opacity-85 leading-relaxed font-normal">
+                            {project.shortDesc}
+                          </p>
+
+                          <div className="pt-2 flex flex-wrap items-center gap-4">
+                            <button
+                              type="button"
+                              onClick={() => openCaseStudy(project)}
+                              className="inline-flex items-center gap-2 font-mono text-xs sm:text-sm font-bold tracking-wider uppercase underline underline-offset-4 hover:text-[#EA580C] transition-colors cursor-pointer"
+                            >
+                              <span>VIEW PROJECT</span>
+                              <ArrowRight className="w-4 h-4 text-[#EA580C]" />
+                            </button>
+
+                            <div className="flex items-center gap-3 text-xs font-mono opacity-70">
+                              <span className="inline-flex items-center gap-1">
+                                <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500/30" />
+                                <span>{projectLikes}</span>
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>{projectViews}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Side: Mounted Artwork Frame with Translucent Washi Tape */}
+                        <div className="lg:col-span-7">
+                          <div 
+                            onClick={() => openCaseStudy(project)}
+                            className="relative cursor-pointer group bg-zinc-950/20 p-2 sm:p-3 rounded-lg border border-black/10 dark:border-white/10 shadow-lg"
+                          >
+                            {/* Washi Tape: Top-Left */}
+                            <div className="absolute -top-3.5 -left-3.5 w-16 h-6 bg-[#FEF08A]/85 dark:bg-[#CA8A04]/60 -rotate-12 border border-white/60 shadow-xs z-20 pointer-events-none" />
+                            {/* Washi Tape: Top-Right */}
+                            <div className="absolute -top-3.5 -right-3.5 w-16 h-6 bg-[#BAE6FD]/85 dark:bg-[#0369A1]/60 rotate-15 border border-white/60 shadow-xs z-20 pointer-events-none" />
+
+                            <div className="overflow-hidden rounded-md aspect-[16/10] bg-black">
+                              <img
+                                src={project.image || defaultProjectImage}
+                                alt={project.title}
+                                loading="eager"
+                                decoding="async"
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  if (target.src !== defaultProjectImage) target.src = defaultProjectImage;
+                                }}
+                                className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           ) : (
-            <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-2xl p-8 sm:p-14 text-center space-y-4 max-w-xl mx-auto">
-              <div className="w-12 h-12 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-center mx-auto text-[#EA580C]">
-                <Layers className="w-6 h-6" />
-              </div>
-              <div className="space-y-1.5">
-                <h3 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
-                  No Selected Works Archived Yet
-                </h3>
-                <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-md mx-auto font-normal">
-                  Exhibition archives and studio case studies are currently being curated. Explore all disciplines or initiate a bespoke commission.
-                </p>
-              </div>
-              <div className="pt-2 flex items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveView('commission-form')}
-                  className="w-full sm:w-auto px-6 py-3 rounded-lg bg-[#EA580C] hover:bg-[#D94814] active:bg-[#C23E0E] text-white text-xs font-semibold transition-all shadow-xs cursor-pointer inline-flex items-center justify-center gap-2 min-h-[44px] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>Start a Commission</span>
-                </button>
-              </div>
+            <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-2xl p-10 text-center space-y-4 max-w-xl mx-auto">
+              <Layers className="w-8 h-8 text-[#EA580C] mx-auto" />
+              <h3 className="font-display text-lg font-bold">Catalog In Curation</h3>
+              <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA]">
+                Studio exhibition pieces are actively being updated.
+              </p>
             </div>
           )}
 
@@ -464,36 +436,41 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* ======================================================== */}
-      {/* 5. THE COMMISSION JOURNEY (Linear Progressive Timeline)  */}
+      {/* 4. COMMISSION JOURNEY (Spatial Notebook Progression)     */}
       {/* ======================================================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="space-y-8 sm:space-y-12">
           
-          <div className="space-y-2 border-b border-[#E4E2DC] dark:border-[#222225] pb-6 max-w-2xl">
-            <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold block">
-              03. PRODUCTION TIMELINE
-            </span>
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-              The Commission Journey
-            </h2>
-            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
-              Transparent, deliberate, and monitored directly in your dedicated client workspace from initial inquiry to final handoff.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#222225] pb-6">
+            <div className="space-y-2 max-w-xl">
+              <span className="font-handwriting text-2xl text-[#EA580C]">the process</span>
+              <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+                The Commission Journey
+              </h2>
+              <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                Transparent, deliberate, and monitored directly in your dedicated client workspace from initial inquiry to final handoff.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {processStages.map((step, i) => (
               <div
                 key={i}
-                className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-2xs space-y-6 hover:border-[#D4D2CA] dark:hover:border-[#333338] hover:shadow-xs transition-all duration-200 motion-reduce:transition-none"
+                className="relative bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-7 flex flex-col justify-between shadow-2xs space-y-6 hover:shadow-xs transition-all"
               >
+                {/* Washi tape on first and third cards */}
+                {(i === 0 || i === 2) && (
+                  <div className="absolute -top-2.5 right-6 w-12 h-4 bg-[#FDE68A]/80 dark:bg-[#78350F]/50 rotate-3 border border-white/40 pointer-events-none" />
+                )}
+
                 <div className="space-y-4">
                   <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#222225]">
-                    <span className="font-mono font-black text-2xl text-[#EA580C]">
-                      {step.step}
+                    <span className="font-mono text-xs uppercase tracking-wider text-[#EA580C] font-bold">
+                      Stage {step.step}
                     </span>
-                    <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider font-semibold">
-                      Stage {step.step}/04
+                    <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider">
+                      Workspace Tracked
                     </span>
                   </div>
 
@@ -508,7 +485,7 @@ export const HomeView: React.FC = () => {
 
                 <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
                   <span className="text-[#EA580C] font-semibold">{step.detail}</span>
-                  <span>Live Tracked</span>
+                  <span>Milestone Stage</span>
                 </div>
               </div>
             ))}
@@ -518,76 +495,20 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* ======================================================== */}
-      {/* 6. THE DESIGNER (Editorial Monograph Spread)             */}
-      {/* ======================================================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-2xl sm:rounded-3xl p-6 sm:p-10 lg:p-14 shadow-2xs flex flex-col lg:flex-row items-center lg:items-start gap-8 sm:gap-12">
-          
-          <div className="relative shrink-0">
-            <div className="w-36 h-36 sm:w-48 sm:h-48 lg:w-56 lg:h-56 rounded-2xl overflow-hidden ring-1 ring-[#E4E2DC] dark:ring-[#222225] shadow-xs">
-              <img
-                src={studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
-                alt={studioProfile.designerName || 'Studio Lead'}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="absolute -bottom-2 -right-2 px-3 py-1 rounded-md bg-[#18181B] dark:bg-[#18181B] text-[#EDEDEC] text-[10px] font-bold font-mono uppercase tracking-wider shadow-xs border border-white/10 dark:border-[#222225]">
-              Studio Director
-            </div>
-          </div>
-
-          <div className="space-y-5 text-center lg:text-left flex-1">
-            <div className="space-y-2">
-              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold block">
-                04. THE ATELIER LEAD
-              </span>
-
-              <h3 className="font-display text-2xl sm:text-3xl lg:text-4xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-                {studioProfile.designerName}
-              </h3>
-              <p className="font-mono text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider">
-                {studioProfile.title} · Manila, Philippines
-              </p>
-            </div>
-
-            <blockquote className="text-sm sm:text-base lg:text-lg text-[#52525B] dark:text-[#D4D4D8] leading-relaxed font-normal italic border-l-0 lg:border-l-2 border-[#EA580C] lg:pl-4">
-              "{studioProfile.bio}"
-            </blockquote>
-
-            <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-2.5 sm:gap-3 text-xs text-[#18181B] dark:text-[#EDEDEC] font-medium">
-              <div className="flex items-center gap-1.5 sm:gap-2 bg-[#FAF9F6] dark:bg-[#18181B] px-3.5 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#222225] font-mono text-[11px]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>Custom Vector Systems</span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 bg-[#FAF9F6] dark:bg-[#18181B] px-3.5 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#222225] font-mono text-[11px]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>300 DPI Production Masters</span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 bg-[#FAF9F6] dark:bg-[#18181B] px-3.5 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#222225] font-mono text-[11px]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>Direct 1-on-1 Dialogue</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ======================================================== */}
-      {/* 7. INITIATE PROJECT (Expressive Editorial Studio Callout) */}
+      {/* 5. INITIATE COMMISSION (Bold Studio Callout Field)       */}
       {/* ======================================================== */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="bg-[#121214] text-white rounded-2xl sm:rounded-3xl p-8 sm:p-14 lg:p-16 shadow-xl space-y-6 relative overflow-hidden border border-[#222225]">
           <div className="absolute inset-0 bg-noise opacity-30 pointer-events-none" />
 
           <div className="relative z-10 space-y-4 max-w-2xl mx-auto">
-            <span className="text-xs font-mono uppercase tracking-widest text-[#EA580C] font-bold block">
-              INITIATE COMMISSION
+            <span className="font-handwriting text-2xl sm:text-3xl text-amber-300 block">
+              let's collaborate
             </span>
 
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-[#EDEDEC] tracking-tight leading-tight text-balance">
               Make noise. Make meaning.{' '}
-              <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-300 to-white">
+              <span className="block sm:inline text-white/90">
                 Let's build something enduring.
               </span>
             </h2>
@@ -601,7 +522,7 @@ export const HomeView: React.FC = () => {
                 id="cta-btn-start-commission"
                 type="button"
                 onClick={() => setActiveView('commission-form')}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] active:bg-[#C23E0E] text-white font-semibold text-sm transition-all shadow-md inline-flex items-center justify-center gap-2.5 cursor-pointer btn-tactile min-h-[48px] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214] motion-reduce:transition-none"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] active:bg-[#C23E0E] text-white font-semibold text-sm transition-all shadow-md inline-flex items-center justify-center gap-2.5 cursor-pointer btn-tactile min-h-[48px] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
               >
                 <Send className="w-4 h-4" />
                 <span>Start a Commission</span>

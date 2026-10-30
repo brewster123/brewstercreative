@@ -54,20 +54,21 @@ export const PortfolioView: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10 sm:space-y-14">
+    <div className="bg-notebook-ruled min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10 sm:space-y-14">
       
       {/* Editorial Exhibition Header */}
       <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-8 sm:pb-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
-            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-bold">
-              <span>Exhibition Archive &amp; Case Studies</span>
-              <span aria-hidden="true" className="text-[#A1A1AA]">·</span>
-              <span>Make noise. Make meaning.</span>
+            <div className="flex items-center gap-2">
+              <span className="font-handwriting text-2xl text-[#EA580C]">curated catalog</span>
+              <span className="font-mono text-[11px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-bold">
+                · Exhibition Archive &amp; Case Studies
+              </span>
             </div>
 
             <h1 className="font-display text-3xl sm:text-5xl lg:text-5.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
-              Selected Visual Systems & Bespoke Artworks
+              Selected Visual Systems &amp; Bespoke Artworks
             </h1>
 
             <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">

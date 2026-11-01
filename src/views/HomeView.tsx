@@ -3,13 +3,7 @@ import { useApp } from '../context/AppContext';
 import { 
   Send, 
   ArrowRight, 
-  CheckCircle2, 
   Layers, 
-  Sparkles, 
-  Compass, 
-  Sliders, 
-  Palette,
-  ExternalLink,
   Eye,
   Heart
 } from 'lucide-react';
@@ -18,7 +12,6 @@ import { getProjectLikes, getProjectViews } from '../lib/portfolio';
 
 export const HomeView: React.FC = () => {
   const { 
-    studioProfile, 
     portfolio, 
     setActiveView, 
     selectedPortfolioProject, 
@@ -28,7 +21,6 @@ export const HomeView: React.FC = () => {
 
   const explicitFeatured = portfolio.filter(p => p.featured);
   const featuredPortfolio = explicitFeatured.length > 0 ? explicitFeatured.slice(0, 3) : portfolio.slice(0, 3);
-  const featuredPiece = featuredPortfolio[0] || portfolio[0];
 
   // Creative process stages matching design specification
   const processStages = [
@@ -59,220 +51,9 @@ export const HomeView: React.FC = () => {
   ];
 
   const defaultProjectImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80';
-  const heroFeaturedImage = (featuredPiece?.image && typeof featuredPiece.image === 'string' && featuredPiece.image.trim())
-    ? featuredPiece.image.trim()
-    : defaultProjectImage;
 
   return (
     <div className="bg-notebook-ruled min-h-screen space-y-16 sm:space-y-24 lg:space-y-32 pb-20 sm:pb-28 pt-6 sm:pt-10">
-      
-      {/* ======================================================== */}
-      {/* 1. HERO SECTION (Editorial Reference Composition)        */}
-      {/* ======================================================== */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center text-center space-y-6 sm:space-y-8">
-          
-          {/* Top Tape Badges & "my name is" Annotation */}
-          <div className="w-full flex items-center justify-between max-w-2xl px-2">
-            <span className="px-3 py-1 rounded bg-[#D1FAE5] text-[#065F46] dark:bg-[#064E3B]/80 dark:text-[#A7F3D0] border border-[#6EE7B7]/70 text-[11px] font-mono font-bold tracking-wider uppercase rotate-[-2deg] shadow-2xs">
-              MADE THINGS
-            </span>
-            
-            <div className="flex flex-col items-center">
-              <span className="font-handwriting text-2xl sm:text-3xl text-[#52525B] dark:text-[#A1A1AA] select-none">
-                my name is
-              </span>
-              <svg className="w-16 h-2 text-[#71717A] dark:text-[#A1A1AA]" viewBox="0 0 64 8" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M2 4 Q 16 1 32 4 T 62 4" />
-                <path d="M6 7 Q 20 5 36 7 T 58 7" />
-              </svg>
-            </div>
-
-            <span className="px-3 py-1 rounded bg-[#FEF3C7] text-[#92400E] dark:bg-[#78350F]/70 dark:text-[#FDE68A] border border-[#FCD34D]/70 text-[11px] font-mono font-bold tracking-wider uppercase rotate-[2.5deg] shadow-2xs">
-              SWEAT THE DETAILS
-            </span>
-          </div>
-
-          {/* Central Sketched Box with the Studio Wordmark */}
-          <div className="relative inline-block my-2 sm:my-3">
-            {/* The imperfect hand-drawn box */}
-            <div className="relative px-6 sm:px-14 py-4 sm:py-7 border-2 sm:border-3 border-[#EA580C] rounded-xl -rotate-0.5 shadow-sm bg-white/80 dark:bg-[#18181B]/90 backdrop-blur-xs">
-              <h1 className="font-display text-4xl min-[380px]:text-5xl sm:text-7xl lg:text-8.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tighter leading-none select-none uppercase">
-                {studioProfile.studioName || 'DESTALION'}
-              </h1>
-            </div>
-
-            {/* Bottom-Left Sticker Tag with Hand-Drawn Arrow */}
-            <div className="absolute -bottom-5 -left-2 sm:-left-8 flex items-center gap-1.5 rotate-[-3.5deg] z-10">
-              <span className="px-2.5 py-1 rounded bg-[#FDE047] text-zinc-950 border border-[#EAB308] text-[10px] sm:text-[11px] font-mono font-bold uppercase shadow-2xs whitespace-nowrap">
-                Multimedia Studio
-              </span>
-              <svg className="w-5 h-4 text-[#EA580C] hidden sm:block" viewBox="0 0 20 16" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M2 14 Q 10 14 16 4 M 16 4 L 11 4 M 16 4 L 16 9" />
-              </svg>
-            </div>
-
-            {/* Bottom-Right Sticker Tag with Hand-Drawn Arrow */}
-            <div className="absolute -bottom-5 -right-2 sm:-right-8 flex items-center gap-1.5 rotate-[3deg] z-10">
-              <svg className="w-5 h-4 text-[#EA580C] hidden sm:block" viewBox="0 0 20 16" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 14 Q 10 14 4 4 M 4 4 L 9 4 M 4 4 L 4 9" />
-              </svg>
-              <span className="px-2.5 py-1 rounded bg-[#CFFAFE] text-[#155E75] dark:bg-[#164E63] dark:text-[#A5F3FC] border border-[#67E8F9] text-[10px] sm:text-[11px] font-mono font-bold uppercase shadow-2xs whitespace-nowrap">
-                {studioProfile.location || 'Cebu City / Worldwide'}
-              </span>
-            </div>
-          </div>
-
-          {/* Availability Status Bar */}
-          <div className="pt-3 sm:pt-4 flex items-center justify-center gap-2 text-xs font-mono tracking-widest text-[#18181B] dark:text-[#EDEDEC] uppercase font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>OPEN TO COMMISSIONS &amp; VISIONARY COLLABORATION</span>
-          </div>
-
-          {/* Statement Headline Flanked by Avatar Badges */}
-          <div className="flex items-center justify-center gap-4 sm:gap-8 max-w-4xl mx-auto pt-3 sm:pt-5">
-            {/* Left Circular Avatar Stamp */}
-            <div className="hidden sm:block shrink-0 w-14 h-14 rounded-full p-1 ring-2 ring-[#EA580C] bg-white dark:bg-[#18181B] shadow-sm rotate-[-6deg]">
-              <img
-                src={studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
-                alt={studioProfile.designerName}
-                className="w-full h-full object-cover rounded-full"
-              />
-            </div>
-
-            <div className="space-y-3 max-w-2xl px-2">
-              <h2 className="font-display text-2xl min-[400px]:text-3xl sm:text-4.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-snug">
-                Visual systems &amp; bespoke artistry that make noise and make meaning.
-              </h2>
-              <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-lg mx-auto leading-relaxed font-normal">
-                {studioProfile.bio}
-              </p>
-            </div>
-
-            {/* Right Circular Avatar Stamp */}
-            <div className="hidden sm:block shrink-0 w-14 h-14 rounded-full p-1 ring-2 ring-[#EA580C] bg-white dark:bg-[#18181B] shadow-sm rotate-[6deg]">
-              <img
-                src={studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
-                alt="Studio Lead"
-                className="w-full h-full object-cover rounded-full"
-              />
-            </div>
-          </div>
-
-          {/* Primary Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 w-full max-w-md sm:max-w-none">
-            <button
-              id="hero-btn-start-commission"
-              type="button"
-              onClick={() => setActiveView('commission-form')}
-              className="w-full sm:w-auto min-h-[44px] h-11 sm:h-12 px-7 rounded-lg bg-[#EA580C] hover:bg-[#D94814] active:bg-[#C23E0E] text-white font-semibold text-sm transition-all shadow-xs flex items-center justify-center gap-2.5 cursor-pointer btn-tactile border border-[#C23E0E] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
-            >
-              <Send className="w-4 h-4" />
-              <span>Start a Commission</span>
-            </button>
-
-            <button
-              id="hero-btn-view-portfolio"
-              type="button"
-              onClick={() => setActiveView('portfolio')}
-              className="w-full sm:w-auto min-h-[44px] h-11 sm:h-12 px-7 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#222225] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-sm transition-all border border-[#E4E2DC] dark:border-[#333338] shadow-2xs flex items-center justify-center gap-2 cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
-            >
-              <span>Explore Selected Works</span>
-              <ArrowRight className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
-            </button>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ======================================================== */}
-      {/* 2. THE ATELIER ("what's up" Editorial Monograph)          */}
-      {/* ======================================================== */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative pt-6">
-          {/* Hand-Drawn Dividing Wave Rule */}
-          <div className="w-full flex items-center justify-center mb-8 sm:mb-12">
-            <svg className="w-full max-w-3xl h-4 text-[#E4E2DC] dark:text-[#333338]" viewBox="0 0 800 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M0 8 Q 200 2 400 8 T 800 8" />
-            </svg>
-          </div>
-
-          {/* Section Eyebrow Annotation & Boxed Badge */}
-          <div className="flex flex-col items-center space-y-3 mb-8 sm:mb-12">
-            <span className="font-handwriting text-2xl sm:text-3xl text-[#52525B] dark:text-[#A1A1AA] self-start sm:self-center -ml-4 sm:ml-0">
-              about the studio!
-            </span>
-            <div className="px-4 py-1 rounded border border-[#18181B] dark:border-[#EDEDEC] text-xs font-mono uppercase font-bold tracking-widest bg-white dark:bg-[#18181B] shadow-2xs">
-              what's up
-            </div>
-          </div>
-
-          {/* Monograph Spread: Polaroid on Left, Bio in Center, Workspace on Right */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
-            {/* Left Polaroid: Brewster Cabando */}
-            <div className="lg:col-span-3 flex justify-center order-2 lg:order-1">
-              <div className="relative bg-white dark:bg-[#18181B] p-3 pb-5 rounded-sm shadow-md border border-[#E4E2DC] dark:border-[#27272A] max-w-[210px] rotate-[-3.5deg] hover:rotate-0 transition-transform duration-300">
-                {/* Washi Tape Strip across top left */}
-                <div className="absolute -top-3 -left-3 w-14 h-5 bg-[#BFDBFE]/80 dark:bg-[#1E3A8A]/60 -rotate-25 border border-white/50 shadow-2xs pointer-events-none" />
-                <div className="aspect-square overflow-hidden bg-zinc-100 dark:bg-zinc-800 rounded-2xs mb-2">
-                  <img
-                    src={studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
-                    alt="Brewster Cabando"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <p className="font-handwriting text-lg text-center text-[#52525B] dark:text-[#A1A1AA] pt-1">
-                  director · 2026
-                </p>
-              </div>
-            </div>
-
-            {/* Center Story & Creative Philosophy */}
-            <div className="lg:col-span-6 space-y-6 text-center order-1 lg:order-2 px-2">
-              <p className="font-handwriting text-2xl sm:text-3.5xl text-[#18181B] dark:text-[#EDEDEC] leading-relaxed max-w-xl mx-auto">
-                I'm Brewster Cabando — a brand designer and multimedia artist who gets a little too excited about making complex things feel clear, bold, and resonant. ✨ I care about the small details, the edge cases everyone forgets, and shipping work that genuinely leaves a mark. 🎨
-              </p>
-
-              {/* Colorful Tactile Discipline Stamps (Matching Reference Style) */}
-              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 pt-2">
-                <span className="px-3.5 py-1.5 rounded-lg bg-[#FDE047] text-zinc-950 border border-[#EAB308] text-xs font-bold font-mono tracking-wide shadow-2xs rotate-[-1deg]">
-                  Brand Identity Systems ✦
-                </span>
-                <span className="px-3.5 py-1.5 rounded-lg bg-[#10B981] text-white border border-[#059669] text-xs font-bold font-mono tracking-wide shadow-2xs rotate-[1.5deg]">
-                  Screen-print Posters 🎨
-                </span>
-                <span className="px-3.5 py-1.5 rounded-lg bg-[#F43F5E] text-white border border-[#E11D48] text-xs font-bold font-mono tracking-wide shadow-2xs rotate-[-1.5deg]">
-                  Digital Illustration 🧩
-                </span>
-                <span className="px-3.5 py-1.5 rounded-lg bg-[#2563EB] text-white border border-[#1D4ED8] text-xs font-bold font-mono tracking-wide shadow-2xs rotate-[1deg]">
-                  Custom Vector Systems 👀
-                </span>
-              </div>
-            </div>
-
-            {/* Right Polaroid: Workspace / Print Bench */}
-            <div className="lg:col-span-3 flex justify-center order-3">
-              <div className="relative bg-white dark:bg-[#18181B] p-3 pb-5 rounded-sm shadow-md border border-[#E4E2DC] dark:border-[#27272A] max-w-[210px] rotate-[3.5deg] hover:rotate-0 transition-transform duration-300">
-                {/* Washi Tape Strip across top right */}
-                <div className="absolute -top-3 -right-3 w-14 h-5 bg-[#FDE68A]/85 dark:bg-[#854D0E]/60 rotate-25 border border-white/50 shadow-2xs pointer-events-none" />
-                <div className="aspect-square overflow-hidden bg-zinc-100 dark:bg-zinc-800 rounded-2xs mb-2">
-                  <img
-                    src="https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=600&auto=format&fit=crop&q=80"
-                    alt="The atelier workspace"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <p className="font-handwriting text-lg text-center text-[#52525B] dark:text-[#A1A1AA] pt-1">
-                  the workspace
-                </p>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
 
       {/* ======================================================== */}
       {/* 3. SELECTED WORKS (Folder-Tab Editorial Presentation)     */}

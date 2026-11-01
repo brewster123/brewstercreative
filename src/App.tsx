@@ -313,7 +313,7 @@ const MainLayout: React.FC = () => {
   }
 
   return (
-    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'} flex flex-col bg-slate-950 text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative [&>header]:fixed [&>header]:inset-x-0 [&>header]:top-0 [&>header]:max-w-none [&>header]:bg-[#1313BD]/90`}>
+    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'} flex flex-col bg-[var(--bg-canvas)] dark:bg-slate-950 text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative [&>header]:fixed [&>header]:inset-x-0 [&>header]:top-0 [&>header]:max-w-none [&>header]:bg-[#FAF9F6]/90 dark:[&>header]:bg-[#1313BD]/90`}>
       {/* Navbar flow placeholder for the fixed header */}
       <div className="h-16 sm:h-[81px] shrink-0">
         {/* Accessible Skip Link */}

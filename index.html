@@ -22,7 +22,10 @@
         try {
           var saved = localStorage.getItem('brewster_theme');
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (saved === 'dark' || (!saved && prefersDark) || (saved === 'system' && prefersDark)) {
+          // First-time visitors (!saved) default to dark mode.
+          // Returning visitors retain their explicit saved preference.
+          var isDark = !saved || saved === 'dark' || (saved === 'system' && prefersDark);
+          if (isDark) {
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');

@@ -1,17 +1,26 @@
 # DESTALION — Design System Specification
 
-## 1. Aesthetic Philosophy & Brand Identity
-DESTALION is an **independent experimental multimedia art and brand design studio**. Its aesthetic direction avoids sterile, generic SaaS dashboards and prefabricated AI-applet templates in favor of:
-- **Atmospheric Depth**: A tactile, near-black canvas that frames creative artwork like a museum exhibition catalog or dark atelier.
-- **Editorial Typography**: Strong typographic hierarchy with deliberate line-height, micro-tracking, and balanced text wraps.
-- **High-Contrast Energy**: Intense, deliberate bursts of studio orange accentuating interactive actions and live status indicators against velvety surfaces.
-- **Micro-Structured Layouts**: Subtle hairlines, mono metadata tags, and purposeful spacing rather than bulky cards or generic rounded pills.
+## 1. Aesthetic Philosophy & Brand Identity: Experimental Editorial Studio
+DESTALION is an **independent experimental multimedia art and brand design studio**. Its aesthetic direction avoids sterile, generic corporate agency templates, repetitive SaaS dashboards, and uninspired cookie-cutter cards.
+
+The revised visual direction is guided by **Experimental Editorial Studio** principles:
+- **Broadsheet Pacing & Scale Contrasts**: Alternating between open broadsheet typography, high-impact asymmetrical image compositions, and focused functional workspaces.
+- **Atmospheric Depth**: A velvety near-black canvas (`#09090B`) as the primary visitor experience that frames creative artwork like a museum exhibition catalog or dark atelier.
+- **Expressive Editorial Typography**: Oversized display headlines, intentional line wraps, and bold scale contrasts rather than relying solely on tiny uppercase letter-spaced labels.
+- **High-Contrast Energy**: Intense, deliberate bursts of studio orange (`#EA580C`) accentuating interactive actions and live status indicators.
+- **Selective Handmade & Architectural Accents**: Occasional handwritten notes (`Caveat`), architectural crop/grid textures, washi-tape mount touches, or notched folder tabs used intentionally where they contribute meaning—never applied as uniform wallpaper across every screen.
+- **Flexibility over Rigid Monotony**: Consistency should never force every page or component to look identical. Component geometry (rounded, square, notched, bordered, or borderless) is chosen purposefully to serve the composition and functionality.
 
 ---
 
-## 2. Core Color Palette Tokens
+## 2. Core Color Palette Tokens & Theme Default
 
-### Primary Studio Tokens (Dark Mode — Primary Experience)
+### Theme Initialization Rule
+- **First-Time Visitors Default to Dark Mode**: The default experience for any visitor without a saved preference is the immersive dark atelier (`#09090B`).
+- **Persistence**: Returning visitors' explicit selections are strictly preserved under `localStorage.getItem('brewster_theme')` (`'dark'`, `'light'`, or `'system'`).
+- **Zero-Flash Execution**: Theme initialization executes synchronously in `<head>` of `index.html` before DOM render to prevent theme flashing.
+
+### Primary Studio Tokens (Dark Mode — Primary Default Experience)
 | Token Name | Hex Value | CSS Variable | Semantic Purpose |
 | :--- | :--- | :--- | :--- |
 | **Canvas Background** | `#09090B` | `--bg-canvas` / `--color-canvas` | Deepest root viewport background (zinc-950 depth) |

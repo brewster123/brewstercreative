@@ -8,6 +8,7 @@ import {
   Heart
 } from 'lucide-react';
 import { PortfolioModal } from '../components/PortfolioModal';
+import { ParallaxHero } from '../components/ParallaxHero';
 import { getProjectLikes, getProjectViews } from '../lib/portfolio';
 
 export const HomeView: React.FC = () => {
@@ -53,11 +54,16 @@ export const HomeView: React.FC = () => {
   const defaultProjectImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80';
 
   return (
-    <div className="bg-notebook-ruled min-h-screen space-y-16 sm:space-y-24 lg:space-y-32 pb-20 sm:pb-28 pt-6 sm:pt-10">
+    <div className="bg-notebook-ruled min-h-screen pb-20 sm:pb-28">
+      {/* ======================================================== */}
+      {/* 1. CINEMATIC PARALLAX VINTAGE SUNBURST HERO               */}
+      {/* ======================================================== */}
+      <ParallaxHero />
 
-      {/* ======================================================== */}
-      {/* 3. SELECTED WORKS (Folder-Tab Editorial Presentation)     */}
-      {/* ======================================================== */}
+      <div className="space-y-16 sm:space-y-24 lg:space-y-32 pt-12 sm:pt-20">
+        {/* ======================================================== */}
+        {/* 2. SELECTED WORKS (Folder-Tab Editorial Presentation)     */}
+        {/* ======================================================== */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="space-y-10 sm:space-y-14">
           
@@ -312,6 +318,7 @@ export const HomeView: React.FC = () => {
           </div>
         </div>
       </section>
+      </div>
 
       {/* Portfolio Detail Modal */}
       {selectedPortfolioProject && (

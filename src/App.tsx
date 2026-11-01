@@ -313,20 +313,17 @@ const MainLayout: React.FC = () => {
   }
 
   return (
-    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'} flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative`}>
-      {/* Accessible Skip Link */}
-      <a 
-        href="#main-content" 
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#EA580C] focus:text-white focus:font-semibold focus:rounded-md focus:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-white transition-all motion-reduce:transition-none"
-      >
-        Skip to main content
-      </a>
-
-      {/* Database Notice Banner */}
-      <DatabaseErrorBanner />
-
-      {/* Primary Sticky Navigation Header */}
-      <Navbar />
+    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'} flex flex-col bg-slate-950 text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative [&>header]:fixed [&>header]:inset-x-0 [&>header]:top-0 [&>header]:max-w-none [&>header]:bg-[#1313BD]/90`}>
+      {/* Navbar flow placeholder for the fixed header */}
+      <div className="h-16 sm:h-[81px] shrink-0">
+        {/* Accessible Skip Link */}
+        <a 
+          href="#main-content" 
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#EA580C] focus:text-white focus:font-semibold focus:rounded-md focus:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-white transition-all motion-reduce:transition-none"
+        >
+          Skip to main content
+        </a>
+      </div>
 
       {/* Main Page Body View with Subtle View Transition */}
       <main 
@@ -335,11 +332,19 @@ const MainLayout: React.FC = () => {
         key={activeView}
         className={`flex-1 ${isChatView ? 'min-h-0 flex flex-col overflow-hidden' : ''} outline-hidden animate-in fade-in duration-200 motion-reduce:animate-none`}
       >
+        {/* Database Notice Banner */}
+        <DatabaseErrorBanner />
+
         {renderCurrentView()}
       </main>
 
-      {/* Studio Footer */}
-      {!isChatView && <Footer />}
+      {/* Studio Footer with the layout's reserved top margin */}
+      <div className={`w-full ${isChatView ? 'hidden' : 'pt-20 [&>footer]:mt-0'}`}>
+        {!isChatView && <Footer />}
+      </div>
+
+      {/* Primary Fixed Navigation Header */}
+      <Navbar />
     </div>
   );
 };

@@ -134,7 +134,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FAF9F6]/90 dark:bg-[#09090B]/95 backdrop-blur-md border-b border-[#E4E2DC] dark:border-[#1C1C1F] transition-all">
+    <header className="sticky top-0 z-40 w-full max-w-[1358px] mx-auto bg-[rgba(28,28,185,0.90)] backdrop-blur-md border-b border-[#E4E2DC] dark:border-[#1C1C1F] transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
@@ -173,7 +173,7 @@ export const Navbar: React.FC = () => {
                       : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-white/60 dark:hover:bg-[#222225]/60 font-medium'
                   }`}
                 >
-                  {isHome && isActive ? `★ ${link.label}` : link.label}
+                  {link.label}
                 </button>
               );
             })}

@@ -57,28 +57,23 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
           const isCurrent = !isCommissionCompleted && stage.number === commission.currentStage;
           const isUpcoming = !isCommissionCompleted && stage.number > commission.currentStage;
 
-          return (
-            <div
-              key={stage.number}
-              onClick={() => {
-                if (isAdmin && interactiveAdmin) {
-                  updateCommissionStage(commission.id, stage.number);
-                }
-              }}
-              className={`p-3 rounded-lg border text-left flex sm:flex-col justify-between items-center sm:items-start gap-2 transition-all ${
-                isCurrent
-                  ? 'border-[#EA580C] bg-[#FFF7ED] dark:bg-[#78350F]/20'
-                  : isCompleted
-                  ? 'border-[#E4E2DC] dark:border-[#222225] bg-[#FAF9F6] dark:bg-[#18181B]'
-                  : 'border-transparent bg-transparent opacity-40'
-              } ${isAdmin && interactiveAdmin ? 'cursor-pointer hover:border-[#EA580C]' : ''}`}
-            >
+          const stageStatusText = isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming';
+          const stageClasses = `p-3 rounded-lg border text-left flex sm:flex-col justify-between items-center sm:items-start gap-2 transition-all ${
+            isCurrent
+              ? 'border-[#EA580C] bg-[#FFF7ED] dark:bg-[#78350F]/20'
+              : isCompleted
+              ? 'border-[#E4E2DC] dark:border-[#222225] bg-[#FAF9F6] dark:bg-[#18181B]'
+              : 'border-transparent bg-transparent opacity-40'
+          } ${isAdmin && interactiveAdmin ? 'cursor-pointer hover:border-[#EA580C] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile' : ''}`;
+
+          const content = (
+            <>
               <div className="flex items-center sm:justify-between w-full gap-2 font-mono text-[10px]">
                 <span className={`font-semibold tracking-wider ${isCurrent ? 'text-[#EA580C]' : 'text-[#71717A] dark:text-[#A1A1AA]'}`}>
                   0{stage.number}
                 </span>
 
-                <div className="shrink-0">
+                <div className="shrink-0" aria-hidden="true">
                   {isCompleted ? (
                     <span className="w-4 h-4 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center text-[9px]">
                       <Check className="w-2.5 h-2.5" />
@@ -98,6 +93,31 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
                   {stage.name}
                 </p>
               </div>
+            </>
+          );
+
+          if (isAdmin && interactiveAdmin) {
+            return (
+              <button
+                key={stage.number}
+                type="button"
+                onClick={() => updateCommissionStage(commission.id, stage.number)}
+                className={stageClasses}
+                aria-label={`Advance to Stage 0${stage.number}: ${stage.name} (${stageStatusText})`}
+                title={`Click to set stage to 0${stage.number} - ${stage.name}`}
+              >
+                {content}
+              </button>
+            );
+          }
+
+          return (
+            <div
+              key={stage.number}
+              className={stageClasses}
+              aria-label={`Stage 0${stage.number}: ${stage.name} (${stageStatusText})`}
+            >
+              {content}
             </div>
           );
         })}

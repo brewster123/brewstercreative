@@ -188,7 +188,7 @@ export const Navbar: React.FC = () => {
                 id="btn-chat-navbar"
                 type="button"
                 onClick={handleOpenChat}
-                className="hidden sm:flex p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors relative border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer"
+                className="hidden sm:flex p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors relative border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
                 title={currentUser.role === 'admin' ? "Client Conversations" : "Project Conversation"}
                 aria-label={currentUser.role === 'admin' ? "Open client conversations" : "Open project conversation"}
               >
@@ -208,7 +208,7 @@ export const Navbar: React.FC = () => {
                   setShowNotifications(prev => !prev);
                   setShowUserDropdown(false);
                 }}
-                className="p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors relative border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer btn-tactile"
+                className="p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors relative border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
                 title="Notifications"
                 aria-label="View notifications"
                 aria-expanded={showNotifications}
@@ -232,7 +232,7 @@ export const Navbar: React.FC = () => {
               id="btn-nav-theme-toggle"
               type="button"
               onClick={toggleTheme}
-              className="hidden sm:flex p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer btn-tactile"
+              className="hidden sm:flex p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors border border-transparent hover:border-[#E4E2DC] dark:hover:border-[#222225] cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
               title={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
               aria-label={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
             >
@@ -249,7 +249,7 @@ export const Navbar: React.FC = () => {
                     setShowUserDropdown(prev => !prev);
                     setShowNotifications(false);
                   }}
-                  className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-lg bg-white dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] transition-all text-sm cursor-pointer shadow-2xs btn-tactile"
+                  className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-lg bg-white dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] transition-all text-sm cursor-pointer shadow-2xs btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
                   aria-expanded={showUserDropdown}
                   aria-haspopup="true"
                 >

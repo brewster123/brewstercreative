@@ -22,6 +22,7 @@ import {
   subscribeToCommissionDeliverables,
   DELIVERABLE_SIGNED_URL_EXPIRY_SECONDS
 } from '../lib/deliverables';
+import { parseCommissionBudget } from '../lib/payments';
 
 interface FinalDeliverySectionProps {
   commission: Commission;
@@ -32,7 +33,7 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({
   commission,
   onNavigateToPayment 
 }) => {
-  const { currentUser } = useApp();
+  const { currentUser, studioProfile } = useApp();
   const [deliverables, setDeliverables] = useState<CommissionDeliverable[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -41,6 +42,46 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({
   const isPaymentSettled = currentUser?.role === 'admin' || (
     commission.paymentStatus === 'Paid' && commission.totalPaid === true
   );
+
+  // Financial calculations for locked deliverable breakdown
+  const depositPercent = studioProfile?.gcashDetails?.depositPercentage || 50;
+  const currencySymbol = studioProfile?.currencySymbol || '₱';
+  const currencyCode = commission.currency || studioProfile?.currency || 'PHP';
+
+  const budgetAnalysis = parseCommissionBudget(
+    commission.budget,
+    depositPercent,
+    currencySymbol,
+    currencyCode
+  );
+
+  const formatCurrency = (val: number) => {
+    return `${budgetAnalysis.currencySymbol}${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const totalBudgetFormatted = budgetAnalysis.isValid
+    ? formatCurrency(budgetAnalysis.numericBudget)
+    : String(commission.budget || '—');
+
+  const amountPaidValue = (commission.paymentStatus === 'Paid' && commission.totalPaid)
+    ? budgetAnalysis.numericBudget
+    : (commission.depositPaid || commission.paymentStatus === 'Partial')
+    ? budgetAnalysis.depositAmount
+    : 0;
+
+  const remainingBalanceValue = (commission.paymentStatus === 'Paid' && commission.totalPaid)
+    ? 0
+    : (commission.depositPaid || commission.paymentStatus === 'Partial')
+    ? budgetAnalysis.balanceAmount
+    : budgetAnalysis.numericBudget;
+
+  const amountPaidFormatted = budgetAnalysis.isValid
+    ? formatCurrency(amountPaidValue)
+    : (commission.depositPaid ? 'Deposit Verified' : '₱0.00');
+
+  const remainingBalanceFormatted = budgetAnalysis.isValid
+    ? formatCurrency(remainingBalanceValue)
+    : String(commission.budget || 'Pending calculation');
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadSuccessId, setDownloadSuccessId] = useState<string | null>(null);
@@ -174,36 +215,66 @@ export const FinalDeliverySection: React.FC<FinalDeliverySectionProps> = ({
 
       {/* Payment Security Gating Alert when commission is not fully settled */}
       {!isPaymentSettled && (
-        <div className="p-5 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 dark:text-amber-200 space-y-3">
-          <div className="flex items-start gap-3">
-            <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        <div className="p-6 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 dark:text-amber-200 space-y-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
             <div className="space-y-1">
-              <h4 className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC]">
-                Deliverable Downloads Locked Pending Payment
+              <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                Final Deliverables Locked
               </h4>
               <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
-                Studio policy requires verified payment in full before final production master files, vector packages, and font assets can be downloaded. Your payment status is currently{' '}
-                <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono">
-                  {commission.paymentStatus === 'Partial' ? 'Partial (Deposit Paid · Balance Pending)' : 'Awaiting Payment'}
-                </span>
-                .
+                Your final production master files, vector packages, and full commercial licenses are ready for release once your remaining balance has been paid and verified.
               </p>
             </div>
           </div>
 
-          {onNavigateToPayment && (
-            <div className="pt-2 border-t border-amber-500/20 flex justify-end">
+          {/* Exact Financial Breakdown */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-lg bg-white/70 dark:bg-[#18181B]/80 border border-amber-500/20 text-xs font-mono">
+            <div>
+              <span className="text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA] block mb-0.5">
+                Total Project Budget
+              </span>
+              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] text-sm">
+                {totalBudgetFormatted}
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA] block mb-0.5">
+                Amount Paid
+              </span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                {amountPaidFormatted}
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase text-[#EA580C] font-semibold block mb-0.5">
+                Remaining Balance
+              </span>
+              <span className="font-bold text-[#EA580C] text-sm">
+                {remainingBalanceFormatted}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+            <span className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+              Current status: <span className="font-semibold text-amber-700 dark:text-amber-400">{commission.paymentStatus === 'Partial' ? 'Partial (Deposit Paid · Balance Pending)' : 'Awaiting Payment'}</span>
+            </span>
+
+            {onNavigateToPayment && (
               <button
                 type="button"
                 onClick={onNavigateToPayment}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
               >
                 <CreditCard className="w-3.5 h-3.5" />
-                <span>Submit GCash Payment Proof</span>
+                <span>View Payments & Receipts</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 

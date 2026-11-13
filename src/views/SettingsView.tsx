@@ -8,9 +8,6 @@ import {
   LogOut, 
   ArrowLeft, 
   Check, 
-  ShieldCheck, 
-  User, 
-  Layers,
   CheckCircle2,
   Lock
 } from 'lucide-react';

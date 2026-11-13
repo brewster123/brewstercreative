@@ -585,8 +585,17 @@ export const ClientPaymentVerificationCard: React.FC<ClientPaymentVerificationCa
               Transaction Screenshot (JPEG, PNG, WebP · Max 10 MB)
             </label>
             <div 
+              role="button"
+              tabIndex={0}
+              aria-label="Upload GCash transaction screenshot (JPEG, PNG, WebP up to 10 MB)"
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C] dark:hover:border-[#EA580C] rounded-xl p-6 text-center cursor-pointer transition-colors bg-[#FAF9F6] dark:bg-[#18181B]"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              className="border-2 border-dashed border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C] dark:hover:border-[#EA580C] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded-xl p-6 text-center cursor-pointer transition-colors bg-[#FAF9F6] dark:bg-[#18181B]"
             >
               <input
                 ref={fileInputRef}

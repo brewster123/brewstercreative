@@ -309,9 +309,11 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div 
+        <button 
+          type="button"
           onClick={() => setStatusFilter('pending_verification')}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${
+          aria-pressed={statusFilter === 'pending_verification'}
+          className={`p-4 rounded-xl border text-left transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile ${
             statusFilter === 'pending_verification'
               ? 'bg-amber-500/10 border-amber-500 ring-1 ring-amber-500/40'
               : 'bg-white dark:bg-[#121214] border-[#E4E2DC] dark:border-[#222225] hover:border-amber-400'
@@ -329,11 +331,13 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
           <span className="text-[11px] font-mono text-amber-600 dark:text-amber-400">
             {pendingCount === 1 ? '1 receipt awaits decision' : `${pendingCount} receipts await decision`}
           </span>
-        </div>
+        </button>
 
-        <div 
+        <button 
+          type="button"
           onClick={() => setStatusFilter('confirmed')}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${
+          aria-pressed={statusFilter === 'confirmed'}
+          className={`p-4 rounded-xl border text-left transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile ${
             statusFilter === 'confirmed'
               ? 'bg-emerald-500/10 border-emerald-500 ring-1 ring-emerald-500/40'
               : 'bg-white dark:bg-[#121214] border-[#E4E2DC] dark:border-[#222225] hover:border-emerald-400'
@@ -351,11 +355,13 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
           <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
             Authorized transfers verified
           </span>
-        </div>
+        </button>
 
-        <div 
+        <button 
+          type="button"
           onClick={() => setStatusFilter('rejected')}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${
+          aria-pressed={statusFilter === 'rejected'}
+          className={`p-4 rounded-xl border text-left transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile ${
             statusFilter === 'rejected'
               ? 'bg-red-500/10 border-red-500 ring-1 ring-red-500/40'
               : 'bg-white dark:bg-[#121214] border-[#E4E2DC] dark:border-[#222225] hover:border-red-400'
@@ -373,7 +379,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
           <span className="text-[11px] font-mono text-red-600 dark:text-red-400">
             Declined with feedback
           </span>
-        </div>
+        </button>
       </div>
 
       {/* Filter and Search Bar */}
@@ -522,9 +528,11 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
 
                   {/* Receipt Preview Trigger / Meta */}
                   <div className="p-4 space-y-3">
-                    <div 
+                    <button 
+                      type="button"
                       onClick={() => handleOpenLightbox(proof)}
-                      className="group relative aspect-[16/10] bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg overflow-hidden cursor-pointer flex items-center justify-center"
+                      aria-label={`Enlarge GCash receipt ${proof.fileName || 'file'}`}
+                      className="w-full text-left group relative aspect-[16/10] bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg overflow-hidden cursor-pointer flex items-center justify-center focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
                     >
                       {signedUrlCache[proof.id] ? (
                         <img
@@ -546,7 +554,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                         <Eye className="w-4 h-4" />
                         <span>Enlarge Receipt</span>
                       </div>
-                    </div>
+                    </button>
 
                     {/* Transaction Details */}
                     <div className="space-y-1 text-xs">

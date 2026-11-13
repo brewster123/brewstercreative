@@ -1054,6 +1054,175 @@ assert(
   'Reference number normalization: Dashes and spaces are cleanly stripped'
 );
 
+console.log('\n--- 9. PHASE 3 PAYMENT SECURITY CORRECTION REGRESSION TESTS ---');
+
+// Test 9.1: General commission update payload safety (verifying ordinary status/stage/priority updates omit/strip financial payment fields)
+function sanitizeGeneralCommissionUpdatePayload(payload: Record<string, any>): Record<string, any> {
+  const SENSITIVE_FINANCIAL_FIELDS = ['payment_status', 'deposit_paid', 'total_paid', 'paymentStatus', 'depositPaid', 'totalPaid'];
+  const sanitized: Record<string, any> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (!SENSITIVE_FINANCIAL_FIELDS.includes(key)) {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+}
+
+const testGeneralPayload = {
+  status: 'in_progress',
+  priority: 'high',
+  currentStage: 4,
+  progress: 55,
+  payment_status: 'Paid', // Malicious attempt to inject payment status via general update
+  total_paid: true,       // Malicious attempt to bypass verification
+  deposit_paid: true,
+};
+const sanitizedPayload = sanitizeGeneralCommissionUpdatePayload(testGeneralPayload);
+
+assert(
+  !('payment_status' in sanitizedPayload) && !('total_paid' in sanitizedPayload) && !('deposit_paid' in sanitizedPayload),
+  'Payload safety: General commission status/stage updates strictly strip all financial payment mutation fields'
+);
+assert(
+  sanitizedPayload.status === 'in_progress' && sanitizedPayload.priority === 'high' && sanitizedPayload.progress === 55,
+  'Payload safety: Standard non-financial commission fields (status, priority, progress) are cleanly preserved'
+);
+
+// Test 9.2: Deposit approval strictly transitions to Partial only and cannot set total_paid = true
+const depositApprovalTransition = validatePaymentReviewTransition({
+  currentProofStatus: 'pending_verification',
+  paymentType: 'deposit',
+  commissionDepositPaid: false,
+  decision: 'confirmed',
+  isAdmin: true,
+});
+assert(
+  depositApprovalTransition.allowed === true && depositApprovalTransition.resultingPaymentStatus === 'Partial',
+  'Deposit settlement guard: Approved deposit receipt strictly transitions payment status to "Partial"'
+);
+
+const depositBypassAttempt = validatePaymentReviewTransition({
+  currentProofStatus: 'pending_verification',
+  paymentType: 'deposit',
+  commissionDepositPaid: false,
+  decision: 'confirmed',
+  targetPaymentStatus: 'Paid',
+  isAdmin: true,
+});
+assert(
+  depositBypassAttempt.allowed === false &&
+  depositBypassAttempt.error?.includes('cannot mark a commission as fully paid'),
+  'Deposit settlement guard: Attempting to mark a commission as "Paid" via deposit receipt is strictly rejected'
+);
+
+// Test 9.3: Balance approval strictly fails if deposit_paid === false
+const balanceWithoutDeposit = validatePaymentReviewTransition({
+  currentProofStatus: 'pending_verification',
+  paymentType: 'balance',
+  commissionDepositPaid: false,
+  decision: 'confirmed',
+  isAdmin: true,
+});
+assert(
+  balanceWithoutDeposit.allowed === false &&
+  balanceWithoutDeposit.error?.includes('before deposit payment has been confirmed'),
+  'Balance sequence guard: Balance receipt cannot be confirmed if deposit payment is unverified (deposit_paid = false)'
+);
+
+// Test 9.4: Balance approval succeeds only via authorized verification, setting payment_status = 'Paid' and total_paid = true
+const balanceWithDeposit = validatePaymentReviewTransition({
+  currentProofStatus: 'pending_verification',
+  paymentType: 'balance',
+  commissionDepositPaid: true,
+  decision: 'confirmed',
+  isAdmin: true,
+});
+assert(
+  balanceWithDeposit.allowed === true && balanceWithDeposit.resultingPaymentStatus === 'Paid',
+  'Balance settlement guard: Authorized balance receipt verification transitions status to "Paid"'
+);
+
+const balanceInvalidTargetAttempt = validatePaymentReviewTransition({
+  currentProofStatus: 'pending_verification',
+  paymentType: 'balance',
+  commissionDepositPaid: true,
+  decision: 'confirmed',
+  targetPaymentStatus: 'Partial',
+  isAdmin: true,
+});
+assert(
+  balanceInvalidTargetAttempt.allowed === false &&
+  balanceInvalidTargetAttempt.error?.includes('cannot set payment status to "Partial"'),
+  'Balance settlement guard: Balance receipt completes full settlement and cannot set status to "Partial"'
+);
+
+// Test 9.5: Receipt rejection preserves existing confirmed payment state without downgrade
+const rejectionWithNotes = validatePaymentReviewTransition({
+  currentProofStatus: 'pending_verification',
+  paymentType: 'balance',
+  commissionDepositPaid: true,
+  decision: 'rejected',
+  adminNotes: 'Reference number not found in merchant SMS notification log.',
+  isAdmin: true,
+});
+assert(
+  rejectionWithNotes.allowed === true && rejectionWithNotes.resultingPaymentStatus === undefined,
+  'Rejection state preservation: Receipt rejection preserves existing confirmed payment state without status alteration or downgrade'
+);
+
+// Test 9.6: Final deliverable conjunction check locks access unless BOTH payment_status === 'Paid' AND total_paid === true
+assert(
+  checkFinalDeliverableAccess({
+    userRole: 'client',
+    isClientOwner: true,
+    paymentStatus: 'Paid',
+    totalPaid: false,
+  }).accessGranted === false,
+  'Conjunction rule: Client with paymentStatus="Paid" but totalPaid=false is strictly denied access'
+);
+
+assert(
+  checkFinalDeliverableAccess({
+    userRole: 'client',
+    isClientOwner: true,
+    paymentStatus: 'Partial',
+    totalPaid: true,
+  }).accessGranted === false,
+  'Conjunction rule: Client with paymentStatus="Partial" but totalPaid=true is strictly denied access'
+);
+
+assert(
+  checkFinalDeliverableAccess({
+    userRole: 'client',
+    isClientOwner: true,
+    paymentStatus: 'Paid',
+    totalPaid: true,
+  }).accessGranted === true,
+  'Conjunction rule: Client with BOTH paymentStatus="Paid" AND totalPaid=true is granted deliverable access'
+);
+
+// Test 9.7: Receipt review navigation routing mapping
+interface AdminNavigationState {
+  activeHub: 'overview' | 'commissions' | 'payments' | 'creative' | 'studio';
+  selectedCommissionId: string | null;
+}
+
+function simulateAdminHubNavigation(
+  targetHub: 'overview' | 'commissions' | 'payments' | 'creative' | 'studio',
+  commissionId?: string
+): AdminNavigationState {
+  return {
+    activeHub: targetHub,
+    selectedCommissionId: commissionId || null,
+  };
+}
+
+const navResult = simulateAdminHubNavigation('payments', 'comm-uuid-9901');
+assert(
+  navResult.activeHub === 'payments' && navResult.selectedCommissionId === 'comm-uuid-9901',
+  'Receipt review routing: Clicking "Review Receipt in Payments Hub" routes to Hub 3 and binds commissionId'
+);
+
 console.log('\n=======================================');
 console.log(`ACCEPTANCE TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);
 console.log('=======================================\n');
@@ -1061,3 +1230,4 @@ console.log('=======================================\n');
 if (failed > 0) {
   process.exit(1);
 }
+

@@ -196,7 +196,7 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
                 : (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Studio Concept')}
             </span>
             <span aria-hidden="true" className="text-[#A1A1AA] dark:text-[#52525B]">·</span>
-            <span className="text-[#71717A] dark:text-[#71717A]">{project.date}</span>
+            <span className="text-[#71717A] dark:text-[#A1A1AA]">{project.date}</span>
           </div>
 
           <h3 className="font-display text-xl sm:text-2xl font-bold leading-snug">

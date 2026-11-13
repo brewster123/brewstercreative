@@ -394,7 +394,7 @@ export const ParallaxHero: React.FC = () => {
               id="hero-cta-explore-portfolio"
               type="button"
               onClick={() => setActiveView('portfolio')}
-              className="px-6 py-3.5 sm:py-4 rounded-md bg-[#171311]/80 hover:bg-[#171311] text-[#F5EBCB] font-mono text-xs sm:text-sm uppercase tracking-wider font-semibold transition-all border border-[#F5EBCB]/25 hover:border-[#F5EBCB]/50 min-h-[50px] cursor-pointer backdrop-blur-xs flex items-center gap-2"
+              className="px-6 py-3.5 sm:py-4 rounded-md bg-[#171311]/80 hover:bg-[#171311] text-[#F5EBCB] font-mono text-xs sm:text-sm uppercase tracking-wider font-semibold transition-all border border-[#F5EBCB]/25 hover:border-[#F5EBCB]/50 min-h-[50px] cursor-pointer backdrop-blur-xs flex items-center gap-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#F5EBCB]"
             >
               <span>EXPLORE WORKS</span>
             </button>
@@ -411,12 +411,12 @@ export const ParallaxHero: React.FC = () => {
           type="button"
           onClick={scrollToNextSection}
           aria-label="Scroll to explore curated works"
-          className="group flex flex-col items-center gap-1.5 text-[#F5EBCB]/70 hover:text-[#F5EBCB] transition-colors cursor-pointer focus:outline-hidden"
+          className="group flex flex-col items-center gap-1.5 text-[#F5EBCB]/70 hover:text-[#F5EBCB] transition-colors cursor-pointer rounded-sm p-1 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#F5EBCB]"
         >
           <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-widest font-bold">
             SCROLL TO EXPLORE
           </span>
-          <ChevronDown className="w-4 h-4 text-[#EA2B0B] group-hover:translate-y-1 transition-transform animate-bounce" />
+          <ChevronDown className="w-4 h-4 text-[#EA2B0B] group-hover:translate-y-1 transition-transform animate-bounce motion-reduce:animate-none" />
         </button>
       </div>
 

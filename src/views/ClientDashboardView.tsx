@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { ProgressBar } from '../components/ProgressBar';
 import { ProgressTimeline } from '../components/ProgressTimeline';
@@ -6,6 +6,8 @@ import { ClientReviewSection } from '../components/ClientReviewSection';
 import { FinalDeliverySection } from '../components/FinalDeliverySection';
 import { ClientPaymentVerificationCard } from '../components/ClientPaymentVerificationCard';
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
+import { ProjectChatDrawer } from '../components/ProjectChatDrawer';
+import { ChatWindow } from '../components/ChatWindow';
 import { formatCommissionDate } from '../utils/dateUtils';
 import { fetchCommissionProofs } from '../lib/proofs';
 import { CommissionProof, COMMISSION_STAGES } from '../types';
@@ -24,7 +26,11 @@ import {
   ShieldCheck,
   Settings,
   CreditCard,
-  Search
+  Search,
+  MessageSquare,
+  AlertCircle,
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 
 export const ClientDashboardView: React.FC = () => {
@@ -100,6 +106,7 @@ export const ClientDashboardView: React.FC = () => {
     studioProfile,
     timelineUpdates = [],
     activeDashboardTab,
+    messages = [],
   } = useApp();
 
   const commission = activeCommission || (currentUserCommissions && currentUserCommissions.length > 0 ? currentUserCommissions[0] : undefined);
@@ -107,27 +114,39 @@ export const ClientDashboardView: React.FC = () => {
   const [loadingProofs, setLoadingProofs] = useState<boolean>(false);
 
   // Two-level dashboard navigation state
+  type WorkspaceTab = 'overview' | 'messages' | 'payments' | 'proofs' | 'milestones' | 'delivery' | 'profile';
   const [viewMode, setViewMode] = useState<'overview' | 'workspace'>('overview');
   const [overviewFilter, setOverviewFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'payment' | 'deposit' | 'review' | 'timeline' | 'delivery' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('overview');
+  const [isChatDrawerOpen, setIsChatDrawerOpen] = useState<boolean>(false);
 
   // Sync activeTab and viewMode when deep-linking from notifications
   useEffect(() => {
     if (activeDashboardTab) {
-      if (activeDashboardTab === 'chat') {
-        setActiveView('chat');
+      if (activeDashboardTab === 'chat' || activeDashboardTab === 'messages') {
+        setActiveTab('messages');
+        setViewMode('workspace');
         return;
       }
       if (
         activeDashboardTab === 'payment' ||
         activeDashboardTab === 'deposit' ||
-        activeDashboardTab === 'review' || 
-        activeDashboardTab === 'timeline' || 
-        activeDashboardTab === 'delivery' || 
-        activeDashboardTab === 'profile'
+        activeDashboardTab === 'payments'
       ) {
-        setActiveTab(activeDashboardTab);
+        setActiveTab('payments');
+        setViewMode('workspace');
+      } else if (activeDashboardTab === 'review' || activeDashboardTab === 'proofs') {
+        setActiveTab('proofs');
+        setViewMode('workspace');
+      } else if (activeDashboardTab === 'timeline' || activeDashboardTab === 'milestones') {
+        setActiveTab('milestones');
+        setViewMode('workspace');
+      } else if (activeDashboardTab === 'delivery') {
+        setActiveTab('delivery');
+        setViewMode('workspace');
+      } else if (activeDashboardTab === 'profile') {
+        setActiveTab('profile');
         setViewMode('workspace');
       } else {
         setActiveTab('overview');
@@ -334,7 +353,79 @@ export const ClientDashboardView: React.FC = () => {
         !latestProofStatus.includes('revision') &&
         latestProofStatus !== 'approved'));
 
-  const currentStageInfo = COMMISSION_STAGES.find(s => s.number === (currentCommission.currentStage || 1));
+  const currentStageInfo = COMMISSION_STAGES.find(s => s.number === (currentCommission?.currentStage || 1));
+  const nextStageInfo = COMMISSION_STAGES.find(s => s.number === ((currentCommission?.currentStage || 1) + 1));
+
+  // Payment conjunction security invariant
+  const isPaymentSettled = currentUser?.role === 'admin' || (
+    currentCommission?.paymentStatus === 'Paid' && currentCommission?.totalPaid === true
+  );
+
+  // Unread messages for active commission
+  const unreadMessagesCount = useMemo(() => {
+    if (!currentCommission?.id || !currentUser?.id) return 0;
+    return messages.filter(
+      m => m.commissionId === currentCommission.id && m.senderId !== currentUser.id && !m.read
+    ).length;
+  }, [messages, currentCommission?.id, currentUser?.id]);
+
+  // Derived Action Required states
+  const isDepositRequired = Boolean(
+    currentCommission &&
+    !currentCommission.depositPaid && 
+    currentCommission.paymentStatus !== 'Paid' && 
+    currentCommission.paymentStatus !== 'Partial' &&
+    ((currentCommission.currentStage || 1) <= 2 || currentCommission.status === 'pending' || currentCommission.status === 'reviewing' || currentCommission.status === 'accepted')
+  );
+
+  const isBalancePending = Boolean(
+    currentCommission &&
+    (currentCommission.depositPaid || currentCommission.paymentStatus === 'Partial') && 
+    currentCommission.paymentStatus !== 'Paid' && 
+    !currentCommission.totalPaid && 
+    ((currentCommission.currentStage || 1) >= 7 || currentCommission.status === 'final_approval' || isFinalDelivery)
+  );
+
+  const isDeliverablesLocked = Boolean(
+    currentCommission &&
+    isFinalDelivery && 
+    !isPaymentSettled
+  );
+
+  // Derive highest-priority pending client action
+  const pendingAction = useMemo(() => {
+    if (!currentCommission) return null;
+    if (isProofPendingReview) {
+      return {
+        type: 'proof' as const,
+        title: `Creative Proof v${latestProof?.version || 1} Awaiting Review`,
+        description: 'Your designer has published a high-resolution milestone proof. Please inspect the visual draft and submit your approval or revision directives.',
+        actionLabel: 'Review Creative Proof',
+        targetTab: 'proofs' as const,
+      };
+    }
+    if (isDepositRequired) {
+      return {
+        type: 'deposit' as const,
+        title: 'Initial Production Deposit Required',
+        description: 'Submit your 50% GCash deposit receipt to commence conceptual art direction and vector drafting.',
+        actionLabel: 'Submit Deposit Receipt',
+        targetTab: 'payments' as const,
+      };
+    }
+    if (isBalancePending || isDeliverablesLocked) {
+      return {
+        type: 'balance' as const,
+        title: isDeliverablesLocked ? 'Final Deliverables Locked Pending Balance' : 'Final Balance Outstanding',
+        description: isDeliverablesLocked 
+          ? 'Final vector packages and commercial licenses are ready for release once remaining balance verification is complete.'
+          : 'Creative work is complete. Settle the remaining balance via GCash to unlock final vector deliverables.',
+        actionLabel: 'Settle Remaining Balance',
+        targetTab: 'payments' as const,
+      };
+    }
+    return null;
+  }, [currentCommission, isProofPendingReview, isDepositRequired, isBalancePending, isDeliverablesLocked, latestProof?.version]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10 animate-in fade-in duration-300">
@@ -418,7 +509,7 @@ export const ClientDashboardView: React.FC = () => {
                   placeholder="Filter commissions..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C]"
                 />
               </div>
             )}
@@ -580,9 +671,26 @@ export const ClientDashboardView: React.FC = () => {
                 </h2>
               </div>
 
-              <div className="flex items-center gap-2 font-mono text-xs">
-                <span className="text-[#71717A] dark:text-[#A1A1AA]">Status:</span>
-                <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">{formatCommissionStatus(currentCommission.status)}</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 font-mono text-xs">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Status:</span>
+                  <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">{formatCommissionStatus(currentCommission.status)}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsChatDrawerOpen(true)}
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-[#EA580C]/40 bg-orange-500/10 hover:bg-orange-500/20 text-[#EA580C] text-xs font-mono font-semibold transition-colors cursor-pointer shadow-2xs"
+                  title="Open Project Chat Drawer"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Project Chat</span>
+                  {unreadMessagesCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-[#EA580C] text-white text-[10px] font-mono">
+                      {unreadMessagesCount}
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -590,7 +698,7 @@ export const ClientDashboardView: React.FC = () => {
             <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1.5">
               <div className="flex items-center justify-between text-xs font-mono">
                 <span className="font-bold text-[#EA580C] uppercase tracking-wider">
-                  Stage 0{currentCommission.currentStage} of 08 · {currentStageInfo?.name || 'Production'}
+                  Stage 0{currentCommission.currentStage || 1} of 08 · {currentStageInfo?.name || 'Production'}
                 </span>
                 <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
                   Progress {currentCommission.progress}%
@@ -605,22 +713,68 @@ export const ClientDashboardView: React.FC = () => {
             <ProgressBar commission={currentCommission} interactiveAdmin={false} />
           </div>
 
-          {/* Quiet Tab Navigation Bar */}
+          {/* Pinned Action-Required Contextual Bar */}
+          {pendingAction && (
+            <div className="p-5 rounded-xl border-2 border-[#EA580C] bg-gradient-to-r from-orange-500/10 via-[#FAF9F6] to-white dark:via-[#18181B] dark:to-[#121214] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-200">
+              <div className="flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-[#EA580C] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div className="space-y-0.5">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-bold block">
+                    Action Required
+                  </span>
+                  <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                    {pendingAction.title}
+                  </h4>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] max-w-xl leading-relaxed">
+                    {pendingAction.description}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab(pendingAction.targetTab)}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold font-mono uppercase tracking-wider shadow-xs transition-all cursor-pointer shrink-0 self-start sm:self-auto"
+              >
+                <span>{pendingAction.actionLabel}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Consolidated Workspace Navigation Bar */}
           <nav className="flex items-center gap-2 border-b border-[#E4E2DC] dark:border-[#222225] pb-1 overflow-x-auto no-scrollbar" aria-label="Project details navigation">
             {[
-              { id: 'overview' as const, label: 'Specifications', icon: FileText },
+              { id: 'overview' as const, label: 'Overview', icon: FileText },
               { 
-                id: 'payment' as const, 
-                label: 'Payment Verification', 
+                id: 'messages' as const, 
+                label: 'Messages', 
+                icon: MessageSquare, 
+                count: unreadMessagesCount > 0 ? unreadMessagesCount : undefined 
+              },
+              { 
+                id: 'payments' as const, 
+                label: 'Payments & Receipts', 
                 icon: CreditCard, 
                 count: currentCommission.paymentStatus !== 'Paid' 
                   ? (currentCommission.paymentStatus === 'Partial' ? 'Balance' : 'Deposit') 
                   : undefined 
               },
-              { id: 'deposit' as const, label: 'Deposit', icon: CreditCard },
-              { id: 'review' as const, label: 'Creative Proofs', icon: Eye, count: isProofPendingReview ? 'Action' : undefined },
-              { id: 'timeline' as const, label: 'Milestone Log', icon: Clock },
-              { id: 'delivery' as const, label: 'Final Delivery', icon: FolderArchive, count: isFinalDelivery ? 'Ready' : undefined },
+              { 
+                id: 'proofs' as const, 
+                label: 'Files & Creative Proofs', 
+                icon: Eye, 
+                count: isProofPendingReview ? 'Action' : (effectiveProofs.length > 0 ? effectiveProofs.length : undefined) 
+              },
+              { id: 'milestones' as const, label: 'Milestones', icon: Clock },
+              { 
+                id: 'delivery' as const, 
+                label: 'Final Deliverables', 
+                icon: FolderArchive, 
+                count: isFinalDelivery ? 'Ready' : undefined 
+              },
               { id: 'profile' as const, label: 'Settings', icon: Settings },
             ].map(({ id, label, icon: TabIcon, count }) => {
               const isSelected = activeTab === id;
@@ -651,43 +805,114 @@ export const ClientDashboardView: React.FC = () => {
             })}
           </nav>
 
-          {/* TAB 1: SPECIFICATIONS & BRIEF */}
+          {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-8 animate-in fade-in duration-200">
               
-              {/* If Stage 8, Show Final Delivery Prompt */}
-              {isFinalDelivery && (
-                <FinalDeliverySection 
-                  commission={currentCommission} 
-                  onNavigateToPayment={() => setActiveTab('payment')} 
-                />
-              )}
-
-              {/* Proof Review Alert if pending */}
-              {isProofPendingReview && (
-                <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#EA580C] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              {/* Three Core Questions Section */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                {/* 1. What is happening with my project? */}
+                <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex flex-col justify-between space-y-3">
                   <div className="space-y-1">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
-                      Action Required
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+                      Current Production Status
                     </span>
                     <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
-                      Creative Proof v{latestProof?.version || 1} is awaiting your review
+                      Stage 0{currentCommission.currentStage || 1} · {currentStageInfo?.name || 'In Production'}
                     </h4>
-                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-                      Inspect the latest high-resolution drafts and submit your approval or adjustment directives.
+                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                      {currentStageInfo?.description || 'Active vector drafting and aesthetic development underway.'}
                     </p>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('review')}
-                    className="px-5 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Inspect Proof</span>
-                  </button>
+                  <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between text-xs font-mono">
+                    <span className="text-[#71717A] dark:text-[#A1A1AA]">Deadline:</span>
+                    <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">{formatCommissionDate(currentCommission.deadline)}</span>
+                  </div>
                 </div>
-              )}
+
+                {/* 2. What does the designer need from me? */}
+                <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex flex-col justify-between space-y-3">
+                  <div className="space-y-1">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+                      Required Client Action
+                    </span>
+                    {pendingAction ? (
+                      <>
+                        <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                          {pendingAction.title}
+                        </h4>
+                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed line-clamp-2">
+                          {pendingAction.description}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="font-display font-bold text-base text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                          <Check className="w-4 h-4" />
+                          <span>No Actions Pending</span>
+                        </h4>
+                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                          All client approvals and receipts are in order. The studio is working on your creative assets.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#222225]">
+                    {pendingAction ? (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab(pendingAction.targetTab)}
+                        className="text-xs font-mono font-semibold text-[#EA580C] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>{pendingAction.actionLabel} →</span>
+                      </button>
+                    ) : (
+                      <span className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                        ✓ All requirements satisfied
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. What happens next? */}
+                <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex flex-col justify-between space-y-3">
+                  <div className="space-y-1">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+                      Next Milestone Roadmap
+                    </span>
+                    {nextStageInfo ? (
+                      <>
+                        <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                          Stage 0{nextStageInfo.number} · {nextStageInfo.name}
+                        </h4>
+                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed line-clamp-2">
+                          {nextStageInfo.description}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                          Final Delivery & Archive
+                        </h4>
+                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                          All milestone stages completed. Vector master files and production packages released.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#222225]">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('milestones')}
+                      className="text-xs font-mono font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>View Full Milestones Log →</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
 
               {/* Editorial Ledger of Project Terms */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -699,7 +924,7 @@ export const ClientDashboardView: React.FC = () => {
                     {formatCommissionDate(currentCommission.deadline)}
                   </p>
                   <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
-                    Target completion
+                    Target completion schedule
                   </p>
                 </div>
 
@@ -720,7 +945,7 @@ export const ClientDashboardView: React.FC = () => {
                         </span>
                         <button
                           type="button"
-                          onClick={() => setActiveTab('payment')}
+                          onClick={() => setActiveTab('payments')}
                           className="text-[11px] font-mono text-[#EA580C] hover:underline text-left block font-semibold cursor-pointer"
                         >
                           Submit Final Balance GCash Receipt →
@@ -733,7 +958,7 @@ export const ClientDashboardView: React.FC = () => {
                         </span>
                         <button
                           type="button"
-                          onClick={() => setActiveTab('payment')}
+                          onClick={() => setActiveTab('payments')}
                           className="text-[11px] font-mono text-[#EA580C] hover:underline text-left block font-semibold cursor-pointer"
                         >
                           Submit GCash Deposit Receipt →
@@ -745,13 +970,13 @@ export const ClientDashboardView: React.FC = () => {
 
                 <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
-                    Revision Cycles
+                    Revision Allowance
                   </span>
                   <p className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
                     {currentCommission.revisionsUsed || 0} used / {currentCommission.revisionsAllowed || 2} included
                   </p>
                   <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
-                    Refinement rounds
+                    Bespoke refinement rounds
                   </p>
                 </div>
               </div>
@@ -832,20 +1057,95 @@ export const ClientDashboardView: React.FC = () => {
                       </div>
                     </div>
                   )}
+
+                  {currentCommission.referenceLinks && currentCommission.referenceLinks.length > 0 && (
+                    <div className="pt-2">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1.5">
+                        Inspiration & Reference Links
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {currentCommission.referenceLinks.map((link, idx) => (
+                          <a 
+                            key={idx} 
+                            href={link} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-xs font-mono text-[#EA580C] hover:underline"
+                          >
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                            <span className="truncate max-w-xs">{link}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Recent Activity Feed Preview */}
+              {((currentCommission.timelineUpdates && currentCommission.timelineUpdates.length > 0) || 
+                timelineUpdates.filter(t => t.commissionId === currentCommission.id).length > 0) && (
+                <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#222225]">
+                    <div>
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-0.5">
+                        Recent Log
+                      </span>
+                      <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                        Project Activity
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('milestones')}
+                      className="text-xs font-mono font-semibold text-[#EA580C] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>View All Milestones →</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {(currentCommission.timelineUpdates || timelineUpdates.filter(t => t.commissionId === currentCommission.id))
+                      .slice(0, 3)
+                      .map((update, idx) => (
+                        <div key={idx} className="p-3.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-start justify-between gap-3 text-xs">
+                          <div className="space-y-0.5">
+                            <span className="font-display font-bold text-[#18181B] dark:text-[#EDEDEC] block">
+                              {update.title || `Stage Update: ${update.stage || 'Production'}`}
+                            </span>
+                            <p className="text-[#71717A] dark:text-[#A1A1AA]">{update.description || update.notes}</p>
+                          </div>
+                          <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] shrink-0">
+                            {formatCommissionDate(update.timestamp)}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 
-          {/* TAB: GCASH PAYMENT VERIFICATION */}
-          {activeTab === 'payment' && (
+          {/* TAB 2: IN-WORKSPACE MESSAGES */}
+          {activeTab === 'messages' && (
+            <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl overflow-hidden shadow-2xs h-[680px] flex flex-col animate-in fade-in duration-200">
+              <ChatWindow
+                commission={currentCommission}
+                isAdmin={currentUser?.role === 'admin'}
+              />
+            </div>
+          )}
+
+          {/* TAB 3: PAYMENTS & RECEIPTS (CONSOLIDATED) */}
+          {activeTab === 'payments' && (
             <div className="animate-in fade-in duration-200">
               {currentUser && currentCommission ? (
                 <ClientPaymentVerificationCard
                   commission={currentCommission}
                   currentUser={currentUser}
                   onPaymentProofSubmitted={() => {
-                    // Stay in payment tab to inspect pending status
+                    // Stay in payments tab to inspect pending status
                   }}
                 />
               ) : (
@@ -856,129 +1156,26 @@ export const ClientDashboardView: React.FC = () => {
             </div>
           )}
 
-          {/* TAB: DEPOSIT TERMS & GCASH INSTRUCTIONS */}
-          {activeTab === 'deposit' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
-                  <div>
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
-                      Settlement Policy
-                    </span>
-                    <h3 className="font-display text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
-                      Initial Production Deposit
-                    </h3>
-                  </div>
-                  <div>
-                    {currentCommission.paymentStatus === 'Paid' || currentCommission.paymentStatus === 'Partial' || currentCommission.depositPaid ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-mono font-semibold">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Deposit Received & Confirmed</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-xs font-mono font-semibold">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Awaiting Deposit Verification</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
-                      Total Investment
-                    </span>
-                    <p className="font-mono font-bold text-xl text-[#18181B] dark:text-[#EDEDEC]">
-                      {currentCommission.budget}
-                    </p>
-                    <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
-                      Fixed commission scope
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
-                      Required Initial Deposit
-                    </span>
-                    <p className="font-mono font-bold text-xl text-[#EA580C]">
-                      50% of budget
-                    </p>
-                    <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
-                      Commences concept crafting and vector development
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-xl border border-[#E4E2DC] dark:border-[#222225] bg-white dark:bg-[#18181B] space-y-4">
-                  <div className="space-y-1">
-                    <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
-                      Official Studio GCash Settlement Instructions
-                    </h4>
-                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
-                      Transfer the initial 50% deposit to the verified studio GCash account below. After transferring, submit a screenshot or PDF of the GCash transaction receipt for manual admin audit.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div className="p-4 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225]">
-                      <span className="text-[10px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] block mb-1">
-                        GCash Account Name
-                      </span>
-                      <span className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC]">
-                        {studioProfile?.gcashDetails?.accountName || 'Brewster Cabando'}
-                      </span>
-                    </div>
-
-                    <div className="p-4 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225]">
-                      <span className="text-[10px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] block mb-1">
-                        GCash Mobile Number
-                      </span>
-                      <span className="font-mono font-bold text-sm text-[#EA580C]">
-                        {studioProfile?.gcashDetails?.accountNumber || '0965-706-4331'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <p className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
-                      Important: Please include Ref #{currentCommission.id.slice(0, 8)} in your transfer message.
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('payment')}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer shrink-0"
-                    >
-                      <CreditCard className="w-4 h-4" />
-                      <span>Submit GCash Deposit Receipt →</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: PROOF REVIEW */}
-          {activeTab === 'review' && (
+          {/* TAB 4: FILES & CREATIVE PROOFS */}
+          {activeTab === 'proofs' && (
             <div className="animate-in fade-in duration-200">
               <ClientReviewSection commission={currentCommission} />
             </div>
           )}
 
-          {/* TAB 4: TIMELINE */}
-          {activeTab === 'timeline' && (
+          {/* TAB 5: MILESTONES */}
+          {activeTab === 'milestones' && (
             <div className="animate-in fade-in duration-200">
               <ProgressTimeline updates={currentCommission.timelineUpdates || timelineUpdates.filter(t => t.commissionId === currentCommission.id)} />
             </div>
           )}
 
-          {/* TAB 5: FINAL DELIVERY */}
+          {/* TAB 6: FINAL DELIVERABLES */}
           {activeTab === 'delivery' && (
             <div className="animate-in fade-in duration-200">
               <FinalDeliverySection 
                 commission={currentCommission} 
-                onNavigateToPayment={() => setActiveTab('payment')} 
+                onNavigateToPayment={() => setActiveTab('payments')} 
               />
             </div>
           )}
@@ -1031,7 +1228,7 @@ export const ClientDashboardView: React.FC = () => {
                       required
                       value={profileName}
                       onChange={(e) => setProfileName(e.target.value)}
-                      className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                      className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C]"
                     />
                   </div>
                   <div>
@@ -1057,7 +1254,7 @@ export const ClientDashboardView: React.FC = () => {
                       value={profileHandle}
                       onChange={(e) => setProfileHandle(e.target.value)}
                       placeholder="@company"
-                      className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                      className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C]"
                     />
                   </div>
                   <div>
@@ -1069,7 +1266,7 @@ export const ClientDashboardView: React.FC = () => {
                       value={profilePhone}
                       onChange={(e) => setProfilePhone(e.target.value)}
                       placeholder="+1 (555) 019-2834"
-                      className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                      className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C]"
                     />
                   </div>
                 </div>
@@ -1083,7 +1280,7 @@ export const ClientDashboardView: React.FC = () => {
                     value={profileBio}
                     onChange={(e) => setProfileBio(e.target.value)}
                     placeholder="e.g. Founder at Solis Labs"
-                    className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] resize-none"
+                    className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] resize-none"
                   />
                 </div>
 
@@ -1100,6 +1297,15 @@ export const ClientDashboardView: React.FC = () => {
           )}
 
         </div>
+      )}
+
+      {/* Contextual Project Chat Drawer */}
+      {currentCommission && (
+        <ProjectChatDrawer
+          isOpen={isChatDrawerOpen}
+          onClose={() => setIsChatDrawerOpen(false)}
+          commission={currentCommission}
+        />
       )}
 
     </div>

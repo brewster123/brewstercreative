@@ -231,7 +231,8 @@ export const Footer: React.FC = () => {
             <button
               type="button"
               onClick={scrollToTop}
-              className="flex items-center gap-1 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors font-medium cursor-pointer"
+              className="flex items-center gap-1 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors font-medium cursor-pointer rounded px-1.5 py-0.5 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+              aria-label="Scroll back to top of page"
             >
               <span>Back to top</span>
               <ArrowUp className="w-3.5 h-3.5" />

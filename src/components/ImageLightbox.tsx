@@ -97,7 +97,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
             onClose();
           }}
           aria-label="Close image viewer"
-          className="pointer-events-auto p-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-[#18181B]/90 hover:bg-[#222225] text-white/90 hover:text-white transition-all cursor-pointer border border-[#222225] shadow-lg ml-auto focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+          className="pointer-events-auto p-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-[#18181B]/90 hover:bg-[#222225] text-white/90 hover:text-white transition-all cursor-pointer border border-[#222225] shadow-lg ml-auto focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
         >
           <X className="w-5 h-5" />
         </button>
@@ -112,7 +112,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
             onNavigate!((currentIndex ?? 0) - 1);
           }}
           aria-label="Previous image"
-          className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-[#18181B]/90 hover:bg-[#222225] text-white transition-all cursor-pointer border border-[#222225] shadow-lg z-10 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+          className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-[#18181B]/90 hover:bg-[#222225] text-white transition-all cursor-pointer border border-[#222225] shadow-lg z-10 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
         >
           <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
@@ -141,7 +141,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
             onNavigate!((currentIndex ?? 0) + 1);
           }}
           aria-label="Next image"
-          className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-[#18181B]/90 hover:bg-[#222225] text-white transition-all cursor-pointer border border-[#222225] shadow-lg z-10 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+          className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-[#18181B]/90 hover:bg-[#222225] text-white transition-all cursor-pointer border border-[#222225] shadow-lg z-10 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
         >
           <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>

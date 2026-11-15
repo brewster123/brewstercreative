@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Commission, User } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { 
@@ -40,6 +40,21 @@ export const CreativeReviewDeliverables: React.FC<CreativeReviewDeliverablesProp
   );
   const [subTab, setSubTab] = useState<'proofs' | 'deliverables'>(defaultSubTab);
 
+  useEffect(() => {
+    if (initialCommissionId) {
+      setSelectedId(initialCommissionId);
+    } else if (!selectedId) {
+      const fallbackId = activeCommission?.id || commissions[0]?.id || '';
+      if (fallbackId) {
+        setSelectedId(fallbackId);
+      }
+    }
+  }, [initialCommissionId, selectedId, activeCommission?.id, commissions]);
+
+  useEffect(() => {
+    setSubTab(defaultSubTab);
+  }, [defaultSubTab]);
+
   const currentCommission = commissions.find(c => c.id === selectedId) || commissions[0];
 
   const handleSelectCommission = (id: string) => {
@@ -57,29 +72,29 @@ export const CreativeReviewDeliverables: React.FC<CreativeReviewDeliverablesProp
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Commission Selector Bar */}
-      <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface border border-hairline rounded-3xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
         <div>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block mb-1">
             Production & Delivery Hub
           </span>
-          <h2 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+          <h2 className="font-display text-xl sm:text-2xl font-bold text-carbon">
             Creative Review & Deliverables
           </h2>
-          <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+          <p className="text-xs sm:text-sm text-graphite mt-0.5">
             Manage iterative client design proofs, revisions, and final delivery master packages.
           </p>
         </div>
 
         {/* Project Selector */}
         <div className="flex items-center gap-2.5">
-          <label htmlFor="hub4-commission-select" className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] shrink-0 font-medium">
+          <label htmlFor="hub4-commission-select" className="font-mono text-xs text-graphite shrink-0 font-medium">
             Project:
           </label>
           <select
             id="hub4-commission-select"
             value={currentCommission?.id || ''}
             onChange={(e) => handleSelectCommission(e.target.value)}
-            className="w-full sm:w-auto bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg px-3 py-2 text-xs font-medium text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C] cursor-pointer"
+            className="w-full sm:w-auto bg-surface-secondary border border-hairline rounded-xl px-3 py-2 text-xs font-medium text-carbon focus:outline-none focus:border-accent cursor-pointer"
           >
             {commissions.map((c) => (
               <option key={c.id} value={c.id}>
@@ -93,14 +108,14 @@ export const CreativeReviewDeliverables: React.FC<CreativeReviewDeliverablesProp
       {currentCommission ? (
         <div className="space-y-6">
           {/* Sub-tab Navigation */}
-          <div className="flex border-b border-[#E4E2DC] dark:border-[#27272A] gap-2">
+          <div className="flex flex-wrap border-b border-hairline pb-3 gap-2">
             <button
               type="button"
               onClick={() => setSubTab('proofs')}
-              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                 subTab === 'proofs'
-                  ? 'border-[#EA580C] text-[#EA580C] bg-[#EA580C]/5'
-                  : 'border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                  ? 'bg-accent text-white shadow-xs'
+                  : 'bg-surface-secondary text-graphite hover:text-carbon border border-hairline'
               }`}
             >
               <Layers className="w-4 h-4" />
@@ -109,10 +124,10 @@ export const CreativeReviewDeliverables: React.FC<CreativeReviewDeliverablesProp
             <button
               type="button"
               onClick={() => setSubTab('deliverables')}
-              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                 subTab === 'deliverables'
-                  ? 'border-[#EA580C] text-[#EA580C] bg-[#EA580C]/5'
-                  : 'border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                  ? 'bg-accent text-white shadow-xs'
+                  : 'bg-surface-secondary text-graphite hover:text-carbon border border-hairline'
               }`}
             >
               <FolderArchive className="w-4 h-4" />
@@ -122,13 +137,13 @@ export const CreativeReviewDeliverables: React.FC<CreativeReviewDeliverablesProp
 
           {/* Deliverables Security Gate Banner (Visible when on Deliverables tab) */}
           {subTab === 'deliverables' && (
-            <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+            <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
               isDeliveryUnlocked 
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200' 
                 : 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200'
             }`}>
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg shrink-0 ${isDeliveryUnlocked ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
+                <div className={`p-2 rounded-xl shrink-0 ${isDeliveryUnlocked ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
                   {isDeliveryUnlocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                 </div>
                 <div className="space-y-0.5">
@@ -136,7 +151,7 @@ export const CreativeReviewDeliverables: React.FC<CreativeReviewDeliverablesProp
                     <span className="font-display font-bold text-sm">
                       {isDeliveryUnlocked ? 'Deliverable Access Unlocked' : 'Deliverable Access Locked to Client'}
                     </span>
-                    <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded font-semibold bg-white/50 dark:bg-black/30">
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full font-semibold bg-white/50 dark:bg-black/30">
                       Payment Conjunction Invariant
                     </span>
                   </div>
@@ -149,7 +164,7 @@ export const CreativeReviewDeliverables: React.FC<CreativeReviewDeliverablesProp
               </div>
 
               {!isDeliveryUnlocked && (
-                <div className="shrink-0 font-mono text-[11px] px-2.5 py-1 rounded bg-white dark:bg-[#18181B] text-amber-600 dark:text-amber-400 border border-amber-500/30 font-semibold self-start sm:self-auto">
+                <div className="shrink-0 font-mono text-[11px] px-3 py-1 rounded-full bg-surface text-amber-600 dark:text-amber-400 border border-amber-500/30 font-semibold self-start sm:self-auto">
                   Requires: Paid & Total Paid
                 </div>
               )}
@@ -177,8 +192,8 @@ export const CreativeReviewDeliverables: React.FC<CreativeReviewDeliverablesProp
           )}
         </div>
       ) : (
-        <div className="p-12 text-center rounded-xl border border-dashed border-[#E4E2DC] dark:border-[#27272A] bg-[#FAF9F6] dark:bg-[#0F0F11]">
-          <p className="text-sm font-mono text-[#71717A] dark:text-[#A1A1AA]">
+        <div className="p-12 text-center rounded-3xl border border-dashed border-hairline bg-surface-secondary">
+          <p className="text-sm font-mono text-graphite">
             No commissions available in studio pipeline.
           </p>
         </div>

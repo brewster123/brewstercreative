@@ -3,22 +3,26 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* DESTALION Theme Tokens — Light Mode */
-  --bg-canvas: #FAF9F6;
+  /* DESTALION Theme Tokens — Light Mode (Sky Atelier & Crisp Gallery White) */
+  --bg-canvas: #FFFFFF;
   --bg-surface: #FFFFFF;
-  --bg-surface-secondary: #F4F2ED;
-  --text-primary: #18181B;
-  --text-muted: #71717A;
-  --border-subtle: #E4E2DC;
-  --accent: #EA580C;
-  --accent-hover: #D94814;
+  --bg-surface-secondary: #F4F5F7;
+  --text-primary: #111114;
+  --text-secondary: #4B5563;
+  --text-muted: #6B7280;
+  --border-subtle: #E5E7EB;
+  --accent: #0284C7;
+  --accent-hover: #0369A1;
+  --lime: #D4FF38;
+  --lime-hover: #C4F024;
+  --obsidian: #111114;
 
   /* Elevation Shadows — Light */
-  --shadow-2xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  --shadow-xs: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.07), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-2xs: 0 1px 2px 0 rgba(17, 17, 20, 0.03);
+  --shadow-xs: 0 1px 3px 0 rgba(17, 17, 20, 0.05), 0 1px 2px -1px rgba(17, 17, 20, 0.03);
+  --shadow-sm: 0 4px 10px -2px rgba(17, 17, 20, 0.06), 0 2px 4px -2px rgba(17, 17, 20, 0.03);
+  --shadow-md: 0 12px 24px -4px rgba(17, 17, 20, 0.08), 0 4px 8px -4px rgba(17, 17, 20, 0.04);
+  --shadow-lg: 0 24px 40px -8px rgba(17, 17, 20, 0.12), 0 8px 14px -6px rgba(17, 17, 20, 0.05);
 
   /* Semantic - Light */
   --color-success-text: #047857;
@@ -37,15 +41,19 @@
 .dark {
   color-scheme: dark;
 
-  /* DESTALION Theme Tokens — Dark Mode (Deep Studio Atelier Depth) */
-  --bg-canvas: #09090B;
-  --bg-surface: #121214;
-  --bg-surface-secondary: #18181B;
-  --text-primary: #EDEDEC;
-  --text-muted: #A1A1AA;
-  --border-subtle: #222225;
-  --accent: #EA580C;
-  --accent-hover: #D94814;
+  /* DESTALION Theme Tokens — Dark Mode (Deep Obsidian & Electric Sky) */
+  --bg-canvas: #090A0F;
+  --bg-surface: #11131B;
+  --bg-surface-secondary: #181B26;
+  --text-primary: #F4F4F6;
+  --text-secondary: #A1A1AA;
+  --text-muted: #9CA3AF;
+  --border-subtle: #232635;
+  --accent: #0EA5E9;
+  --accent-hover: #38BDF8;
+  --lime: #D4FF38;
+  --lime-hover: #C4F024;
+  --obsidian: #181B26;
 
   /* Elevation Shadows — Dark */
   --shadow-2xs: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
@@ -81,12 +89,15 @@
   --color-surface-muted: var(--bg-surface-secondary);
   --color-carbon: var(--text-primary);
   --color-graphite: var(--text-muted);
+  --color-graphite-strong: var(--text-secondary);
   --color-hairline: var(--border-subtle);
   --color-border-subtle: var(--border-subtle);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
-  --color-terracotta: #EA580C;
-  --color-terracotta-dark: #D94814;
+  --color-lime: var(--lime);
+  --color-lime-hover: var(--lime-hover);
+  --color-terracotta: var(--accent);
+  --color-terracotta-dark: var(--accent-hover);
 }
 
 @layer base {
@@ -100,13 +111,13 @@
   h1, h2, h3, h4, h5, h6, .font-display {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     word-spacing: normal;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.03em;
     text-wrap: balance;
   }
 
   .font-mono, .font-mono-code {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
   }
 
   /* Form controls theme integration */
@@ -118,259 +129,172 @@
 
   /* Accessible, High-Contrast Focus Ring */
   :focus-visible {
-    outline: 2px solid #EA580C;
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 }
 
 /* ==========================================================================
-   Dark Mode Surface & UI Overrides
-   Surrounding UI adapts cleanly; artwork remains 100% natural and unfiltered.
+   Dark Mode Compatibility Fallbacks
+   Scoped strictly to elements without explicit dark: overrides so semantic
+   tokens and component dark: variants remain in full control.
    ========================================================================== */
 
-.dark body {
+/* Legacy Surface Fallbacks */
+.dark :is(.bg-white, .bg-\[\#ffffff\], .bg-\[\#FFFFFF\]):not([class*="dark:bg-"]) {
+  background-color: var(--bg-surface);
+}
+
+.dark :is(.bg-\[\#FAF9F6\], .bg-\[\#faf9f6\]):not([class*="dark:bg-"]) {
   background-color: var(--bg-canvas);
+}
+
+.dark :is(.bg-\[\#FAF9F6\]\/90, .bg-\[\#faf9f6\]\/90):not([class*="dark:bg-"]) {
+  background-color: rgba(9, 10, 15, 0.9);
+}
+
+.dark :is(.bg-\[\#F4F2ED\], .bg-\[\#f4f2ed\], .bg-\[\#F4F5F7\], .bg-zinc-50, .bg-zinc-50\/70, .bg-zinc-50\/80, .bg-zinc-100, .bg-\[\#0F0F11\], .bg-\[\#0f0f11\], .bg-\[\#232327\]):not([class*="dark:bg-"]) {
+  background-color: var(--bg-surface-secondary);
+}
+
+.dark .bg-zinc-100\/90:not([class*="dark:bg-"]) {
+  background-color: rgba(24, 27, 38, 0.9);
+}
+
+.dark .bg-zinc-200:not([class*="dark:bg-"]) {
+  background-color: var(--border-subtle);
+}
+
+/* Legacy Border Fallbacks */
+.dark :is(.border-\[\#E4E2DC\], .border-\[\#e4e2dc\], .border-\[\#E5E7EB\], .border-\[\#E5E5E5\], .border-\[\#e5e5e5\], .border-\[\#27272A\], .border-\[\#27272a\], .border-zinc-200, .border-zinc-200\/90, .border-zinc-200\/80, .border-zinc-200\/70, .border-zinc-200\/60, .border-zinc-100):not([class*="dark:border-"]) {
+  border-color: var(--border-subtle);
+}
+
+/* Legacy Text Fallbacks */
+.dark :is(.text-\[\#18181B\], .text-\[\#18181b\], .text-\[\#111114\], .text-black, .text-zinc-900, .text-zinc-800, .text-neutral-900, .text-gray-900, .text-\[\#141416\]):not([class*="dark:text-"]) {
   color: var(--text-primary);
 }
 
-/* Surfaces */
-.dark .bg-white,
-.dark .bg-\[\#ffffff\],
-.dark .bg-\[\#FFFFFF\] {
-  background-color: var(--bg-surface) !important;
+.dark :is(.text-\[\#71717A\], .text-\[\#71717a\], .text-zinc-700, .text-zinc-600, .text-zinc-500, .text-zinc-400):not([class*="dark:text-"]) {
+  color: var(--text-muted);
 }
 
-.dark .bg-\[\#FAF9F6\],
-.dark .bg-\[\#faf9f6\] {
-  background-color: var(--bg-canvas) !important;
+/* Legacy Form Control Fallbacks */
+.dark :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="submit"]):not([type="button"]):not(.bg-orange-500),
+  textarea,
+  select
+):not([class*="dark:bg-"]) {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
 }
 
-.dark .bg-\[\#FAF9F6\]\/90,
-.dark .bg-\[\#faf9f6\]\/90 {
-  background-color: rgba(15, 15, 17, 0.9) !important;
+.dark :is(input, textarea)::placeholder {
+  color: #71717A;
 }
 
-.dark .bg-\[\#F4F2ED\],
-.dark .bg-\[\#f4f2ed\] {
-  background-color: var(--bg-surface-secondary) !important;
+/* Legacy Dark Button Fallbacks */
+.dark :is(.bg-zinc-900, .bg-zinc-950, .bg-\[\#18181B\]):not(.bg-orange-500):not(.bg-emerald-600):not(.bg-rose-600):not([class*="dark:bg-"]) {
+  background-color: #1F2330;
+  color: #F4F4F6;
 }
 
-.dark .bg-zinc-50,
-.dark .bg-zinc-50\/70,
-.dark .bg-zinc-50\/80 {
-  background-color: var(--bg-surface-secondary) !important;
-}
-
-.dark .bg-zinc-100,
-.dark .bg-\[\#0F0F11\],
-.dark .bg-\[\#0f0f11\],
-.dark .bg-\[\#232327\] {
-  background-color: var(--bg-surface-secondary) !important;
-}
-
-.dark .bg-zinc-100\/90 {
-  background-color: rgba(24, 24, 27, 0.9) !important;
-}
-
-.dark .bg-zinc-200 {
-  background-color: #222225 !important;
-}
-
-/* Borders */
-.dark .border-\[\#E4E2DC\],
-.dark .border-\[\#e4e2dc\],
-.dark .border-\[\#E5E5E5\],
-.dark .border-\[\#e5e5e5\],
-.dark .border-\[\#27272A\],
-.dark .border-\[\#27272a\],
-.dark .border-zinc-200,
-.dark .border-zinc-200\/90,
-.dark .border-zinc-200\/80,
-.dark .border-zinc-200\/70,
-.dark .border-zinc-200\/60,
-.dark .border-zinc-100 {
-  border-color: var(--border-subtle) !important;
-}
-
-/* Text Colors */
-.dark .text-\[\#18181B\],
-.dark .text-\[\#18181b\],
-.dark .text-black,
-.dark .text-zinc-900,
-.dark .text-zinc-800,
-.dark .text-neutral-900,
-.dark .text-gray-900,
-.dark .text-\[\#141416\] {
-  color: var(--text-primary) !important;
-}
-
-.dark .text-\[\#71717A\],
-.dark .text-\[\#71717a\],
-.dark .text-zinc-700,
-.dark .text-zinc-600,
-.dark .text-zinc-500 {
-  color: var(--text-muted) !important;
-}
-
-.dark .text-zinc-400 {
-  color: #A1A1AA !important;
-}
-
-/* Dark mode inputs, textareas, selects */
-.dark input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="submit"]):not([type="button"]):not(.bg-orange-500),
-.dark textarea,
-.dark select {
-  background-color: var(--bg-surface) !important;
-  color: var(--text-primary) !important;
-  border-color: var(--border-subtle) !important;
-}
-
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #71717A !important;
-}
-
-/* Dark buttons in dark mode */
-.dark .bg-zinc-900:not(.bg-orange-500):not(.bg-emerald-600):not(.bg-rose-600),
-.dark .bg-zinc-950:not(.bg-orange-500):not(.bg-emerald-600):not(.bg-rose-600),
-.dark .bg-\[\#18181B\]:not(.bg-orange-500) {
-  background-color: #27272A !important;
-  color: #EDEDEC !important;
-}
-
-.dark .bg-zinc-900:hover,
-.dark .bg-zinc-950:hover,
-.dark .bg-\[\#18181B\]:hover {
-  background-color: #3F3F46 !important;
+.dark :is(.bg-zinc-900, .bg-zinc-950, .bg-\[\#18181B\]):not(.bg-orange-500):not(.bg-emerald-600):not(.bg-rose-600):not([class*="dark:bg-"]):hover {
+  background-color: #2B3042;
 }
 
 /* Brand logo fill in dark mode */
 .dark #brand-official-logo g {
-  fill: #EDEDEC !important;
+  fill: #F4F4F6;
 }
 
-/* Semantic Badges & Notifications in Dark Mode */
-.dark .bg-emerald-50,
-.dark .bg-emerald-50\/80,
-.dark .bg-emerald-50\/70 {
-  background-color: rgba(6, 78, 59, 0.4) !important;
-  border-color: #065F46 !important;
+/* Legacy Semantic Badge Fallbacks */
+.dark :is(.bg-emerald-50, .bg-emerald-50\/80, .bg-emerald-50\/70):not([class*="dark:bg-"]) {
+  background-color: rgba(6, 78, 59, 0.4);
+  border-color: #065F46;
 }
-.dark .text-emerald-700,
-.dark .text-emerald-800,
-.dark .text-emerald-900 {
-  color: #34D399 !important;
+.dark :is(.text-emerald-700, .text-emerald-800, .text-emerald-900):not([class*="dark:text-"]) {
+  color: #34D399;
 }
 
-.dark .bg-amber-50,
-.dark .bg-amber-50\/80,
-.dark .bg-amber-50\/70 {
-  background-color: rgba(120, 53, 15, 0.4) !important;
-  border-color: #92400E !important;
+.dark :is(.bg-amber-50, .bg-amber-50\/80, .bg-amber-50\/70):not([class*="dark:bg-"]) {
+  background-color: rgba(120, 53, 15, 0.4);
+  border-color: #92400E;
 }
-.dark .text-amber-700,
-.dark .text-amber-800,
-.dark .text-amber-900 {
-  color: #FBBF24 !important;
+.dark :is(.text-amber-700, .text-amber-800, .text-amber-900):not([class*="dark:text-"]) {
+  color: #FBBF24;
 }
 
-.dark .bg-rose-50,
-.dark .bg-rose-50\/80,
-.dark .bg-rose-50\/60 {
-  background-color: rgba(76, 5, 25, 0.4) !important;
-  border-color: #9F1239 !important;
+.dark :is(.bg-rose-50, .bg-rose-50\/80, .bg-rose-50\/60):not([class*="dark:bg-"]) {
+  background-color: rgba(76, 5, 25, 0.4);
+  border-color: #9F1239;
 }
-.dark .text-rose-700,
-.dark .text-rose-800,
-.dark .text-rose-900 {
-  color: #F87171 !important;
+.dark :is(.text-rose-700, .text-rose-800, .text-rose-900):not([class*="dark:text-"]) {
+  color: #F87171;
 }
 
-.dark .bg-orange-50,
-.dark .bg-orange-50\/70 {
-  background-color: rgba(234, 88, 12, 0.15) !important;
-  border-color: rgba(234, 88, 12, 0.3) !important;
+.dark :is(.bg-orange-50, .bg-orange-50\/70):not([class*="dark:bg-"]) {
+  background-color: rgba(2, 132, 199, 0.15);
+  border-color: rgba(2, 132, 199, 0.3);
 }
-.dark .text-orange-700,
-.dark .text-orange-800 {
-  color: #FB923C !important;
+.dark :is(.text-orange-700, .text-orange-800):not([class*="dark:text-"]) {
+  color: #38BDF8;
 }
 
-.dark .bg-blue-50 {
-  background-color: rgba(30, 58, 138, 0.4) !important;
-  border-color: #1E40AF !important;
+.dark .bg-blue-50:not([class*="dark:bg-"]) {
+  background-color: rgba(30, 58, 138, 0.4);
+  border-color: #1E40AF;
 }
-.dark .text-blue-700 {
-  color: #60A5FA !important;
+.dark .text-blue-700:not([class*="dark:text-"]) {
+  color: #60A5FA;
 }
 
-/* Handmade Editorial Aesthetic Utilities (Reference Inspired) */
+/* Signature Sky-Blue & Lime Atelier Aesthetics */
 .font-handwriting {
-  font-family: 'Caveat', cursive, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
-/* Outer architectural graph paper frame */
+.hero-sky-gradient {
+  background: linear-gradient(180deg, #026BB5 0%, #098CE0 46%, #3CB9F9 84%, #9CE0FE 100%);
+}
+
+.dark .hero-sky-gradient {
+  background: linear-gradient(180deg, #073866 0%, #095999 48%, #0E87CE 86%, #38BDF8 100%);
+}
+
+/* Crisp Clean Gallery Canvas Surface */
 .bg-graph-outer {
-  background-color: #DCD9D0;
-  background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
-  background-size: 28px 28px;
+  background-color: var(--bg-canvas);
 }
 
-.dark .bg-graph-outer {
-  background-color: #070709;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-
-/* Notebook ruled paper lines */
 .bg-notebook-ruled {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent 31px,
-    rgba(0, 0, 0, 0.035) 32px
-  );
+  background-color: var(--bg-canvas);
 }
 
-.dark .bg-notebook-ruled {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent 31px,
-    rgba(255, 255, 255, 0.03) 32px
-  );
-}
-
-/* Notched Folder Tab */
+/* Modern Asymmetric Card Edge */
 .notched-tab {
-  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 100%, 0 100%);
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
 }
 
-/* Noise & Grid textures */
+/* Subtle Surface Texture */
 .bg-noise {
-  background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0);
   background-size: 24px 24px;
-}
-
-.dark .bg-noise {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0);
 }
 
 .bg-grid-pattern {
   background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
-  background-size: 36px 36px;
+    linear-gradient(to right, rgba(17, 17, 20, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17, 17, 20, 0.035) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 .dark .bg-grid-pattern {
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
 }
 
 /* Custom scrollbars */

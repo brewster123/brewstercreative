@@ -48,6 +48,16 @@ export function mapDbProofToAppProof(row: CommissionProofDbRow): CommissionProof
     revisionNote: row.revision_note || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    commission_id: row.commission_id,
+    uploaded_by: row.uploaded_by,
+    file_name: row.file_name,
+    file_path: row.file_path,
+    file_url: row.file_url,
+    file_type: row.file_type || undefined,
+    file_size: row.file_size !== null && row.file_size !== undefined ? Number(row.file_size) : undefined,
+    revision_note: row.revision_note,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
   };
 }
 
@@ -270,7 +280,7 @@ export async function uploadAdminCreativeProof({
     id: proofId,
     commission_id: commissionId,
     uploaded_by: currentUser.id,
-    file_name: file.name,
+    file_name: safeFileName || file.name,
     file_path: storagePath,
     file_url: null, // Private bucket: never expose a public URL
     file_type: file.type || 'application/octet-stream',

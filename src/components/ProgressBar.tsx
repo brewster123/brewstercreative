@@ -17,34 +17,35 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
     (commission.status || '').toLowerCase() === 'completed';
 
   const currentStageInfo = COMMISSION_STAGES.find(s => s.number === commission.currentStage) || COMMISSION_STAGES[0];
+  const clampedProgress = Math.min(100, Math.max(0, Math.round(commission.progress ?? 0)));
 
   return (
     <div className="space-y-6">
       
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 pb-4 border-b border-hairline">
         <div className="space-y-1">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block">
             Stage 0{commission.currentStage} of 08 · {currentStageInfo.name}
           </span>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+          <p className="text-xs text-graphite">
             {currentStageInfo.description}
           </p>
         </div>
 
         <div className="flex items-baseline gap-3 shrink-0 self-start sm:self-auto font-mono">
-          <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider">Progress</span>
-          <span className="text-xl font-bold text-[#18181B] dark:text-[#EDEDEC] font-display">
-            {commission.progress}%
+          <span className="text-[11px] text-graphite uppercase tracking-wider">Progress</span>
+          <span className="text-xl font-bold text-carbon font-display">
+            {clampedProgress}%
           </span>
         </div>
       </div>
 
       {/* Hairline Progress Rule */}
-      <div className="h-0.5 w-full bg-[#E4E2DC] dark:bg-[#222225] rounded-full overflow-hidden">
+      <div className="h-1 w-full bg-surface-secondary rounded-full overflow-hidden">
         <div
-          className="h-full bg-[#EA580C] transition-all duration-500 ease-out"
-          style={{ width: `${commission.progress}%` }}
+          className="h-full bg-accent transition-all duration-500 ease-out"
+          style={{ width: `${clampedProgress}%` }}
         />
       </div>
 
@@ -55,21 +56,20 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
             ? stage.number <= commission.currentStage
             : stage.number < commission.currentStage;
           const isCurrent = !isCommissionCompleted && stage.number === commission.currentStage;
-          const isUpcoming = !isCommissionCompleted && stage.number > commission.currentStage;
 
           const stageStatusText = isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming';
-          const stageClasses = `p-3 rounded-lg border text-left flex sm:flex-col justify-between items-center sm:items-start gap-2 transition-all ${
+          const stageClasses = `p-3 rounded-2xl border text-left flex sm:flex-col justify-between items-center sm:items-start gap-2 transition-all ${
             isCurrent
-              ? 'border-[#EA580C] bg-[#FFF7ED] dark:bg-[#78350F]/20'
+              ? 'border-accent bg-[#E0F2FE]/60 dark:bg-sky-950/30'
               : isCompleted
-              ? 'border-[#E4E2DC] dark:border-[#222225] bg-[#FAF9F6] dark:bg-[#18181B]'
+              ? 'border-hairline bg-surface-secondary'
               : 'border-transparent bg-transparent opacity-40'
-          } ${isAdmin && interactiveAdmin ? 'cursor-pointer hover:border-[#EA580C] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile' : ''}`;
+          } ${isAdmin && interactiveAdmin ? 'cursor-pointer hover:border-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent btn-tactile' : ''}`;
 
           const content = (
             <>
               <div className="flex items-center sm:justify-between w-full gap-2 font-mono text-[10px]">
-                <span className={`font-semibold tracking-wider ${isCurrent ? 'text-[#EA580C]' : 'text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                <span className={`font-semibold tracking-wider ${isCurrent ? 'text-accent' : 'text-graphite'}`}>
                   0{stage.number}
                 </span>
 
@@ -79,16 +79,16 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
                       <Check className="w-2.5 h-2.5" />
                     </span>
                   ) : isCurrent ? (
-                    <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-pulse" />
+                    <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
                   ) : (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E4E2DC] dark:bg-[#222225]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-surface-secondary" />
                   )}
                 </div>
               </div>
 
               <div className="min-w-0 flex-1 sm:flex-initial">
                 <p className={`font-mono text-[10px] uppercase tracking-wider font-semibold line-clamp-2 ${
-                  isCurrent ? 'text-[#EA580C]' : isCompleted ? 'text-[#18181B] dark:text-[#EDEDEC]' : 'text-[#71717A] dark:text-[#A1A1AA]'
+                  isCurrent ? 'text-accent' : isCompleted ? 'text-carbon' : 'text-graphite'
                 }`}>
                   {stage.name}
                 </p>
@@ -124,7 +124,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ commission, interactiv
       </div>
 
       {isAdmin && interactiveAdmin && (
-        <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] text-right">
+        <p className="text-[11px] font-mono text-graphite text-right">
           Studio Director: Click any milestone stage above to advance production.
         </p>
       )}

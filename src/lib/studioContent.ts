@@ -22,13 +22,15 @@ export {
  * Subscribes to realtime changes for the Phase 5D public content tables.
  * AppContext refetches the affected collection when a database change occurs.
  */
+let publicContentChannelSeq = 0;
+
 export function subscribeToPublicContentChanges(options: {
   onProfileChanged?: () => void;
   onServicesChanged?: () => void;
   onPortfolioChanged?: () => void;
 }): () => void {
   const channel = supabase
-    .channel(`public-content-${Date.now()}`)
+    .channel(`public-content-${Date.now()}-${++publicContentChannelSeq}`)
     .on(
       'postgres_changes',
       {

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { 
   Palette, 
   Type, 
@@ -52,11 +52,36 @@ export const StudioTokenEditor: React.FC = () => {
 
   // Status message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showResetConfirm) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowResetConfirm(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showResetConfirm]);
 
   // Helper to show momentary feedback toast
   const showToast = useCallback((msg: string) => {
+    if (!isMountedRef.current) return;
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      if (isMountedRef.current) setToastMessage(null);
+    }, 2500);
   }, []);
 
   // Check if draft has unsaved differences from canonical defaults
@@ -259,13 +284,21 @@ export const StudioTokenEditor: React.FC = () => {
 
       {/* Reset Confirmation Modal */}
       {showResetConfirm && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reset-tokens-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowResetConfirm(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
           <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
               <div className="p-2 rounded-lg bg-red-50 dark:bg-red-950/30">
                 <AlertCircle className="w-5 h-5" />
               </div>
-              <h3 className="font-display font-bold text-lg text-[#18181B] dark:text-[#EDEDEC]">
+              <h3 id="reset-tokens-title" className="font-display font-bold text-lg text-[#18181B] dark:text-[#EDEDEC]">
                 Reset Design Tokens?
               </h3>
             </div>
@@ -758,10 +791,11 @@ export const StudioTokenEditor: React.FC = () => {
                   accentColor: '#D94814',
                 },
               ].map((variant) => (
-                <div
+                <button
                   key={variant.id}
+                  type="button"
                   onClick={() => applyVariant(variant.id)}
-                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
+                  className={`w-full p-4 rounded-xl border text-left cursor-pointer transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
                     currentConfig.themeVariant === variant.id
                       ? 'border-[#EA580C] bg-[#FAF9F6] dark:bg-[#0F0F11] shadow-2xs ring-1 ring-[#EA580C]'
                       : 'border-[#E4E2DC] dark:border-[#27272A] bg-white dark:bg-[#18181B] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46]'
@@ -779,7 +813,7 @@ export const StudioTokenEditor: React.FC = () => {
                   <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
                     {variant.desc}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
           )}

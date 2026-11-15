@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, UploadCloud, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import {
@@ -29,6 +29,9 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
 }) => {
   const { updateUserProfile } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(true);
+  const selectedImageSrcRef = useRef<string | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Editor Modal State
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
@@ -40,6 +43,24 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    selectedImageSrcRef.current = selectedImageSrc;
+  }, [selectedImageSrc]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+      }
+      if (selectedImageSrcRef.current) {
+        URL.revokeObjectURL(selectedImageSrcRef.current);
+        selectedImageSrcRef.current = null;
+      }
+    };
+  }, []);
 
   const displayedAvatar =
     previewUrl ||
@@ -69,9 +90,12 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       return;
     }
 
-    // Read file into Object URL for adjustment editor
+    if (selectedImageSrc) {
+      URL.revokeObjectURL(selectedImageSrc);
+    }
     setSelectedFileName(file.name);
     const objectUrl = URL.createObjectURL(file);
+    selectedImageSrcRef.current = objectUrl;
     setSelectedImageSrc(objectUrl);
     setIsEditorOpen(true);
   };
@@ -81,6 +105,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
     setIsEditorOpen(false);
     if (selectedImageSrc) {
       URL.revokeObjectURL(selectedImageSrc);
+      selectedImageSrcRef.current = null;
       setSelectedImageSrc(null);
     }
   };
@@ -94,6 +119,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
 
     const previousAvatarUrl = currentAvatar;
     setIsUploading(true);
+    setErrorMessage(null);
 
     try {
       // Upload cropped blob to: avatars/{userId}/profile-{timestamp}.{extension}
@@ -110,7 +136,12 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       const newPublicUrl = result.publicUrl;
 
       // Persist to user's profile in Supabase & AppContext (must succeed before updating UI state)
-      await updateUserProfile(userId, { avatar: newPublicUrl });
+      const updateResult = await updateUserProfile(userId, { avatar: newPublicUrl });
+      if (updateResult && !updateResult.success) {
+        throw new Error(updateResult.error || 'Failed to persist profile photo update.');
+      }
+
+      if (!isMountedRef.current) return;
 
       // Update immediate local preview only AFTER successful database update
       setPreviewUrl(newPublicUrl);
@@ -119,8 +150,13 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
         onAvatarUpdated(newPublicUrl);
       }
 
-      // Close editor modal
-      handleCloseEditor();
+      // Close editor modal cleanly after upload finishes
+      setIsEditorOpen(false);
+      if (selectedImageSrcRef.current) {
+        URL.revokeObjectURL(selectedImageSrcRef.current);
+        selectedImageSrcRef.current = null;
+        setSelectedImageSrc(null);
+      }
 
       setSuccessMessage('Profile photo updated successfully!');
 
@@ -129,13 +165,22 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
         deletePreviousUserPhoto(previousAvatarUrl, userId, 'profile');
       }
 
-      setTimeout(() => {
-        setSuccessMessage(null);
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+      }
+      successTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          setSuccessMessage(null);
+        }
       }, 4000);
     } catch (err: any) {
-      setErrorMessage(err?.message || 'An unexpected error occurred while saving profile photo.');
+      if (isMountedRef.current) {
+        setErrorMessage(err?.message || 'An unexpected error occurred while saving profile photo.');
+      }
     } finally {
-      setIsUploading(false);
+      if (isMountedRef.current) {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -153,7 +198,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
           <img
             src={displayedAvatar}
             alt="Account Profile Avatar"
-            className={`${avatarSizeClass} rounded-full object-cover ring-4 ring-orange-500/20 shadow-xs transition-opacity duration-200 ${
+            className={`${avatarSizeClass} rounded-full object-cover ring-4 ring-accent/20 shadow-xs transition-opacity duration-200 ${
               isUploading ? 'opacity-50' : 'opacity-100'
             }`}
           />
@@ -170,7 +215,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
             disabled={isUploading}
             title="Change Profile Photo"
             aria-label="Change Profile Photo"
-            className="absolute bottom-0 right-0 p-2 rounded-full bg-zinc-900 text-white hover:bg-orange-600 transition-colors shadow-md border-2 border-white focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="absolute bottom-0 right-0 p-2 rounded-full bg-[#111114] text-white hover:bg-accent transition-colors shadow-md border-2 border-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <Camera className="w-3.5 h-3.5" />
           </button>
@@ -179,8 +224,8 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
         {/* Action Controls & Description */}
         <div className="flex-1 space-y-2">
           <div>
-            <span className="block text-xs font-bold text-zinc-900">{label}</span>
-            <p className="text-xs text-zinc-500 font-medium">{description}</p>
+            <span className="block text-xs font-bold text-carbon">{label}</span>
+            <p className="text-xs text-graphite font-medium">{description}</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -199,11 +244,11 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
               id="btn-upload-profile-photo"
               onClick={handleTriggerUpload}
               disabled={isUploading}
-              className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-orange-600 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="px-4 py-2 rounded-full bg-[#111114] hover:bg-accent dark:bg-white dark:text-[#111114] dark:hover:bg-[#D4FF38] text-white text-xs font-bold transition-all flex items-center gap-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {isUploading ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-400" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
                   <span>Processing photo...</span>
                 </>
               ) : (
@@ -221,7 +266,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       {errorMessage && (
         <div
           role="alert"
-          className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-start gap-2 animate-fadeIn"
+          className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400 text-xs font-medium flex items-start gap-2 animate-fadeIn"
         >
           <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
           <div className="flex-1">

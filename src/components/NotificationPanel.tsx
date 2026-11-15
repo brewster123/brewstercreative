@@ -10,7 +10,8 @@ import {
   AlertCircle, 
   Clock, 
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  CreditCard
 } from 'lucide-react';
 import { AppNotification, NotificationType } from '../types';
 
@@ -54,7 +55,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
         return <MessageSquare className="w-4 h-4 text-blue-500" />;
       case 'proof_review':
       case 'review':
-        return <Sparkles className="w-4 h-4 text-orange-500" />;
+        return <Sparkles className="w-4 h-4 text-accent" />;
       case 'proof_approved':
         return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
       case 'proof_revision':
@@ -65,6 +66,12 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
       case 'commission_update':
       case 'status':
         return <Clock className="w-4 h-4 text-indigo-500" />;
+      case 'payment_submitted':
+        return <CreditCard className="w-4 h-4 text-amber-500" />;
+      case 'payment_verified':
+        return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+      case 'payment_rejected':
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
       case 'system':
       default:
         return <AlertCircle className="w-4 h-4 text-zinc-500" />;
@@ -129,23 +136,23 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
   };
 
   return (
-    <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl shadow-xl overflow-hidden backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 w-80 sm:w-96">
+    <div className="bg-surface border border-hairline rounded-3xl shadow-xl overflow-hidden backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 w-80 sm:w-96">
       {/* Header */}
-      <div className="px-4 py-3 bg-[#FAF9F6] dark:bg-[#18181B] border-b border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between">
+      <div className="px-4 py-3 bg-surface-secondary border-b border-hairline flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Bell className="w-4 h-4 text-[#EA580C]" />
-          <h4 className="text-xs font-bold text-[#18181B] dark:text-[#EDEDEC] uppercase tracking-wider">
+          <Bell className="w-4 h-4 text-accent" />
+          <h4 className="text-xs font-bold text-carbon uppercase tracking-wider">
             Notifications
           </h4>
           {unreadCount > 0 ? (
             <span 
               id="notifications-unread-counter"
-              className="px-1.5 py-0.5 rounded-md bg-[#EA580C]/10 border border-[#EA580C]/20 text-[10px] text-[#EA580C] font-mono font-bold"
+              className="px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-[10px] text-accent font-mono font-bold"
             >
               {unreadCount} unread
             </span>
           ) : (
-            <span className="px-1.5 py-0.5 rounded-md bg-[#F4F2ED] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-mono font-medium">
+            <span className="px-2 py-0.5 rounded-full bg-surface border border-hairline text-[10px] text-graphite font-mono font-medium">
               All caught up
             </span>
           )}
@@ -157,7 +164,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
               id="btn-mark-all-notifications-read"
               type="button"
               onClick={() => markAllNotificationsAsRead()}
-              className="text-[11px] font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] transition-colors flex items-center gap-1 px-2 py-1 rounded-md hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] cursor-pointer"
+              className="text-[11px] font-semibold text-graphite hover:text-accent transition-colors flex items-center gap-1 px-2 py-1 rounded-full hover:bg-surface cursor-pointer"
               title="Mark all notifications as read"
               aria-label="Mark all as read"
             >
@@ -168,7 +175,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
           <button
             type="button"
             onClick={onClose}
-            className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] p-1.5 rounded-md hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] transition-colors cursor-pointer"
+            className="text-graphite hover:text-carbon p-1.5 rounded-full hover:bg-surface transition-colors cursor-pointer"
             aria-label="Close notifications"
           >
             <X className="w-4 h-4" />
@@ -177,20 +184,22 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
       </div>
 
       {/* Tabs Toolbar: All vs Unread */}
-      <div className="px-4 py-2 bg-[#FAF9F6]/80 dark:bg-[#121214] border-b border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 bg-[#F4F2ED] dark:bg-[#18181B] p-1 rounded-lg border border-[#E4E2DC] dark:border-[#222225] w-full">
+      <div className="px-4 py-2 bg-surface border-b border-hairline flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 bg-surface-secondary p-1 rounded-full border border-hairline w-full">
           <button
             id="tab-notifications-all"
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`flex-1 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`flex-1 px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === 'all'
-                ? 'bg-white dark:bg-[#222225] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-semibold'
-                : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                ? 'bg-accent text-white shadow-2xs font-semibold'
+                : 'text-graphite hover:text-carbon'
             }`}
           >
             <span>All</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#E4E2DC]/60 dark:bg-[#333338] text-[#71717A] dark:text-[#A1A1AA]">
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+              activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-surface text-graphite'
+            }`}>
               {userNotifications.length}
             </span>
           </button>
@@ -199,17 +208,19 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
             id="tab-notifications-unread"
             type="button"
             onClick={() => setActiveTab('unread')}
-            className={`flex-1 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`flex-1 px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === 'unread'
-                ? 'bg-white dark:bg-[#222225] text-[#18181B] dark:text-[#EDEDEC] shadow-2xs font-semibold'
-                : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                ? 'bg-accent text-white shadow-2xs font-semibold'
+                : 'text-graphite hover:text-carbon'
             }`}
           >
             <span>Unread</span>
-            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
-              unreadCount > 0
-                ? 'bg-[#EA580C] text-white font-bold'
-                : 'bg-[#E4E2DC]/60 dark:bg-[#333338] text-[#71717A] dark:text-[#A1A1AA]'
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+              activeTab === 'unread'
+                ? 'bg-white/20 text-white font-bold'
+                : unreadCount > 0
+                ? 'bg-accent text-white font-bold'
+                : 'bg-surface text-graphite'
             }`}>
               {unreadCount}
             </span>
@@ -218,19 +229,19 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
       </div>
 
       {/* Notifications List */}
-      <div className="max-h-80 overflow-y-auto divide-y divide-[#E4E2DC] dark:divide-[#222225]">
+      <div className="max-h-80 overflow-y-auto divide-y divide-border-hairline dark:divide-[#222634]">
         {displayedNotifications.length === 0 ? (
           <div className="py-8 px-4 text-center">
             {activeTab === 'unread' ? (
               <>
                 <CheckCircle2 className="w-8 h-8 text-[#059669] dark:text-[#34D399] mx-auto mb-2 opacity-80" />
-                <p className="text-xs text-[#18181B] dark:text-[#EDEDEC] font-bold">No unread notifications</p>
-                <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 font-medium">You're all caught up with studio activity.</p>
+                <p className="text-xs text-carbon font-bold">No unread notifications</p>
+                <p className="text-[11px] text-graphite mt-0.5 font-medium">You're all caught up with studio activity.</p>
                 {userNotifications.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setActiveTab('all')}
-                    className="mt-2.5 text-xs text-[#EA580C] hover:underline font-semibold cursor-pointer"
+                    className="mt-2.5 text-xs text-accent hover:underline font-semibold cursor-pointer"
                   >
                     View all notifications ({userNotifications.length})
                   </button>
@@ -238,9 +249,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
               </>
             ) : (
               <>
-                <Bell className="w-8 h-8 text-[#A1A1AA] dark:text-[#71717A] mx-auto mb-2 opacity-60" />
-                <p className="text-xs text-[#18181B] dark:text-[#EDEDEC] font-bold">No notifications yet</p>
-                <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 font-medium">You're all caught up with studio activity.</p>
+                <Bell className="w-8 h-8 text-graphite mx-auto mb-2 opacity-60" />
+                <p className="text-xs text-carbon font-bold">No notifications yet</p>
+                <p className="text-[11px] text-graphite mt-0.5 font-medium">You're all caught up with studio activity.</p>
               </>
             )}
           </div>
@@ -254,17 +265,26 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
                 key={notif.id}
                 data-notification-id={notif.id}
                 data-read-status={isUnread ? 'unread' : 'read'}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleNotificationClick(notif)}
-                className={`p-3.5 transition-all cursor-pointer flex items-start gap-3 group relative ${
+                onKeyDown={(e) => {
+                  if (e.target !== e.currentTarget) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleNotificationClick(notif);
+                  }
+                }}
+                className={`p-3.5 transition-all cursor-pointer flex items-start gap-3 group relative focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
                   isUnread 
-                    ? 'bg-[#FFF7ED] dark:bg-[#78350F]/20 hover:bg-[#FFEDD5]/60 dark:hover:bg-[#78350F]/30 border-l-[3px] border-l-[#EA580C]' 
-                    : 'bg-white dark:bg-[#121214] hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] border-l-[3px] border-l-transparent'
+                    ? 'bg-[#E0F2FE]/60 dark:bg-sky-950/30 hover:bg-[#E0F2FE] dark:hover:bg-sky-950/50 border-l-[3px] border-l-accent' 
+                    : 'bg-surface hover:bg-surface-secondary border-l-[3px] border-l-transparent'
                 }`}
               >
-                <div className={`mt-0.5 p-2 rounded-lg shrink-0 border ${
+                <div className={`mt-0.5 p-2 rounded-xl shrink-0 border ${
                   isUnread
-                    ? 'bg-white dark:bg-[#18181B] border-[#FDBA74] dark:border-[#9A3412]/50'
-                    : 'bg-[#FAF9F6] dark:bg-[#18181B] border-[#E4E2DC] dark:border-[#222225]'
+                    ? 'bg-surface border-accent/40'
+                    : 'bg-surface-secondary border-hairline'
                 }`}>
                   {getIcon(notif.type)}
                 </div>
@@ -273,8 +293,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
                   <div className="flex items-center justify-between gap-1">
                     <h5 className={`text-xs ${
                       isUnread 
-                        ? 'font-bold text-[#18181B] dark:text-[#EDEDEC]' 
-                        : 'font-medium text-[#71717A] dark:text-[#A1A1AA]'
+                        ? 'font-bold text-carbon' 
+                        : 'font-medium text-graphite'
                     } truncate`}>
                       {notif.title || 'Studio Notice'}
                     </h5>
@@ -282,7 +302,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
                     <div className="flex items-center gap-1.5 shrink-0">
                       {isUnread && (
                         <span 
-                          className="w-2 h-2 rounded-full bg-[#EA580C] shrink-0" 
+                          className="w-2 h-2 rounded-full bg-accent shrink-0" 
                           title="Unread notification"
                           aria-label="Unread notification"
                         />
@@ -294,7 +314,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
                             e.stopPropagation();
                             markNotificationAsRead(notif.id);
                           }}
-                          className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] hover:bg-white/80 dark:hover:bg-[#18181B] opacity-70 group-hover:opacity-100 transition-all cursor-pointer"
+                          className="p-1 rounded text-graphite hover:text-accent hover:bg-surface opacity-70 group-hover:opacity-100 transition-all cursor-pointer"
                           title="Mark as read"
                           aria-label="Mark as read"
                         >
@@ -306,14 +326,14 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
 
                   <p className={`text-xs mt-0.5 leading-relaxed line-clamp-2 ${
                     isUnread 
-                      ? 'text-[#18181B] dark:text-[#EDEDEC] font-medium' 
-                      : 'text-[#71717A] dark:text-[#A1A1AA] font-normal'
+                      ? 'text-carbon font-medium' 
+                      : 'text-graphite font-normal'
                   }`}>
                     {notif.message}
                   </p>
 
                   <div className="flex items-center justify-between mt-1 pt-0.5">
-                    <p className="text-[10px] text-[#A1A1AA] dark:text-[#71717A] font-mono">
+                    <p className="text-[10px] text-graphite font-mono">
                       {notif.timestamp}
                     </p>
 
@@ -321,7 +341,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
                       <button
                         type="button"
                         onClick={(e) => handleNavigate(e, notif)}
-                        className="text-[10px] font-semibold text-[#EA580C] hover:underline flex items-center gap-0.5 cursor-pointer ml-auto"
+                        className="text-[10px] font-semibold text-accent hover:underline flex items-center gap-0.5 cursor-pointer ml-auto"
                         title={notif.type === 'message' ? 'Open conversation' : 'View commission'}
                       >
                         <span>{notif.type === 'message' ? 'Open chat' : 'View'}</span>
@@ -336,8 +356,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
         )}
       </div>
 
-      <div className="p-2.5 bg-[#FAF9F6] dark:bg-[#18181B] border-t border-[#E4E2DC] dark:border-[#222225] text-center">
-        <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-medium font-mono">
+      <div className="p-2.5 bg-surface-secondary border-t border-hairline text-center">
+        <p className="text-[10px] text-graphite font-medium font-mono">
           Persistent client-designer alerts and live milestones
         </p>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { formatCommissionDate } from '../utils/dateUtils';
 import { isValidReferenceUrl } from '../utils/urlUtils';
@@ -182,23 +182,28 @@ export const CommissionFormView: React.FC = () => {
     return new Date(Date.now() + 86400000).toISOString().split('T')[0];
   }, []);
 
-  // Sync preselectedService if passed from Portfolio or Services page
+  const appliedPreselectionRef = useRef<string | null>(null);
+
+  // Sync preselectedService once when a new preselection arrives from Portfolio or Services page
   useEffect(() => {
-    if (preselectedService) {
-      const matchingService = services.find(
-        s => s.name.toLowerCase() === preselectedService.toLowerCase() ||
-             s.category.toLowerCase() === preselectedService.toLowerCase()
-      );
-      if (matchingService) {
-        setServiceType(matchingService.name);
-        setBudget(matchingService.startingPrice.toString());
-      } else {
-        setServiceType(preselectedService);
-      }
-      // If user came specifically for this service, advance to step 2 if on step 1
-      if (!initialDraft?.title) {
-        setCurrentStep(2);
-      }
+    if (!preselectedService || appliedPreselectionRef.current === preselectedService) {
+      return;
+    }
+    appliedPreselectionRef.current = preselectedService;
+
+    const matchingService = services.find(
+      s => s.name.toLowerCase() === preselectedService.toLowerCase() ||
+           s.category.toLowerCase() === preselectedService.toLowerCase()
+    );
+    if (matchingService) {
+      setServiceType(matchingService.name);
+      setBudget(matchingService.startingPrice.toString());
+    } else {
+      setServiceType(preselectedService);
+    }
+    // Advance to step 2 if user came specifically for a service and has no saved title yet
+    if (!initialDraft?.title) {
+      setCurrentStep(2);
     }
   }, [preselectedService, services, initialDraft]);
 
@@ -447,66 +452,66 @@ export const CommissionFormView: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 animate-in fade-in duration-300 space-y-10">
         
         {/* Receipt Header */}
-        <div className="space-y-4 border-b border-[#E4E2DC] dark:border-[#27272A] pb-8">
-          <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+        <div className="space-y-4 border-b border-hairline pb-8">
+          <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-accent font-semibold">
+            <span className="w-2 h-2 rounded-full bg-accent" />
             <span>Project Receipt & Alignment</span>
           </div>
 
-          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-carbon tracking-tight">
             Commission Brief Initiated
           </h1>
 
-          <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-2xl font-normal">
+          <p className="text-sm sm:text-base text-graphite leading-relaxed max-w-2xl font-normal">
             Your creative specifications have been securely recorded. The DESTALION studio team will review your scope, verify scheduling, and initiate preliminary concept boards.
           </p>
         </div>
 
         {/* Ledger Summary Card */}
-        <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-[#E4E2DC] dark:border-[#27272A] flex-wrap gap-2">
-            <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider font-semibold">
+        <div className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
+          <div className="flex items-center justify-between pb-4 border-b border-hairline flex-wrap gap-2">
+            <span className="font-mono text-xs text-graphite uppercase tracking-wider font-semibold">
               Commission Reference
             </span>
-            <span className="font-mono text-xs sm:text-sm font-bold text-[#18181B] dark:text-[#EDEDEC]">
+            <span className="font-mono text-xs sm:text-sm font-bold text-carbon">
               #{submittedCommission.id.slice(0, 8).toUpperCase()}
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 text-xs sm:text-sm">
             <div>
-              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block mb-1">Service Practice</span>
-              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">{submittedCommission.service}</span>
+              <span className="font-mono text-[10px] text-graphite uppercase tracking-wider block mb-1">Service Practice</span>
+              <span className="font-bold text-carbon">{submittedCommission.service}</span>
             </div>
 
             <div>
-              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block mb-1">Status</span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#EA580C]">
+              <span className="font-mono text-[10px] text-graphite uppercase tracking-wider block mb-1">Status</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent">
                 <Clock className="w-3.5 h-3.5" />
                 <span>Pending Designer Review</span>
               </span>
             </div>
 
             <div>
-              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block mb-1">Proposed Investment</span>
-              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] font-mono">{submittedCommission.budget}</span>
+              <span className="font-mono text-[10px] text-graphite uppercase tracking-wider block mb-1">Proposed Investment</span>
+              <span className="font-bold text-carbon font-mono">{submittedCommission.budget}</span>
             </div>
 
             <div>
-              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block mb-1">Target Delivery</span>
-              <span className="font-medium text-[#18181B] dark:text-[#EDEDEC]">{formatCommissionDate(submittedCommission.deadline)}</span>
+              <span className="font-mono text-[10px] text-graphite uppercase tracking-wider block mb-1">Target Delivery</span>
+              <span className="font-medium text-carbon">{formatCommissionDate(submittedCommission.deadline)}</span>
             </div>
 
             <div className="sm:col-span-2">
-              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block mb-1">Project Title</span>
-              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">{submittedCommission.projectName}</span>
+              <span className="font-mono text-[10px] text-graphite uppercase tracking-wider block mb-1">Project Title</span>
+              <span className="font-bold text-carbon">{submittedCommission.projectName}</span>
             </div>
           </div>
 
           {submittedCommission.description && (
-            <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#27272A] space-y-1.5">
-              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider block">Brief Summary</span>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed whitespace-pre-line bg-[#FAF9F6] dark:bg-[#0F0F11] p-4 rounded-lg border border-[#E4E2DC] dark:border-[#27272A]">
+            <div className="pt-4 border-t border-hairline space-y-1.5">
+              <span className="font-mono text-[10px] text-graphite uppercase tracking-wider block">Brief Summary</span>
+              <p className="text-xs text-graphite leading-relaxed whitespace-pre-line bg-surface-secondary p-4 rounded-2xl border border-hairline">
                 {submittedCommission.description}
               </p>
             </div>
@@ -519,7 +524,7 @@ export const CommissionFormView: React.FC = () => {
             id="btn-submit-another"
             type="button"
             onClick={resetForm}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-full border border-hairline text-xs font-semibold text-carbon hover:bg-surface-secondary transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Submit Another Project</span>
@@ -529,7 +534,7 @@ export const CommissionFormView: React.FC = () => {
             id="btn-view-client-dashboard"
             type="button"
             onClick={() => setActiveView('client-dashboard')}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>Proceed to Client Dashboard</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -549,8 +554,8 @@ export const CommissionFormView: React.FC = () => {
       {/* Header & Section Metadata */}
       <div className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+          <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-accent font-semibold">
+            <span className="w-2 h-2 rounded-full bg-accent" />
             <span>Commission Intake Brief</span>
           </div>
 
@@ -564,7 +569,7 @@ export const CommissionFormView: React.FC = () => {
             <button
               type="button"
               onClick={() => { setAuthDialogMode('signin'); setIsAuthDialogOpen(true); }}
-              className="text-xs font-mono text-[#EA580C] hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-xs font-mono text-accent hover:underline flex items-center gap-1 cursor-pointer"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Have an account? Sign in</span>
@@ -572,18 +577,18 @@ export const CommissionFormView: React.FC = () => {
           )}
         </div>
 
-        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
+        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-carbon tracking-tight leading-[1.08]">
           Initiate a Project Commission
         </h1>
 
-        <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-2xl font-normal">
+        <p className="text-xs sm:text-sm text-graphite leading-relaxed max-w-2xl font-normal">
           A structured 6-step consultation brief to align creative parameters, technical deliverables, and production timelines directly with DESTALION studio.
         </p>
       </div>
 
       {/* Restored Draft Alert Banner */}
       {hasRestoredDraft && (
-        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between gap-4 animate-in fade-in duration-200">
+        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between gap-4 animate-in fade-in duration-200">
           <div className="flex items-center gap-2.5">
             <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span className="leading-relaxed">
@@ -601,7 +606,7 @@ export const CommissionFormView: React.FC = () => {
             <button
               type="button"
               onClick={resetForm}
-              className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] hover:text-red-500 cursor-pointer"
+              className="text-[11px] text-graphite hover:text-red-500 cursor-pointer"
             >
               Clear
             </button>
@@ -612,22 +617,22 @@ export const CommissionFormView: React.FC = () => {
       {/* ========================================================================= */}
       {/* RESPONSIVE STEPPER / PROGRESS INDICATOR                                   */}
       {/* ========================================================================= */}
-      <div className="space-y-3 bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-4 sm:p-5 shadow-2xs">
+      <div className="space-y-3 bg-surface border border-hairline rounded-3xl p-4 sm:p-5 shadow-xs">
         
         {/* Step Label & Count */}
         <div className="flex items-center justify-between text-xs font-mono">
-          <span className="font-bold text-[#EA580C] uppercase tracking-wider">
+          <span className="font-bold text-accent uppercase tracking-wider">
             Step 0{currentStep} of 06 · {STEP_DEFINITIONS[currentStep - 1].label}
           </span>
-          <span className="text-[#71717A] dark:text-[#A1A1AA]">
+          <span className="text-graphite">
             {Math.round((currentStep / 6) * 100)}% Complete
           </span>
         </div>
 
         {/* Progress Bar Track */}
-        <div className="w-full h-1.5 bg-[#FAF9F6] dark:bg-[#18181B] rounded-full overflow-hidden border border-[#E4E2DC] dark:border-[#222225]">
+        <div className="w-full h-2 bg-surface-secondary rounded-full overflow-hidden border border-hairline">
           <div 
-            className="h-full bg-[#EA580C] transition-all duration-300 ease-out"
+            className="h-full bg-accent transition-all duration-300 ease-out rounded-full"
             style={{ width: `${(currentStep / 6) * 100}%` }}
           />
         </div>
@@ -648,12 +653,12 @@ export const CommissionFormView: React.FC = () => {
                 disabled={isUpcoming}
                 aria-label={`Jump to Step ${def.step}: ${def.label}`}
                 aria-current={isCurrent ? 'step' : undefined}
-                className={`py-1.5 px-1 sm:px-2 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 text-center transition-all cursor-pointer ${
+                className={`py-2 px-1 sm:px-2.5 rounded-full flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 text-center transition-all cursor-pointer ${
                   isCurrent
-                    ? 'bg-[#FAF9F6] dark:bg-[#18181B] border border-[#EA580C] text-[#EA580C] font-bold shadow-2xs'
+                    ? 'bg-[#E0F2FE]/70 dark:bg-sky-950/50 border border-accent text-accent font-bold shadow-2xs'
                     : isCompleted
-                    ? 'text-emerald-600 dark:text-emerald-400 hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] font-medium'
-                    : 'text-[#71717A] dark:text-[#52525B] opacity-50 cursor-not-allowed'
+                    ? 'text-emerald-600 dark:text-emerald-400 hover:bg-surface-secondary font-medium'
+                    : 'text-graphite opacity-50 cursor-not-allowed'
                 }`}
               >
                 <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0">
@@ -695,15 +700,15 @@ export const CommissionFormView: React.FC = () => {
         {/* STEP 1: SERVICE PACKAGE SELECTION                                     */}
         {/* --------------------------------------------------------------------- */}
         {currentStep === 1 && (
-          <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
-            <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-4 space-y-1">
-              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+          <section className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200 shadow-xs">
+            <div className="border-b border-hairline pb-4 space-y-1">
+              <span className="font-mono text-xs uppercase tracking-widest text-accent font-bold">
                 01 / SERVICE PRACTICE
               </span>
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-carbon">
                 Select a Design Discipline
               </h2>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              <p className="text-xs text-graphite">
                 Choose the primary service package that matches your engagement. You can refine deliverables in subsequent steps.
               </p>
             </div>
@@ -725,18 +730,18 @@ export const CommissionFormView: React.FC = () => {
                     type="button"
                     onClick={() => handleServiceSelect(srv.name)}
                     aria-pressed={isSelected}
-                    className={`p-5 rounded-xl border text-left transition-all cursor-pointer relative space-y-3 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile ${
+                    className={`p-5 rounded-2xl border text-left transition-all cursor-pointer relative space-y-3 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent btn-tactile ${
                       isSelected
-                        ? 'border-[#EA580C] bg-orange-50/20 dark:bg-orange-950/20 ring-1 ring-[#EA580C] shadow-xs'
-                        : 'border-[#E4E2DC] dark:border-[#222225] bg-[#FAF9F6] dark:bg-[#18181B] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46]'
+                        ? 'border-accent bg-[#E0F2FE]/55 dark:bg-sky-950/30 ring-1 ring-accent shadow-xs'
+                        : 'border-hairline bg-surface-secondary hover:border-graphite/40'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-accent font-semibold">
                           {srv.category}
                         </span>
-                        <h3 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                        <h3 className="font-display font-bold text-base text-carbon">
                           {srv.name}
                         </h3>
                       </div>
@@ -744,22 +749,22 @@ export const CommissionFormView: React.FC = () => {
                       {/* Selection Check Indicator */}
                       <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
                         isSelected 
-                          ? 'bg-[#EA580C] border-[#EA580C] text-white shadow-2xs' 
-                          : 'border-[#D4D2CA] dark:border-[#3F3F46]'
+                          ? 'bg-accent border-accent text-white shadow-2xs' 
+                          : 'border-graphite/40'
                       }`} aria-hidden="true">
                         {isSelected && <Check className="w-3.5 h-3.5" />}
                       </div>
                     </div>
 
-                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed line-clamp-2">
+                    <p className="text-xs text-graphite leading-relaxed line-clamp-2">
                       {srv.shortDesc}
                     </p>
 
-                    <div className="pt-2 border-t border-[#E4E2DC]/60 dark:border-[#27272A]/60 flex items-center justify-between text-xs font-mono">
-                      <span className="text-[#18181B] dark:text-[#EDEDEC] font-bold">
+                    <div className="pt-2 border-t border-hairline flex items-center justify-between text-xs font-mono">
+                      <span className="text-carbon font-bold">
                         From {studioProfile.currencySymbol}{srv.startingPrice.toLocaleString()}
                       </span>
-                      <span className="text-[#71717A] dark:text-[#A1A1AA] text-[11px]">
+                      <span className="text-graphite text-[11px]">
                         {srv.turnaround}
                       </span>
                     </div>
@@ -772,39 +777,39 @@ export const CommissionFormView: React.FC = () => {
                 type="button"
                 onClick={() => handleServiceSelect('Custom Studio Engagement')}
                 aria-pressed={serviceType === 'Custom Studio Engagement'}
-                className={`p-5 rounded-xl border text-left transition-all cursor-pointer relative space-y-3 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile ${
+                className={`p-5 rounded-2xl border text-left transition-all cursor-pointer relative space-y-3 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent btn-tactile ${
                   serviceType === 'Custom Studio Engagement'
-                    ? 'border-[#EA580C] bg-orange-50/20 dark:bg-orange-950/20 ring-1 ring-[#EA580C] shadow-xs'
-                    : 'border-[#E4E2DC] dark:border-[#222225] bg-[#FAF9F6] dark:bg-[#18181B] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46]'
+                    ? 'border-accent bg-[#E0F2FE]/55 dark:bg-sky-950/30 ring-1 ring-accent shadow-xs'
+                    : 'border-hairline bg-surface-secondary hover:border-graphite/40'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-accent font-semibold">
                       Bespoke
                     </span>
-                    <h3 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                    <h3 className="font-display font-bold text-base text-carbon">
                       Custom Studio Engagement
                     </h3>
                   </div>
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
                     serviceType === 'Custom Studio Engagement'
-                      ? 'bg-[#EA580C] border-[#EA580C] text-white shadow-2xs' 
-                      : 'border-[#D4D2CA] dark:border-[#3F3F46]'
+                      ? 'bg-accent border-accent text-white shadow-2xs' 
+                      : 'border-graphite/40'
                   }`} aria-hidden="true">
                     {serviceType === 'Custom Studio Engagement' && <Check className="w-3.5 h-3.5" />}
                   </div>
                 </div>
 
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                <p className="text-xs text-graphite leading-relaxed">
                   Have an experimental or hybrid commission outside standard practice tiers? We'll tailor custom deliverables and timeline terms.
                 </p>
 
-                <div className="pt-2 border-t border-[#E4E2DC]/60 dark:border-[#27272A]/60 flex items-center justify-between text-xs font-mono">
-                  <span className="text-[#18181B] dark:text-[#EDEDEC] font-bold">
+                <div className="pt-2 border-t border-hairline flex items-center justify-between text-xs font-mono">
+                  <span className="text-carbon font-bold">
                     Custom Quote
                   </span>
-                  <span className="text-[#71717A] dark:text-[#A1A1AA] text-[11px]">
+                  <span className="text-graphite text-[11px]">
                     Tailored Schedule
                   </span>
                 </div>
@@ -817,23 +822,23 @@ export const CommissionFormView: React.FC = () => {
         {/* STEP 2: PROJECT SCOPE & OBJECTIVES                                   */}
         {/* --------------------------------------------------------------------- */}
         {currentStep === 2 && (
-          <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
-            <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-4 space-y-1">
-              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+          <section className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200 shadow-xs">
+            <div className="border-b border-hairline pb-4 space-y-1">
+              <span className="font-mono text-xs uppercase tracking-widest text-accent font-bold">
                 02 / SCOPE & CONTEXT
               </span>
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-carbon">
                 Define Project Scope & Objectives
               </h2>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              <p className="text-xs text-graphite">
                 Give your project an identifiable working name and describe the core requirements.
               </p>
             </div>
 
             <div className="space-y-5">
               <div>
-                <label htmlFor="input-project-title" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                  Project Working Title <span className="text-[#EA580C]">*</span>
+                <label htmlFor="input-project-title" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                  Project Working Title <span className="text-accent">*</span>
                 </label>
                 <input
                   id="input-project-title"
@@ -845,9 +850,9 @@ export const CommissionFormView: React.FC = () => {
                     setTitle(e.target.value);
                     if (stepErrors.title) setStepErrors(prev => ({ ...prev, title: '' }));
                   }}
-                  className={`w-full bg-[#FAF9F6] dark:bg-[#18181B] border ${
-                    stepErrors.title ? 'border-red-500 ring-1 ring-red-500' : 'border-[#E4E2DC] dark:border-[#222225]'
-                  } rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors`}
+                  className={`w-full bg-surface-secondary border ${
+                    stepErrors.title ? 'border-red-500 ring-1 ring-red-500' : 'border-hairline'
+                  } rounded-xl px-4 py-2.5 text-xs sm:text-sm text-carbon placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors`}
                 />
                 {stepErrors.title ? (
                   <p className="text-xs text-red-600 dark:text-red-400 font-mono mt-1 flex items-center gap-1">
@@ -855,15 +860,15 @@ export const CommissionFormView: React.FC = () => {
                     {stepErrors.title}
                   </p>
                 ) : (
-                  <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1 font-mono">
+                  <p className="text-[11px] text-graphite mt-1 font-mono">
                     A distinct moniker for identifying your project in the studio ledger.
                   </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="textarea-project-description" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                  Project Brief & Deliverable Requirements <span className="text-[#EA580C]">*</span>
+                <label htmlFor="textarea-project-description" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                  Project Brief & Deliverable Requirements <span className="text-accent">*</span>
                 </label>
                 <textarea
                   id="textarea-project-description"
@@ -875,9 +880,9 @@ export const CommissionFormView: React.FC = () => {
                     setDescription(e.target.value);
                     if (stepErrors.description) setStepErrors(prev => ({ ...prev, description: '' }));
                   }}
-                  className={`w-full bg-[#FAF9F6] dark:bg-[#18181B] border ${
-                    stepErrors.description ? 'border-red-500 ring-1 ring-red-500' : 'border-[#E4E2DC] dark:border-[#222225]'
-                  } rounded-lg p-3.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors resize-none leading-relaxed`}
+                  className={`w-full bg-surface-secondary border ${
+                    stepErrors.description ? 'border-red-500 ring-1 ring-red-500' : 'border-hairline'
+                  } rounded-xl p-3.5 text-xs sm:text-sm text-carbon placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors resize-none leading-relaxed`}
                 />
                 {stepErrors.description ? (
                   <p className="text-xs text-red-600 dark:text-red-400 font-mono mt-1 flex items-center gap-1">
@@ -885,7 +890,7 @@ export const CommissionFormView: React.FC = () => {
                     {stepErrors.description}
                   </p>
                 ) : (
-                  <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1 font-mono">
+                  <p className="text-[11px] text-graphite mt-1 font-mono">
                     Minimum 10 characters detailing primary design targets.
                   </p>
                 )}
@@ -893,8 +898,8 @@ export const CommissionFormView: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div>
-                  <label htmlFor="input-project-purpose" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                    Context & Purpose <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
+                  <label htmlFor="input-project-purpose" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                    Context & Purpose <span className="text-graphite font-normal lowercase">(optional)</span>
                   </label>
                   <input
                     id="input-project-purpose"
@@ -902,13 +907,13 @@ export const CommissionFormView: React.FC = () => {
                     placeholder="e.g. Seed-stage venture launch, annual festival..."
                     value={purpose}
                     onChange={(e) => setPurpose(e.target.value)}
-                    className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors"
+                    className="w-full bg-surface-secondary border border-hairline rounded-xl px-4 py-2.5 text-xs sm:text-sm text-carbon placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="input-target-audience" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                    Target Demographic <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
+                  <label htmlFor="input-target-audience" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                    Target Demographic <span className="text-graphite font-normal lowercase">(optional)</span>
                   </label>
                   <input
                     id="input-target-audience"
@@ -916,7 +921,7 @@ export const CommissionFormView: React.FC = () => {
                     placeholder="e.g. Design-conscious collectors, technical founders..."
                     value={targetAudience}
                     onChange={(e) => setTargetAudience(e.target.value)}
-                    className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors"
+                    className="w-full bg-surface-secondary border border-hairline rounded-xl px-4 py-2.5 text-xs sm:text-sm text-carbon placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors"
                   />
                 </div>
               </div>
@@ -928,23 +933,23 @@ export const CommissionFormView: React.FC = () => {
         {/* STEP 3: CREATIVE DIRECTIVES & FORMATS                                */}
         {/* --------------------------------------------------------------------- */}
         {currentStep === 3 && (
-          <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
-            <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-4 space-y-1">
-              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+          <section className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200 shadow-xs">
+            <div className="border-b border-hairline pb-4 space-y-1">
+              <span className="font-mono text-xs uppercase tracking-widest text-accent font-bold">
                 03 / CREATIVE DIRECTIVES
               </span>
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-carbon">
                 Visual Tone & Technical Specifications
               </h2>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              <p className="text-xs text-graphite">
                 Communicate your aesthetic sensibilities, color palettes, and production dimensions.
               </p>
             </div>
 
             <div className="space-y-5">
               <div>
-                <label htmlFor="input-preferred-style" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                  Aesthetic Style / Feel <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
+                <label htmlFor="input-preferred-style" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                  Aesthetic Style / Feel <span className="text-graphite font-normal lowercase">(optional)</span>
                 </label>
                 <input
                   id="input-preferred-style"
@@ -952,12 +957,12 @@ export const CommissionFormView: React.FC = () => {
                   placeholder="e.g. Swiss typographic minimalism, vintage screen-print, bold brutalist..."
                   value={preferredStyle}
                   onChange={(e) => setPreferredStyle(e.target.value)}
-                  className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors"
+                  className="w-full bg-surface-secondary border border-hairline rounded-xl px-4 py-2.5 text-xs sm:text-sm text-carbon placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors"
                 />
 
                 {/* Suggested Aesthetic Chips */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                  <span className="text-[10px] font-mono text-[#71717A] dark:text-[#A1A1AA] pr-1">Suggestions:</span>
+                  <span className="text-[10px] font-mono text-graphite pr-1">Suggestions:</span>
                   {[
                     'Swiss Typographic',
                     'Vintage Screen-print',
@@ -969,7 +974,7 @@ export const CommissionFormView: React.FC = () => {
                       key={tag}
                       type="button"
                       onClick={() => setPreferredStyle(tag)}
-                      className="px-2 py-0.5 rounded bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[10px] font-mono hover:border-[#EA580C] transition-colors cursor-pointer"
+                      className="px-2.5 py-0.5 rounded-full bg-surface-secondary border border-hairline text-[10px] font-mono hover:border-accent transition-colors cursor-pointer"
                     >
                       +{tag}
                     </button>
@@ -978,8 +983,8 @@ export const CommissionFormView: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="input-preferred-colors" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                  Color Palette or Hex Codes <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
+                <label htmlFor="input-preferred-colors" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                  Color Palette or Hex Codes <span className="text-graphite font-normal lowercase">(optional)</span>
                 </label>
                 <input
                   id="input-preferred-colors"
@@ -987,15 +992,15 @@ export const CommissionFormView: React.FC = () => {
                   placeholder="e.g. #B91F20, #F5EBCB, Charcoal, Deep Navy (comma-separated)"
                   value={colorsInput}
                   onChange={(e) => setColorsInput(e.target.value)}
-                  className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors"
+                  className="w-full bg-surface-secondary border border-hairline rounded-xl px-4 py-2.5 text-xs sm:text-sm text-carbon placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors"
                 />
 
                 {/* Live Swatch Preview */}
                 {previewColors.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2 pt-2.5">
-                    <span className="text-[10px] font-mono text-[#71717A] dark:text-[#A1A1AA]">Detected:</span>
+                    <span className="text-[10px] font-mono text-graphite">Detected:</span>
                     {previewColors.map((color, i) => (
-                      <span key={i} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[11px] font-mono">
+                      <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-secondary border border-hairline text-[11px] font-mono">
                         {color.startsWith('#') && (
                           <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: color }} />
                         )}
@@ -1007,8 +1012,8 @@ export const CommissionFormView: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="input-required-dimensions" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                  Required Dimensions & Formats <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
+                <label htmlFor="input-required-dimensions" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                  Required Dimensions & Formats <span className="text-graphite font-normal lowercase">(optional)</span>
                 </label>
                 <input
                   id="input-required-dimensions"
@@ -1016,13 +1021,13 @@ export const CommissionFormView: React.FC = () => {
                   placeholder="e.g. Scalable SVG + Vector AI, A2 300 DPI Print PDF, 1920x1080 horizontal..."
                   value={requiredDimensions}
                   onChange={(e) => setRequiredDimensions(e.target.value)}
-                  className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors"
+                  className="w-full bg-surface-secondary border border-hairline rounded-xl px-4 py-2.5 text-xs sm:text-sm text-carbon placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors"
                 />
               </div>
 
               <div>
-                <label htmlFor="textarea-additional-notes" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                  Directives, Constraints & Things to Avoid <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
+                <label htmlFor="textarea-additional-notes" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                  Directives, Constraints & Things to Avoid <span className="text-graphite font-normal lowercase">(optional)</span>
                 </label>
                 <textarea
                   id="textarea-additional-notes"
@@ -1030,7 +1035,7 @@ export const CommissionFormView: React.FC = () => {
                   placeholder="e.g. Must harmonize with existing brand guidelines, avoid drop shadows, specific copy to embed..."
                   value={additionalNotes}
                   onChange={(e) => setAdditionalNotes(e.target.value)}
-                  className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors resize-none leading-relaxed"
+                  className="w-full bg-surface-secondary border border-hairline rounded-xl p-3.5 text-xs sm:text-sm text-carbon placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors resize-none leading-relaxed"
                 />
               </div>
             </div>
@@ -1041,26 +1046,26 @@ export const CommissionFormView: React.FC = () => {
         {/* STEP 4: INVESTMENT & COMMITTED DELIVERY                              */}
         {/* --------------------------------------------------------------------- */}
         {currentStep === 4 && (
-          <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
-            <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-4 space-y-1">
-              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+          <section className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200 shadow-xs">
+            <div className="border-b border-hairline pb-4 space-y-1">
+              <span className="font-mono text-xs uppercase tracking-widest text-accent font-bold">
                 04 / INVESTMENT & TIMELINE
               </span>
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-carbon">
                 Proposed Budget & Delivery Window
               </h2>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              <p className="text-xs text-graphite">
                 Set your target financial investment and committed delivery date.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label htmlFor="input-commission-budget" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                  Target Budget ({studioProfile.currencySymbol}) <span className="text-[#EA580C]">*</span>
+                <label htmlFor="input-commission-budget" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                  Target Budget ({studioProfile.currencySymbol}) <span className="text-accent">*</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#71717A] dark:text-[#A1A1AA] font-mono text-xs font-bold">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-graphite font-mono text-xs font-bold">
                     {studioProfile.currencySymbol}
                   </span>
                   <input
@@ -1075,9 +1080,9 @@ export const CommissionFormView: React.FC = () => {
                       setBudget(e.target.value);
                       if (stepErrors.budget) setStepErrors(prev => ({ ...prev, budget: '' }));
                     }}
-                    className={`w-full bg-[#FAF9F6] dark:bg-[#18181B] border ${
-                      stepErrors.budget ? 'border-red-500 ring-1 ring-red-500' : 'border-[#E4E2DC] dark:border-[#222225]'
-                    } rounded-lg pl-8 pr-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors font-mono font-bold`}
+                    className={`w-full bg-surface-secondary border ${
+                      stepErrors.budget ? 'border-red-500 ring-1 ring-red-500' : 'border-hairline'
+                    } rounded-xl pl-8 pr-4 py-2.5 text-xs sm:text-sm text-carbon placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors font-mono font-bold`}
                   />
                 </div>
                 {stepErrors.budget ? (
@@ -1086,15 +1091,15 @@ export const CommissionFormView: React.FC = () => {
                     {stepErrors.budget}
                   </p>
                 ) : (
-                  <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1 font-mono">
+                  <p className="text-[11px] text-graphite mt-1 font-mono">
                     Base rate for {serviceType}: {studioProfile.currencySymbol}{selectedServiceItem ? selectedServiceItem.startingPrice.toLocaleString() : '3,500'}.
                   </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="input-commission-deadline" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                  Committed Delivery Date <span className="text-[#EA580C]">*</span>
+                <label htmlFor="input-commission-deadline" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                  Committed Delivery Date <span className="text-accent">*</span>
                 </label>
                 <input
                   id="input-commission-deadline"
@@ -1106,9 +1111,9 @@ export const CommissionFormView: React.FC = () => {
                     setDeadline(e.target.value);
                     if (stepErrors.deadline) setStepErrors(prev => ({ ...prev, deadline: '' }));
                   }}
-                  className={`w-full bg-[#FAF9F6] dark:bg-[#18181B] border ${
-                    stepErrors.deadline ? 'border-red-500 ring-1 ring-red-500' : 'border-[#E4E2DC] dark:border-[#222225]'
-                  } rounded-lg px-4 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors cursor-pointer`}
+                  className={`w-full bg-surface-secondary border ${
+                    stepErrors.deadline ? 'border-red-500 ring-1 ring-red-500' : 'border-hairline'
+                  } rounded-xl px-4 py-2.5 text-xs sm:text-sm text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors cursor-pointer`}
                 />
                 {stepErrors.deadline ? (
                   <p className="text-xs text-red-600 dark:text-red-400 font-mono mt-1 flex items-center gap-1">
@@ -1116,7 +1121,7 @@ export const CommissionFormView: React.FC = () => {
                     {stepErrors.deadline}
                   </p>
                 ) : (
-                  <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1 font-mono">
+                  <p className="text-[11px] text-graphite mt-1 font-mono">
                     Subject to studio schedule alignment during brief review.
                   </p>
                 )}
@@ -1124,11 +1129,11 @@ export const CommissionFormView: React.FC = () => {
             </div>
 
             {/* Explanatory Policy Callout */}
-            <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1.5">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold block">
+            <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline space-y-1.5">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-accent font-semibold block">
                 Payment Terms Alignment
               </span>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+              <p className="text-xs text-graphite leading-relaxed">
                 Commissions require a <strong>50% deposit</strong> following scope alignment to reserve production scheduling. The remaining <strong>50% balance</strong> is settled upon final design approval prior to deliverable package handoff.
               </p>
             </div>
@@ -1139,23 +1144,23 @@ export const CommissionFormView: React.FC = () => {
         {/* STEP 5: VISUAL REFERENCES & LINKS                                    */}
         {/* --------------------------------------------------------------------- */}
         {currentStep === 5 && (
-          <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
-            <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-4 space-y-1">
-              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+          <section className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200 shadow-xs">
+            <div className="border-b border-hairline pb-4 space-y-1">
+              <span className="font-mono text-xs uppercase tracking-widest text-accent font-bold">
                 05 / REFERENCES & VISUALS
               </span>
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-carbon">
                 Visual References & Moodboards
               </h2>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              <p className="text-xs text-graphite">
                 Share online moodboards, inspiration boards, or brand decks via secure HTTPS links.
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="textarea-reference-links" className="block text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] mb-2 font-mono uppercase tracking-wider">
-                  Inspiration Links (HTTPS) <span className="text-[#71717A] dark:text-[#A1A1AA] font-normal lowercase">(optional)</span>
+                <label htmlFor="textarea-reference-links" className="block text-xs font-semibold text-carbon mb-2 font-mono uppercase tracking-wider">
+                  Inspiration Links (HTTPS) <span className="text-graphite font-normal lowercase">(optional)</span>
                 </label>
                 <textarea
                   id="textarea-reference-links"
@@ -1166,9 +1171,9 @@ export const CommissionFormView: React.FC = () => {
                     setReferenceLinksInput(e.target.value);
                     if (stepErrors.referenceLinks) setStepErrors(prev => ({ ...prev, referenceLinks: '' }));
                   }}
-                  className={`w-full bg-[#FAF9F6] dark:bg-[#18181B] border ${
-                    stepErrors.referenceLinks ? 'border-red-500 ring-1 ring-red-500' : 'border-[#E4E2DC] dark:border-[#222225]'
-                  } rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] transition-colors resize-none leading-relaxed`}
+                  className={`w-full bg-surface-secondary border ${
+                    stepErrors.referenceLinks ? 'border-red-500 ring-1 ring-red-500' : 'border-hairline'
+                  } rounded-xl p-3.5 text-xs sm:text-sm text-carbon placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors resize-none leading-relaxed`}
                 />
                 {stepErrors.referenceLinks ? (
                   <p className="text-xs text-red-600 dark:text-red-400 font-mono mt-1 flex items-center gap-1">
@@ -1176,7 +1181,7 @@ export const CommissionFormView: React.FC = () => {
                     {stepErrors.referenceLinks}
                   </p>
                 ) : (
-                  <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1 font-mono">
+                  <p className="text-[11px] text-graphite mt-1 font-mono">
                     All links must begin with <code>https://</code> for browser security.
                   </p>
                 )}
@@ -1184,13 +1189,13 @@ export const CommissionFormView: React.FC = () => {
 
               {/* Verified Links Chips */}
               {parsedReferenceLinks.length > 0 && !stepErrors.referenceLinks && (
-                <div className="p-3 bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg space-y-2">
-                  <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase font-bold block">
+                <div className="p-3 bg-surface-secondary border border-hairline rounded-2xl space-y-2">
+                  <span className="font-mono text-[10px] text-graphite uppercase font-bold block">
                     Recognized Reference Links ({parsedReferenceLinks.length}):
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {parsedReferenceLinks.map((url, idx) => (
-                      <span key={idx} className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] text-[#EA580C]">
+                      <span key={idx} className="inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-surface border border-hairline text-accent">
                         <LinkIcon className="w-3 h-3" />
                         <span className="truncate max-w-[220px]">{url}</span>
                       </span>
@@ -1200,13 +1205,13 @@ export const CommissionFormView: React.FC = () => {
               )}
 
               {/* Secure Asset Delivery Policy Notice */}
-              <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-start gap-3">
-                <ShieldCheck className="w-4 h-4 text-[#EA580C] shrink-0 mt-0.5" />
+              <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline flex items-start gap-3">
+                <ShieldCheck className="w-4 h-4 text-accent shrink-0 mt-0.5" />
                 <div className="space-y-1 text-xs">
-                  <span className="font-mono font-bold text-[#18181B] dark:text-[#EDEDEC] block uppercase tracking-wider text-[10px]">
+                  <span className="font-mono font-bold text-carbon block uppercase tracking-wider text-[10px]">
                     Direct File Attachments Notice
                   </span>
-                  <p className="text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                  <p className="text-graphite leading-relaxed">
                     High-resolution brand assets, logos, and print PDFs are uploaded directly inside your private <strong>Client Workspace</strong> following brief transmission. This protects your proprietary source material with encrypted storage.
                   </p>
                 </div>
@@ -1219,15 +1224,15 @@ export const CommissionFormView: React.FC = () => {
         {/* STEP 6: REVIEW & TRANSMIT BRIEF                                      */}
         {/* --------------------------------------------------------------------- */}
         {currentStep === 6 && (
-          <section className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
-            <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-4 space-y-1">
-              <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+          <section className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200 shadow-xs">
+            <div className="border-b border-hairline pb-4 space-y-1">
+              <span className="font-mono text-xs uppercase tracking-widest text-accent font-bold">
                 06 / VERIFY & TRANSMIT
               </span>
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-carbon">
                 Review Project Brief
               </h2>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              <p className="text-xs text-graphite">
                 Confirm your brief specifications before transmitting to the studio. You can edit any section below.
               </p>
             </div>
@@ -1236,16 +1241,16 @@ export const CommissionFormView: React.FC = () => {
             <div className="space-y-4 text-xs">
               
               {/* Card 1: Service Practice */}
-              <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-start justify-between gap-4">
+              <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <span className="font-mono text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA] font-bold block">
+                  <span className="font-mono text-[10px] uppercase text-graphite font-bold block">
                     01 · Service Practice
                   </span>
-                  <h3 className="font-display font-bold text-sm sm:text-base text-[#18181B] dark:text-[#EDEDEC]">
+                  <h3 className="font-display font-bold text-sm sm:text-base text-carbon">
                     {serviceType}
                   </h3>
                   {selectedServiceItem && (
-                    <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                    <p className="text-[11px] text-graphite">
                       Starting at {studioProfile.currencySymbol}{selectedServiceItem.startingPrice.toLocaleString()} · {selectedServiceItem.turnaround}
                     </p>
                   )}
@@ -1253,7 +1258,7 @@ export const CommissionFormView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => jumpToStep(1)}
-                  className="px-3 py-1.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-xs font-mono font-semibold text-[#EA580C] hover:bg-white dark:hover:bg-[#121214] transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                  className="px-3 py-1.5 rounded-full border border-hairline text-xs font-mono font-semibold text-accent hover:bg-surface transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                 >
                   <Edit3 className="w-3 h-3" />
                   <span>Edit</span>
@@ -1261,19 +1266,19 @@ export const CommissionFormView: React.FC = () => {
               </div>
 
               {/* Card 2: Project Scope */}
-              <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-start justify-between gap-4">
+              <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline flex items-start justify-between gap-4">
                 <div className="space-y-1.5 flex-1 min-w-0">
-                  <span className="font-mono text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA] font-bold block">
+                  <span className="font-mono text-[10px] uppercase text-graphite font-bold block">
                     02 · Project Scope
                   </span>
-                  <h3 className="font-display font-bold text-sm sm:text-base text-[#18181B] dark:text-[#EDEDEC] truncate">
+                  <h3 className="font-display font-bold text-sm sm:text-base text-carbon truncate">
                     {title || 'Untitled Project'}
                   </h3>
-                  <p className="text-[#71717A] dark:text-[#A1A1AA] leading-relaxed line-clamp-3 whitespace-pre-line text-xs">
+                  <p className="text-graphite leading-relaxed line-clamp-3 whitespace-pre-line text-xs">
                     {description || 'No description provided.'}
                   </p>
                   {(purpose || targetAudience) && (
-                    <div className="pt-2 flex flex-wrap gap-4 text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                    <div className="pt-2 flex flex-wrap gap-4 text-[11px] text-graphite">
                       {purpose && <span><strong>Context:</strong> {purpose}</span>}
                       {targetAudience && <span><strong>Audience:</strong> {targetAudience}</span>}
                     </div>
@@ -1282,7 +1287,7 @@ export const CommissionFormView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => jumpToStep(2)}
-                  className="px-3 py-1.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-xs font-mono font-semibold text-[#EA580C] hover:bg-white dark:hover:bg-[#121214] transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                  className="px-3 py-1.5 rounded-full border border-hairline text-xs font-mono font-semibold text-accent hover:bg-surface transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                 >
                   <Edit3 className="w-3 h-3" />
                   <span>Edit</span>
@@ -1290,26 +1295,26 @@ export const CommissionFormView: React.FC = () => {
               </div>
 
               {/* Card 3: Creative Directives */}
-              <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-start justify-between gap-4">
+              <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline flex items-start justify-between gap-4">
                 <div className="space-y-1.5 flex-1 min-w-0">
-                  <span className="font-mono text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA] font-bold block">
+                  <span className="font-mono text-[10px] uppercase text-graphite font-bold block">
                     03 · Creative Directives & Formats
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     <div>
-                      <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Aesthetic Feel</span>
-                      <span className="font-medium text-[#18181B] dark:text-[#EDEDEC]">{preferredStyle || 'Studio Artistic Discretion'}</span>
+                      <span className="text-graphite font-mono text-[10px] uppercase block">Aesthetic Feel</span>
+                      <span className="font-medium text-carbon">{preferredStyle || 'Studio Artistic Discretion'}</span>
                     </div>
                     <div>
-                      <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Dimensions & Formats</span>
-                      <span className="font-medium text-[#18181B] dark:text-[#EDEDEC]">{requiredDimensions || 'Standard Vector & Production Package'}</span>
+                      <span className="text-graphite font-mono text-[10px] uppercase block">Dimensions & Formats</span>
+                      <span className="font-medium text-carbon">{requiredDimensions || 'Standard Vector & Production Package'}</span>
                     </div>
                   </div>
                   {previewColors.length > 0 && (
                     <div className="pt-1 flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] font-mono text-[#71717A] dark:text-[#A1A1AA]">Palette:</span>
+                      <span className="text-[10px] font-mono text-graphite">Palette:</span>
                       {previewColors.map((c, idx) => (
-                        <span key={idx} className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225]">
+                        <span key={idx} className="inline-flex items-center gap-1 text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-surface border border-hairline">
                           {c.startsWith('#') && (
                             <span className="w-2 h-2 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: c }} />
                           )}
@@ -1320,15 +1325,15 @@ export const CommissionFormView: React.FC = () => {
                   )}
                   {additionalNotes && (
                     <div className="pt-1">
-                      <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[10px] uppercase block">Directives</span>
-                      <span className="text-xs text-[#18181B] dark:text-[#EDEDEC] line-clamp-2">{additionalNotes}</span>
+                      <span className="text-graphite font-mono text-[10px] uppercase block">Directives</span>
+                      <span className="text-xs text-carbon line-clamp-2">{additionalNotes}</span>
                     </div>
                   )}
                 </div>
                 <button
                   type="button"
                   onClick={() => jumpToStep(3)}
-                  className="px-3 py-1.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-xs font-mono font-semibold text-[#EA580C] hover:bg-white dark:hover:bg-[#121214] transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                  className="px-3 py-1.5 rounded-full border border-hairline text-xs font-mono font-semibold text-accent hover:bg-surface transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                 >
                   <Edit3 className="w-3 h-3" />
                   <span>Edit</span>
@@ -1336,21 +1341,21 @@ export const CommissionFormView: React.FC = () => {
               </div>
 
               {/* Card 4: Investment & Timeline */}
-              <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-start justify-between gap-4">
+              <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <span className="font-mono text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA] font-bold block">
+                  <span className="font-mono text-[10px] uppercase text-graphite font-bold block">
                     04 · Investment & Target Delivery
                   </span>
                   <div className="flex items-center gap-6 font-mono text-xs sm:text-sm">
                     <div>
-                      <span className="text-[#71717A] dark:text-[#A1A1AA] text-[10px] uppercase block">Budget Target</span>
-                      <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                      <span className="text-graphite text-[10px] uppercase block">Budget Target</span>
+                      <span className="font-bold text-carbon">
                         {studioProfile.currencySymbol}{parseFloat(budget.replace(/[^0-9.]/g, '') || '0').toLocaleString()}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[#71717A] dark:text-[#A1A1AA] text-[10px] uppercase block">Committed Delivery</span>
-                      <span className="font-medium text-[#18181B] dark:text-[#EDEDEC]">
+                      <span className="text-graphite text-[10px] uppercase block">Committed Delivery</span>
+                      <span className="font-medium text-carbon">
                         {deadline ? formatCommissionDate(deadline) : 'Scheduled with studio'}
                       </span>
                     </div>
@@ -1359,7 +1364,7 @@ export const CommissionFormView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => jumpToStep(4)}
-                  className="px-3 py-1.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-xs font-mono font-semibold text-[#EA580C] hover:bg-white dark:hover:bg-[#121214] transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                  className="px-3 py-1.5 rounded-full border border-hairline text-xs font-mono font-semibold text-accent hover:bg-surface transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                 >
                   <Edit3 className="w-3 h-3" />
                   <span>Edit</span>
@@ -1367,9 +1372,9 @@ export const CommissionFormView: React.FC = () => {
               </div>
 
               {/* Card 5: References */}
-              <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-start justify-between gap-4">
+              <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline flex items-start justify-between gap-4">
                 <div className="space-y-1 flex-1 min-w-0">
-                  <span className="font-mono text-[10px] uppercase text-[#71717A] dark:text-[#A1A1AA] font-bold block">
+                  <span className="font-mono text-[10px] uppercase text-graphite font-bold block">
                     05 · Visual References
                   </span>
                   {parsedReferenceLinks.length > 0 ? (
@@ -1380,7 +1385,7 @@ export const CommissionFormView: React.FC = () => {
                           href={link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-mono text-[#EA580C] hover:underline"
+                          className="inline-flex items-center gap-1 text-[11px] font-mono text-accent hover:underline"
                         >
                           <ExternalLink className="w-3 h-3" />
                           <span className="truncate max-w-[200px]">{link}</span>
@@ -1388,7 +1393,7 @@ export const CommissionFormView: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                    <p className="text-xs text-graphite">
                       No external links provided. Uploads can be supplied in Client Workspace.
                     </p>
                   )}
@@ -1396,7 +1401,7 @@ export const CommissionFormView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => jumpToStep(5)}
-                  className="px-3 py-1.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-xs font-mono font-semibold text-[#EA580C] hover:bg-white dark:hover:bg-[#121214] transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                  className="px-3 py-1.5 rounded-full border border-hairline text-xs font-mono font-semibold text-accent hover:bg-surface transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                 >
                   <Edit3 className="w-3 h-3" />
                   <span>Edit</span>
@@ -1407,14 +1412,14 @@ export const CommissionFormView: React.FC = () => {
 
             {/* Authentication Status Check Banner */}
             {!currentUser ? (
-              <div className="p-5 rounded-xl bg-orange-50/60 dark:bg-orange-950/20 border border-[#EA580C]/40 space-y-3">
+              <div className="p-5 rounded-2xl bg-[#E0F2FE]/60 dark:bg-sky-950/30 border border-accent/40 space-y-3">
                 <div className="flex items-start gap-3">
-                  <ShieldCheck className="w-5 h-5 text-[#EA580C] shrink-0 mt-0.5" />
+                  <ShieldCheck className="w-5 h-5 text-accent shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <h4 className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC]">
+                    <h4 className="font-display font-bold text-sm text-carbon">
                       Client Authentication Required to Transmit
                     </h4>
-                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                    <p className="text-xs text-graphite leading-relaxed">
                       Your draft is safely preserved in this session. Sign in or register in one click below to link your brief to your personal studio dashboard.
                     </p>
                   </div>
@@ -1424,7 +1429,7 @@ export const CommissionFormView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => { setAuthDialogMode('signin'); setIsAuthDialogOpen(true); }}
-                    className="px-4 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                    className="px-5 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] font-bold text-xs transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
                   >
                     <span>Sign In to Transmit</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -1433,14 +1438,14 @@ export const CommissionFormView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => { setAuthDialogMode('register'); setIsAuthDialogOpen(true); }}
-                    className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#222225] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#EDEDEC] text-xs font-semibold transition-all cursor-pointer"
+                    className="px-4 py-2 rounded-full border border-hairline bg-surface text-carbon text-xs font-semibold transition-all cursor-pointer"
                   >
                     Create Account
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between gap-4 text-xs">
+              <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between gap-4 text-xs">
                 <div className="flex items-center gap-2.5 text-emerald-800 dark:text-emerald-300">
                   <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>
@@ -1464,7 +1469,7 @@ export const CommissionFormView: React.FC = () => {
               id="btn-step-prev"
               type="button"
               onClick={handlePrevStep}
-              className="px-5 py-2.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] bg-white dark:bg-[#18181B] hover:bg-[#FAF9F6] dark:hover:bg-[#121214] text-[#18181B] dark:text-[#EDEDEC] text-xs font-semibold transition-all cursor-pointer flex items-center gap-2"
+              className="px-5 py-2.5 rounded-full border border-hairline bg-surface hover:bg-surface-secondary text-carbon text-xs font-semibold transition-all cursor-pointer flex items-center gap-2"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back</span>
@@ -1478,7 +1483,7 @@ export const CommissionFormView: React.FC = () => {
               id="btn-step-next"
               type="button"
               onClick={handleNextStep}
-              className="px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-2 cursor-pointer ml-auto"
+              className="px-6 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer ml-auto"
             >
               <span>Continue</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -1488,11 +1493,11 @@ export const CommissionFormView: React.FC = () => {
               id="btn-submit-commission-form"
               type="submit"
               disabled={isSubmitting}
-              className="px-7 py-3 min-h-[44px] rounded-lg bg-[#EA580C] hover:bg-[#D94814] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ml-auto focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+              className="px-7 py-3 min-h-[44px] rounded-full bg-[#D4FF38] hover:bg-[#C4F024] disabled:opacity-50 text-[#111114] font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ml-auto focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
             >
               {isSubmitting ? (
                 <>
-                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3.5 h-3.5 border-2 border-[#111114] border-t-transparent rounded-full animate-spin" />
                   <span>Transmitting Brief to Studio...</span>
                 </>
               ) : (

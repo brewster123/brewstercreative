@@ -94,7 +94,8 @@ function formatMessageTimestamp(isoDate: string): string {
  */
 export async function mapDbRowToMessage(
   row: DbMessageRow,
-  currentUser?: User | null
+  currentUser?: User | null,
+  isRealtimeIncoming: boolean = false
 ): Promise<Message> {
   const sender = await resolveSenderProfile(row.sender_id, currentUser);
   const textBody = row.body ?? row.message ?? '';
@@ -133,7 +134,7 @@ export async function mapDbRowToMessage(
     body: textBody,
     attachment: resolvedAttachment,
     timestamp: formatMessageTimestamp(row.created_at),
-    readStatus: true,
+    readStatus: isRealtimeIncoming && currentUser?.id ? row.sender_id !== currentUser.id ? false : true : true,
     createdAt: row.created_at,
     commission_id: row.commission_id,
     sender_id: row.sender_id,
@@ -340,6 +341,8 @@ export async function sendCommissionMessageToSupabase(
  * Automatically triggers callback on new database row insertion.
  * Listens on 'commission_messages' table.
  */
+let messageChannelSeq = 0;
+
 export function subscribeToCommissionMessages(
   commissionId: string,
   onNewMessage: (msg: Message) => void,
@@ -347,7 +350,7 @@ export function subscribeToCommissionMessages(
 ): () => void {
   if (!commissionId) return () => {};
 
-  const channelId = `realtime-messages-${commissionId}-${Date.now()}`;
+  const channelId = `realtime-messages-${commissionId}-${Date.now()}-${++messageChannelSeq}`;
   const channel = supabase.channel(channelId);
 
   channel
@@ -361,7 +364,7 @@ export function subscribeToCommissionMessages(
       },
       async (payload) => {
         if (payload.new) {
-          const mapped = await mapDbRowToMessage(payload.new as DbMessageRow, currentUser);
+          const mapped = await mapDbRowToMessage(payload.new as DbMessageRow, currentUser, true);
           onNewMessage(mapped);
         }
       }

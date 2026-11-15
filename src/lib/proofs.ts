@@ -4,6 +4,46 @@ import { CommissionProof, ProofStatus } from '../types';
 export const COMMISSION_PROOFS_BUCKET = 'commission-proofs';
 
 /**
+ * Normalizes a Supabase commission_proofs row into a CommissionProof with both
+ * camelCase and snake_case fields populated.
+ */
+export function mapDbRowToProof(row: any): CommissionProof {
+  const fileSize =
+    row.file_size !== null && row.file_size !== undefined
+      ? Number(row.file_size)
+      : row.fileSize !== undefined
+        ? Number(row.fileSize)
+        : undefined;
+
+  return {
+    id: row.id,
+    commissionId: row.commission_id || row.commissionId,
+    uploadedBy: row.uploaded_by || row.uploadedBy,
+    fileName: row.file_name || row.fileName || '',
+    filePath: row.file_path || row.filePath || '',
+    fileUrl: (row.file_url ?? row.fileUrl) || undefined,
+    fileType: (row.file_type ?? row.fileType) || undefined,
+    fileSize,
+    version: Number(row.version) || 1,
+    status: row.status,
+    revisionNote: (row.revision_note ?? row.revisionNote) || undefined,
+    createdAt: row.created_at || row.createdAt || '',
+    updatedAt: row.updated_at || row.updatedAt || '',
+
+    commission_id: row.commission_id || row.commissionId,
+    uploaded_by: row.uploaded_by || row.uploadedBy,
+    file_name: row.file_name || row.fileName || '',
+    file_path: row.file_path || row.filePath || '',
+    file_url: row.file_url ?? row.fileUrl ?? null,
+    file_type: row.file_type ?? row.fileType,
+    file_size: fileSize,
+    revision_note: row.revision_note ?? row.revisionNote ?? null,
+    created_at: row.created_at || row.createdAt,
+    updated_at: row.updated_at || row.updatedAt,
+  };
+}
+
+/**
  * Fetches proofs belonging to an accessible commission using Supabase SELECT RLS.
  * Row-Level Security automatically ensures clients only receive proofs for their own commissions.
  */
@@ -26,7 +66,7 @@ export async function fetchCommissionProofs(
       return { data: null, error: error.message || 'Failed to fetch creative proofs.' };
     }
 
-    return { data: (data as CommissionProof[]) || [], error: null };
+    return { data: (data || []).map(mapDbRowToProof), error: null };
   } catch (err: any) {
     return {
       data: null,
@@ -126,7 +166,7 @@ export async function submitClientReviewRpc(
       };
     }
 
-    return { data: data as CommissionProof, error: null };
+    return { data: data ? mapDbRowToProof(data) : null, error: null };
   } catch (err: any) {
     return {
       data: null,

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, UploadCloud, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import {
@@ -29,6 +29,9 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
 }) => {
   const { currentUser, studioProfile, updateStudioProfile } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(true);
+  const selectedImageSrcRef = useRef<string | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const effectiveAdminUserId = propAdminUserId || (currentUser?.role === 'admin' ? currentUser.id : '');
   const photoFromProps = currentPhoto || currentPhotoUrl;
@@ -43,6 +46,24 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    selectedImageSrcRef.current = selectedImageSrc;
+  }, [selectedImageSrc]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+      }
+      if (selectedImageSrcRef.current) {
+        URL.revokeObjectURL(selectedImageSrcRef.current);
+        selectedImageSrcRef.current = null;
+      }
+    };
+  }, []);
 
   // If user is not authenticated as admin, do not allow access
   if (currentUser?.role !== 'admin') {
@@ -77,8 +98,12 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
       return;
     }
 
+    if (selectedImageSrc) {
+      URL.revokeObjectURL(selectedImageSrc);
+    }
     setSelectedFileName(file.name);
     const objectUrl = URL.createObjectURL(file);
+    selectedImageSrcRef.current = objectUrl;
     setSelectedImageSrc(objectUrl);
     setIsEditorOpen(true);
   };
@@ -88,6 +113,7 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
     setIsEditorOpen(false);
     if (selectedImageSrc) {
       URL.revokeObjectURL(selectedImageSrc);
+      selectedImageSrcRef.current = null;
       setSelectedImageSrc(null);
     }
   };
@@ -100,6 +126,7 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
 
     const previousPhotoUrl = photoFromProps || studioProfile.avatar;
     setIsUploading(true);
+    setErrorMessage(null);
 
     try {
       // Upload via storage utility
@@ -115,20 +142,27 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
 
       const newPublicUrl = result.publicUrl;
 
-      // Update immediate local preview
-      setPreviewUrl(newPublicUrl);
-
-      // Persist to studioProfile in AppContext, LocalStorage, and Supabase DB
+      // Persist to studioProfile in AppContext, LocalStorage, and Supabase DB BEFORE updating preview
       const updateResult = await updateStudioProfile({ avatar: newPublicUrl });
       if (updateResult && !updateResult.success) {
-        console.warn('Database sync notice for studio profile:', updateResult.error);
+        throw new Error(updateResult.error || 'Failed to persist studio profile photo.');
       }
+
+      if (!isMountedRef.current) return;
+
+      // Update immediate local preview only after successful persistence
+      setPreviewUrl(newPublicUrl);
 
       if (onPhotoUpdated) {
         onPhotoUpdated(newPublicUrl);
       }
 
-      handleCloseEditor();
+      setIsEditorOpen(false);
+      if (selectedImageSrcRef.current) {
+        URL.revokeObjectURL(selectedImageSrcRef.current);
+        selectedImageSrcRef.current = null;
+        setSelectedImageSrc(null);
+      }
 
       setSuccessMessage('Studio Lead Photo updated! Live on public homepage.');
 
@@ -137,13 +171,22 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
         deletePreviousUserPhoto(previousPhotoUrl, effectiveAdminUserId, 'studio');
       }
 
-      setTimeout(() => {
-        setSuccessMessage(null);
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+      }
+      successTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          setSuccessMessage(null);
+        }
       }, 4000);
     } catch (err: any) {
-      setErrorMessage(err?.message || 'An unexpected error occurred while saving studio photo.');
+      if (isMountedRef.current) {
+        setErrorMessage(err?.message || 'An unexpected error occurred while saving studio photo.');
+      }
     } finally {
-      setIsUploading(false);
+      if (isMountedRef.current) {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -155,10 +198,10 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 sm:p-5 rounded-2xl bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 sm:p-5 rounded-3xl bg-surface-secondary border border-hairline">
         {/* Studio Photo Preview in Rounded Frame matching Homepage Bento Tile */}
         <div className="relative group shrink-0">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-[#EA580C]/20 shadow-md bg-zinc-900">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-accent/25 shadow-md bg-zinc-900">
             <img
               src={displayedPhoto}
               alt="Studio Lead Photo"
@@ -180,7 +223,7 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
             disabled={isUploading}
             title="Change Studio Photo"
             aria-label="Change Studio Photo"
-            className="absolute -bottom-1 -right-1 p-2 rounded-xl bg-[#18181B] dark:bg-[#27272A] text-white hover:bg-[#EA580C] dark:hover:bg-[#EA580C] transition-colors shadow-md border-2 border-white dark:border-[#18181B] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EA580C] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="absolute -bottom-1 -right-1 p-2 rounded-xl bg-[#111114] text-white hover:bg-accent transition-colors shadow-md border-2 border-white dark:border-[#11131B] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <Camera className="w-4 h-4" />
           </button>
@@ -189,15 +232,15 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
         {/* Action Controls & Description */}
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-orange-50 dark:bg-orange-950/40 text-[#EA580C] dark:text-orange-400 border border-orange-200 dark:border-orange-900/50 text-[10px] font-mono font-bold uppercase flex items-center gap-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/40 text-accent border border-sky-200 dark:border-sky-800 text-[10px] font-mono font-bold uppercase flex items-center gap-1">
               <Sparkles className="w-2.5 h-2.5" />
               Public Homepage Representation
             </span>
           </div>
 
           <div>
-            <span className="block text-xs sm:text-sm font-bold text-[#18181B] dark:text-[#EDEDEC]">{label}</span>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-normal leading-relaxed">{description}</p>
+            <span className="block text-xs sm:text-sm font-bold text-carbon">{label}</span>
+            <p className="text-xs text-graphite font-normal leading-relaxed">{description}</p>
           </div>
 
           <div className="flex items-center gap-3 pt-1">
@@ -216,11 +259,11 @@ export const StudioPhotoUploader: React.FC<StudioPhotoUploaderProps> = ({
               id="btn-upload-studio-photo"
               onClick={handleTriggerUpload}
               disabled={isUploading}
-              className="px-4 py-2 rounded-xl bg-[#18181B] dark:bg-[#EDEDEC] hover:bg-[#EA580C] dark:hover:bg-[#EA580C] text-white dark:text-[#18181B] dark:hover:text-white text-xs font-bold transition-all flex items-center gap-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="px-4 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-all flex items-center gap-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer btn-tactile"
             >
               {isUploading ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#EA580C]" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#111114]" />
                   <span>Processing Studio Photo...</span>
                 </>
               ) : (

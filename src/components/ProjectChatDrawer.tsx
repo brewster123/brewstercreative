@@ -57,26 +57,26 @@ export const ProjectChatDrawer: React.FC<ProjectChatDrawerProps> = ({
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
         <div 
           ref={drawerRef}
-          className="w-screen max-w-2xl bg-[#FAF9F6] dark:bg-[#121214] border-l border-[#E4E2DC] dark:border-[#222225] shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300"
+          className="w-screen max-w-2xl bg-canvas border-l border-hairline shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300"
         >
           {/* Drawer Header */}
-          <div className="px-5 py-4 border-b border-[#E4E2DC] dark:border-[#222225] bg-white dark:bg-[#18181B] flex items-center justify-between shrink-0">
+          <div className="px-5 py-4 border-b border-hairline bg-surface flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#EA580C] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center shrink-0 shadow-xs">
                 <MessageSquare className="w-4 h-4" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-accent font-semibold">
                     Project Conversation
                   </span>
-                  <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
+                  <span className="font-mono text-[10px] text-graphite">
                     · #{commission.id.slice(0, 8)}
                   </span>
                 </div>
                 <h3 
                   id="project-chat-drawer-title" 
-                  className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC] truncate"
+                  className="font-display font-bold text-base text-carbon truncate"
                 >
                   {commission.projectName}
                 </h3>
@@ -86,7 +86,7 @@ export const ProjectChatDrawer: React.FC<ProjectChatDrawerProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#222225] transition-colors cursor-pointer"
+              className="p-2 rounded-full text-graphite hover:text-carbon hover:bg-surface-secondary transition-colors cursor-pointer"
               aria-label="Close project chat drawer"
             >
               <X className="w-5 h-5" />

@@ -64,41 +64,63 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
   } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const activeCommissionIdRef = useRef<string | undefined>(commission?.id);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Load existing proofs for this commission
   const loadProofs = async () => {
-    if (!commission?.id) return;
+    const targetId = commission?.id;
+    if (!targetId) return;
     setIsLoadingProofs(true);
     setProofsError(null);
 
     try {
-      const result = await fetchProofsForCommission(commission.id);
+      const result = await fetchProofsForCommission(targetId);
+      if (!isMountedRef.current || activeCommissionIdRef.current !== targetId) return;
       if (result.success) {
         setProofs(result.data);
       } else {
         setProofsError(result.error || 'Failed to load creative proofs.');
       }
     } catch (err: any) {
+      if (!isMountedRef.current || activeCommissionIdRef.current !== targetId) return;
       setProofsError(err?.message || 'Error loading creative proofs.');
     } finally {
-      setIsLoadingProofs(false);
+      if (isMountedRef.current && activeCommissionIdRef.current === targetId) {
+        setIsLoadingProofs(false);
+      }
     }
   };
 
   // Update expected next version
   const refreshNextVersion = async () => {
-    if (!commission?.id) return;
-    const nextVer = await getNextProofVersion(commission.id);
-    setNextExpectedVersion(nextVer);
+    const targetId = commission?.id;
+    if (!targetId) return;
+    const nextVer = await getNextProofVersion(targetId);
+    if (isMountedRef.current && activeCommissionIdRef.current === targetId) {
+      setNextExpectedVersion(nextVer);
+    }
   };
 
   useEffect(() => {
+    activeCommissionIdRef.current = commission?.id;
     loadProofs();
     refreshNextVersion();
     // Reset selection when commission changes
     setSelectedFile(null);
     setUploadError(null);
     setUploadSuccess(null);
+    setViewError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }, [commission?.id]);
 
   // Handle Escape key to dismiss proof lightbox modal
@@ -331,33 +353,33 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
   const isPdf = (proof: CommissionProof) => {
     return (
       proof.fileType === 'application/pdf' ||
-      proof.fileName.toLowerCase().endsWith('.pdf')
+      (proof.fileName || '').toLowerCase().endsWith('.pdf')
     );
   };
 
   return (
     <div className="space-y-8">
       {/* SECTION 1: EXISTING CREATIVE PROOFS */}
-      <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-8 space-y-6 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-zinc-100">
+      <div className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-hairline">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-sky-500/10 text-accent flex items-center justify-center shrink-0">
               <Layers className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-display text-lg sm:text-xl font-black text-zinc-900">
+                <h3 className="font-display text-lg sm:text-xl font-black text-carbon">
                   Creative Proofs
                 </h3>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono-code font-bold bg-zinc-100 text-zinc-700 border border-zinc-200">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono-code font-bold bg-surface-secondary text-graphite-strong border border-hairline">
                   {proofs.length} {proofs.length === 1 ? 'Proof' : 'Proofs'}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono-code font-bold bg-zinc-900 text-white flex items-center gap-1">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono-code font-bold bg-[#111114] text-white dark:bg-white dark:text-[#111114] flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3 text-emerald-400" /> Private Storage
                 </span>
               </div>
-              <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                Target Project: <strong className="text-zinc-800 font-bold">{commission.projectName}</strong>
+              <p className="text-xs text-graphite font-medium mt-0.5">
+                Target Project: <strong className="text-carbon font-bold">{commission.projectName}</strong>
               </p>
             </div>
           </div>
@@ -366,7 +388,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
             type="button"
             onClick={loadProofs}
             disabled={isLoadingProofs}
-            className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            className="self-start sm:self-auto px-4 py-1.5 rounded-full border border-hairline text-xs font-bold text-graphite hover:text-carbon hover:bg-surface-secondary transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             title="Refresh creative proofs from Supabase"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoadingProofs ? 'animate-spin' : ''}`} />
@@ -375,7 +397,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
         </div>
 
         {viewError && (
-          <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="text-xs text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
               <span>{viewError}</span>
@@ -383,7 +405,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
             <button
               type="button"
               onClick={() => setViewError(null)}
-              className="text-rose-500 hover:text-rose-800"
+              className="text-rose-500 hover:text-rose-800 dark:hover:text-rose-300"
             >
               <X className="w-4 h-4" />
             </button>
@@ -392,24 +414,24 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
 
         {/* Proofs List */}
         {isLoadingProofs ? (
-          <div className="py-12 flex flex-col items-center justify-center text-zinc-400 space-y-2">
-            <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+          <div className="py-12 flex flex-col items-center justify-center text-graphite space-y-2">
+            <Loader2 className="w-6 h-6 animate-spin text-accent" />
             <span className="text-xs font-medium">Loading creative proofs...</span>
           </div>
         ) : proofsError ? (
-          <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center gap-2">
+          <div className="text-xs text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-2xl p-4 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
             <span>{proofsError}</span>
           </div>
         ) : proofs.length === 0 ? (
-          <div className="text-center py-10 px-4 border-2 border-dashed border-zinc-200 rounded-[24px] bg-zinc-50/60">
-            <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-400 flex items-center justify-center mx-auto mb-3">
+          <div className="text-center py-10 px-4 border-2 border-dashed border-hairline rounded-3xl bg-surface-secondary/60">
+            <div className="w-12 h-12 rounded-2xl bg-surface text-graphite border border-hairline flex items-center justify-center mx-auto mb-3">
               <FileText className="w-6 h-6" />
             </div>
-            <h4 className="font-display text-sm font-bold text-zinc-800">
+            <h4 className="font-display text-sm font-bold text-carbon">
               No creative proofs uploaded yet
             </h4>
-            <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1 font-medium">
+            <p className="text-xs text-graphite max-w-md mx-auto mt-1 font-medium">
               Use the upload section below to submit high-resolution proofs, draft iterations, or concept PDF presentations.
             </p>
           </div>
@@ -423,44 +445,44 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
               return (
                 <div
                   key={proof.id}
-                  className="bg-zinc-50/80 hover:bg-zinc-50 border border-zinc-200 rounded-2xl p-4 sm:p-5 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="bg-surface-secondary/80 hover:bg-surface-secondary border border-hairline rounded-2xl p-4 sm:p-5 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="flex items-start gap-3.5 min-w-0">
-                    <div className="w-11 h-11 rounded-2xl bg-white border border-zinc-200 text-zinc-700 flex items-center justify-center shrink-0 shadow-2xs">
+                    <div className="w-11 h-11 rounded-2xl bg-surface border border-hairline text-carbon flex items-center justify-center shrink-0 shadow-2xs">
                       {pdfFile ? (
                         <FileText className="w-5 h-5 text-rose-500" />
                       ) : (
-                        <ImageIcon className="w-5 h-5 text-orange-500" />
+                        <ImageIcon className="w-5 h-5 text-accent" />
                       )}
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-mono-code font-black bg-orange-100 text-orange-800 border border-orange-200">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-mono-code font-black bg-sky-500/15 text-accent border border-accent/30">
                           v{proof.version}
                         </span>
-                        <h4 className="font-display text-sm font-bold text-zinc-900 truncate" title={proof.fileName}>
-                          {proof.fileName}
+                        <h4 className="font-display text-sm font-bold text-carbon truncate" title={proof.fileName || 'Untitled Proof'}>
+                          {proof.fileName || 'Untitled Proof'}
                         </h4>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono-code font-bold border ${statusInfo.badgeClass}`}>
                           {statusInfo.label}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 text-xs text-zinc-500 font-medium mt-1 flex-wrap">
-                        <span>Type: <strong className="text-zinc-700 font-mono-code font-semibold">{proof.fileType || 'File'}</strong></span>
+                      <div className="flex items-center gap-3 text-xs text-graphite font-medium mt-1 flex-wrap">
+                        <span>Type: <strong className="text-carbon font-mono-code font-semibold">{proof.fileType || 'File'}</strong></span>
                         <span>•</span>
-                        <span>Size: <strong className="text-zinc-700 font-mono-code font-semibold">{formatProofFileSize(proof.fileSize)}</strong></span>
+                        <span>Size: <strong className="text-carbon font-mono-code font-semibold">{formatProofFileSize(proof.fileSize)}</strong></span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-zinc-400" />
+                          <Clock className="w-3 h-3 text-graphite" />
                           {formatProofDate(proof.createdAt)}
                         </span>
                       </div>
 
                       {proof.revisionNote && (
-                        <p className="mt-2 text-xs text-zinc-600 bg-white border border-zinc-200 rounded-xl p-2.5">
-                          <strong className="text-zinc-800">Revision Note:</strong> {proof.revisionNote}
+                        <p className="mt-2 text-xs text-graphite-strong bg-surface border border-hairline rounded-xl p-2.5">
+                          <strong className="text-carbon">Revision Note:</strong> {proof.revisionNote}
                         </p>
                       )}
                     </div>
@@ -471,7 +493,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
                       type="button"
                       onClick={() => handleOpenProof(proof)}
                       disabled={isOpening}
-                      className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                      className="px-4 py-2 rounded-full bg-[#111114] hover:bg-black text-white dark:bg-white dark:text-[#111114] dark:hover:bg-zinc-200 text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
                       title="Generate secure signed link and open file"
                     >
                       {isOpening ? (
@@ -495,23 +517,23 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
       </div>
 
       {/* SECTION 2: UPLOAD CREATIVE PROOF */}
-      <div className="bg-white border border-[#E5E5E5] rounded-[32px] p-6 sm:p-8 space-y-6 shadow-xs">
-        <div className="flex items-center gap-3 pb-4 border-b border-zinc-100">
-          <div className="w-10 h-10 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+      <div className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
+        <div className="flex items-center gap-3 pb-4 border-b border-hairline">
+          <div className="w-10 h-10 rounded-2xl bg-sky-500/10 text-accent flex items-center justify-center shrink-0">
             <UploadCloud className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-display text-lg font-black text-zinc-900">
+            <h3 className="font-display text-lg font-black text-carbon">
               Upload Creative Proof
             </h3>
-            <p className="text-xs text-zinc-500 font-medium">
-              Files will be stored securely in the private <code className="text-zinc-800 font-mono-code font-bold">commission-proofs</code> bucket as <strong className="text-orange-600 font-bold">Version {nextExpectedVersion}</strong>.
+            <p className="text-xs text-graphite font-medium">
+              Files will be stored securely in the private <code className="text-carbon font-mono-code font-bold">commission-proofs</code> bucket as <strong className="text-accent font-bold">Version {nextExpectedVersion}</strong>.
             </p>
           </div>
         </div>
 
         {uploadSuccess && (
-          <div className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-start justify-between gap-3 animate-fade-in">
+          <div className="text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl p-4 flex items-start justify-between gap-3 animate-fade-in">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{uploadSuccess}</span>
@@ -519,7 +541,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
             <button
               type="button"
               onClick={() => setUploadSuccess(null)}
-              className="text-emerald-600 hover:text-emerald-900"
+              className="text-emerald-600 hover:text-emerald-900 dark:hover:text-emerald-300"
             >
               <X className="w-4 h-4" />
             </button>
@@ -527,7 +549,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
         )}
 
         {uploadError && (
-          <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start justify-between gap-3 animate-fade-in">
+          <div className="text-xs text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-2xl p-4 flex items-start justify-between gap-3 animate-fade-in">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
               <span>{uploadError}</span>
@@ -535,7 +557,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
             <button
               type="button"
               onClick={() => setUploadError(null)}
-              className="text-rose-500 hover:text-rose-800"
+              className="text-rose-500 hover:text-rose-800 dark:hover:text-rose-300"
             >
               <X className="w-4 h-4" />
             </button>
@@ -547,10 +569,10 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
-            className={`border-2 border-dashed rounded-[28px] p-6 sm:p-8 text-center transition-all ${
+            className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 text-center transition-all ${
               selectedFile
-                ? 'border-orange-500 bg-orange-50/20'
-                : 'border-zinc-200 hover:border-orange-400 bg-zinc-50/50 hover:bg-zinc-50'
+                ? 'border-accent bg-sky-500/5'
+                : 'border-hairline hover:border-accent/60 bg-surface-secondary/60 hover:bg-surface-secondary'
             }`}
           >
             <input
@@ -566,27 +588,27 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
             {selectedFile ? (
               <div className="space-y-4">
                 {filePreviewUrl ? (
-                  <div className="max-w-xs mx-auto aspect-[16/10] rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-100 shadow-2xs relative">
+                  <div className="max-w-xs mx-auto aspect-[16/10] rounded-2xl overflow-hidden border border-hairline bg-surface-secondary shadow-2xs relative">
                     <img
                       src={filePreviewUrl}
                       alt="Selected preview"
                       className="w-full h-full object-cover"
                     />
-                    <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-mono-code text-white font-bold">
+                    <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-black/70 text-[10px] font-mono-code text-white font-bold">
                       Local Preview
                     </span>
                   </div>
                 ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto">
+                  <div className="w-16 h-16 rounded-2xl bg-sky-500/15 text-accent flex items-center justify-center mx-auto">
                     <FileCheck className="w-8 h-8" />
                   </div>
                 )}
 
                 <div>
-                  <h4 className="text-sm font-bold text-zinc-900 font-display break-all">
+                  <h4 className="text-sm font-bold text-carbon font-display break-all">
                     {selectedFile.name}
                   </h4>
-                  <p className="text-xs text-zinc-500 font-mono-code mt-0.5">
+                  <p className="text-xs text-graphite font-mono-code mt-0.5">
                     {formatProofFileSize(selectedFile.size)} • {selectedFile.type || 'Document'}
                   </p>
                 </div>
@@ -599,7 +621,7 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
                       if (fileInputRef.current) fileInputRef.current.value = '';
                     }}
                     disabled={isUploading}
-                    className="px-3.5 py-1.5 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all flex items-center gap-1.5"
+                    className="px-4 py-1.5 rounded-full border border-hairline text-xs font-bold text-graphite hover:text-carbon hover:bg-surface-secondary transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                     <span>Choose Different File</span>
@@ -608,15 +630,15 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto shadow-2xs">
+                <div className="w-14 h-14 rounded-2xl bg-sky-500/10 text-accent flex items-center justify-center mx-auto shadow-2xs">
                   <UploadCloud className="w-7 h-7" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-zinc-800">
+                  <p className="text-sm font-bold text-carbon">
                     Click to browse or drag and drop your creative proof
                   </p>
-                  <p className="text-xs text-zinc-500 font-medium mt-1">
-                    Supported formats: <strong className="text-zinc-700">JPG, PNG, WebP, GIF, PDF</strong> (Up to 50 MB)
+                  <p className="text-xs text-graphite font-medium mt-1">
+                    Supported formats: <strong className="text-carbon">JPG, PNG, WebP, GIF, PDF</strong> (Up to 50 MB)
                   </p>
                 </div>
 
@@ -624,9 +646,9 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-bold border border-zinc-300 shadow-2xs transition-all inline-flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-full bg-surface hover:bg-surface-secondary text-carbon text-xs font-bold border border-hairline shadow-2xs transition-all inline-flex items-center gap-2 cursor-pointer"
                 >
-                  <UploadCloud className="w-4 h-4 text-orange-500" />
+                  <UploadCloud className="w-4 h-4 text-accent" />
                   <span>Select Proof File</span>
                 </button>
               </div>
@@ -635,16 +657,16 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
 
           {/* Action Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-            <div className="text-xs text-zinc-500 font-medium flex items-center gap-2">
+            <div className="text-xs text-graphite font-medium flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>Next Version to assign: <strong className="text-zinc-800 font-mono-code font-bold">v{nextExpectedVersion}</strong></span>
+              <span>Next Version to assign: <strong className="text-carbon font-mono-code font-bold">v{nextExpectedVersion}</strong></span>
             </div>
 
             <button
               id="btn-upload-creative-proof-submit"
               type="submit"
               disabled={!selectedFile || isUploading}
-              className="px-6 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-bold shadow-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-tactile px-6 py-3 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs sm:text-sm font-bold shadow-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {isUploading ? (
                 <>
@@ -673,12 +695,12 @@ export const AdminCreativeProofsSection: React.FC<AdminCreativeProofsSectionProp
         >
           <div 
             onClick={(e) => e.stopPropagation()} 
-            className="relative max-w-5xl w-full max-h-[92vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden cursor-default shadow-2xl"
+            className="relative max-w-5xl w-full max-h-[92vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden cursor-default shadow-2xl"
           >
             {/* Header */}
             <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/80 backdrop-blur-xs shrink-0">
               <div className="flex items-center gap-2.5">
-                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-orange-600/20 text-orange-400 border border-orange-500/30">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">
                   v{lightboxProof.proof.version}
                 </span>
                 <span className="text-white text-xs sm:text-sm font-semibold truncate max-w-xs sm:max-w-md">

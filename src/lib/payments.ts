@@ -589,7 +589,7 @@ export async function adminReviewPaymentProof(params: {
       p_proof_id: proofId,
       p_decision: decision,
       p_admin_notes: adminNotes ? adminNotes.trim() : null,
-      p_target_payment_status: targetPaymentStatus || (decision === 'confirmed' ? 'Partial' : null),
+      p_target_payment_status: decision === 'confirmed' ? (targetPaymentStatus || null) : null,
     });
 
     if (!rpcError && rpcData) {
@@ -634,9 +634,28 @@ export async function adminReviewPaymentProof(params: {
     }
 
     // 3. Strict settlement rule enforcement during fallback
+    const { data: targetComm } = await supabase
+      .from('commissions')
+      .select('id, deposit_paid, total_paid, payment_status')
+      .eq('id', commissionId)
+      .maybeSingle();
+
     let newStatus: 'Partial' | 'Paid';
     if (decision === 'confirmed') {
+      if (targetComm && (targetComm.payment_status === 'Paid' || targetComm.total_paid === true)) {
+        return {
+          success: false,
+          error: 'Commission is already fully paid (Paid). Additional receipts cannot downgrade or alter settled payment status.',
+        };
+      }
+
       if (currentProof.payment_type === 'deposit') {
+        if (targetComm && targetComm.deposit_paid) {
+          return {
+            success: false,
+            error: 'A deposit payment has already been confirmed for this commission.',
+          };
+        }
         if (targetPaymentStatus === 'Paid') {
           return {
             success: false,
@@ -645,12 +664,6 @@ export async function adminReviewPaymentProof(params: {
         }
         newStatus = 'Partial';
       } else if (currentProof.payment_type === 'balance') {
-        const { data: targetComm } = await supabase
-          .from('commissions')
-          .select('id, deposit_paid')
-          .eq('id', commissionId)
-          .maybeSingle();
-
         if (targetComm && !targetComm.deposit_paid) {
           return {
             success: false,
@@ -665,6 +678,12 @@ export async function adminReviewPaymentProof(params: {
         }
         newStatus = 'Paid';
       } else if (currentProof.payment_type === 'full') {
+        if (targetComm && targetComm.deposit_paid) {
+          return {
+            success: false,
+            error: 'A deposit has already been confirmed for this commission. Submit a remaining balance payment instead.',
+          };
+        }
         if (targetPaymentStatus && targetPaymentStatus !== 'Paid') {
           return {
             success: false,
@@ -887,6 +906,8 @@ export function checkFinalDeliverableAccess(params: {
   return { accessGranted: true };
 }
 
+let paymentChannelSeq = 0;
+
 /**
  * Subscribes to real-time changes on commission_payment_proofs.
  */
@@ -895,9 +916,10 @@ export function subscribeToPaymentProofs(
   onUpdate: () => void
 ): () => void {
   try {
+    const suffix = `${Date.now()}_${++paymentChannelSeq}`;
     const channelName = commissionId
-      ? `payment_proofs_comm_${commissionId}`
-      : 'payment_proofs_all';
+      ? `payment_proofs_comm_${commissionId}_${suffix}`
+      : `payment_proofs_all_${suffix}`;
 
     const channel = supabase
       .channel(channelName)

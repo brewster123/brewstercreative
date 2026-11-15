@@ -4,51 +4,51 @@ import { CommissionStatus } from '../../types';
 /**
  * DESTALION — Global Design System Tokens & Base Helper Components (UI-1A)
  * Establishes a cohesive visual language:
- * - Color foundations: Warm Alabaster Canvas, Surface White, Carbon Ink, Hairline Rules, Terracotta Accent.
+ * - Color foundations: Gallery White Canvas, Surface White, Carbon Ink, Hairline Rules, Sky Blue & Acid Lime Accents.
  * - Single typography standard: Plus Jakarta Sans across all headings, UI, body copy, and metadata.
- * - Standardized Radii & Borders: 6px/8px/12px, zero structural bubble pills.
+ * - Standardized Radii & Borders: Generous card curves and clean pill controls.
  * - Standardized Badges & Canonical 8-Stage Status Nodes.
  */
 
 // Global Color & Design Token Classes
 export const UI_TOKENS = {
   // Canvases & Surfaces
-  canvas: 'bg-[#FAF9F6] dark:bg-[#09090B] text-[#18181B] dark:text-[#EDEDEC]',
-  surface: 'bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225]',
-  surfaceMuted: 'bg-[#F4F2ED] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225]',
-  surfaceDark: 'bg-[#181816] text-white border border-[#222225]',
+  canvas: 'bg-canvas text-carbon',
+  surface: 'bg-surface border border-hairline',
+  surfaceMuted: 'bg-surface-secondary border border-hairline',
+  surfaceDark: 'bg-[#111114] text-white border border-[#222634]',
   
   // Dividers & Hairlines
-  divider: 'border-t border-[#E4E2DC] dark:border-[#222225]',
-  hairline: 'border-[#E4E2DC] dark:border-[#222225]',
+  divider: 'border-t border-hairline',
+  hairline: 'border-hairline',
 
   // Typographic Styles
-  display: 'font-display tracking-tight text-[#18181B] dark:text-[#EDEDEC] font-bold',
-  subheading: 'font-sans font-semibold text-[#18181B] dark:text-[#EDEDEC]',
-  body: 'font-sans text-[15px] leading-relaxed text-[#71717A] dark:text-[#A1A1AA]',
-  metadata: 'font-mono text-[11px] tracking-wider text-[#71717A] dark:text-[#A1A1AA]',
-  label: 'font-sans text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] tracking-normal',
+  display: 'font-display tracking-tight text-carbon font-bold',
+  subheading: 'font-sans font-semibold text-carbon',
+  body: 'font-sans text-[15px] leading-relaxed text-graphite',
+  metadata: 'font-mono text-[11px] tracking-wider text-graphite',
+  label: 'font-sans text-xs font-semibold text-carbon tracking-normal',
 
   // Interactive Buttons
-  btnPrimary: 'inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#222225] hover:bg-[#222225] dark:hover:bg-[#333338] text-white text-xs sm:text-sm font-semibold transition-all duration-200 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
-  btnAccent: 'inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs sm:text-sm font-semibold transition-all duration-200 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
-  btnSecondary: 'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#121214] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#D4D2CA] dark:hover:border-[#333338] text-xs sm:text-sm font-semibold transition-all duration-200 shadow-2xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
-  btnGhost: 'inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-xs font-medium transition-all duration-200 cursor-pointer',
-  btnDestructive: 'inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[#DC2626] dark:text-[#F87171] hover:bg-[#FEF2F2] dark:hover:bg-[#4C0519]/40 border border-transparent hover:border-[#FEE2E2] dark:hover:border-[#9F1239] text-xs font-semibold transition-all duration-200 cursor-pointer',
+  btnPrimary: 'inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#111114] dark:bg-white hover:opacity-90 text-white dark:text-[#111114] text-xs sm:text-sm font-bold transition-all duration-200 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed btn-tactile',
+  btnAccent: 'inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs sm:text-sm font-bold transition-all duration-200 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed btn-tactile',
+  btnSecondary: 'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-surface hover:bg-surface-secondary text-carbon border border-hairline hover:border-accent text-xs sm:text-sm font-semibold transition-all duration-200 shadow-2xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
+  btnGhost: 'inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-graphite hover:text-carbon hover:bg-surface-secondary text-xs font-medium transition-all duration-200 cursor-pointer',
+  btnDestructive: 'inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full text-[#DC2626] dark:text-[#F87171] hover:bg-[#FEF2F2] dark:hover:bg-[#4C0519]/40 border border-transparent hover:border-[#FEE2E2] dark:hover:border-[#9F1239] text-xs font-semibold transition-all duration-200 cursor-pointer',
 
   // Form Inputs
-  input: 'w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] transition-colors outline-none',
-  textarea: 'w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] transition-colors outline-none resize-y',
-  select: 'w-full bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] transition-colors outline-none cursor-pointer',
+  input: 'w-full bg-surface-secondary border border-hairline focus:border-accent focus:ring-1 focus:ring-accent rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-carbon placeholder-graphite/60 transition-colors outline-none',
+  textarea: 'w-full bg-surface-secondary border border-hairline focus:border-accent focus:ring-1 focus:ring-accent rounded-xl p-3 text-xs sm:text-sm text-carbon placeholder-graphite/60 transition-colors outline-none resize-y',
+  select: 'w-full bg-surface-secondary border border-hairline focus:border-accent focus:ring-1 focus:ring-accent rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-carbon transition-colors outline-none cursor-pointer',
 
-  // Structural Containers (Ending 32px bento bubble corners)
-  panel: 'bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 shadow-2xs',
-  panelMuted: 'bg-[#F4F2ED] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8',
+  // Structural Containers
+  panel: 'bg-surface border border-hairline rounded-3xl p-6 sm:p-8 shadow-2xs',
+  panelMuted: 'bg-surface-secondary border border-hairline rounded-3xl p-6 sm:p-8',
 };
 
 /**
- * Editorial Section Eyebrow (De-Pilled alternative to glowing orange pills)
- * Clean monospace label with a quiet dash indicator.
+ * Editorial Section Eyebrow
+ * Clean monospace label with a sky-blue indicator dot.
  */
 export const StudioSectionHeader: React.FC<{
   eyebrow?: string;
@@ -61,16 +61,16 @@ export const StudioSectionHeader: React.FC<{
   return (
     <div className={`space-y-2.5 ${isCenter ? 'text-center max-w-2xl mx-auto' : ''} ${className}`}>
       {eyebrow && (
-        <div className={`flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold ${isCenter ? 'justify-center' : ''}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+        <div className={`flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-accent font-semibold ${isCenter ? 'justify-center' : ''}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
           <span>{eyebrow}</span>
         </div>
       )}
-      <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#18181B] dark:text-[#EDEDEC]">
+      <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-carbon">
         {title}
       </h2>
       {description && (
-        <p className="font-sans text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-2xl">
+        <p className="font-sans text-xs sm:text-sm text-graphite leading-relaxed max-w-2xl">
           {description}
         </p>
       )}
@@ -81,7 +81,7 @@ export const StudioSectionHeader: React.FC<{
 /**
  * Restrained Canonical Status Node (UI-1A)
  * Preserves the exact 8 canonical commission stages and their backend values.
- * Renders an understated, gallery-grade indicator rather than an oversized candy pill.
+ * Renders an understated, gallery-grade indicator.
  */
 export const StudioStatusBadge: React.FC<{
   status: CommissionStatus | string;
@@ -90,8 +90,8 @@ export const StudioStatusBadge: React.FC<{
 }> = ({ status, size = 'md', className = '' }) => {
   const s = (status || '').toLowerCase();
 
-  let dotColor = 'bg-[#71717A] dark:bg-[#A1A1AA]';
-  let textColor = 'text-[#71717A] dark:text-[#A1A1AA]';
+  let dotColor = 'bg-graphite';
+  let textColor = 'text-graphite';
   let label = status;
 
   switch (s) {
@@ -101,8 +101,8 @@ export const StudioStatusBadge: React.FC<{
       label = 'Pending Review';
       break;
     case 'reviewing':
-      dotColor = 'bg-[#EA580C]';
-      textColor = 'text-[#C2410C] dark:text-[#FB923C]';
+      dotColor = 'bg-accent';
+      textColor = 'text-accent';
       label = 'In Discussion';
       break;
     case 'accepted':
@@ -111,18 +111,18 @@ export const StudioStatusBadge: React.FC<{
       label = 'Accepted';
       break;
     case 'in_progress':
-      dotColor = 'bg-[#4F46E5]';
-      textColor = 'text-[#4338CA] dark:text-[#818CF8]';
+      dotColor = 'bg-[#0284C7] dark:bg-[#0EA5E9]';
+      textColor = 'text-[#0284C7] dark:text-[#38BDF8]';
       label = 'In Production';
       break;
     case 'for_review':
-      dotColor = 'bg-[#EA580C] animate-pulse';
-      textColor = 'text-[#EA580C] dark:text-[#FB923C]';
+      dotColor = 'bg-accent animate-pulse';
+      textColor = 'text-accent';
       label = 'Client Review';
       break;
     case 'revision':
-      dotColor = 'bg-[#C2410C]';
-      textColor = 'text-[#9A3412] dark:text-[#F87171]';
+      dotColor = 'bg-[#D97706]';
+      textColor = 'text-[#B45309] dark:text-[#FBBF24]';
       label = 'Revision Requested';
       break;
     case 'final_approval':
@@ -151,7 +151,7 @@ export const StudioStatusBadge: React.FC<{
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] font-mono font-medium ${
+      className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-surface border border-hairline font-mono font-medium ${
         isSmall ? 'text-[10px]' : 'text-[11px]'
       } ${textColor} ${className}`}
     >

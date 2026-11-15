@@ -876,13 +876,16 @@ export async function approveCommissionInSupabase(
  * Subscribes to real-time changes on public.commissions.
  * Calls onInsert, onUpdate, and onDelete callbacks with mapped Commission models.
  */
+let commissionsChannelSeq = 0;
+
 export function subscribeToCommissionsChange(callbacks: {
   onInsert: (row: CommissionDbRow) => void | Promise<void>;
   onUpdate: (row: CommissionDbRow) => void | Promise<void>;
   onDelete: (id: string) => void;
 }): () => void {
+  const channelName = `public:commissions_realtime_${Date.now()}_${++commissionsChannelSeq}`;
   const channel = supabase
-    .channel('public:commissions_realtime')
+    .channel(channelName)
     .on(
       'postgres_changes',
       {

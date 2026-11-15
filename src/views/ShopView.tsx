@@ -6,7 +6,8 @@ import {
   Layers, 
   Download, 
   Send, 
-  ArrowRight, 
+  ArrowRight,
+  ArrowUpRight,
   Palette, 
   Type, 
   Box, 
@@ -62,37 +63,37 @@ export const ShopView: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 sm:space-y-20">
+    <div className="bg-canvas max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 sm:space-y-20">
       
       {/* Editorial Shop Header */}
-      <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-8 sm:pb-12">
+      <div className="border-b border-hairline pb-8 sm:pb-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
-            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#EA580C] font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
-              <span>Studio Storefront & Editions</span>
+            <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-accent font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+              <span>Studio Storefront &amp; Editions</span>
             </div>
 
-            <h1 className="font-display text-3xl sm:text-5xl lg:text-5.5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
-              Editions, Prints & Design Assets
+            <h1 className="font-display text-3xl sm:text-5xl font-bold text-carbon tracking-tight leading-[1.08]">
+              Editions, Prints &amp; Design Assets
             </h1>
 
-            <p className="text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
+            <p className="text-sm sm:text-base text-graphite-strong leading-relaxed font-normal">
               An ongoing release of digital design systems, display typography, screen-print posters, and vector libraries created by {studioProfile.designerName}.
             </p>
           </div>
 
-          <div className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] self-start md:self-end">
-            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{filteredProducts.length}</span> Curated Editions
+          <div className="text-xs text-graphite self-start md:self-end">
+            <span className="text-carbon font-bold tabular-nums">{filteredProducts.length}</span> Curated Editions
           </div>
         </div>
 
         {/* Storefront Preparation Notice Strip */}
-        <div className="mt-8 p-4 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+        <div className="mt-8 p-4 rounded-2xl bg-surface-secondary border border-hairline flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-pulse shrink-0" />
-            <p className="text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-medium">
-              <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] font-mono uppercase tracking-wider text-[11px] mr-1.5">
+            <span className="w-2 h-2 rounded-full bg-accent shrink-0" />
+            <p className="text-graphite-strong leading-relaxed font-medium">
+              <span className="font-bold text-carbon uppercase tracking-wider text-[11px] mr-1.5">
                 Catalog in Preparation:
               </span>
               Direct purchasing activates upon launch. In the interim, all goods can be commissioned as customized variants.
@@ -103,7 +104,7 @@ export const ShopView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveView('commission-form')}
-              className="px-3.5 py-1.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="pl-4 pr-3 py-1.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] font-bold text-xs shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Commission Variant</span>
@@ -111,10 +112,10 @@ export const ShopView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveView('portfolio')}
-              className="px-3.5 py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#222225] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-xs border border-[#E4E2DC] dark:border-[#222225] flex items-center gap-1 transition-colors cursor-pointer"
+              className="px-4 py-1.5 rounded-full bg-surface hover:bg-hairline/40 text-carbon font-semibold text-xs border border-hairline flex items-center gap-1 transition-colors cursor-pointer"
             >
               <span>Exhibitions</span>
-              <ArrowRight className="w-3 h-3 text-[#A1A1AA]" />
+              <ArrowRight className="w-3 h-3 text-graphite" />
             </button>
           </div>
         </div>
@@ -124,7 +125,7 @@ export const ShopView: React.FC = () => {
       <div className="space-y-8">
         
         {/* Simple Text Navigation Category Filter */}
-        <div className="flex items-center justify-between gap-4 border-b border-[#E4E2DC] dark:border-[#222225] pb-3">
+        <div className="flex items-center justify-between gap-4 border-b border-hairline pb-3">
           <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-1" aria-label="Shop categories">
             {SHOP_CATEGORIES.map((cat) => {
               const isSelected = selectedShopCategory === cat.name;
@@ -137,25 +138,25 @@ export const ShopView: React.FC = () => {
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedShopCategory(cat.name)}
-                  className={`relative px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                  className={`relative px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                     isSelected
-                      ? 'text-[#18181B] dark:text-[#EDEDEC] font-bold'
-                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                      ? 'text-carbon font-bold'
+                      : 'text-graphite hover:text-carbon'
                   }`}
                 >
                   <span>{cat.name}</span>
-                  <span className={`text-[10px] font-mono font-normal ${isSelected ? 'text-[#EA580C]' : 'text-[#A1A1AA]'}`}>
+                  <span className={`text-[10px] font-normal tabular-nums ${isSelected ? 'text-accent font-semibold' : 'text-graphite'}`}>
                     ({count})
                   </span>
                   {isSelected && (
-                    <span className="absolute bottom-0 inset-x-3 h-0.5 bg-[#EA580C] rounded-full animate-in fade-in duration-200" />
+                    <span className="absolute bottom-0 inset-x-3 h-0.5 bg-accent rounded-full animate-in fade-in duration-200" />
                   )}
                 </button>
               );
             })}
           </nav>
 
-          <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] hidden sm:inline">
+          <span className="text-xs text-graphite hidden sm:inline">
             Studio Goods Archive
           </span>
         </div>
@@ -173,8 +174,8 @@ export const ShopView: React.FC = () => {
           </div>
         ) : (
           /* Empty State */
-          <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-12 sm:p-16 text-center space-y-4 max-w-xl mx-auto shadow-2xs">
-            <div className="w-12 h-12 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#EA580C] flex items-center justify-center mx-auto">
+          <div className="bg-surface border border-hairline rounded-3xl p-12 sm:p-16 text-center space-y-4 max-w-xl mx-auto shadow-2xs">
+            <div className="w-12 h-12 rounded-2xl bg-surface-secondary border border-hairline text-accent flex items-center justify-center mx-auto">
               {selectedShopCategory === 'Typography' ? (
                 <Type className="w-6 h-6" />
               ) : selectedShopCategory === 'Digital Mockups' ? (
@@ -185,13 +186,13 @@ export const ShopView: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold">
+              <span className="text-[10px] uppercase tracking-wider text-accent font-semibold">
                 In Studio Production
               </span>
-              <h3 className="font-display font-bold text-xl text-[#18181B] dark:text-[#EDEDEC]">
+              <h3 className="font-display font-bold text-xl text-carbon">
                 {selectedShopCategory} Releases Coming Soon
               </h3>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+              <p className="text-xs text-graphite-strong max-w-md mx-auto leading-relaxed">
                 New {selectedShopCategory} assets are currently being typeset and tested in the studio. Direct ordering activates with the catalog release.
               </p>
             </div>
@@ -200,7 +201,7 @@ export const ShopView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedShopCategory('All')}
-                className="px-4 py-2 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-full bg-[#111114] dark:bg-white text-white dark:text-[#111114] text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>View All Categories</span>
@@ -208,7 +209,7 @@ export const ShopView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveView('commission-form')}
-                className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-[#18181B] dark:text-[#EDEDEC] text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 hover:bg-[#F4F2ED] dark:hover:bg-[#18181B]"
+                className="px-5 py-2.5 rounded-full border border-hairline text-carbon text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 hover:bg-surface-secondary"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Request Custom {selectedShopCategory}</span>
@@ -219,34 +220,34 @@ export const ShopView: React.FC = () => {
       </div>
 
       {/* Studio Production Standards & Quality Highlights */}
-      <section className="pt-10 border-t border-[#E4E2DC] dark:border-[#222225] space-y-10">
+      <section className="pt-10 border-t border-hairline space-y-10">
         <div className="max-w-2xl space-y-2">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
-            Quality & Specifications
+          <span className="text-[11px] uppercase tracking-widest text-accent font-bold">
+            · Quality &amp; Specifications
           </span>
-          <h2 className="font-display text-2xl sm:text-3xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon tracking-tight">
             Crafted for Rigorous Creative Workflows
           </h2>
-          <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+          <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed">
             Every digital asset and tactile print release is calibrated to the strict aesthetic and technical criteria of DESTALION.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {shopHighlights.map((highlight, idx) => {
             const Icon = highlight.icon;
             return (
               <div 
                 key={idx} 
-                className="space-y-3 pb-6 border-b border-[#E4E2DC] dark:border-[#222225] sm:border-b-0"
+                className="p-6 rounded-3xl bg-surface-secondary border border-hairline space-y-3"
               >
-                <div className="w-9 h-9 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#EA580C] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-surface border border-hairline text-accent flex items-center justify-center shadow-2xs">
                   <Icon className="w-4 h-4" />
                 </div>
-                <h3 className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                <h3 className="font-display text-base font-bold text-carbon">
                   {highlight.title}
                 </h3>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                <p className="text-xs text-graphite-strong leading-relaxed">
                   {highlight.desc}
                 </p>
               </div>
@@ -257,15 +258,15 @@ export const ShopView: React.FC = () => {
 
       {/* Commission Bridge Banner */}
       <section className="pt-6">
-        <div className="bg-[#121214] text-white rounded-xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-[#222225]">
+        <div className="hero-sky-gradient text-white rounded-3xl p-8 sm:p-12 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
-              Bespoke Studio Directives
+            <span className="text-[11px] uppercase tracking-widest text-white/85 font-bold block">
+              · Bespoke Studio Directives
             </span>
             <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
               Need a custom asset crafted exclusively for your brand?
             </h3>
-            <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed font-normal">
+            <p className="text-xs sm:text-sm text-white/85 leading-relaxed font-normal">
               While studio templates provide immediate utility, DESTALION specializes in one-of-a-kind visual identities, brand systems, and multimedia campaigns with interactive client reviews.
             </p>
           </div>
@@ -273,10 +274,12 @@ export const ShopView: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveView('commission-form')}
-            className="px-6 py-3.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs sm:text-sm font-semibold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer shrink-0"
+            className="pl-6 pr-2.5 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md inline-flex items-center gap-3 cursor-pointer shrink-0 btn-tactile"
           >
-            <Send className="w-4 h-4" />
             <span>Initiate Custom Brief</span>
+            <span className="w-8 h-8 rounded-full bg-[#111114] text-white flex items-center justify-center">
+              <ArrowUpRight className="w-4 h-4" />
+            </span>
           </button>
         </div>
       </section>

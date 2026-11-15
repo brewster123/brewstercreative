@@ -25,6 +25,7 @@ export const AdminDashboardView: React.FC = () => {
     commissions, 
     users,
     activeCommission,
+    setActiveCommissionId,
     currentUser,
     authLoading,
     setActiveView,
@@ -38,6 +39,16 @@ export const AdminDashboardView: React.FC = () => {
   );
   const [creativeSubTab, setCreativeSubTab] = useState<'proofs' | 'deliverables'>('proofs');
   const [studioSubTab, setStudioSubTab] = useState<'clients' | 'profile' | 'services' | 'portfolio' | 'account'>('clients');
+
+  // Keep selectedCommissionId synchronized once commissions finish loading asynchronously
+  useEffect(() => {
+    if (!selectedCommissionId) {
+      const fallbackId = activeCommission?.id || commissions[0]?.id || '';
+      if (fallbackId) {
+        setSelectedCommissionId(fallbackId);
+      }
+    }
+  }, [selectedCommissionId, activeCommission?.id, commissions]);
 
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState<number>(0);
 
@@ -146,8 +157,8 @@ export const AdminDashboardView: React.FC = () => {
   if (authLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
-        <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
-        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+        <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin mx-auto" />
+        <p className="text-xs text-graphite font-mono">
           Verifying studio director credentials...
         </p>
       </div>
@@ -157,14 +168,14 @@ export const AdminDashboardView: React.FC = () => {
   if (currentUser?.role !== 'admin') {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
-        <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
-          <ShieldCheck className="w-5 h-5 text-[#EA580C]" />
+        <div className="w-12 h-12 rounded-2xl bg-surface border border-hairline flex items-center justify-center mx-auto text-graphite">
+          <ShieldCheck className="w-5 h-5 text-accent" />
         </div>
         <div className="space-y-2">
-          <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon">
             Studio Director Access
           </h2>
-          <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-graphite max-w-md mx-auto leading-relaxed">
             This production console is strictly reserved for authorized studio directors.
           </p>
         </div>
@@ -172,7 +183,7 @@ export const AdminDashboardView: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveView('home')}
-            className="px-6 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold text-xs transition-all cursor-pointer"
+            className="px-6 py-2.5 rounded-full bg-[#111114] dark:bg-white text-white dark:text-[#111114] font-semibold text-xs transition-all cursor-pointer"
           >
             Return to Home
           </button>
@@ -188,35 +199,35 @@ export const AdminDashboardView: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Top Console Header */}
-      <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface border border-hairline rounded-3xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-4">
           <img
             src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
             alt="Studio Director"
-            className="w-12 h-12 rounded-full object-cover ring-2 ring-[#EA580C] shadow-sm"
+            className="w-12 h-12 rounded-full object-cover ring-2 ring-accent shadow-sm"
           />
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold">
                 Director Console
               </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface-secondary text-graphite border border-hairline">
                 Phase 3 Unified Hub
               </span>
             </div>
-            <h1 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+            <h1 className="font-display text-xl sm:text-2xl font-bold text-carbon">
               DESTALION Studio Administration
             </h1>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+            <p className="text-xs text-graphite mt-0.5">
               Production pipeline, GCash settlement verification, creative proofs, and archival deliverables.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 shrink-0 font-mono text-xs self-start md:self-auto border-t md:border-t-0 pt-3 md:pt-0 border-[#E4E2DC] dark:border-[#27272A]">
-          <div className="px-3 py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A]">
-            <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] block uppercase">Active Orders</span>
-            <span className="font-bold text-[#18181B] dark:text-[#EDEDEC] text-sm font-display">
+        <div className="flex items-center gap-4 shrink-0 font-mono text-xs self-start md:self-auto border-t md:border-t-0 pt-3 md:pt-0 border-hairline">
+          <div className="px-4 py-2 rounded-2xl bg-surface-secondary border border-hairline">
+            <span className="text-[10px] text-graphite block uppercase">Active Orders</span>
+            <span className="font-bold text-carbon text-sm font-display">
               {activeCommissionsCount}
             </span>
           </div>
@@ -224,7 +235,7 @@ export const AdminDashboardView: React.FC = () => {
             <button
               type="button"
               onClick={() => handleSelectHub('payments')}
-              className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors cursor-pointer text-left"
+              className="px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors cursor-pointer text-left"
             >
               <span className="text-[10px] block uppercase font-semibold flex items-center gap-1">
                 <Clock className="w-3 h-3" />
@@ -240,7 +251,7 @@ export const AdminDashboardView: React.FC = () => {
 
       {/* Primary 5-Hub Navigation Bar */}
       <nav 
-        className="flex items-center gap-2 border-b border-[#E4E2DC] dark:border-[#27272A] pb-2 overflow-x-auto no-scrollbar" 
+        className="flex items-center gap-2 border-b border-hairline pb-3 overflow-x-auto no-scrollbar" 
         aria-label="Studio 5-hub administration navigation"
       >
         {[
@@ -281,27 +292,27 @@ export const AdminDashboardView: React.FC = () => {
               type="button"
               onClick={() => handleSelectHub(id)}
               aria-selected={isSelected}
-              className={`relative px-4 py-2.5 min-h-[44px] rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile ${
+              className={`relative px-4 py-2.5 min-h-[44px] rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent btn-tactile ${
                 isSelected
-                  ? 'bg-[#18181B] text-white dark:bg-[#EDEDEC] dark:text-[#18181B] shadow-sm'
-                  : 'bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                  ? 'bg-[#111114] text-white dark:bg-white dark:text-[#111114] shadow-xs'
+                  : 'bg-surface border border-hairline text-graphite hover:text-carbon hover:border-accent'
               }`}
             >
               <TabIcon className="w-4 h-4 shrink-0" />
               <span>{label}</span>
 
               {typeof count === 'number' && (
-                <span className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${
+                <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] ${
                   isSelected 
-                    ? 'bg-white/20 text-white dark:bg-black/20 dark:text-[#18181B]' 
-                    : 'bg-[#FAF9F6] dark:bg-[#0F0F11] text-[#71717A] dark:text-[#A1A1AA]'
+                    ? 'bg-white/20 text-white dark:bg-black/15 dark:text-[#111114]' 
+                    : 'bg-surface-secondary text-graphite'
                 }`}>
                   {count}
                 </span>
               )}
 
               {badge && (
-                <span className="px-1.5 py-0.2 rounded font-mono text-[10px] font-bold bg-[#EA580C] text-white">
+                <span className="px-2 py-0.5 rounded-full font-mono text-[10px] font-bold bg-accent text-white">
                   {badge}
                 </span>
               )}
@@ -329,7 +340,13 @@ export const AdminDashboardView: React.FC = () => {
         <CommissionManagement
           selectedCommissionId={selectedCommissionId}
           onSelectCommission={(id) => setSelectedCommissionId(id)}
-          onOpenChat={(_commissionId) => setActiveView('chat')}
+          onOpenChat={(commissionId) => {
+            if (commissionId) {
+              setSelectedCommissionId(commissionId);
+              setActiveCommissionId(commissionId);
+            }
+            setActiveView('chat');
+          }}
           onNavigateToPayments={(commissionId) => handleHubNavigation('payments', commissionId)}
         />
       )}

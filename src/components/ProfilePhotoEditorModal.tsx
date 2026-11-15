@@ -26,6 +26,14 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
 
   const dragStartRef = useRef<{ startX: number; startY: number; initialPanX: number; initialPanY: number } | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const isMountedRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Responsive crop size: 280px on larger screens, 240px on mobile
   const [cropBoxSize, setCropBoxSize] = useState<number>(280);
@@ -49,6 +57,18 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
       setErrorMessage(null);
     }
   }, [isOpen, imageSrc]);
+
+  // Escape key dismissal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSaving) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isSaving, onClose]);
 
   // Handle image load to get natural dimensions
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -171,6 +191,7 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
 
       canvas.toBlob(
         async (blob) => {
+          if (!isMountedRef.current) return;
           if (!blob) {
             setErrorMessage('Could not generate cropped profile photo.');
             return;
@@ -178,14 +199,18 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
           try {
             await onSave(blob, ext);
           } catch (err: any) {
-            setErrorMessage(err?.message || 'Failed to save cropped profile photo.');
+            if (isMountedRef.current) {
+              setErrorMessage(err?.message || 'Failed to save cropped profile photo.');
+            }
           }
         },
         mimeType,
         0.92
       );
     } catch (err: any) {
-      setErrorMessage(err?.message || 'Failed to crop profile photo.');
+      if (isMountedRef.current) {
+        setErrorMessage(err?.message || 'Failed to crop profile photo.');
+      }
     }
   };
 
@@ -200,16 +225,22 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
       role="dialog"
       aria-modal="true"
       aria-labelledby="profile-photo-editor-title"
+      onClick={() => {
+        if (!isSaving) onClose();
+      }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn"
     >
-      <div className="bg-white border border-zinc-200 rounded-[28px] shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[92vh]">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-surface border border-hairline rounded-3xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[92vh]"
+      >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 border-b border-hairline flex items-center justify-between shrink-0">
           <div>
-            <h3 id="profile-photo-editor-title" className="font-display text-base sm:text-lg font-black text-zinc-900">
+            <h3 id="profile-photo-editor-title" className="font-display text-base sm:text-lg font-black text-carbon">
               Adjust Profile Photo
             </h3>
-            <p className="text-[11px] text-zinc-500 font-medium">
+            <p className="text-[11px] text-graphite font-medium">
               Drag to position and zoom to frame your face inside the circle.
             </p>
           </div>
@@ -217,7 +248,7 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-full text-graphite hover:text-carbon hover:bg-surface-secondary transition-colors disabled:opacity-50 cursor-pointer"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -229,8 +260,8 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
           {/* Crop Area Container */}
           <div className="relative flex flex-col items-center">
             {/* Instruction Badge */}
-            <div className="mb-2.5 flex items-center gap-1.5 text-[11px] font-mono-code text-zinc-500 font-semibold bg-zinc-100 px-3 py-1 rounded-full">
-              <Move className="w-3 h-3 text-orange-500" />
+            <div className="mb-2.5 flex items-center gap-1.5 text-[11px] font-mono-code text-graphite-strong font-semibold bg-surface-secondary border border-hairline px-3 py-1 rounded-full">
+              <Move className="w-3 h-3 text-accent" />
               <span>Drag to reposition photo</span>
             </div>
 
@@ -241,7 +272,7 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
-              className={`relative rounded-full overflow-hidden bg-zinc-950 shadow-inner ring-4 ring-orange-500/30 touch-none select-none ${
+              className={`relative rounded-full overflow-hidden bg-zinc-950 shadow-inner ring-4 ring-accent/30 touch-none select-none ${
                 isDragging ? 'cursor-grabbing' : 'cursor-grab'
               }`}
             >
@@ -267,7 +298,7 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
 
             {/* Live circular thumbnail indicator */}
             <div className="mt-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-zinc-200 shrink-0 bg-zinc-100 relative">
+              <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-hairline shrink-0 bg-surface-secondary relative">
                 {imageSize && (
                   <img
                     src={imageSrc}
@@ -282,20 +313,20 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
                   />
                 )}
               </div>
-              <span className="text-[11px] text-zinc-500 font-medium">
+              <span className="text-[11px] text-graphite font-medium">
                 Live circular avatar preview
               </span>
             </div>
           </div>
 
           {/* Zoom & Adjustment Controls */}
-          <div className="w-full space-y-3 pt-2 border-t border-zinc-100">
-            <div className="flex items-center justify-between text-xs font-bold text-zinc-700">
+          <div className="w-full space-y-3 pt-3 border-t border-hairline">
+            <div className="flex items-center justify-between text-xs font-bold text-carbon">
               <span className="flex items-center gap-1.5">
-                <ZoomIn className="w-3.5 h-3.5 text-orange-500" />
+                <ZoomIn className="w-3.5 h-3.5 text-accent" />
                 <span>Zoom Level</span>
               </span>
-              <span className="font-mono-code text-[11px] text-zinc-500">
+              <span className="font-mono-code text-[11px] text-graphite">
                 {Math.round(zoom * 100)}%
               </span>
             </div>
@@ -306,7 +337,8 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
                 onClick={() => handleZoomChange(zoom - 0.15)}
                 disabled={zoom <= 1 || isSaving}
                 title="Zoom Out"
-                className="p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Zoom out"
+                className="p-2 rounded-full bg-surface-secondary hover:bg-surface border border-hairline text-carbon disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
@@ -318,8 +350,9 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
                 step="0.02"
                 value={zoom}
                 disabled={isSaving}
+                aria-label="Zoom level"
                 onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
-                className="flex-1 accent-orange-500 cursor-pointer h-2 bg-zinc-100 rounded-lg appearance-none"
+                className="flex-1 accent-accent cursor-pointer h-2 bg-surface-secondary rounded-lg appearance-none"
               />
 
               <button
@@ -327,7 +360,8 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
                 onClick={() => handleZoomChange(zoom + 0.15)}
                 disabled={zoom >= 3 || isSaving}
                 title="Zoom In"
-                className="p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Zoom in"
+                className="p-2 rounded-full bg-surface-secondary hover:bg-surface border border-hairline text-carbon disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
@@ -337,7 +371,7 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
                 onClick={handleReset}
                 disabled={isSaving || (zoom === 1 && pan.x === 0 && pan.y === 0)}
                 title="Reset Position and Zoom"
-                className="p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1 text-xs font-semibold"
+                className="px-3 py-2 rounded-full bg-surface-secondary hover:bg-surface border border-hairline text-graphite hover:text-carbon disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Reset</span>
@@ -347,7 +381,7 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
 
           {/* Error Message */}
           {errorMessage && (
-            <div className="w-full p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+            <div className="w-full p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400 text-xs font-medium flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
               <span>{errorMessage}</span>
             </div>
@@ -355,12 +389,12 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 bg-zinc-50 border-t border-zinc-100 flex items-center justify-end gap-3 shrink-0">
+        <div className="px-6 py-4 bg-surface-secondary border-t border-hairline flex items-center justify-end gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="px-4 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+            className="px-4 py-2 rounded-full border border-hairline bg-surface text-carbon hover:bg-surface-secondary text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
@@ -369,16 +403,16 @@ export const ProfilePhotoEditorModal: React.FC<ProfilePhotoEditorModalProps> = (
             id="btn-save-profile-photo"
             onClick={handleConfirmSave}
             disabled={isSaving}
-            className="px-5 py-2 rounded-xl bg-zinc-900 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            className="btn-tactile px-5 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-all shadow-xs flex items-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             {isSaving ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-400" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#111114]" />
                 <span>Saving Photo...</span>
               </>
             ) : (
               <>
-                <Check className="w-3.5 h-3.5 text-orange-400" />
+                <Check className="w-3.5 h-3.5 text-[#111114]" />
                 <span>Save Profile Photo</span>
               </>
             )}

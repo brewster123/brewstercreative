@@ -135,7 +135,7 @@ interface AppContextType {
   clearEmailVerificationStatus: () => void;
   resendVerificationEmail: (email: string) => Promise<{ success: boolean; error?: string }>;
   registerClient: (name: string, email: string, handle?: string, contactMethod?: string, phone?: string) => User;
-  updateUserProfile: (userId: string, updates: Partial<User>) => Promise<void>;
+  updateUserProfile: (userId: string, updates: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   
   // Data entities
@@ -233,7 +233,7 @@ export const STORAGE_KEYS = {
 
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Theme state: dark mode is the authoritative default for first-time visitors
+  // Theme state: crisp light gallery mode is the default for first-time visitors
   const [theme, setThemeState] = useState<AppTheme>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.THEME) as AppTheme;
@@ -241,7 +241,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return saved;
       }
     } catch (e) {}
-    return 'dark';
+    return 'light';
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
@@ -252,9 +252,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (saved === 'system') {
         return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       }
-      return 'dark';
+      return 'light';
     } catch (e) {
-      return 'dark';
+      return 'light';
     }
   });
 
@@ -292,7 +292,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => mediaQuery.removeEventListener('change', listener);
   }, [theme]);
 
-  const [activeView, setActiveView] = useState<AppView>(() => {
+  const [activeView, setActiveViewRaw] = useState<AppView>(() => {
     if (typeof window !== 'undefined') {
       const hash = (window.location.hash || '').toLowerCase();
       const pathname = (window.location.pathname || '').toLowerCase();
@@ -306,6 +306,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return 'home';
   });
+
+  const setActiveView = useCallback((view: AppView) => {
+    setActiveViewRaw(view);
+    if (view !== 'case-study') {
+      setSelectedPortfolioProject(null);
+      if (typeof window !== 'undefined' && window.location.hash.startsWith('#case-study-')) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+  }, []);
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>('');
   const [selectedPortfolioProject, setSelectedPortfolioProject] = useState<PortfolioProject | null>(() => {
     if (typeof window !== 'undefined') {
@@ -329,16 +339,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Initialize state with LocalStorage fallback
   const [studioProfile, setStudioProfile] = useState<StudioProfile>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PROFILE);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.studioName === 'Cabando Studio' || parsed.studioName === 'Brewster Creative' || !parsed.studioName) {
-        parsed.studioName = 'DESTALION';
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PROFILE);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.studioName === 'Cabando Studio' || parsed.studioName === 'Brewster Creative' || !parsed.studioName) {
+            parsed.studioName = 'DESTALION';
+          }
+          if (parsed.email?.toLowerCase().includes('cabandobrewster') || !parsed.email) {
+            parsed.email = 'brewstercreates@gmail.com';
+          }
+          return { ...INITIAL_STUDIO_PROFILE, ...parsed };
+        }
       }
-      if (parsed.email?.toLowerCase().includes('cabandobrewster') || !parsed.email) {
-        parsed.email = 'brewstercreates@gmail.com';
-      }
-      return parsed;
+    } catch (e) {
+      console.warn('[AppContext] Failed to parse cached studioProfile, falling back to default:', e);
     }
     return INITIAL_STUDIO_PROFILE;
   });
@@ -719,6 +735,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Keep track of pending profile fetches to deduplicate concurrent requests for the same user ID (e.g. on mount race conditions)
   const pendingProfileFetches = useRef<Map<string, Promise<{ profile: User | null; error?: string; rawError?: any }>>>(new Map());
+  const currentUserRef = useRef<User | null>(null);
+  const messagesRef = useRef<Message[]>(messages);
+  currentUserRef.current = currentUser;
+  messagesRef.current = messages;
 
   // Securely query profile from Supabase profiles table using the authenticated user's UUID
   // Admin role is strictly derived from the database 'public.profiles.role' column
@@ -1748,8 +1768,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCommissionDetails = (commissionId: string, updates: Partial<Commission>) => {
+    const todayStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     setCommissions(prev =>
-      prev.map(c => (c.id === commissionId ? { ...c, ...updates, updatedAt: 'Just now' } : c))
+      prev.map(c => (c.id === commissionId ? { ...c, ...updates, updatedAt: todayStr } : c))
     );
   };
 
@@ -2062,7 +2083,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             currentStage: 8,
             progress: 100,
             status: 'completed',
-            totalPaid: true,
             finalFiles: finalPackage,
             updatedAt: todayStr,
           };
@@ -2121,14 +2141,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ]);
   };
 
-  const fetchMessagesForCommission = async (
+  const fetchMessagesForCommission = useCallback(async (
     commissionId: string
   ): Promise<{ data: Message[] | null; error: string | null }> => {
     if (!commissionId?.trim()) return { data: [], error: null };
 
+    const activeUser = currentUserRef.current;
     // If Supabase is configured and a user is signed in, load from Supabase database
-    if (isSupabaseConfigured() && currentUser) {
-      const { data, error } = await fetchCommissionMessages(commissionId, currentUser);
+    if (isSupabaseConfigured() && activeUser) {
+      const { data, error } = await fetchCommissionMessages(commissionId, activeUser);
       if (error) {
         console.warn('[Supabase Messages] Fetch notice:', error);
         return { data: null, error };
@@ -2143,9 +2164,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Local fallback for offline/development
-    const local = messages.filter(m => m.commissionId === commissionId);
+    const local = messagesRef.current.filter(m => m.commissionId === commissionId);
     return { data: local, error: null };
-  };
+  }, []);
 
   const sendMessage = async (
     commissionId: string,
@@ -2244,7 +2265,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const recipientId = isSenderAdmin ? comm.clientId : 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69';
       const notifTitle = isSenderAdmin ? 'Message from DESTALION' : `New message from ${sender.name}`;
       const notifMsg = isSenderAdmin 
-        ? `${sender.name} sent you a message: "${cleanText.slice(0, 45)}..."` 
+        ? `${sender.name} sent you a message: "${effectiveBody.slice(0, 45)}..."` 
         : `New message from ${sender.name} on "${comm.projectName}"`;
       
       dispatchNotification({
@@ -2260,11 +2281,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: newMsg };
   };
 
-  const markMessagesAsRead = (commissionId: string) => {
-    setMessages(prev =>
-      prev.map(m => (m.commissionId === commissionId ? { ...m, readStatus: true } : m))
-    );
-  };
+  const markMessagesAsRead = useCallback((commissionId: string) => {
+    setMessages(prev => {
+      const hasUnread = prev.some(m => m.commissionId === commissionId && !m.readStatus);
+      if (!hasUnread) return prev;
+      return prev.map(m => (m.commissionId === commissionId && !m.readStatus ? { ...m, readStatus: true } : m));
+    });
+  }, []);
 
   const uploadProjectFile = (file: Omit<ProjectFile, 'id' | 'timestamp'>) => {
     const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -2346,7 +2369,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => [newNotif, ...prev]);
   };
 
-  const updateUserProfile = async (userId: string, updates: Partial<User>) => {
+  const updateUserProfile = async (
+    userId: string,
+    updates: Partial<User>
+  ): Promise<{ success: boolean; error?: string }> => {
     // Security: explicitly strip role, id, and email so clients cannot tamper with roles
     const { role: _ignoredRole, id: _ignoredId, email: _ignoredEmail, ...safeUpdates } = updates as any;
 
@@ -2358,10 +2384,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (safeUpdates.contactMethod !== undefined) dbPayload.contact_method = safeUpdates.contactMethod;
         if (safeUpdates.bio !== undefined) dbPayload.bio = safeUpdates.bio;
         if (safeUpdates.avatar !== undefined) dbPayload.avatar = safeUpdates.avatar;
-        dbPayload.updated_at = new Date().toISOString();
 
         if (Object.keys(dbPayload).length > 0) {
-          await supabase.from('profiles').update(dbPayload).eq('id', userId);
+          dbPayload.updated_at = new Date().toISOString();
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update(dbPayload)
+            .eq('id', userId);
+          if (profileError) {
+            return { success: false, error: profileError.message || 'Failed to update profile in database.' };
+          }
         }
 
         // Store phone in Supabase auth user_metadata if updated
@@ -2374,8 +2406,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // non-blocking
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error updating profile in Supabase:', err);
+        return { success: false, error: err?.message || 'Unexpected error while saving profile.' };
       }
     }
 
@@ -2383,33 +2416,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (currentUser && currentUser.id === userId) {
       setCurrentUser(prev => (prev ? { ...prev, ...safeUpdates } : null));
     }
-    // Also sync client fields on their commission records
-    if (updates.name || updates.email || updates.handle || updates.avatar || updates.contactMethod) {
+    // Also sync client fields on their commission records using sanitized fields only
+    if (safeUpdates.name || safeUpdates.handle || safeUpdates.avatar || safeUpdates.contactMethod) {
       setCommissions(prev =>
         prev.map(c => {
           if (c.clientId === userId) {
             return {
               ...c,
-              clientName: updates.name || c.clientName,
-              clientEmail: updates.email || c.clientEmail,
-              clientHandle: updates.handle || c.clientHandle,
-              clientAvatar: updates.avatar || c.clientAvatar,
-              contactMethod: updates.contactMethod || c.contactMethod,
+              clientName: safeUpdates.name || c.clientName,
+              clientHandle: safeUpdates.handle || c.clientHandle,
+              clientAvatar: safeUpdates.avatar || c.clientAvatar,
+              contactMethod: safeUpdates.contactMethod || c.contactMethod,
             };
           }
           return c;
         })
       );
     }
+
+    return { success: true };
   };
 
   const updateStudioProfile = async (updates: Partial<StudioProfile>): Promise<{ success: boolean; error?: string }> => {
+    const previousProfile = studioProfile;
     const updated = { ...studioProfile, ...updates };
     setStudioProfile(updated);
 
     if (isSupabaseConfigured()) {
       const { error } = await upsertStudioProfileInDb(updated);
       if (error) {
+        setStudioProfile(previousProfile);
         return { success: false, error };
       }
     }
@@ -2420,12 +2456,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetService = services.find(s => s.id === serviceId);
     if (!targetService) return { success: false, error: 'Service not found.' };
 
+    const previousServices = services;
     const updated = { ...targetService, startingPrice: newPrice };
     setServices(prev => prev.map(s => (s.id === serviceId ? updated : s)));
 
     if (isSupabaseConfigured()) {
       const { error } = await upsertServiceInDb(updated);
       if (error) {
+        setServices(previousServices);
         return { success: false, error };
       }
     }
@@ -2433,11 +2471,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addServiceItem = async (service: ServiceItem): Promise<{ success: boolean; error?: string }> => {
+    const previousServices = services;
     setServices(prev => [...prev, service]);
 
     if (isSupabaseConfigured()) {
-      const { error } = await upsertServiceInDb(service, services.length + 1);
+      const { error } = await upsertServiceInDb(service, previousServices.length + 1);
       if (error) {
+        setServices(previousServices);
         return { success: false, error };
       }
     }
@@ -2448,12 +2488,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const target = services.find(s => s.id === serviceId);
     if (!target) return { success: false, error: 'Service not found.' };
 
+    const previousServices = services;
     const updated = { ...target, ...updates };
     setServices(prev => prev.map(s => (s.id === serviceId ? updated : s)));
 
     if (isSupabaseConfigured()) {
       const { error } = await upsertServiceInDb(updated);
       if (error) {
+        setServices(previousServices);
         return { success: false, error };
       }
     }
@@ -2461,11 +2503,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteServiceItem = async (serviceId: string): Promise<{ success: boolean; error?: string }> => {
+    const previousServices = services;
     setServices(prev => prev.filter(s => s.id !== serviceId));
 
     if (isSupabaseConfigured()) {
       const { success, error } = await deleteServiceFromDb(serviceId);
       if (!success) {
+        setServices(previousServices);
         return { success: false, error: error || 'Failed to delete service.' };
       }
     }
@@ -2473,11 +2517,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addPortfolioProject = async (project: PortfolioProject): Promise<{ success: boolean; error?: string }> => {
+    const previousPortfolio = portfolio;
     setPortfolio(prev => [project, ...prev]);
 
     if (isSupabaseConfigured()) {
       const { error } = await upsertPortfolioProjectInDb(project, 0);
       if (error) {
+        setPortfolio(previousPortfolio);
         return { success: false, error };
       }
     }
@@ -2488,12 +2534,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const target = portfolio.find(p => p.id === projectId);
     if (!target) return { success: false, error: 'Project not found.' };
 
+    const previousPortfolio = portfolio;
     const updated = { ...target, ...updates };
     setPortfolio(prev => prev.map(p => (p.id === projectId ? updated : p)));
 
     if (isSupabaseConfigured()) {
       const { error } = await upsertPortfolioProjectInDb(updated);
       if (error) {
+        setPortfolio(previousPortfolio);
         return { success: false, error };
       }
     }
@@ -2501,6 +2549,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deletePortfolioProject = async (projectId: string): Promise<{ success: boolean; error?: string }> => {
+    const previousPortfolio = portfolio;
     setPortfolio(prev => {
       const updated = prev.filter(p => p.id !== projectId);
       try {
@@ -2512,6 +2561,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isSupabaseConfigured()) {
       const { success, error } = await deletePortfolioProjectFromDb(projectId);
       if (!success) {
+        setPortfolio(previousPortfolio);
+        try {
+          localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(previousPortfolio));
+        } catch {}
         return { success: false, error: error || 'Failed to delete project.' };
       }
     }
@@ -2519,7 +2572,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetAllData = () => {
-    localStorage.clear();
+    try {
+      localStorage.clear();
+    } catch {}
     // Re-hydrate from Supabase if configured, otherwise reset to empty portfolio
     if (isSupabaseConfigured()) {
       fetchStudioProfileFromDb().then(({ data }) => data && setStudioProfile(data));
@@ -2537,7 +2592,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setServices(INITIAL_SERVICES);
       setPortfolio([]);
     }
-    setUsers([]);
+    setUsers(INITIAL_USERS);
     setCurrentUser(null);
     setCommissions(INITIAL_COMMISSIONS);
     setMessages(INITIAL_MESSAGES);
@@ -2590,7 +2645,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setPortfolio((prev) => {
         const next = prev.map((p) => {
           if (p.id === projectId) {
-            return { ...p, likesCount: res.likesCount };
+            return { ...p, likesCount: res.likesCount, likes_count: res.likesCount };
           }
           return p;
         });
@@ -2601,7 +2656,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       setSelectedPortfolioProject((prev) => {
         if (prev && prev.id === projectId) {
-          return { ...prev, likesCount: res.likesCount };
+          return { ...prev, likesCount: res.likesCount, likes_count: res.likesCount };
         }
         return prev;
       });

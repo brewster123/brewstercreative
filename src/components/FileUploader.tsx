@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, FileText, Image as ImageIcon, X, Check, Paperclip } from 'lucide-react';
 
 interface FileUploaderProps {
@@ -19,6 +19,21 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedList, setUploadedList] = useState<{ name: string; size: string; type: string; url: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadedListRef = useRef<{ name: string; size: string; type: string; url: string }[]>([]);
+
+  useEffect(() => {
+    uploadedListRef.current = uploadedList;
+  }, [uploadedList]);
+
+  useEffect(() => {
+    return () => {
+      uploadedListRef.current.forEach((f) => {
+        if (f.url && f.url.startsWith('blob:')) {
+          URL.revokeObjectURL(f.url);
+        }
+      });
+    };
+  }, []);
 
   const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -54,6 +69,10 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   };
 
   const handleRemove = (index: number) => {
+    const removed = uploadedList[index];
+    if (removed?.url && removed.url.startsWith('blob:')) {
+      URL.revokeObjectURL(removed.url);
+    }
     const updated = uploadedList.filter((_, i) => i !== index);
     setUploadedList(updated);
     onFilesSelected(updated);
@@ -62,21 +81,29 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   return (
     <div className="space-y-3">
       {label && (
-        <label className="block text-xs font-bold text-zinc-800 mb-1.5">
+        <label className="block text-xs font-bold text-carbon mb-1.5">
           {label}
         </label>
       )}
 
       {/* Drag & Drop Box */}
       <div
+        role="button"
+        tabIndex={0}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-[24px] p-6 sm:p-8 text-center cursor-pointer transition-all duration-300 ${
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
+        className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 text-center cursor-pointer transition-all duration-300 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
           isDragging
-            ? 'border-orange-500 bg-orange-50 scale-[1.01]'
-            : 'border-zinc-300 bg-zinc-50 hover:border-orange-400 hover:bg-orange-50/30'
+            ? 'border-accent bg-sky-500/10 scale-[1.01]'
+            : 'border-hairline bg-surface-secondary/70 hover:border-accent/60 hover:bg-surface-secondary'
         }`}
       >
         <input
@@ -88,14 +115,14 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           className="hidden"
         />
 
-        <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto mb-3 shadow-xs">
+        <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-accent/25 text-accent flex items-center justify-center mx-auto mb-3 shadow-xs">
           <UploadCloud className="w-6 h-6" />
         </div>
 
-        <p className="text-xs sm:text-sm font-bold text-zinc-800">
+        <p className="text-xs sm:text-sm font-bold text-carbon">
           Click to upload or drag & drop files here
         </p>
-        <p className="text-[11px] text-zinc-500 mt-1 max-w-md mx-auto font-medium">
+        <p className="text-[11px] text-graphite mt-1 max-w-md mx-auto font-medium">
           {description}
         </p>
       </div>
@@ -103,7 +130,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       {/* Uploaded File List Badges */}
       {uploadedList.length > 0 && (
         <div className="space-y-2 pt-2">
-          <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider font-bold block">
+          <span className="text-[11px] font-mono-code text-graphite uppercase tracking-wider font-bold block">
             Uploaded Attachments ({uploadedList.length}):
           </span>
 
@@ -111,11 +138,11 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
             {uploadedList.map((file, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-2.5 rounded-2xl bg-white border border-[#E5E5E5] text-xs text-zinc-800 shadow-xs"
+                className="flex items-center justify-between p-2.5 rounded-2xl bg-surface border border-hairline text-xs text-carbon shadow-xs"
               >
                 <div className="flex items-center gap-2 truncate">
                   {file.type === 'image' ? (
-                    <ImageIcon className="w-4 h-4 text-orange-500 shrink-0" />
+                    <ImageIcon className="w-4 h-4 text-accent shrink-0" />
                   ) : (
                     <FileText className="w-4 h-4 text-blue-500 shrink-0" />
                   )}
@@ -123,14 +150,14 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 ml-2">
-                  <span className="text-[10px] text-zinc-400 font-mono-code font-bold">{file.size}</span>
+                  <span className="text-[10px] text-graphite font-mono-code font-bold">{file.size}</span>
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRemove(idx);
                     }}
-                    className="p-1 text-zinc-400 hover:text-red-500 hover:bg-zinc-100 rounded-lg transition-colors"
+                    className="p-1 text-graphite hover:text-red-500 hover:bg-surface-secondary rounded-full transition-colors cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>

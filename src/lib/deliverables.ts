@@ -444,13 +444,15 @@ export async function deleteCommissionDeliverable(
 /**
  * Subscribes to realtime deliverable inserts or deletions for a commission.
  */
+let deliverableChannelSeq = 0;
+
 export function subscribeToCommissionDeliverables(
   commissionId: string,
   onDeliverablesChanged: () => void
 ): () => void {
   if (!commissionId) return () => {};
 
-  const channelId = `realtime-deliv-${commissionId}-${Date.now()}`;
+  const channelId = `realtime-deliv-${commissionId}-${Date.now()}-${++deliverableChannelSeq}`;
   const channel = supabase.channel(channelId);
 
   channel

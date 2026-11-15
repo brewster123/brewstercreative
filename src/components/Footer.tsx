@@ -12,10 +12,10 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-[#FAF9F6] dark:bg-[#09090B] border-t border-[#E4E2DC] dark:border-[#222225] text-[#71717A] dark:text-[#A1A1AA] text-sm mt-20 relative overflow-hidden transition-colors">
-      <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none"></div>
+    <footer className="bg-canvas border-t border-hairline text-graphite-strong text-sm mt-20 relative overflow-hidden transition-colors">
+      <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10 lg:gap-8 mb-10 sm:mb-12">
           
           {/* Studio Brand & Bio */}
@@ -23,26 +23,26 @@ export const Footer: React.FC = () => {
             <div className="flex items-center gap-3">
               <BrandLogo size="md" />
               <div>
-                <span className="font-display font-bold text-lg text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+                <span className="font-display font-bold text-lg text-carbon tracking-tight">
                   {studioProfile.studioName}
                 </span>
-                <p className="text-xs text-[#EA580C] font-mono -mt-0.5 font-medium">
+                <p className="text-xs text-accent -mt-0.5 font-medium">
                   by {studioProfile.designerName}
                 </p>
               </div>
             </div>
 
-            <div className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-bold">
+            <div className="text-xs uppercase tracking-widest text-carbon font-bold">
               Make noise. Make meaning.
             </div>
 
-            <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] leading-relaxed max-w-sm">
+            <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed max-w-sm">
               {studioProfile.bio}
             </p>
 
-            <div className="flex items-center gap-4 pt-2 text-xs text-[#18181B] dark:text-[#EDEDEC]">
-              <div className="flex items-center gap-1.5 text-[#71717A] dark:text-[#A1A1AA] font-medium">
-                <MapPin className="w-3.5 h-3.5 text-[#EA580C]" />
+            <div className="flex items-center gap-4 pt-2 text-xs text-carbon">
+              <div className="flex items-center gap-1.5 text-graphite-strong font-medium">
+                <MapPin className="w-3.5 h-3.5 text-accent" />
                 <span>{studioProfile.location}</span>
               </div>
             </div>
@@ -50,7 +50,7 @@ export const Footer: React.FC = () => {
 
           {/* Navigation Links */}
           <div className="space-y-3">
-            <h4 className="font-display font-bold text-[#18181B] dark:text-[#EDEDEC] text-xs uppercase tracking-wider">
+            <h4 className="font-display font-bold text-carbon text-xs uppercase tracking-wider">
               Studio Explore
             </h4>
             <ul className="space-y-2 text-xs sm:text-sm">
@@ -58,16 +58,16 @@ export const Footer: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => { setActiveView('home'); scrollToTop(); }}
-                  className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] transition-colors cursor-pointer"
+                  className="text-graphite-strong hover:text-accent transition-colors cursor-pointer"
                 >
-                  Home & Overview
+                  Home &amp; Overview
                 </button>
               </li>
               <li>
                 <button
                   type="button"
                   onClick={() => { setActiveView('portfolio'); scrollToTop(); }}
-                  className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] transition-colors cursor-pointer"
+                  className="text-graphite-strong hover:text-accent transition-colors cursor-pointer"
                 >
                   Selected Works (Portfolio)
                 </button>
@@ -76,25 +76,25 @@ export const Footer: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => { setActiveView('services'); scrollToTop(); }}
-                  className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] transition-colors cursor-pointer"
+                  className="text-graphite-strong hover:text-accent transition-colors cursor-pointer"
                 >
-                  Services & Pricing
+                  Services &amp; Pricing
                 </button>
               </li>
               <li>
                 <button
                   type="button"
                   onClick={() => { setActiveView('shop'); scrollToTop(); }}
-                  className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] transition-colors cursor-pointer"
+                  className="text-graphite-strong hover:text-accent transition-colors cursor-pointer"
                 >
-                  Studio Shop & Goods
+                  Studio Shop &amp; Goods
                 </button>
               </li>
               <li>
                 <button
                   type="button"
                   onClick={() => { setActiveView('commission-form'); scrollToTop(); }}
-                  className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] transition-colors cursor-pointer"
+                  className="text-graphite-strong hover:text-accent transition-colors cursor-pointer"
                 >
                   Commission Request Form
                 </button>
@@ -104,7 +104,7 @@ export const Footer: React.FC = () => {
 
           {/* Client & Portals */}
           <div className="space-y-3">
-            <h4 className="font-display font-bold text-[#18181B] dark:text-[#EDEDEC] text-xs uppercase tracking-wider">
+            <h4 className="font-display font-bold text-carbon text-xs uppercase tracking-wider">
               Client Portal
             </h4>
             <ul className="space-y-2 text-xs sm:text-sm">
@@ -112,17 +112,18 @@ export const Footer: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => { setActiveView('client-dashboard'); scrollToTop(); }}
-                  className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="text-graphite-strong hover:text-accent transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>Active Commission Dashboard</span>
-                  <span className="text-[10px] bg-[#FFF7ED] dark:bg-[#78350F]/40 text-[#EA580C] dark:text-[#FBBF24] border border-[#FFEDD5] dark:border-[#92400E] px-1.5 py-0.5 rounded font-semibold font-mono">Live</span>
+                  <span aria-hidden="true" className="text-graphite">·</span>
+                  <span className="text-[11px] font-mono text-accent font-semibold">Live</span>
                 </button>
               </li>
               <li>
                 <button
                   type="button"
                   onClick={() => { setActiveView('auth'); scrollToTop(); }}
-                  className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] transition-colors cursor-pointer"
+                  className="text-graphite-strong hover:text-accent transition-colors cursor-pointer"
                 >
                   Client Sign In
                 </button>
@@ -131,9 +132,9 @@ export const Footer: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => { setActiveView('admin-dashboard'); scrollToTop(); }}
-                  className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#059669] dark:hover:text-[#34D399] transition-colors flex items-center gap-1 cursor-pointer"
+                  className="text-graphite-strong hover:text-[#059669] dark:hover:text-[#34D399] transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#059669]" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#059669] dark:text-[#34D399]" />
                   <span>Designer Admin Login</span>
                 </button>
               </li>
@@ -142,15 +143,15 @@ export const Footer: React.FC = () => {
 
           {/* Contact & Socials */}
           <div className="space-y-3">
-            <h4 className="font-display font-bold text-[#18181B] dark:text-[#EDEDEC] text-xs uppercase tracking-wider">
-              Inquiries & Social
+            <h4 className="font-display font-bold text-carbon text-xs uppercase tracking-wider">
+              Inquiries &amp; Social
             </h4>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+            <p className="text-xs text-graphite-strong leading-relaxed">
               For custom brand collaborations or direct art direction inquiries:
             </p>
             <a
               href={`mailto:${studioProfile.email}`}
-              className="inline-flex items-center gap-1.5 text-xs text-[#EA580C] hover:underline font-mono font-medium underline underline-offset-2"
+              className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline font-mono font-medium underline underline-offset-2"
             >
               <Mail className="w-3.5 h-3.5" />
               {studioProfile.email}
@@ -173,7 +174,7 @@ export const Footer: React.FC = () => {
                       href={instagramUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-surface hover:bg-surface-secondary text-graphite-strong hover:text-accent border border-hairline transition-colors cursor-pointer"
                       aria-label="Instagram Profile"
                     >
                       <Instagram className="w-4 h-4" />
@@ -185,7 +186,7 @@ export const Footer: React.FC = () => {
                       href={behanceUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-surface hover:bg-surface-secondary text-graphite-strong hover:text-accent border border-hairline transition-colors cursor-pointer"
                       aria-label="Behance Portfolio"
                     >
                       <span className="font-display font-bold text-[12px] leading-none select-none tracking-tighter">Bē</span>
@@ -197,7 +198,7 @@ export const Footer: React.FC = () => {
                       href={dribbbleUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-surface hover:bg-surface-secondary text-graphite-strong hover:text-accent border border-hairline transition-colors cursor-pointer"
                       aria-label="Dribbble Portfolio"
                     >
                       <Dribbble className="w-4 h-4" />
@@ -209,7 +210,7 @@ export const Footer: React.FC = () => {
                       href={twitterUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121214] hover:bg-[#F4F2ED] dark:hover:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#EA580C] dark:hover:text-[#EA580C] border border-[#E4E2DC] dark:border-[#222225] transition-colors cursor-pointer"
+                      className="p-2 rounded-lg bg-surface hover:bg-surface-secondary text-graphite-strong hover:text-accent border border-hairline transition-colors cursor-pointer"
                       aria-label="Twitter / X Profile"
                     >
                       <Twitter className="w-4 h-4" />
@@ -223,15 +224,15 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Bottom copyright & back to top */}
-        <div className="pt-8 border-t border-[#E4E2DC] dark:border-[#222225] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#71717A] dark:text-[#A1A1AA]">
+        <div className="pt-8 border-t border-hairline flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-graphite">
           <p>
-            © {new Date().getFullYear()} {studioProfile.studioName} ({studioProfile.designerName}). All rights reserved. Graphic design & multimedia art.
+            © {new Date().getFullYear()} {studioProfile.studioName} ({studioProfile.designerName}). All rights reserved. Graphic design &amp; multimedia art.
           </p>
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={scrollToTop}
-              className="flex items-center gap-1 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors font-medium cursor-pointer rounded px-1.5 py-0.5 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+              className="flex items-center gap-1 text-graphite-strong hover:text-carbon transition-colors font-medium cursor-pointer rounded px-1.5 py-0.5 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
               aria-label="Scroll back to top of page"
             >
               <span>Back to top</span>

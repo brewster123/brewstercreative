@@ -86,7 +86,7 @@ const getStatusBadgeStyle = (status: string | undefined): string => {
     case 'pending':
     case 'reviewing':
     default:
-      return 'bg-orange-950/60 text-orange-400 border-orange-800/60';
+      return 'bg-sky-950/60 text-sky-400 border-sky-800/60';
   }
 };
 
@@ -149,23 +149,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const attachmentUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    attachmentUrlRef.current = attachment?.url || null;
+  }, [attachment?.url]);
 
   const clearAttachment = useCallback(() => {
-    if (attachment?.url && attachment.url.startsWith('blob:')) {
-      URL.revokeObjectURL(attachment.url);
+    if (attachmentUrlRef.current && attachmentUrlRef.current.startsWith('blob:')) {
+      URL.revokeObjectURL(attachmentUrlRef.current);
+      attachmentUrlRef.current = null;
     }
     setAttachment(null);
     setAttachmentFile(null);
-  }, [attachment]);
+  }, []);
 
   // Clean up any remaining blob URL on unmount
   useEffect(() => {
     return () => {
-      if (attachment?.url && attachment.url.startsWith('blob:')) {
-        URL.revokeObjectURL(attachment.url);
+      if (attachmentUrlRef.current && attachmentUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(attachmentUrlRef.current);
+        attachmentUrlRef.current = null;
       }
     };
-  }, [attachment]);
+  }, []);
 
   const commissionMessages = messages.filter(m => m.commissionId === commission.id);
 
@@ -214,11 +221,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     };
   }, [commission.id, currentUser?.id]);
 
-  // Scroll to bottom on new message
+  // Scroll to bottom on new message and mark incoming unread messages as read
+  const hasUnreadIncoming = commissionMessages.some(
+    m => m.senderId !== currentUser?.id && !m.readStatus
+  );
+
   useEffect(() => {
     scrollToBottom(true);
-    markMessagesAsRead(commission.id);
-  }, [commissionMessages.length, commission.id, scrollToBottom]);
+    if (hasUnreadIncoming) {
+      markMessagesAsRead(commission.id);
+    }
+  }, [commissionMessages.length, hasUnreadIncoming, commission.id, scrollToBottom, markMessagesAsRead]);
 
   // Close emoji picker on click outside
   useEffect(() => {
@@ -360,7 +373,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <button
               type="button"
               onClick={onBackToList}
-              className="md:hidden p-2 -ml-1.5 min-h-[44px] min-w-[44px] rounded-full text-[#EA580C] hover:bg-[#18181B] transition-colors cursor-pointer shrink-0 inline-flex items-center justify-center focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+              className="md:hidden p-2 -ml-1.5 min-h-[44px] min-w-[44px] rounded-full text-[#0EA5E9] hover:bg-[#18181B] transition-colors cursor-pointer shrink-0 inline-flex items-center justify-center focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
               title="Back to conversation list"
               aria-label="Back to conversation list"
             >
@@ -412,7 +425,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <select
                 value={commission.id}
                 onChange={(e) => onSelectCommission(e.target.value)}
-                className="bg-[#18181B] border border-[#222225] rounded-lg px-2.5 py-1.5 text-xs text-[#EDEDEC] focus:outline-hidden focus:border-[#EA580C] cursor-pointer max-w-[170px] truncate"
+                className="bg-[#18181B] border border-[#222225] rounded-xl px-2.5 py-1.5 text-xs text-[#EDEDEC] focus:outline-hidden focus:border-[#0EA5E9] cursor-pointer max-w-[170px] truncate"
               >
                 {availableCommissions.map(c => (
                   <option key={c.id} value={c.id}>
@@ -427,10 +440,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           <button
             type="button"
             onClick={() => setShowProjectContext(!showProjectContext)}
-            className={`w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
+            className={`w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9] ${
               showProjectContext 
-                ? 'bg-[#EA580C] text-white shadow-xs' 
-                : 'bg-[#18181B] hover:bg-[#222225] text-[#EA580C]'
+                ? 'bg-[#0284C7] text-white shadow-xs' 
+                : 'bg-[#18181B] hover:bg-[#222225] text-[#0EA5E9]'
             }`}
             title="Conversation information & project dossier"
             aria-label="Conversation information & project dossier"
@@ -460,7 +473,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   <div className="h-10 w-48 rounded-2xl bg-[#18181B]" />
                 </div>
                 <div className="flex items-end justify-end">
-                  <div className="h-12 w-56 rounded-2xl bg-[#EA580C]/20" />
+                  <div className="h-12 w-56 rounded-2xl bg-[#0EA5E9]/20" />
                 </div>
                 <div className="flex items-start gap-2.5">
                   <div className="w-8 h-8 rounded-full bg-[#18181B]" />
@@ -498,7 +511,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       setInputText("Hello, could you share an update on the current project stage?");
                       textareaRef.current?.focus();
                     }}
-                    className="px-3.5 py-2 min-h-[40px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#EDEDEC] border border-[#222225] hover:border-[#EA580C] transition-colors cursor-pointer text-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                    className="px-3.5 py-2 min-h-[40px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#EDEDEC] border border-[#222225] hover:border-[#0EA5E9] transition-colors cursor-pointer text-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                   >
                     "Ask for an update"
                   </button>
@@ -508,7 +521,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       setInputText("I have feedback and reference files ready for review.");
                       textareaRef.current?.focus();
                     }}
-                    className="px-3.5 py-2 min-h-[40px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#EDEDEC] border border-[#222225] hover:border-[#EA580C] transition-colors cursor-pointer text-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                    className="px-3.5 py-2 min-h-[40px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#EDEDEC] border border-[#222225] hover:border-[#0EA5E9] transition-colors cursor-pointer text-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                   >
                     "Share feedback"
                   </button>
@@ -563,11 +576,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                         )}
 
                         <div className="space-y-1">
-                          {/* Bubble Container: Accent Orange (Me) vs Inset Surface (Them) */}
+                          {/* Bubble Container: Sky Blue (Me) vs Inset Surface (Them) */}
                           <div
                             className={`text-sm leading-relaxed break-words ${
                               isMe
-                                ? 'bg-[#EA580C] text-white rounded-2xl rounded-br-xs p-3 sm:px-4 sm:py-2.5 shadow-xs'
+                                ? 'bg-[#0284C7] text-white rounded-2xl rounded-br-xs p-3 sm:px-4 sm:py-2.5 shadow-xs'
                                 : 'bg-[#18181B] text-[#EDEDEC] border border-[#222225] rounded-2xl rounded-bl-xs p-3 sm:px-4 sm:py-2.5'
                             }`}
                           >
@@ -581,8 +594,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                                 {msg.attachment.type === 'image' && msg.attachment.url ? (
                                   <div className="space-y-1.5">
                                     <div 
+                                      role="button"
+                                      tabIndex={0}
+                                      aria-label={`View photo ${msg.attachment.name || ''}`}
                                       onClick={() => setPreviewImage({ url: msg.attachment!.url, name: msg.attachment!.name })}
-                                      className="relative group rounded-xl overflow-hidden border border-black/20 dark:border-white/10 max-h-64 max-w-sm cursor-pointer bg-black/20"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                          e.preventDefault();
+                                          setPreviewImage({ url: msg.attachment!.url, name: msg.attachment!.name });
+                                        }
+                                      }}
+                                      className="relative group rounded-xl overflow-hidden border border-black/20 dark:border-white/10 max-h-64 max-w-sm cursor-pointer bg-black/20 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                                     >
                                       <img 
                                         src={msg.attachment.url} 
@@ -608,7 +630,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                                     className={`inline-flex items-center gap-2.5 p-2.5 rounded-xl border text-xs font-mono transition-colors ${
                                       isMe 
                                         ? 'bg-white/15 border-white/20 text-white hover:bg-white/25' 
-                                        : 'bg-[#121214] border-[#222225] text-[#EDEDEC] hover:border-[#EA580C]'
+                                        : 'bg-[#121214] border-[#222225] text-[#EDEDEC] hover:border-[#0EA5E9]'
                                     }`}
                                   >
                                     <FileText className="w-5 h-5 text-white shrink-0" />
@@ -629,7 +651,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                           {isMe && (
                             <div className="flex items-center justify-end gap-1 px-1 font-mono text-[10px] text-[#A1A1AA]">
                               <span>{msg.timestamp}</span>
-                              <CheckCheck className="w-3.5 h-3.5 text-[#EA580C]" />
+                              <CheckCheck className="w-3.5 h-3.5 text-[#0EA5E9]" />
                             </div>
                           )}
                         </div>
@@ -646,7 +668,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           {attachment && (
             <div className="px-4 py-2 bg-[#121214] border-t border-[#222225] flex items-center justify-between text-xs font-mono shrink-0">
               <div className="flex items-center gap-2.5 truncate">
-                <Paperclip className="w-4 h-4 text-[#EA580C] shrink-0" />
+                <Paperclip className="w-4 h-4 text-[#0EA5E9] shrink-0" />
                 <span className="truncate max-w-xs text-[#EDEDEC] font-semibold">
                   {attachment.name}
                 </span>
@@ -723,7 +745,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   onClick={() => fileInputRef.current?.click()}
                   title="Attach photo, brief, or file"
                   aria-label="Attach photo, brief, or file"
-                  className="w-11 h-11 sm:w-10 sm:h-10 rounded-full text-[#EA580C] hover:bg-[#18181B] flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                  className="w-11 h-11 sm:w-10 sm:h-10 rounded-full text-[#0EA5E9] hover:bg-[#18181B] flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                 >
                   <Paperclip className="w-5 h-5" />
                 </button>
@@ -733,7 +755,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   title="Insert emoji"
                   aria-label="Insert emoji"
-                  className="w-11 h-11 sm:w-10 sm:h-10 rounded-full text-[#EA580C] hover:bg-[#18181B] flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                  className="w-11 h-11 sm:w-10 sm:h-10 rounded-full text-[#0EA5E9] hover:bg-[#18181B] flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                 >
                   <Smile className="w-5 h-5" />
                 </button>
@@ -749,7 +771,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   rows={1}
                   aria-label={isAdmin ? "Reply to client as DESTALION" : "Message text"}
                   placeholder={isAdmin ? "Reply to client as DESTALION..." : "Aa"}
-                  className="w-full bg-[#18181B] hover:bg-[#1C1C20] focus:bg-[#1C1C20] border border-[#222225] focus:border-[#EA580C] rounded-2xl px-4 py-2.5 text-sm text-[#EDEDEC] placeholder-[#71717A] focus:outline-hidden transition-colors resize-none leading-relaxed max-h-32"
+                  className="w-full bg-[#18181B] hover:bg-[#1C1C20] focus:bg-[#1C1C20] border border-[#222225] focus:border-[#0EA5E9] rounded-2xl px-4 py-2.5 text-sm text-[#EDEDEC] placeholder-[#71717A] focus:outline-hidden transition-colors resize-none leading-relaxed max-h-32"
                 />
               </div>
 
@@ -758,7 +780,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 <button
                   type="submit"
                   disabled={isSending || (!inputText.trim() && !attachment && !attachmentFile)}
-                  className="w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-[#EA580C] hover:bg-[#D94814] disabled:opacity-30 disabled:hover:bg-[#EA580C] text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                  className="w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] disabled:opacity-30 disabled:hover:bg-[#D4FF38] text-[#111114] flex items-center justify-center transition-colors cursor-pointer shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
                   title="Send message"
                   aria-label="Send message"
                 >
@@ -788,7 +810,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             {/* Dossier Header */}
             <div className="h-16 px-4 border-b border-[#222225] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-[#EA580C]" />
+                <Layers className="w-4 h-4 text-[#0EA5E9]" />
                 <h3 className="font-display text-xs uppercase tracking-wider font-bold text-[#EDEDEC]">
                   Project Dossier
                 </h3>
@@ -796,7 +818,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <button
                 type="button"
                 onClick={() => setShowProjectContext(false)}
-                className="w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#A1A1AA] hover:text-[#EDEDEC] flex items-center justify-center cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                className="w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#A1A1AA] hover:text-[#EDEDEC] flex items-center justify-center cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                 title="Close dossier"
                 aria-label="Close dossier"
               >
@@ -858,7 +880,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 </p>
                 <div className="w-full bg-[#09090B] rounded-full h-1.5 overflow-hidden">
                   <div 
-                    className="bg-[#EA580C] h-full rounded-full transition-all duration-500"
+                    className="bg-[#0EA5E9] h-full rounded-full transition-all duration-500"
                     style={{ width: `${Math.round(((commission.currentStage || 1) / 8) * 100)}%` }}
                   />
                 </div>
@@ -887,10 +909,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       setActiveView('client-dashboard');
                     }
                   }}
-                  className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#18181B] hover:bg-[#222225] border border-[#222225] hover:border-[#EA580C] text-xs font-semibold text-[#EDEDEC] flex items-center justify-center gap-2 transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                  className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#18181B] hover:bg-[#222225] border border-[#222225] hover:border-[#0EA5E9] text-xs font-semibold text-[#EDEDEC] flex items-center justify-center gap-2 transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                 >
                   <span>{isAdmin ? 'Open in Admin Dashboard' : 'Open in Client Workspace'}</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#EA580C]" />
+                  <ArrowRight className="w-3.5 h-3.5 text-[#0EA5E9]" />
                 </button>
               </div>
 
@@ -902,12 +924,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* 3. High-Fidelity Image Lightbox Modal */}
       {previewImage && Boolean(previewImage.url) && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="relative max-w-4xl max-h-[90dvh] flex flex-col items-center">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Preview: ${previewImage.name}`}
+          onClick={() => setPreviewImage(null)}
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-4xl max-h-[90dvh] flex flex-col items-center cursor-default"
+          >
             <button
               type="button"
               onClick={() => setPreviewImage(null)}
-              className="absolute -top-12 right-0 p-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-[#18181B]/90 hover:bg-[#222225] text-white border border-[#222225] cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+              className="absolute -top-12 right-0 p-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-[#18181B]/90 hover:bg-[#222225] text-white border border-[#222225] cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
               title="Close image preview"
               aria-label="Close image preview"
             >
@@ -916,7 +947,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <img 
               src={previewImage.url} 
               alt={previewImage.name} 
-              className="max-h-[80dvh] w-auto rounded-xl object-contain shadow-2xl border border-[#222225]"
+              className="max-h-[80dvh] w-auto rounded-2xl object-contain shadow-2xl border border-[#222225]"
             />
             <div className="mt-3 flex items-center justify-between w-full text-white font-mono text-xs px-1">
               <span className="truncate max-w-md">{previewImage.name}</span>
@@ -925,7 +956,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 download={previewImage.name}
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[#EA580C] hover:text-[#D94814] font-semibold"
+                className="inline-flex items-center gap-1.5 text-[#0EA5E9] hover:text-[#38BDF8] font-semibold"
               >
                 <Download className="w-4 h-4" />
                 <span>Download</span>

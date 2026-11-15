@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PortfolioProject } from '../types';
 import { useApp } from '../context/AppContext';
 import { 
@@ -39,6 +39,16 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
   const [likesCount, setLikesCount] = useState<number>(() => getProjectLikes(project));
   const [isLiking, setIsLiking] = useState<boolean>(false);
   const [copiedShare, setCopiedShare] = useState<boolean>(false);
+  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setLikesCount(getProjectLikes(project));
@@ -96,10 +106,18 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
       }
     }
 
-    if (navigator.clipboard && shareUrl) {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedShare(true);
-      setTimeout(() => setCopiedShare(false), 2000);
+    if (navigator.clipboard?.writeText && shareUrl) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        if (!isMountedRef.current) return;
+        setCopiedShare(true);
+        if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+        shareTimerRef.current = setTimeout(() => {
+          if (isMountedRef.current) setCopiedShare(false);
+        }, 2000);
+      } catch {
+        // Clipboard unavailable in restricted browser contexts
+      }
     }
   };
 
@@ -115,14 +133,11 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
         if (target.closest('button') || target.closest('a')) return;
         onSelect(project);
       }}
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#D4D2CA] dark:hover:border-[#333338] transition-all duration-300 cursor-pointer shadow-2xs hover:shadow-xs motion-reduce:transition-none ${className}`}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-surface border border-hairline hover:border-accent/40 transition-all duration-300 cursor-pointer shadow-2xs hover:shadow-md motion-reduce:transition-none ${className}`}
     >
-      {/* Subtle washi tape corner mount */}
-      <div className="absolute -top-2.5 right-6 w-12 h-4 bg-[#BAE6FD]/75 dark:bg-[#0369A1]/50 rotate-3 border border-white/50 shadow-2xs z-20 pointer-events-none group-hover:rotate-6 transition-transform" />
-
       {/* Artwork Viewport — High-Fidelity Breathing Room */}
       <div 
-        className={`relative overflow-hidden bg-[#FAF9F6] dark:bg-[#09090B] w-full min-h-[190px] ${
+        className={`relative overflow-hidden bg-surface-secondary w-full min-h-[190px] ${
           isFeatured ? 'aspect-[16/10] sm:aspect-[16/9]' : isWide ? 'aspect-[16/9]' : 'aspect-[4/3]'
         }`}
       >
@@ -155,7 +170,7 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
               onPointerDown={(e) => e.stopPropagation()}
               aria-label="Quick visual preview"
               title="Quick preview"
-              className="w-8 h-8 rounded-lg bg-black/65 hover:bg-black text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] transition-all duration-200 cursor-pointer backdrop-blur-xs shadow-xs"
+              className="w-8 h-8 rounded-full bg-black/65 hover:bg-black text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent transition-all duration-200 cursor-pointer backdrop-blur-xs shadow-xs"
             >
               <Maximize2 className="w-4 h-4" />
             </button>
@@ -168,7 +183,7 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
             onPointerDown={(e) => e.stopPropagation()}
             aria-label="Share case study"
             title={copiedShare ? "Link copied!" : "Share case study"}
-            className="w-8 h-8 rounded-lg bg-black/65 hover:bg-black text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] transition-all duration-200 cursor-pointer backdrop-blur-xs shadow-xs"
+            className="w-8 h-8 rounded-full bg-black/65 hover:bg-black text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent transition-all duration-200 cursor-pointer backdrop-blur-xs shadow-xs"
           >
             {copiedShare ? (
               <Check className="w-4 h-4 text-emerald-400" />
@@ -177,8 +192,8 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
             )}
           </button>
 
-          <div className="w-8 h-8 rounded-lg bg-[#18181B] dark:bg-[#27272A] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 motion-reduce:transform-none shadow-xs">
-            <ArrowUpRight className="w-4 h-4 text-[#EA580C]" />
+          <div className="w-8 h-8 rounded-full bg-[#D4FF38] text-[#111114] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 motion-reduce:transform-none shadow-xs">
+            <ArrowUpRight className="w-4 h-4" />
           </div>
         </div>
       </div>
@@ -187,35 +202,35 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
       <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
         <div className="space-y-2.5">
           {/* Editorial Unboxed Metadata String */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-mono tracking-wider uppercase font-semibold">
-            <span className="text-[#EA580C]">{project.category}</span>
-            <span aria-hidden="true" className="text-[#A1A1AA] dark:text-[#52525B]">·</span>
-            <span className={project.projectType === 'client' ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#71717A] dark:text-[#A1A1AA]'}>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-wider font-semibold">
+            <span className="text-accent">{project.category}</span>
+            <span aria-hidden="true" className="text-graphite">·</span>
+            <span className={project.projectType === 'client' ? 'text-emerald-600 dark:text-emerald-400' : 'text-graphite'}>
               {project.projectType === 'client'
                 ? (project.client || 'Client Commission')
                 : (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Studio Concept')}
             </span>
-            <span aria-hidden="true" className="text-[#A1A1AA] dark:text-[#52525B]">·</span>
-            <span className="text-[#71717A] dark:text-[#A1A1AA]">{project.date}</span>
+            <span aria-hidden="true" className="text-graphite">·</span>
+            <span className="text-graphite">{project.date}</span>
           </div>
 
           <h3 className="font-display text-xl sm:text-2xl font-bold leading-snug">
             <button
               type="button"
               onClick={() => onSelect(project)}
-              className="text-left text-[#18181B] dark:text-[#EDEDEC] group-hover:text-[#EA580C] group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-all duration-300 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded cursor-pointer"
+              className="text-left text-carbon group-hover:text-accent group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-all duration-300 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent rounded cursor-pointer"
             >
               {project.title}
             </button>
           </h3>
 
-          <p className="text-xs sm:text-sm text-[#52525B] dark:text-[#A1A1AA] line-clamp-2 leading-relaxed font-normal">
+          <p className="text-xs sm:text-sm text-graphite-strong line-clamp-2 leading-relaxed font-normal">
             {project.shortDesc}
           </p>
         </div>
 
         {/* Footer Ledger: Social Engagement Counters & Case Study Link */}
-        <div className="pt-4 border-t border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between gap-3">
+        <div className="pt-4 border-t border-hairline flex items-center justify-between gap-3">
           
           {/* Social Stats Strip */}
           <div className="flex items-center gap-3.5">
@@ -234,10 +249,10 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
               }}
               aria-disabled={isLiking}
               aria-label={isLiked ? "Unlike project" : "Like project"}
-              className={`inline-flex items-center gap-1.5 text-xs font-mono transition-colors cursor-pointer py-1.5 px-2 -ml-2 rounded hover:bg-black/5 dark:hover:bg-white/5 min-h-[36px] focus:outline-hidden focus-visible:ring-1 focus-visible:ring-[#EA580C] ${
+              className={`inline-flex items-center gap-1.5 text-xs transition-colors cursor-pointer py-1.5 px-2 -ml-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 min-h-[36px] focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent tabular-nums ${
                 isLiked 
                   ? 'text-rose-600 dark:text-rose-400 font-semibold' 
-                  : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                  : 'text-graphite hover:text-carbon'
               }`}
             >
               <Heart className={`w-4 h-4 ${isLiked ? 'fill-current text-rose-500' : ''}`} />
@@ -245,8 +260,8 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
             </button>
 
             {/* Views Metric */}
-            <div className="inline-flex items-center gap-1.5 text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
-              <Eye className="w-4 h-4 text-[#A1A1AA]" />
+            <div className="inline-flex items-center gap-1.5 text-xs text-graphite tabular-nums">
+              <Eye className="w-4 h-4 text-graphite" />
               <span>{viewsCount.toLocaleString()}</span>
             </div>
           </div>
@@ -258,7 +273,7 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
               e.stopPropagation();
               onSelect(project);
             }}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#EA580C] hover:text-[#D94814] group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-all shrink-0 cursor-pointer focus:outline-hidden focus-visible:ring-1 focus-visible:ring-[#EA580C] rounded px-2 py-1.5 min-h-[36px]"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-hover group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-all shrink-0 cursor-pointer focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent rounded-full px-2 py-1.5 min-h-[36px]"
           >
             <span>Inspect Case Study</span>
             <ArrowRight className="w-3.5 h-3.5" />

@@ -60,6 +60,12 @@ export function normalizeNotificationType(rawType: string): NotificationType {
     case 'commission_completed':
     case 'delivery':
       return 'commission_completed';
+    case 'payment_submitted':
+      return 'payment_submitted';
+    case 'payment_verified':
+      return 'payment_verified';
+    case 'payment_rejected':
+      return 'payment_rejected';
     case 'system':
     default:
       return 'system';
@@ -294,13 +300,15 @@ export async function markAllNotificationsReadInDb(
 /**
  * Subscribes to real-time notifications for the active user.
  */
+let notifChannelSeq = 0;
+
 export function subscribeToUserNotifications(
   userId: string,
   onNewNotification: (notif: AppNotification) => void
 ): () => void {
   if (!userId) return () => {};
 
-  const channelId = `realtime-notifs-${userId}-${Date.now()}`;
+  const channelId = `realtime-notifs-${userId}-${Date.now()}-${++notifChannelSeq}`;
   const channel = supabase.channel(channelId);
 
   channel

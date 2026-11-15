@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { ChatWindow } from '../components/ChatWindow';
 import { 
@@ -55,11 +55,20 @@ export const ChatView: React.FC = () => {
     );
   }, [availableCommissions, selectedCommissionId]);
 
-  // Pre-fetch messages for all available commissions on mount so last messages & unread badges are accurate
+  const fetchedCommissionIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetchedCommissionIdsRef.current.clear();
+  }, [currentUser?.id]);
+
+  // Pre-fetch messages for available commissions once per user session so last messages & unread badges are accurate
   useEffect(() => {
     if (availableCommissions.length > 0) {
       availableCommissions.forEach(c => {
-        fetchMessagesForCommission(c.id);
+        if (!fetchedCommissionIdsRef.current.has(c.id)) {
+          fetchedCommissionIdsRef.current.add(c.id);
+          fetchMessagesForCommission(c.id);
+        }
       });
     }
   }, [availableCommissions, fetchMessagesForCommission]);
@@ -133,9 +142,10 @@ export const ChatView: React.FC = () => {
       // Format last message preview
       let lastMessageSnippet = c.service || c.serviceType || 'Creative Project';
       if (lastMsg) {
-        if (lastMsg.message && lastMsg.message.trim()) {
+        const msgText = (lastMsg.message || lastMsg.body || '').trim();
+        if (msgText) {
           const isMe = lastMsg.senderId === currentUser?.id;
-          lastMessageSnippet = isMe ? `You: ${lastMsg.message.trim()}` : lastMsg.message.trim();
+          lastMessageSnippet = isMe ? `You: ${msgText}` : msgText;
         } else if (lastMsg.attachment) {
           const isMe = lastMsg.senderId === currentUser?.id;
           const prefix = isMe ? 'You: ' : '';
@@ -259,7 +269,7 @@ export const ChatView: React.FC = () => {
               <button
                 type="button"
                 onClick={handleBack}
-                className="w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#A1A1AA] hover:text-[#EDEDEC] flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                className="w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#A1A1AA] hover:text-[#EDEDEC] flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                 title={isAdmin ? "Return to Studio Dashboard" : "Return to Creative Projects"}
                 aria-label={isAdmin ? "Return to Studio Dashboard" : "Return to Creative Projects"}
               >
@@ -271,7 +281,7 @@ export const ChatView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveView('commission-form')}
-                  className="w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#EA580C] hover:text-[#D94814] flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                  className="w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#D4FF38] hover:text-[#C4F024] flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                   title="New Commission"
                   aria-label="New Commission"
                 >
@@ -283,7 +293,7 @@ export const ChatView: React.FC = () => {
 
           {/* Search Input Bar (Atelier Surface) */}
           <div className="relative">
-            <div className="bg-[#18181B] hover:bg-[#1C1C20] focus-within:bg-[#1C1C20] border border-[#222225] focus-within:border-[#EA580C] rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 transition-colors">
+            <div className="bg-[#18181B] hover:bg-[#1C1C20] focus-within:bg-[#1C1C20] border border-[#222225] focus-within:border-[#0EA5E9] rounded-full px-3.5 py-2 flex items-center gap-2.5 transition-colors">
               <Search className="w-4 h-4 text-[#A1A1AA] shrink-0" />
               <input
                 type="text"
@@ -296,7 +306,7 @@ export const ChatView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="text-[#A1A1AA] hover:text-white p-1 rounded-full cursor-pointer shrink-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                  className="text-[#A1A1AA] hover:text-white p-1 rounded-full cursor-pointer shrink-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                   title="Clear search"
                   aria-label="Clear search"
                 >
@@ -311,9 +321,9 @@ export const ChatView: React.FC = () => {
             <button
               type="button"
               onClick={() => setFilter('all')}
-              className={`px-3.5 py-2 min-h-[38px] rounded-lg text-xs font-semibold transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
+              className={`px-3.5 py-1.5 min-h-[36px] rounded-full text-xs font-semibold transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9] ${
                 filter === 'all'
-                  ? 'bg-[#EA580C]/15 text-[#EA580C] border border-[#EA580C]/40 font-bold'
+                  ? 'bg-[#0EA5E9]/15 text-[#0EA5E9] border border-[#0EA5E9]/40 font-bold'
                   : 'text-[#A1A1AA] hover:bg-[#18181B] hover:text-[#EDEDEC]'
               }`}
             >
@@ -322,15 +332,15 @@ export const ChatView: React.FC = () => {
             <button
               type="button"
               onClick={() => setFilter('unread')}
-              className={`px-3.5 py-2 min-h-[38px] rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
+              className={`px-3.5 py-1.5 min-h-[36px] rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9] ${
                 filter === 'unread'
-                  ? 'bg-[#EA580C]/15 text-[#EA580C] border border-[#EA580C]/40 font-bold'
+                  ? 'bg-[#0EA5E9]/15 text-[#0EA5E9] border border-[#0EA5E9]/40 font-bold'
                   : 'text-[#A1A1AA] hover:bg-[#18181B] hover:text-[#EDEDEC]'
               }`}
             >
               <span>Unread</span>
               {totalUnreadCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-[#EA580C] text-white text-[10px] font-mono font-bold">
+                <span className="px-1.5 py-0.2 rounded-full bg-[#0EA5E9] text-white text-[10px] font-mono font-bold">
                   {totalUnreadCount}
                 </span>
               )}
@@ -349,7 +359,7 @@ export const ChatView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="text-xs text-[#EA580C] hover:underline cursor-pointer"
+                  className="text-xs text-[#0EA5E9] hover:underline cursor-pointer"
                 >
                   Clear search query
                 </button>
@@ -369,9 +379,9 @@ export const ChatView: React.FC = () => {
                     markMessagesAsRead(item.commission.id);
                     setMobileView('chat');
                   }}
-                  className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors cursor-pointer group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
+                  className={`w-full text-left p-3 rounded-2xl flex items-center gap-3 transition-colors cursor-pointer group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9] ${
                     isSelected
-                      ? 'bg-[#18181B] text-white border border-[#EA580C]/40 shadow-2xs'
+                      ? 'bg-[#18181B] text-white border border-[#0EA5E9]/40 shadow-2xs'
                       : 'hover:bg-[#18181B]/60 text-[#EDEDEC] border border-transparent'
                   }`}
                 >
@@ -405,7 +415,7 @@ export const ChatView: React.FC = () => {
                       </p>
                       {item.hasUnread && (
                         <span 
-                          className="w-2.5 h-2.5 rounded-full bg-[#EA580C] shrink-0" 
+                          className="w-2.5 h-2.5 rounded-full bg-[#0EA5E9] shrink-0" 
                           title="Unread message"
                         />
                       )}
@@ -444,7 +454,7 @@ export const ChatView: React.FC = () => {
         ) : (
           /* Empty Workspace / No Commission Selected State */
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-xl bg-[#18181B] border border-[#222225] flex items-center justify-center text-[#EA580C]">
+            <div className="w-16 h-16 rounded-2xl bg-[#18181B] border border-[#222225] flex items-center justify-center text-[#0EA5E9]">
               <FolderArchive className="w-8 h-8" />
             </div>
             <div className="space-y-1.5 max-w-sm">
@@ -461,7 +471,7 @@ export const ChatView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveView('commission-form')}
-                className="px-6 py-2.5 min-h-[44px] rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold cursor-pointer shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                className="px-6 py-2.5 min-h-[44px] rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold cursor-pointer shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
               >
                 Start a Commission
               </button>

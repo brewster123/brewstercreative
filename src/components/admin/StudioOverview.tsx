@@ -141,23 +141,31 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
       {/* Studio Operational KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Active Pipeline */}
-        <div 
-          onClick={() => triggerNavigation('commissions', 'active')}
-          className="p-5 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C]/60 dark:hover:border-[#EA580C]/60 transition-all cursor-pointer group shadow-2xs"
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => triggerNavigation('commissions')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              triggerNavigation('commissions');
+            }
+          }}
+          className="p-5 rounded-3xl bg-surface border border-hairline hover:border-accent/60 transition-all cursor-pointer group shadow-2xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
         >
           <div className="flex items-center justify-between pb-3">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA]">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-graphite">
               Active Pipeline
             </span>
-            <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-[#EA580C] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-accent/10 text-accent flex items-center justify-center">
               <FolderArchive className="w-4 h-4" />
             </div>
           </div>
           <div className="space-y-1">
-            <span className="font-display font-black text-3xl text-[#18181B] dark:text-[#EDEDEC] block">
+            <span className="font-display font-black text-3xl text-carbon block">
               {activeCommissions.length}
             </span>
-            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1 group-hover:text-[#EA580C] transition-colors">
+            <span className="text-xs text-graphite flex items-center gap-1 group-hover:text-accent transition-colors">
               <span>View active commissions</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </span>
@@ -165,36 +173,44 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
         </div>
 
         {/* Card 2: Pending Payments */}
-        <div 
-          onClick={() => triggerNavigation('payments', 'pending_verification')}
-          className={`p-5 rounded-xl bg-white dark:bg-[#121214] border transition-all cursor-pointer group shadow-2xs ${
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => triggerNavigation('payments')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              triggerNavigation('payments');
+            }
+          }}
+          className={`p-5 rounded-3xl bg-surface border transition-all cursor-pointer group shadow-2xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
             pendingPaymentsCount > 0 
               ? 'border-amber-500/60 dark:border-amber-500/40 bg-amber-500/5' 
-              : 'border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C]/60'
+              : 'border-hairline hover:border-accent/60'
           }`}
         >
           <div className="flex items-center justify-between pb-3">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA]">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-graphite">
               Pending Payments
             </span>
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-              pendingPaymentsCount > 0 ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+            <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${
+              pendingPaymentsCount > 0 ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-surface-secondary text-graphite'
             }`}>
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
           <div className="space-y-1">
             <div className="flex items-baseline gap-2">
-              <span className="font-display font-black text-3xl text-[#18181B] dark:text-[#EDEDEC]">
+              <span className="font-display font-black text-3xl text-carbon">
                 {pendingPaymentsCount}
               </span>
               {pendingPaymentsCount > 0 && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500 text-white font-bold">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold">
                   Action
                 </span>
               )}
             </div>
-            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1 group-hover:text-[#EA580C] transition-colors">
+            <span className="text-xs text-graphite flex items-center gap-1 group-hover:text-accent transition-colors">
               <span>Verify GCash receipts</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </span>
@@ -202,23 +218,31 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
         </div>
 
         {/* Card 3: Proofs in Review */}
-        <div 
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => triggerNavigation('creative', undefined, 'proofs')}
-          className="p-5 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C]/60 dark:hover:border-[#EA580C]/60 transition-all cursor-pointer group shadow-2xs"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              triggerNavigation('creative', undefined, 'proofs');
+            }
+          }}
+          className="p-5 rounded-3xl bg-surface border border-hairline hover:border-accent/60 transition-all cursor-pointer group shadow-2xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
         >
           <div className="flex items-center justify-between pb-3">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA]">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-graphite">
               Proofs in Review
             </span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
               <Eye className="w-4 h-4" />
             </div>
           </div>
           <div className="space-y-1">
-            <span className="font-display font-black text-3xl text-[#18181B] dark:text-[#EDEDEC] block">
+            <span className="font-display font-black text-3xl text-carbon block">
               {inReviewCommissions.length}
             </span>
-            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1 group-hover:text-[#EA580C] transition-colors">
+            <span className="text-xs text-graphite flex items-center gap-1 group-hover:text-accent transition-colors">
               <span>Inspect draft feedback</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </span>
@@ -226,23 +250,31 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
         </div>
 
         {/* Card 4: Client Accounts */}
-        <div 
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => triggerNavigation('studio', undefined, 'clients')}
-          className="p-5 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C]/60 dark:hover:border-[#EA580C]/60 transition-all cursor-pointer group shadow-2xs"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              triggerNavigation('studio', undefined, 'clients');
+            }
+          }}
+          className="p-5 rounded-3xl bg-surface border border-hairline hover:border-accent/60 transition-all cursor-pointer group shadow-2xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
         >
           <div className="flex items-center justify-between pb-3">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA]">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-graphite">
               Client Directory
             </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="space-y-1">
-            <span className="font-display font-black text-3xl text-[#18181B] dark:text-[#EDEDEC] block">
+            <span className="font-display font-black text-3xl text-carbon block">
               {clients.length}
             </span>
-            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1 group-hover:text-[#EA580C] transition-colors">
+            <span className="text-xs text-graphite flex items-center gap-1 group-hover:text-accent transition-colors">
               <span>Manage client profiles</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </span>
@@ -252,19 +284,19 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
 
       {/* Administrative Alerts & Directives */}
       {pendingPaymentsCount > 0 && (
-        <div className="p-5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-5 rounded-3xl border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
-            <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
               <AlertCircle className="w-5 h-5" />
             </div>
             <div className="space-y-0.5">
               <span className="font-mono text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 font-bold">
                 Action Required · Payment Queue
               </span>
-              <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+              <h4 className="font-display font-bold text-base text-carbon">
                 {pendingPaymentsCount} GCash payment receipt{pendingPaymentsCount > 1 ? 's' : ''} awaiting administrator audit
               </h4>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              <p className="text-xs text-graphite">
                 Verify transaction reference numbers against official studio GCash records to advance commission stages and release final deliverables.
               </p>
             </div>
@@ -272,8 +304,8 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
 
           <button
             type="button"
-            onClick={() => triggerNavigation('payments', 'pending_verification')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-mono font-semibold uppercase tracking-wider transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
+            onClick={() => triggerNavigation('payments')}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer shrink-0 self-start sm:self-auto shadow-xs"
           >
             <span>Audit Receipts</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -285,29 +317,29 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Left Column: Projects Requiring Attention */}
-        <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 space-y-4 shadow-2xs">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#222225]">
+        <div className="bg-surface border border-hairline rounded-3xl p-6 space-y-4 shadow-2xs">
+          <div className="flex items-center justify-between pb-3 border-b border-hairline">
             <div className="space-y-0.5">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block">
                 Active Directives
               </span>
-              <h3 className="font-display font-bold text-lg text-[#18181B] dark:text-[#EDEDEC]">
+              <h3 className="font-display font-bold text-lg text-carbon">
                 Projects Requiring Attention ({attentionCommissions.length})
               </h3>
             </div>
             <button
               type="button"
-              onClick={() => triggerNavigation('commissions', 'active')}
-              className="text-xs font-mono text-[#EA580C] hover:underline"
+              onClick={() => triggerNavigation('commissions')}
+              className="text-xs font-mono text-accent hover:underline cursor-pointer"
             >
               View All Pipeline →
             </button>
           </div>
 
           {attentionCommissions.length === 0 ? (
-            <div className="py-12 text-center text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] space-y-1">
+            <div className="py-12 text-center text-xs font-mono text-graphite space-y-1">
               <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400 mx-auto mb-2" />
-              <p className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">All projects in good standing</p>
+              <p className="font-semibold text-carbon">All projects in good standing</p>
               <p>No critical bottlenecks or overdue verification items.</p>
             </div>
           ) : (
@@ -321,26 +353,26 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
                 return (
                   <div 
                     key={c.id} 
-                    className="p-3.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between gap-3 text-xs"
+                    className="p-3.5 rounded-2xl bg-surface-secondary border border-hairline flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC] truncate">
+                        <span className="font-display font-bold text-sm text-carbon truncate">
                           {c.projectName}
                         </span>
-                        <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
+                        <span className="font-mono text-[10px] text-graphite">
                           #{c.id.slice(0, 8)}
                         </span>
                         {isUrgent && (
-                          <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-red-50 dark:bg-red-950/40 text-red-600 border border-red-200 dark:border-red-900">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-50 dark:bg-red-950/40 text-red-600 border border-red-200 dark:border-red-900">
                             Urgent
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] flex-wrap">
+                      <div className="flex items-center gap-2 text-[11px] font-mono text-graphite flex-wrap">
                         <span>Client: {c.clientName}</span>
-                        <span>·</span>
+                        {(isAwaitingDeposit || isAwaitingReview || isAwaitingBalance) && <span>·</span>}
                         {isAwaitingDeposit && (
                           <span className="text-amber-600 dark:text-amber-400 font-semibold">Deposit Pending</span>
                         )}
@@ -348,7 +380,7 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
                           <span className="text-purple-600 dark:text-purple-400 font-semibold">In Client Review</span>
                         )}
                         {isAwaitingBalance && (
-                          <span className="text-orange-600 dark:text-orange-400 font-semibold">Balance Outstanding</span>
+                          <span className="text-accent font-semibold">Balance Outstanding</span>
                         )}
                         <span>·</span>
                         <span>Stage 0{c.currentStage || 1}/08</span>
@@ -363,7 +395,7 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
                         }
                         triggerNavigation('commissions', c.id);
                       }}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C] bg-white dark:bg-[#121214] text-[11px] font-mono text-[#18181B] dark:text-[#EDEDEC] hover:text-[#EA580C] transition-colors shrink-0 cursor-pointer"
+                      className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full border border-hairline hover:border-accent bg-surface text-[11px] font-mono text-carbon hover:text-accent transition-colors shrink-0 cursor-pointer"
                     >
                       <span>Manage</span>
                       <ArrowRight className="w-3 h-3" />
@@ -376,17 +408,17 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
         </div>
 
         {/* Right Column: Recently Updated Commissions */}
-        <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 space-y-4 shadow-2xs">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#222225]">
+        <div className="bg-surface border border-hairline rounded-3xl p-6 space-y-4 shadow-2xs">
+          <div className="flex items-center justify-between pb-3 border-b border-hairline">
             <div className="space-y-0.5">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-graphite font-semibold block">
                 Production Queue
               </span>
-              <h3 className="font-display font-bold text-lg text-[#18181B] dark:text-[#EDEDEC]">
+              <h3 className="font-display font-bold text-lg text-carbon">
                 Recently Active Commissions
               </h3>
             </div>
-            <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+            <span className="font-mono text-xs text-graphite">
               {commissions.length} Total Projects
             </span>
           </div>
@@ -397,20 +429,20 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
               return (
                 <div 
                   key={c.id} 
-                  className="p-3.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between gap-3 text-xs"
+                  className="p-3.5 rounded-2xl bg-surface-secondary border border-hairline flex items-center justify-between gap-3 text-xs"
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC] truncate">
+                      <span className="font-display font-bold text-sm text-carbon truncate">
                         {c.projectName}
                       </span>
-                      <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
+                      <span className="font-mono text-[10px] text-graphite">
                         {c.serviceType}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
-                      <span className="text-[#EA580C] font-semibold">
+                    <div className="flex items-center gap-2 text-[11px] font-mono text-graphite">
+                      <span className="text-accent font-semibold">
                         Stage 0{c.currentStage || 1}: {stageInfo?.name || 'Production'}
                       </span>
                       <span>·</span>
@@ -428,7 +460,7 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
                       }
                       triggerNavigation('commissions', c.id);
                     }}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C] bg-white dark:bg-[#121214] text-[11px] font-mono text-[#18181B] dark:text-[#EDEDEC] hover:text-[#EA580C] transition-colors shrink-0 cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full border border-hairline hover:border-accent bg-surface text-[11px] font-mono text-carbon hover:text-accent transition-colors shrink-0 cursor-pointer"
                   >
                     <span>Inspect</span>
                     <ArrowRight className="w-3 h-3" />
@@ -443,52 +475,76 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
 
       {/* Quick Studio Operations Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div 
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => triggerNavigation('studio', undefined, 'profile')}
-          className="p-4 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C]/50 transition-colors cursor-pointer flex items-center gap-3.5 group shadow-2xs"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              triggerNavigation('studio', undefined, 'profile');
+            }
+          }}
+          className="p-4 rounded-3xl bg-surface border border-hairline hover:border-accent/50 transition-colors cursor-pointer flex items-center gap-3.5 group shadow-2xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <div className="w-10 h-10 rounded-lg bg-orange-500/10 text-[#EA580C] flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-accent/10 text-accent flex items-center justify-center shrink-0">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC] group-hover:text-[#EA580C] transition-colors">
+            <h4 className="font-display font-bold text-sm text-carbon group-hover:text-accent transition-colors">
               GCash Settlement Policy
             </h4>
-            <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+            <p className="text-[11px] font-mono text-graphite">
               Configure mobile settlement credentials
             </p>
           </div>
         </div>
 
-        <div 
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => triggerNavigation('studio', undefined, 'services')}
-          className="p-4 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C]/50 transition-colors cursor-pointer flex items-center gap-3.5 group shadow-2xs"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              triggerNavigation('studio', undefined, 'services');
+            }
+          }}
+          className="p-4 rounded-3xl bg-surface border border-hairline hover:border-accent/50 transition-colors cursor-pointer flex items-center gap-3.5 group shadow-2xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
             <Layers className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC] group-hover:text-[#EA580C] transition-colors">
+            <h4 className="font-display font-bold text-sm text-carbon group-hover:text-accent transition-colors">
               Services & Pricing Packages
             </h4>
-            <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+            <p className="text-[11px] font-mono text-graphite">
               Manage deliverables & turnaround times
             </p>
           </div>
         </div>
 
-        <div 
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => triggerNavigation('studio', undefined, 'portfolio')}
-          className="p-4 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:border-[#EA580C]/50 transition-colors cursor-pointer flex items-center gap-3.5 group shadow-2xs"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              triggerNavigation('studio', undefined, 'portfolio');
+            }
+          }}
+          className="p-4 rounded-3xl bg-surface border border-hairline hover:border-accent/50 transition-colors cursor-pointer flex items-center gap-3.5 group shadow-2xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
             <ImageIcon className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="font-display font-bold text-sm text-[#18181B] dark:text-[#EDEDEC] group-hover:text-[#EA580C] transition-colors">
+            <h4 className="font-display font-bold text-sm text-carbon group-hover:text-accent transition-colors">
               Portfolio Showcase Works
             </h4>
-            <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+            <p className="text-[11px] font-mono text-graphite">
               Curate case studies & gallery media
             </p>
           </div>

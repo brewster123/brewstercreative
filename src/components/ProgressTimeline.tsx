@@ -10,30 +10,30 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({ updates = []
   const safeUpdates = updates || [];
 
   return (
-    <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
+    <div className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6">
       
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
+      <div className="flex items-center justify-between gap-4 pb-4 border-b border-hairline">
         <div>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block mb-1">
             Production Ledger
           </span>
-          <h3 className="font-display text-lg sm:text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+          <h3 className="font-display text-lg sm:text-xl font-bold text-carbon">
             Milestone Activity Log
           </h3>
         </div>
 
-        <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+        <span className="font-mono text-xs text-graphite">
           {safeUpdates.length} {safeUpdates.length === 1 ? 'entry' : 'entries'} documented
         </span>
       </div>
 
       {safeUpdates.length === 0 ? (
-        <div className="py-8 text-center text-xs text-[#71717A] dark:text-[#A1A1AA]">
+        <div className="py-8 text-center text-xs text-graphite">
           No milestones recorded yet. Production entries will appear as the project advances.
         </div>
       ) : (
-        <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-[#E4E2DC] dark:before:bg-[#222225]">
+        <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-border-hairline dark:before:bg-[#222634]">
           {safeUpdates.map((update, index) => {
             const isLatest = index === safeUpdates.length - 1;
 
@@ -41,10 +41,10 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({ updates = []
               <div key={update.id} className="relative group">
                 {/* Marker */}
                 <div 
-                  className={`absolute -left-6 top-1 w-4 h-4 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-[#121214] ${
+                  className={`absolute -left-6 top-1 w-4 h-4 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-[#11131B] ${
                     isLatest
-                      ? 'bg-[#EA580C] text-white shadow-xs'
-                      : 'bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#71717A] dark:text-[#A1A1AA]'
+                      ? 'bg-accent text-white shadow-xs'
+                      : 'bg-surface-secondary border border-hairline text-graphite'
                   }`}
                 >
                   {isLatest ? (
@@ -55,28 +55,28 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({ updates = []
                 </div>
 
                 {/* Content */}
-                <div className="bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg p-4 space-y-2">
+                <div className="bg-surface-secondary border border-hairline rounded-2xl p-4 space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                      <span className="text-xs font-bold text-carbon">
                         {update.stage}
                       </span>
-                      <span className="font-mono text-[10px] text-[#EA580C]">
+                      <span className="font-mono text-[10px] text-accent font-semibold">
                         {update.percentage}%
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-[11px] text-[#71717A] dark:text-[#A1A1AA] font-mono">
-                      <Clock className="w-3 h-3 text-[#A1A1AA]" />
+                    <div className="flex items-center gap-1.5 text-[11px] text-graphite font-mono">
+                      <Clock className="w-3 h-3 text-graphite" />
                       <span>{update.timestamp}</span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                  <p className="text-xs text-graphite leading-relaxed">
                     {update.note}
                   </p>
 
-                  <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                  <div className="pt-2 border-t border-hairline flex items-center justify-between text-[11px] font-mono text-graphite">
                     <span className="flex items-center gap-1">
                       <UserCheck className="w-3 h-3" />
                       <span>Recorded by {update.updatedBy}</span>

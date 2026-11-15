@@ -71,10 +71,36 @@ export const CreativeStudioView: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
 
+  const isMountedRef = useRef(true);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showExitConfirm) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowExitConfirm(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showExitConfirm]);
+
   // Helper toast notification
   const showToast = useCallback((msg: string) => {
+    if (!isMountedRef.current) return;
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      if (isMountedRef.current) setToastMessage(null);
+    }, 2500);
   }, []);
 
   // Commit document change with history snapshot
@@ -131,7 +157,7 @@ export const CreativeStudioView: React.FC = () => {
   // Add new element to active artboard
   const handleAddElement = useCallback((type: StudioElementType) => {
     if (!activeArtboard) return;
-    const newId = `elem-${Date.now()}`;
+    const newId = `elem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newElement: StudioElement = {
       id: newId,
       name: type === 'text' ? 'Text Heading' : type === 'rectangle' ? 'Visual Block' : type === 'vector-badge' ? 'Status Badge' : 'Group Frame',
@@ -170,9 +196,15 @@ export const CreativeStudioView: React.FC = () => {
     const elem = targetBoard.elements.find((e) => e.id === selectedElementId);
     if (!elem) return;
 
+    const isOnlyUnlocking = Object.keys(updates).length === 1 && updates.locked === false;
+    if (elem.locked && !isOnlyUnlocking) {
+      showToast('Layer is locked. Unlock it to make changes.');
+      return;
+    }
+
     Object.assign(elem, updates);
     commitDocChange(nextDoc);
-  }, [activeArtboard, selectedElementId, doc, commitDocChange]);
+  }, [activeArtboard, selectedElementId, doc, commitDocChange, showToast]);
 
   // Delete element
   const handleDeleteElement = useCallback((elemId: string) => {
@@ -180,6 +212,12 @@ export const CreativeStudioView: React.FC = () => {
     const nextDoc = cloneStudioDocument(doc);
     const targetBoard = nextDoc.artboards.find((a) => a.id === activeArtboard.id);
     if (!targetBoard) return;
+    const targetElem = targetBoard.elements.find((e) => e.id === elemId);
+    if (!targetElem) return;
+    if (targetElem.locked) {
+      showToast('Unlock layer before deleting.');
+      return;
+    }
     targetBoard.elements = targetBoard.elements.filter((e) => e.id !== elemId);
     commitDocChange(nextDoc);
     if (selectedElementId === elemId) {
@@ -190,7 +228,7 @@ export const CreativeStudioView: React.FC = () => {
 
   // Add new artboard
   const handleAddArtboard = useCallback(() => {
-    const newId = `artboard-${Date.now()}`;
+    const newId = `artboard-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newArtboard: StudioArtboard = {
       id: newId,
       name: `Artboard ${doc.artboards.length + 1} (800×600)`,
@@ -208,7 +246,7 @@ export const CreativeStudioView: React.FC = () => {
   }, [doc, commitDocChange, showToast]);
 
   return (
-    <div className="min-h-screen h-screen flex flex-col bg-[#09090B] text-[#EDEDEC] font-sans overflow-hidden select-none">
+    <div className="flex-1 h-full min-h-0 flex flex-col bg-[#09090B] text-[#EDEDEC] font-sans overflow-hidden select-none">
       {/* Toast notification banner */}
       {toastMessage && (
         <div className="fixed top-16 right-6 z-50 px-4 py-2 bg-[#18181B] border border-[#222225] text-white text-xs font-mono rounded-lg shadow-xl flex items-center gap-2 animate-in slide-in-from-top-2">
@@ -219,13 +257,21 @@ export const CreativeStudioView: React.FC = () => {
 
       {/* Unsaved Changes Confirmation Dialog */}
       {showExitConfirm && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="exit-confirm-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowExitConfirm(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4"
+        >
           <div className="bg-[#121214] border border-[#222225] rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center gap-3 text-amber-500">
               <div className="p-2 rounded-lg bg-amber-500/10">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <h3 className="font-display font-bold text-lg text-white">
+              <h3 id="exit-confirm-title" className="font-display font-bold text-lg text-white">
                 Unsaved Studio Changes
               </h3>
             </div>
@@ -233,6 +279,13 @@ export const CreativeStudioView: React.FC = () => {
               You have unsaved draft modifications in your Creative Studio workspace. Would you like to save your work before returning to the Admin Dashboard?
             </p>
             <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowExitConfirm(false)}
+                className="px-3.5 py-2 rounded-lg text-xs font-mono text-[#71717A] hover:text-white transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -389,9 +442,10 @@ export const CreativeStudioView: React.FC = () => {
 
           {/* Quick Starter Launchers */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div 
+            <button
+              type="button"
               onClick={() => setWorkspaceMode('design-workspace')}
-              className="p-6 rounded-xl border border-[#222225] bg-[#121214] hover:border-[#EA580C] transition-all cursor-pointer space-y-4 group"
+              className="text-left p-6 rounded-xl border border-[#222225] bg-[#121214] hover:border-[#EA580C] transition-all cursor-pointer space-y-4 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EA580C]"
             >
               <div className="w-10 h-10 rounded-lg bg-[#18181B] border border-[#222225] flex items-center justify-center text-[#EA580C] group-hover:scale-105 transition-transform">
                 <Layers className="w-5 h-5" />
@@ -408,11 +462,12 @@ export const CreativeStudioView: React.FC = () => {
                 <span>Enter Canvas</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </div>
-            </div>
+            </button>
 
-            <div 
+            <button
+              type="button"
               onClick={() => setWorkspaceMode('website-workspace')}
-              className="p-6 rounded-xl border border-[#222225] bg-[#121214] hover:border-[#EA580C] transition-all cursor-pointer space-y-4 group"
+              className="text-left p-6 rounded-xl border border-[#222225] bg-[#121214] hover:border-[#EA580C] transition-all cursor-pointer space-y-4 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EA580C]"
             >
               <div className="w-10 h-10 rounded-lg bg-[#18181B] border border-[#222225] flex items-center justify-center text-[#EA580C] group-hover:scale-105 transition-transform">
                 <Monitor className="w-5 h-5" />
@@ -429,7 +484,7 @@ export const CreativeStudioView: React.FC = () => {
                 <span>Open Website Workspace</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </div>
-            </div>
+            </button>
           </div>
 
           {/* Active Documents & Artboards Overview */}
@@ -453,13 +508,14 @@ export const CreativeStudioView: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {doc.artboards.map((artboard) => (
-                <div
+                <button
                   key={artboard.id}
+                  type="button"
                   onClick={() => {
                     setActiveArtboardId(artboard.id);
                     setWorkspaceMode('design-workspace');
                   }}
-                  className="p-5 rounded-xl border border-[#222225] bg-[#121214] hover:border-[#38383E] transition-all cursor-pointer space-y-3"
+                  className="text-left p-5 rounded-xl border border-[#222225] bg-[#121214] hover:border-[#38383E] transition-all cursor-pointer space-y-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EA580C]"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[10px] text-[#A1A1AA] uppercase">
@@ -477,7 +533,7 @@ export const CreativeStudioView: React.FC = () => {
                       Artboard Preview Canvas
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -587,19 +643,22 @@ export const CreativeStudioView: React.FC = () => {
                   return (
                     <div
                       key={elem.id}
-                      onClick={() => setSelectedElementId(elem.id)}
-                      className={`flex items-center justify-between p-2 rounded-lg text-xs font-mono cursor-pointer transition-colors ${
+                      className={`flex items-center justify-between p-1.5 rounded-lg text-xs font-mono transition-colors ${
                         isSelected
                           ? 'bg-[#EA580C] text-white font-semibold'
                           : 'text-[#A1A1AA] hover:bg-[#18181B] hover:text-white'
                       }`}
                     >
-                      <div className="flex items-center gap-2 truncate">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedElementId(elem.id)}
+                        className="flex-1 min-w-0 flex items-center gap-2 text-left py-0.5 px-1 rounded cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-white"
+                      >
                         <Icon className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">{elem.name}</span>
-                      </div>
+                      </button>
 
-                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
                           onClick={() => {
@@ -609,8 +668,9 @@ export const CreativeStudioView: React.FC = () => {
                             if (el) el.visible = !el.visible;
                             commitDocChange(nextDoc);
                           }}
-                          className="p-1 hover:text-white transition-colors"
+                          className="p-1 hover:text-white transition-colors cursor-pointer"
                           title={elem.visible ? 'Hide' : 'Show'}
+                          aria-label={elem.visible ? `Hide ${elem.name}` : `Show ${elem.name}`}
                         >
                           {elem.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3 text-zinc-500" />}
                         </button>
@@ -624,8 +684,9 @@ export const CreativeStudioView: React.FC = () => {
                             if (el) el.locked = !el.locked;
                             commitDocChange(nextDoc);
                           }}
-                          className="p-1 hover:text-white transition-colors"
+                          className="p-1 hover:text-white transition-colors cursor-pointer"
                           title={elem.locked ? 'Unlock' : 'Lock'}
+                          aria-label={elem.locked ? `Unlock ${elem.name}` : `Lock ${elem.name}`}
                         >
                           {elem.locked ? <Lock className="w-3 h-3 text-amber-400" /> : <Unlock className="w-3 h-3" />}
                         </button>
@@ -747,29 +808,59 @@ export const CreativeStudioView: React.FC = () => {
                 Element Inspector
               </span>
               {selectedElement && (
-                <button
-                  type="button"
-                  onClick={() => handleDeleteElement(selectedElement.id)}
-                  className="p-1 hover:text-red-400 text-zinc-500 transition-colors cursor-pointer"
-                  title="Delete element"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateSelectedElement({ locked: !selectedElement.locked })}
+                    className="p-1 hover:text-white text-zinc-400 transition-colors cursor-pointer"
+                    title={selectedElement.locked ? 'Unlock element' : 'Lock element'}
+                    aria-label={selectedElement.locked ? 'Unlock element' : 'Lock element'}
+                  >
+                    {selectedElement.locked ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : <Unlock className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selectedElement.locked}
+                    onClick={() => handleDeleteElement(selectedElement.id)}
+                    className="p-1 hover:text-red-400 text-zinc-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    title={selectedElement.locked ? 'Unlock element to delete' : 'Delete element'}
+                    aria-label={selectedElement.locked ? 'Unlock element to delete' : 'Delete element'}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-5">
               {selectedElement ? (
                 <>
+                  {selectedElement.locked && (
+                    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 text-[11px] font-mono text-amber-300">
+                      <span className="flex items-center gap-1.5">
+                        <Lock className="w-3 h-3 shrink-0" />
+                        <span>Layer locked</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateSelectedElement({ locked: false })}
+                        className="underline hover:text-white cursor-pointer"
+                      >
+                        Unlock
+                      </button>
+                    </div>
+                  )}
+
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono uppercase text-[#71717A] font-semibold block">
                       Element Label
                     </label>
                     <input
                       type="text"
+                      disabled={selectedElement.locked}
                       value={selectedElement.name}
                       onChange={(e) => handleUpdateSelectedElement({ name: e.target.value })}
-                      className="w-full bg-[#18181B] border border-[#222225] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#EA580C]"
+                      className="w-full bg-[#18181B] border border-[#222225] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#EA580C] disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
 
@@ -783,36 +874,42 @@ export const CreativeStudioView: React.FC = () => {
                         <span className="text-[#52525B] text-[10px] block">X</span>
                         <input
                           type="number"
+                          disabled={selectedElement.locked}
                           value={selectedElement.x}
                           onChange={(e) => handleUpdateSelectedElement({ x: parseInt(e.target.value, 10) || 0 })}
-                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white"
+                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                       <div>
                         <span className="text-[#52525B] text-[10px] block">Y</span>
                         <input
                           type="number"
+                          disabled={selectedElement.locked}
                           value={selectedElement.y}
                           onChange={(e) => handleUpdateSelectedElement({ y: parseInt(e.target.value, 10) || 0 })}
-                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white"
+                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                       <div>
                         <span className="text-[#52525B] text-[10px] block">Width</span>
                         <input
                           type="number"
+                          min={10}
+                          disabled={selectedElement.locked}
                           value={selectedElement.width}
-                          onChange={(e) => handleUpdateSelectedElement({ width: parseInt(e.target.value, 10) || 10 })}
-                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white"
+                          onChange={(e) => handleUpdateSelectedElement({ width: Math.max(10, parseInt(e.target.value, 10) || 10) })}
+                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                       <div>
                         <span className="text-[#52525B] text-[10px] block">Height</span>
                         <input
                           type="number"
+                          min={10}
+                          disabled={selectedElement.locked}
                           value={selectedElement.height}
-                          onChange={(e) => handleUpdateSelectedElement({ height: parseInt(e.target.value, 10) || 10 })}
-                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white"
+                          onChange={(e) => handleUpdateSelectedElement({ height: Math.max(10, parseInt(e.target.value, 10) || 10) })}
+                          className="w-full bg-[#18181B] border border-[#222225] rounded px-2 py-1 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                     </div>
@@ -828,9 +925,10 @@ export const CreativeStudioView: React.FC = () => {
                         <span className="text-xs text-[#A1A1AA]">Fill Color</span>
                         <input
                           type="color"
+                          disabled={selectedElement.locked}
                           value={selectedElement.fill}
                           onChange={(e) => handleUpdateSelectedElement({ fill: e.target.value })}
-                          className="w-7 h-7 rounded border border-[#222225] cursor-pointer bg-transparent"
+                          className="w-7 h-7 rounded border border-[#222225] cursor-pointer bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                     )}
@@ -844,9 +942,10 @@ export const CreativeStudioView: React.FC = () => {
                           type="range"
                           min="0"
                           max="32"
+                          disabled={selectedElement.locked}
                           value={selectedElement.borderRadius}
                           onChange={(e) => handleUpdateSelectedElement({ borderRadius: parseInt(e.target.value, 10) })}
-                          className="w-full accent-[#EA580C]"
+                          className="w-full accent-[#EA580C] disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                     )}
@@ -860,9 +959,10 @@ export const CreativeStudioView: React.FC = () => {
                       </span>
                       <textarea
                         rows={3}
+                        disabled={selectedElement.locked}
                         value={selectedElement.text || ''}
                         onChange={(e) => handleUpdateSelectedElement({ text: e.target.value })}
-                        className="w-full bg-[#18181B] border border-[#222225] rounded p-2 text-xs text-white focus:outline-none focus:border-[#EA580C] resize-none"
+                        className="w-full bg-[#18181B] border border-[#222225] rounded p-2 text-xs text-white focus:outline-none focus:border-[#EA580C] resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs font-mono">
@@ -873,9 +973,10 @@ export const CreativeStudioView: React.FC = () => {
                           type="range"
                           min="12"
                           max="84"
+                          disabled={selectedElement.locked}
                           value={selectedElement.fontSize || 16}
                           onChange={(e) => handleUpdateSelectedElement({ fontSize: parseInt(e.target.value, 10) })}
-                          className="w-full accent-[#EA580C]"
+                          className="w-full accent-[#EA580C] disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                     </div>

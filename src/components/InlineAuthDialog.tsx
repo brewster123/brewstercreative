@@ -43,22 +43,40 @@ export const InlineAuthDialog: React.FC<InlineAuthDialogProps> = ({
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const dialogRef = useRef<HTMLDivElement>(null);
+  const completedRef = useRef(false);
+  const onSuccessRef = useRef(onSuccess);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+  }, [onSuccess]);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (isOpen) {
+      completedRef.current = false;
       setMode(initialMode);
       setError(null);
       setInfoMessage(null);
     }
   }, [isOpen, initialMode]);
 
-  // If user becomes authenticated while dialog is open, trigger success
+  const finishSuccess = () => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    onSuccessRef.current();
+    onCloseRef.current();
+  };
+
+  // If user becomes authenticated while dialog is open, trigger success once
   useEffect(() => {
     if (isOpen && currentUser) {
-      onSuccess();
-      onClose();
+      finishSuccess();
     }
-  }, [currentUser, isOpen, onSuccess, onClose]);
+  }, [currentUser, isOpen]);
 
   // Escape key handler
   useEffect(() => {
@@ -93,8 +111,7 @@ export const InlineAuthDialog: React.FC<InlineAuthDialogProps> = ({
       try {
         const res = await loginUser(cleanEmail, password);
         if (res.success && res.user) {
-          onSuccess();
-          onClose();
+          finishSuccess();
         } else {
           setError(res.error || 'Invalid credentials. Please verify your email and password.');
         }
@@ -130,8 +147,7 @@ export const InlineAuthDialog: React.FC<InlineAuthDialogProps> = ({
             setInfoMessage('Account created! A confirmation email has been dispatched. Please check your inbox or sign in below.');
             setMode('signin');
           } else if (res.user) {
-            onSuccess();
-            onClose();
+            finishSuccess();
           }
         } else {
           setError(res.error || 'Registration failed. Please check your details or try signing in.');
@@ -149,11 +165,16 @@ export const InlineAuthDialog: React.FC<InlineAuthDialogProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="auth-dialog-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isLoading) {
+          onClose();
+        }
+      }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
     >
       <div
         ref={dialogRef}
-        className="relative w-full max-w-md bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6 text-[#18181B] dark:text-[#EDEDEC]"
+        className="relative w-full max-w-md bg-surface border border-hairline rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 text-carbon"
       >
         {/* Close Button */}
         <button
@@ -161,34 +182,34 @@ export const InlineAuthDialog: React.FC<InlineAuthDialogProps> = ({
           onClick={onClose}
           disabled={isLoading}
           aria-label="Close authentication modal"
-          className="absolute top-5 right-5 p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] transition-colors cursor-pointer disabled:opacity-50"
+          className="absolute top-5 right-5 p-2 rounded-full text-graphite hover:text-carbon hover:bg-surface-secondary transition-colors cursor-pointer disabled:opacity-50"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Modal Header */}
         <div className="space-y-1.5 pr-6">
-          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-accent font-semibold">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Secure Studio Identity</span>
           </div>
           <h2 id="auth-dialog-title" className="font-display text-xl sm:text-2xl font-black tracking-tight">
             {mode === 'signin' ? 'Sign In to Proceed' : 'Create Client Account'}
           </h2>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+          <p className="text-xs text-graphite leading-relaxed">
             {subtitle}
           </p>
         </div>
 
         {/* Mode Switch Tabs */}
-        <div className="flex p-1 bg-[#FAF9F6] dark:bg-[#18181B] rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-xs font-mono">
+        <div className="flex p-1 bg-surface-secondary rounded-full border border-hairline text-xs font-mono">
           <button
             type="button"
             onClick={() => { setMode('signin'); setError(null); }}
-            className={`flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
+            className={`flex-1 py-1.5 rounded-full font-semibold transition-all cursor-pointer ${
               mode === 'signin'
-                ? 'bg-white dark:bg-[#121214] text-[#EA580C] shadow-2xs'
-                : 'text-[#71717A] dark:text-[#A1A1AA]'
+                ? 'bg-accent text-white shadow-2xs'
+                : 'text-graphite hover:text-carbon'
             }`}
           >
             Sign In
@@ -196,10 +217,10 @@ export const InlineAuthDialog: React.FC<InlineAuthDialogProps> = ({
           <button
             type="button"
             onClick={() => { setMode('register'); setError(null); }}
-            className={`flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
+            className={`flex-1 py-1.5 rounded-full font-semibold transition-all cursor-pointer ${
               mode === 'register'
-                ? 'bg-white dark:bg-[#121214] text-[#EA580C] shadow-2xs'
-                : 'text-[#71717A] dark:text-[#A1A1AA]'
+                ? 'bg-accent text-white shadow-2xs'
+                : 'text-graphite hover:text-carbon'
             }`}
           >
             Register Account
@@ -208,14 +229,14 @@ export const InlineAuthDialog: React.FC<InlineAuthDialogProps> = ({
 
         {/* Error / Feedback Alert */}
         {error && (
-          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-start gap-2 animate-in fade-in duration-150">
+          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-start gap-2 animate-in fade-in duration-150">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span className="leading-snug">{error}</span>
           </div>
         )}
 
         {infoMessage && (
-          <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-start gap-2 animate-in fade-in duration-150">
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-start gap-2 animate-in fade-in duration-150">
             <Sparkles className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
             <span className="leading-snug">{infoMessage}</span>
           </div>
@@ -225,71 +246,71 @@ export const InlineAuthDialog: React.FC<InlineAuthDialogProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {mode === 'register' && (
             <div>
-              <label className="block font-mono uppercase tracking-wider text-[10px] text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
-                Full Name <span className="text-[#EA580C]">*</span>
+              <label className="block font-mono uppercase tracking-wider text-[10px] text-graphite mb-1 font-semibold">
+                Full Name <span className="text-accent">*</span>
               </label>
               <div className="relative">
-                <User className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
+                <User className="w-3.5 h-3.5 text-graphite absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   required
                   placeholder="e.g. Alexis Chen"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg pl-9 pr-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                  className="w-full bg-surface-secondary border border-hairline rounded-xl pl-9 pr-3 py-2.5 text-xs text-carbon focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block font-mono uppercase tracking-wider text-[10px] text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
-              Email Address <span className="text-[#EA580C]">*</span>
+            <label className="block font-mono uppercase tracking-wider text-[10px] text-graphite mb-1 font-semibold">
+              Email Address <span className="text-accent">*</span>
             </label>
             <div className="relative">
-              <Mail className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Mail className="w-3.5 h-3.5 text-graphite absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 required
                 placeholder="name@domain.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg pl-9 pr-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                className="w-full bg-surface-secondary border border-hairline rounded-xl pl-9 pr-3 py-2.5 text-xs text-carbon focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-mono uppercase tracking-wider text-[10px] text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
-              Password <span className="text-[#EA580C]">*</span>
+            <label className="block font-mono uppercase tracking-wider text-[10px] text-graphite mb-1 font-semibold">
+              Password <span className="text-accent">*</span>
             </label>
             <div className="relative">
-              <Lock className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Lock className="w-3.5 h-3.5 text-graphite absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="password"
                 required
                 placeholder="••••••••"
                 value={mode === 'signin' ? password : regPassword}
                 onChange={(e) => mode === 'signin' ? setPassword(e.target.value) : setRegPassword(e.target.value)}
-                className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg pl-9 pr-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                className="w-full bg-surface-secondary border border-hairline rounded-xl pl-9 pr-3 py-2.5 text-xs text-carbon focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>
 
           {mode === 'register' && (
             <div>
-              <label className="block font-mono uppercase tracking-wider text-[10px] text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
-                Confirm Password <span className="text-[#EA580C]">*</span>
+              <label className="block font-mono uppercase tracking-wider text-[10px] text-graphite mb-1 font-semibold">
+                Confirm Password <span className="text-accent">*</span>
               </label>
               <div className="relative">
-                <Lock className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-3.5 h-3.5 text-graphite absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={regConfirmPassword}
                   onChange={(e) => setRegConfirmPassword(e.target.value)}
-                  className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg pl-9 pr-3 py-2 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-none focus:border-[#EA580C]"
+                  className="w-full bg-surface-secondary border border-hairline rounded-xl pl-9 pr-3 py-2.5 text-xs text-carbon focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                 />
               </div>
             </div>
@@ -299,11 +320,11 @@ export const InlineAuthDialog: React.FC<InlineAuthDialogProps> = ({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] disabled:opacity-50 text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 px-5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] disabled:opacity-50 text-[#111114] font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <>
-                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3.5 h-3.5 border-2 border-[#111114] border-t-transparent rounded-full animate-spin" />
                   <span>Verifying credentials...</span>
                 </>
               ) : (
@@ -316,7 +337,7 @@ export const InlineAuthDialog: React.FC<InlineAuthDialogProps> = ({
           </div>
         </form>
 
-        <p className="text-[11px] text-center text-[#71717A] dark:text-[#A1A1AA] pt-1 font-mono">
+        <p className="text-[11px] text-center text-graphite pt-1 font-mono">
           Your commission draft is preserved in this browser session.
         </p>
       </div>

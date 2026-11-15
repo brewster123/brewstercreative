@@ -22,9 +22,9 @@
         try {
           var saved = localStorage.getItem('brewster_theme');
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          // First-time visitors (!saved) default to dark mode.
+          // First-time visitors (!saved) default to light mode to showcase the crisp gallery canvas.
           // Returning visitors retain their explicit saved preference.
-          var isDark = !saved || saved === 'dark' || (saved === 'system' && prefersDark);
+          var isDark = saved === 'dark' || (saved === 'system' && prefersDark);
           if (isDark) {
             document.documentElement.classList.add('dark');
           } else {
@@ -34,7 +34,7 @@
       })();
     </script>
   </head>
-  <body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] selection:bg-orange-600 selection:text-white font-sans antialiased overflow-x-hidden min-h-screen">
+  <body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] selection:bg-[#D4FF38] selection:text-[#111114] font-sans antialiased overflow-x-hidden min-h-screen">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

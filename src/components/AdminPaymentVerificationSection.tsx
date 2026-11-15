@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Commission, CommissionPaymentProof, User } from '../types';
 import { useApp } from '../context/AppContext';
 import { 
@@ -66,23 +66,38 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
   // Image Lightbox State
   const [lightboxProof, setLightboxProof] = useState<CommissionPaymentProof | null>(null);
   const [lightboxSignedUrl, setLightboxSignedUrl] = useState<string | null>(null);
+  const [lightboxError, setLightboxError] = useState<string | null>(null);
   const [loadingSignedUrl, setLoadingSignedUrl] = useState<boolean>(false);
   const [signedUrlCache, setSignedUrlCache] = useState<Record<string, string>>({});
+
+  const isMountedRef = useRef(true);
+  const activeLightboxProofIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const loadProofs = async () => {
     setLoading(true);
     setError(null);
     try {
       const { data, error: fetchErr } = await fetchCommissionPaymentProofs();
+      if (!isMountedRef.current) return;
       if (fetchErr) {
         setError(fetchErr);
       } else {
         setProofs(data || []);
       }
     } catch (err: any) {
+      if (!isMountedRef.current) return;
       setError(err?.message || 'Failed to load payment receipts from server.');
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -97,13 +112,6 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
       unsubscribe();
     };
   }, []);
-
-  // Update commission filter if prop changes
-  useEffect(() => {
-    if (initialSelectedCommissionId) {
-      setSelectedCommissionId(initialSelectedCommissionId);
-    }
-  }, [initialSelectedCommissionId]);
 
   // Handle Escape key to dismiss review dialog or receipt lightbox
   useEffect(() => {
@@ -122,8 +130,10 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
 
   // Open Lightbox
   const handleOpenLightbox = async (proof: CommissionPaymentProof) => {
+    activeLightboxProofIdRef.current = proof.id;
     setLightboxProof(proof);
-    setReviewError(null);
+    setLightboxError(null);
+    setLightboxSignedUrl(null);
 
     if (signedUrlCache[proof.id]) {
       setLightboxSignedUrl(signedUrlCache[proof.id]);
@@ -133,22 +143,28 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
     setLoadingSignedUrl(true);
     try {
       const { signedUrl, error: signErr } = await getPaymentProofSignedUrl(proof.filePath, 3600);
+      if (!isMountedRef.current || activeLightboxProofIdRef.current !== proof.id) return;
       if (signErr || !signedUrl) {
-        setReviewError(signErr || 'Failed to generate secure URL for receipt preview.');
+        setLightboxError(signErr || 'Failed to generate secure URL for receipt preview.');
       } else {
         setSignedUrlCache((prev) => ({ ...prev, [proof.id]: signedUrl }));
         setLightboxSignedUrl(signedUrl);
       }
     } catch (err: any) {
-      setReviewError(err?.message || 'Error acquiring signed URL for receipt preview.');
+      if (!isMountedRef.current || activeLightboxProofIdRef.current !== proof.id) return;
+      setLightboxError(err?.message || 'Error acquiring signed URL for receipt preview.');
     } finally {
-      setLoadingSignedUrl(false);
+      if (isMountedRef.current && activeLightboxProofIdRef.current === proof.id) {
+        setLoadingSignedUrl(false);
+      }
     }
   };
 
   const handleCloseLightbox = () => {
+    activeLightboxProofIdRef.current = null;
     setLightboxProof(null);
     setLightboxSignedUrl(null);
+    setLightboxError(null);
   };
 
   // Open Review Dialog
@@ -173,7 +189,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
     // Auto-preload signed URL if not cached
     if (!signedUrlCache[proof.id]) {
       getPaymentProofSignedUrl(proof.filePath, 3600).then(({ signedUrl }) => {
-        if (signedUrl) {
+        if (signedUrl && isMountedRef.current) {
           setSignedUrlCache((prev) => ({ ...prev, [proof.id]: signedUrl }));
         }
       });
@@ -236,7 +252,10 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
         // Also update local commission status if it was in pending
         const comm = commissions.find((c) => c.id === reviewingProof.commissionId);
         if (comm && comm.status === 'pending') {
-          await updateCommissionStatus(comm.id, 'accepted');
+          const statusRes = await updateCommissionStatus(comm.id, 'accepted');
+          if (statusRes && !statusRes.success) {
+            setError(statusRes.error || 'Payment verified, though advancing commission status encountered an issue.');
+          }
         }
       }
 
@@ -277,21 +296,21 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
   return (
     <div className="space-y-6">
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-hairline">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold">
+            <span className="font-mono text-xs uppercase tracking-widest text-accent font-semibold">
               Financial Audit
             </span>
-            <span className="text-[#71717A] dark:text-[#A1A1AA]">·</span>
-            <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+            <span className="text-graphite">·</span>
+            <span className="text-xs font-mono text-graphite">
               GCash Manual Verification
             </span>
           </div>
-          <h3 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+          <h3 className="font-display text-xl sm:text-2xl font-bold text-carbon">
             GCash Payment Verifications
           </h3>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1 max-w-2xl">
+          <p className="text-xs text-graphite mt-1 max-w-2xl">
             Audit manual client GCash transfers, verify reference numbers against your merchant records, and confirm payments to unlock production phases and final deliverables.
           </p>
         </div>
@@ -300,7 +319,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
           type="button"
           onClick={loadProofs}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] transition-all cursor-pointer disabled:opacity-50 self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface border border-hairline hover:bg-surface-secondary text-xs font-mono text-graphite hover:text-carbon transition-all cursor-pointer disabled:opacity-50 self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh Ledger</span>
@@ -313,19 +332,19 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
           type="button"
           onClick={() => setStatusFilter('pending_verification')}
           aria-pressed={statusFilter === 'pending_verification'}
-          className={`p-4 rounded-xl border text-left transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile ${
+          className={`p-5 rounded-3xl border text-left transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent btn-tactile ${
             statusFilter === 'pending_verification'
               ? 'bg-amber-500/10 border-amber-500 ring-1 ring-amber-500/40'
-              : 'bg-white dark:bg-[#121214] border-[#E4E2DC] dark:border-[#222225] hover:border-amber-400'
+              : 'bg-surface border-hairline hover:border-amber-400'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] uppercase">
+            <span className="text-xs font-mono text-graphite uppercase">
               Pending Review
             </span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-2xl font-display font-black text-[#18181B] dark:text-[#EDEDEC] mt-2">
+          <p className="text-2xl font-display font-black text-carbon mt-2">
             {pendingCount}
           </p>
           <span className="text-[11px] font-mono text-amber-600 dark:text-amber-400">
@@ -337,19 +356,19 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
           type="button"
           onClick={() => setStatusFilter('confirmed')}
           aria-pressed={statusFilter === 'confirmed'}
-          className={`p-4 rounded-xl border text-left transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile ${
+          className={`p-5 rounded-3xl border text-left transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent btn-tactile ${
             statusFilter === 'confirmed'
               ? 'bg-emerald-500/10 border-emerald-500 ring-1 ring-emerald-500/40'
-              : 'bg-white dark:bg-[#121214] border-[#E4E2DC] dark:border-[#222225] hover:border-emerald-400'
+              : 'bg-surface border-hairline hover:border-emerald-400'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] uppercase">
+            <span className="text-xs font-mono text-graphite uppercase">
               Confirmed
             </span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
-          <p className="text-2xl font-display font-black text-[#18181B] dark:text-[#EDEDEC] mt-2">
+          <p className="text-2xl font-display font-black text-carbon mt-2">
             {confirmedCount}
           </p>
           <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
@@ -361,19 +380,19 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
           type="button"
           onClick={() => setStatusFilter('rejected')}
           aria-pressed={statusFilter === 'rejected'}
-          className={`p-4 rounded-xl border text-left transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] btn-tactile ${
+          className={`p-5 rounded-3xl border text-left transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent btn-tactile ${
             statusFilter === 'rejected'
               ? 'bg-red-500/10 border-red-500 ring-1 ring-red-500/40'
-              : 'bg-white dark:bg-[#121214] border-[#E4E2DC] dark:border-[#222225] hover:border-red-400'
+              : 'bg-surface border-hairline hover:border-red-400'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] uppercase">
+            <span className="text-xs font-mono text-graphite uppercase">
               Rejected
             </span>
             <XCircle className="w-4 h-4 text-red-500" />
           </div>
-          <p className="text-2xl font-display font-black text-[#18181B] dark:text-[#EDEDEC] mt-2">
+          <p className="text-2xl font-display font-black text-carbon mt-2">
             {rejectedCount}
           </p>
           <span className="text-[11px] font-mono text-red-600 dark:text-red-400">
@@ -383,17 +402,17 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3 bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3.5 bg-surface border border-hairline rounded-2xl">
         <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1 lg:pb-0">
           {(['all', 'pending_verification', 'confirmed', 'rejected'] as const).map((filter) => (
             <button
               key={filter}
               type="button"
               onClick={() => setStatusFilter(filter)}
-              className={`px-3 py-2 sm:py-1.5 min-h-[40px] sm:min-h-[36px] rounded-lg text-xs font-mono transition-colors cursor-pointer shrink-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] ${
+              className={`px-3.5 py-2 sm:py-1.5 min-h-[40px] sm:min-h-[36px] rounded-full text-xs font-mono transition-colors cursor-pointer shrink-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
                 statusFilter === filter
-                  ? 'bg-[#18181B] dark:bg-white text-white dark:text-[#18181B] font-semibold'
-                  : 'text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#FAF9F6] dark:hover:bg-[#18181B]'
+                  ? 'bg-[#111114] dark:bg-white text-white dark:text-[#111114] font-semibold'
+                  : 'text-graphite hover:bg-surface-secondary'
               }`}
             >
               {filter === 'all'
@@ -412,7 +431,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
           <select
             value={selectedCommissionId}
             onChange={(e) => setSelectedCommissionId(e.target.value)}
-            className="w-full sm:w-auto bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-2.5 py-2 sm:py-1.5 text-xs text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+            className="w-full sm:w-auto bg-surface-secondary border border-hairline rounded-xl px-3 py-2 sm:py-1.5 text-xs text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
           >
             <option value="all">All Commissions</option>
             {commissions.map((comm) => (
@@ -424,13 +443,13 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
 
           {/* Search Field */}
           <div className="relative w-full sm:w-auto sm:min-w-[180px]">
-            <Search className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-graphite absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Ref #, client, project..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 sm:py-1.5 text-xs rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+              className="w-full pl-8 pr-3 py-2 sm:py-1.5 text-xs rounded-xl bg-surface-secondary border border-hairline text-carbon placeholder-graphite/60 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
             />
           </div>
         </div>
@@ -438,7 +457,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
 
       {/* Error state */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
+        <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -447,18 +466,18 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
       {/* Loading state */}
       {loading ? (
         <div className="py-20 text-center space-y-3">
-          <Loader2 className="w-6 h-6 animate-spin text-[#EA580C] mx-auto" />
-          <p className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+          <Loader2 className="w-6 h-6 animate-spin text-accent mx-auto" />
+          <p className="text-xs font-mono text-graphite">
             Loading payment verification ledger...
           </p>
         </div>
       ) : filteredProofs.length === 0 ? (
-        <div className="py-16 text-center space-y-3 bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-8">
-          <CreditCard className="w-8 h-8 text-[#A1A1AA] mx-auto opacity-70" />
-          <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+        <div className="py-16 text-center space-y-3 bg-surface border border-hairline rounded-3xl p-8">
+          <CreditCard className="w-8 h-8 text-graphite mx-auto opacity-70" />
+          <h4 className="font-display font-bold text-base text-carbon">
             No Payment Proofs Found
           </h4>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto">
+          <p className="text-xs text-graphite max-w-md mx-auto">
             {statusFilter === 'pending_verification'
               ? 'Great! There are no client payment receipts currently awaiting admin review.'
               : 'No receipts match the selected filters. When clients submit GCash screenshots, they will appear here.'}
@@ -482,13 +501,13 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
             return (
               <article
                 key={proof.id}
-                className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl overflow-hidden flex flex-col justify-between shadow-2xs hover:shadow-xs transition-shadow"
+                className="bg-surface border border-hairline rounded-3xl overflow-hidden flex flex-col justify-between shadow-2xs hover:shadow-xs transition-shadow"
               >
                 <div>
                   {/* Card Header */}
-                  <div className="p-4 border-b border-[#E4E2DC] dark:border-[#222225] space-y-2">
+                  <div className="p-5 border-b border-hairline space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#EA580C] font-semibold">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-accent font-semibold">
                         {proof.paymentType === 'deposit'
                           ? '50% Initial Deposit'
                           : proof.paymentType === 'balance'
@@ -498,7 +517,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
 
                       {/* Status Tag */}
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase ${
                           proof.status === 'confirmed'
                             ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
                             : proof.status === 'rejected'
@@ -514,25 +533,25 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                       </span>
                     </div>
 
-                    <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC] truncate">
+                    <h4 className="font-display font-bold text-base text-carbon truncate">
                       {comm?.projectName || 'Commission Project'}
                     </h4>
 
-                    <div className="flex items-center justify-between text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                    <div className="flex items-center justify-between text-xs font-mono text-graphite">
                       <span className="truncate max-w-[160px]">Client: {comm?.clientName || 'Unknown'}</span>
-                      <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
-                        {proof.currency} {proof.amount.toLocaleString()}
+                      <span className="font-bold text-carbon">
+                        {proof.currency || 'PHP'} {(proof.amount ?? 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
 
                   {/* Receipt Preview Trigger / Meta */}
-                  <div className="p-4 space-y-3">
+                  <div className="p-5 space-y-3">
                     <button 
                       type="button"
                       onClick={() => handleOpenLightbox(proof)}
                       aria-label={`Enlarge GCash receipt ${proof.fileName || 'file'}`}
-                      className="w-full text-left group relative aspect-[16/10] bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg overflow-hidden cursor-pointer flex items-center justify-center focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                      className="w-full text-left group relative aspect-[16/10] bg-surface-secondary border border-hairline rounded-2xl overflow-hidden cursor-pointer flex items-center justify-center focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                     >
                       {signedUrlCache[proof.id] ? (
                         <img
@@ -541,10 +560,10 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-103"
                         />
                       ) : (
-                        <div className="flex flex-col items-center justify-center space-y-1.5 text-[#71717A] dark:text-[#A1A1AA] p-4 text-center">
-                          <Eye className="w-5 h-5 text-[#EA580C]" />
+                        <div className="flex flex-col items-center justify-center space-y-1.5 text-graphite p-4 text-center">
+                          <Eye className="w-5 h-5 text-accent" />
                           <span className="text-xs font-mono">Click to preview receipt</span>
-                          <span className="text-[10px] text-[#A1A1AA]">
+                          <span className="text-[10px] opacity-80">
                             {proof.fileName} ({formatPaymentFileSize(proof.fileSize)})
                           </span>
                         </div>
@@ -560,26 +579,26 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                     <div className="space-y-1 text-xs">
                       {proof.referenceNumber && (
                         <div className="flex items-center justify-between">
-                          <span className="text-[#71717A] dark:text-[#A1A1AA] font-mono text-[11px]">GCash Ref No:</span>
-                          <span className="font-mono font-bold text-[#18181B] dark:text-[#EDEDEC] select-all bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded">
+                          <span className="text-graphite font-mono text-[11px]">GCash Ref No:</span>
+                          <span className="font-mono font-bold text-carbon select-all bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full">
                             {proof.referenceNumber}
                           </span>
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                      <div className="flex items-center justify-between text-[11px] font-mono text-graphite">
                         <span>Submitted:</span>
                         <span>{formattedDate}</span>
                       </div>
 
                       {proof.clientNotes && (
-                        <div className="pt-1.5 border-t border-[#E4E2DC] dark:border-[#222225] text-[11px] text-[#71717A] dark:text-[#A1A1AA] italic">
+                        <div className="pt-1.5 border-t border-hairline text-[11px] text-graphite italic">
                           "{proof.clientNotes}"
                         </div>
                       )}
 
                       {proof.adminNotes && (
-                        <div className="pt-1.5 border-t border-[#E4E2DC] dark:border-[#222225] text-[11px] text-red-600 dark:text-red-400">
+                        <div className="pt-1.5 border-t border-hairline text-[11px] text-red-600 dark:text-red-400">
                           <span className="font-bold font-mono">Feedback:</span> {proof.adminNotes}
                         </div>
                       )}
@@ -588,13 +607,13 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                 </div>
 
                 {/* Card Actions */}
-                <div className="p-3 bg-[#FAF9F6] dark:bg-[#18181B] border-t border-[#E4E2DC] dark:border-[#222225] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="p-3.5 bg-surface-secondary border-t border-hairline flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   {proof.status === 'pending_verification' ? (
                     <>
                       <button
                         type="button"
                         onClick={() => handleStartReview(proof, 'confirmed')}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 sm:py-2 min-h-[44px] sm:min-h-[38px] rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-[38px] rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Confirm Payment</span>
@@ -603,7 +622,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                       <button
                         type="button"
                         onClick={() => handleStartReview(proof, 'rejected')}
-                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 sm:py-2 min-h-[44px] sm:min-h-[38px] rounded-lg bg-white dark:bg-[#121214] hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs font-semibold transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500"
+                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-[38px] rounded-full bg-surface hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs font-semibold transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500"
                       >
                         <XCircle className="w-3.5 h-3.5" />
                         <span>Decline</span>
@@ -615,7 +634,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                         <ShieldCheck className="w-3.5 h-3.5" />
                         <span>Payment Verified</span>
                       </span>
-                      <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider">
+                      <span className="text-[10px] text-graphite uppercase tracking-wider">
                         Audit Log Sealed
                       </span>
                     </div>
@@ -625,7 +644,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                         <XCircle className="w-3.5 h-3.5" />
                         <span>Declined</span>
                       </span>
-                      <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider">
+                      <span className="text-[10px] text-graphite uppercase tracking-wider">
                         Audit Log Sealed
                       </span>
                     </div>
@@ -647,7 +666,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
         >
           <div 
             onClick={(e) => e.stopPropagation()} 
-            className="relative max-w-2xl max-h-[90dvh] w-full bg-[#121214] border border-[#222225] rounded-xl p-4 flex flex-col items-center cursor-default shadow-2xl"
+            className="relative max-w-2xl max-h-[90dvh] w-full bg-[#121214] border border-[#222225] rounded-3xl p-4 sm:p-5 flex flex-col items-center cursor-default shadow-2xl"
           >
             <div className="w-full flex items-center justify-between pb-3 border-b border-[#222225] text-white text-xs font-mono">
               <span className="truncate max-w-[200px] sm:max-w-sm">
@@ -656,7 +675,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
               <button
                 type="button"
                 onClick={handleCloseLightbox}
-                className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                 aria-label="Close receipt lightbox"
               >
                 <X className="w-5 h-5" />
@@ -666,30 +685,30 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
             <div className="py-4 max-h-[72dvh] overflow-auto flex items-center justify-center w-full">
               {loadingSignedUrl ? (
                 <div className="py-20 flex flex-col items-center gap-2 text-white/70">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#EA580C]" />
+                  <Loader2 className="w-6 h-6 animate-spin text-accent" />
                   <span className="text-xs font-mono">Acquiring secure preview link...</span>
                 </div>
               ) : Boolean(lightboxSignedUrl && lightboxSignedUrl.trim()) ? (
                 <img
                   src={lightboxSignedUrl!}
                   alt="GCash Receipt Screenshot"
-                  className="max-h-[68vh] w-auto object-contain rounded-lg shadow-2xl"
+                  className="max-h-[68vh] w-auto object-contain rounded-2xl shadow-2xl"
                 />
               ) : (
-                <div className="py-20 text-center text-red-400 text-xs font-mono">
-                  Unable to load receipt preview. Check storage credentials.
+                <div className="py-20 text-center text-red-400 text-xs font-mono px-4">
+                  {lightboxError || 'Unable to load receipt preview. Check storage credentials.'}
                 </div>
               )}
             </div>
 
             <div className="w-full pt-3 border-t border-[#222225] flex items-center justify-between text-white/70 font-mono text-[11px]">
-              <span>Amount: PHP {lightboxProof.amount.toLocaleString()}</span>
+              <span>Amount: {lightboxProof.currency || 'PHP'} {(lightboxProof.amount ?? 0).toLocaleString()}</span>
               {Boolean(lightboxSignedUrl && lightboxSignedUrl.trim()) && (
                 <a
                   href={lightboxSignedUrl!}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[#EA580C] hover:underline"
+                  className="inline-flex items-center gap-1 text-accent hover:underline"
                 >
                   <ExternalLink className="w-3 h-3" />
                   <span>Open Full Resolution</span>
@@ -710,24 +729,24 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
         >
           <div 
             onClick={(e) => e.stopPropagation()} 
-            className="max-w-lg w-full max-h-[90dvh] overflow-y-auto bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-5 sm:p-7 space-y-6 shadow-2xl"
+            className="max-w-lg w-full max-h-[90dvh] overflow-y-auto bg-surface border border-hairline rounded-3xl p-5 sm:p-7 space-y-6 shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#222225]">
+            <div className="flex items-center justify-between pb-3 border-b border-hairline">
               <div className="flex items-center gap-2">
                 {reviewDecision === 'confirmed' ? (
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                 ) : (
                   <XCircle className="w-5 h-5 text-red-600 shrink-0" />
                 )}
-                <h3 className="font-display font-bold text-base sm:text-lg text-[#18181B] dark:text-[#EDEDEC] truncate">
+                <h3 className="font-display font-bold text-base sm:text-lg text-carbon truncate">
                   {reviewDecision === 'confirmed' ? 'Confirm GCash Payment' : 'Decline GCash Payment Proof'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={handleCloseReview}
-                className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C]"
+                className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full text-graphite hover:text-carbon hover:bg-surface-secondary cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                 aria-label="Close review dialog"
               >
                 <X className="w-5 h-5" />
@@ -735,20 +754,20 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
             </div>
 
             {/* Commission & Receipt Snapshot */}
-            <div className="p-3.5 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-2 text-xs">
+            <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline space-y-2 text-xs">
               <div className="flex justify-between font-mono">
-                <span className="text-[#71717A] dark:text-[#A1A1AA]">Amount Claimed:</span>
-                <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
-                  {reviewingProof.currency} {reviewingProof.amount.toLocaleString()}
+                <span className="text-graphite">Amount Claimed:</span>
+                <span className="font-bold text-carbon">
+                  {reviewingProof.currency || 'PHP'} {(reviewingProof.amount ?? 0).toLocaleString()}
                 </span>
               </div>
               {reviewingProof.referenceNumber && (
                 <div className="flex justify-between font-mono">
-                  <span className="text-[#71717A] dark:text-[#A1A1AA]">GCash Reference No:</span>
-                  <span className="font-bold text-[#EA580C]">{reviewingProof.referenceNumber}</span>
+                  <span className="text-graphite">GCash Reference No:</span>
+                  <span className="font-bold text-accent">{reviewingProof.referenceNumber}</span>
                 </div>
               )}
-              <div className="flex justify-between font-mono text-[#71717A] dark:text-[#A1A1AA]">
+              <div className="flex justify-between font-mono text-graphite">
                 <span>Payment Stage:</span>
                 <span className="uppercase">{reviewingProof.paymentType}</span>
               </div>
@@ -757,34 +776,34 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
             {/* Confirmation Target Selection */}
             {reviewDecision === 'confirmed' ? (
               <div className="space-y-3">
-                <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA]">
+                <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-graphite">
                   Authorized Settlement Outcome
                 </label>
                 {reviewingProof.paymentType === 'deposit' ? (
-                  <div className="p-3.5 rounded-xl border border-[#EA580C] bg-[#EA580C]/10 text-[#EA580C]">
+                  <div className="p-4 rounded-2xl border border-accent bg-accent/10 text-accent">
                     <div className="flex items-center justify-between">
                       <span className="block text-xs font-bold font-mono">50% Deposit Settlement (Partial)</span>
-                      <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-[#EA580C]/20">Stage 2 Milestone</span>
+                      <span className="text-[10px] font-mono font-semibold uppercase px-2.5 py-0.5 rounded-full bg-accent/20">Stage 2 Milestone</span>
                     </div>
                     <span className="block text-[11px] mt-1 opacity-90">
                       Confirms initial project deposit, sets status to Partial, and unlocks concept development and design review stages.
                     </span>
                   </div>
                 ) : reviewingProof.paymentType === 'balance' ? (
-                  <div className="p-3.5 rounded-xl border border-emerald-600 bg-emerald-500/10 text-emerald-600">
+                  <div className="p-4 rounded-2xl border border-emerald-600 bg-emerald-500/10 text-emerald-600">
                     <div className="flex items-center justify-between">
                       <span className="block text-xs font-bold font-mono">Remaining Balance Settlement (Paid)</span>
-                      <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-emerald-500/20">Final Settlement</span>
+                      <span className="text-[10px] font-mono font-semibold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/20">Final Settlement</span>
                     </div>
                     <span className="block text-[11px] mt-1 opacity-90">
                       Verifies final balance settlement against confirmed deposit, sets status to Paid, and releases Stage 8 master deliverables.
                     </span>
                   </div>
                 ) : (
-                  <div className="p-3.5 rounded-xl border border-emerald-600 bg-emerald-500/10 text-emerald-600">
+                  <div className="p-4 rounded-2xl border border-emerald-600 bg-emerald-500/10 text-emerald-600">
                     <div className="flex items-center justify-between">
                       <span className="block text-xs font-bold font-mono">100% Upfront Settlement (Paid)</span>
-                      <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-emerald-500/20">Full Project Fee</span>
+                      <span className="text-[10px] font-mono font-semibold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/20">Full Project Fee</span>
                     </div>
                     <span className="block text-[11px] mt-1 opacity-90">
                       Verifies complete upfront project investment and clears all production stages through final delivery.
@@ -793,7 +812,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                 )}
 
                 <div className="space-y-1.5 pt-2">
-                  <label className="block text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                  <label className="block text-xs font-mono text-graphite">
                     Optional Admin Notes / Internal Memo
                   </label>
                   <input
@@ -801,7 +820,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
                     placeholder="e.g. Verified via GCash merchant text at 2:45 PM"
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C]"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-surface-secondary border border-hairline text-carbon placeholder-graphite/60 focus:outline-none focus:border-accent"
                   />
                 </div>
               </div>
@@ -816,9 +835,9 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                   placeholder="Explain why this receipt cannot be accepted (e.g. Reference No. does not match, image is blurry, deposit amount is incomplete)..."
-                  className="w-full p-3 text-xs rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-red-500 resize-none"
+                  className="w-full p-3.5 text-xs rounded-xl bg-surface-secondary border border-hairline text-carbon placeholder-graphite/60 focus:outline-none focus:border-red-500 resize-none"
                 />
-                <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                <p className="text-[11px] text-graphite">
                   The client will be notified and given the option to submit a corrected receipt screenshot.
                 </p>
               </div>
@@ -826,19 +845,19 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
 
             {/* Error Message */}
             {reviewError && (
-              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{reviewError}</span>
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-3 border-t border-[#E4E2DC] dark:border-[#222225]">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-3 border-t border-hairline">
               <button
                 type="button"
                 onClick={handleCloseReview}
                 disabled={isSubmittingReview}
-                className="px-4 py-2.5 min-h-[44px] text-xs font-mono text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC] cursor-pointer inline-flex items-center justify-center focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded-lg"
+                className="px-4 py-2.5 min-h-[44px] text-xs font-mono text-graphite hover:text-carbon cursor-pointer inline-flex items-center justify-center focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent rounded-full"
               >
                 Cancel
               </button>
@@ -847,7 +866,7 @@ export const AdminPaymentVerificationSection: React.FC<AdminPaymentVerificationS
                 type="button"
                 onClick={handleSubmitReview}
                 disabled={isSubmittingReview}
-                className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-lg text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50 focus:outline-hidden focus-visible:ring-2 ${
+                className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-full text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50 focus:outline-hidden focus-visible:ring-2 ${
                   reviewDecision === 'confirmed'
                     ? 'bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-500'
                     : 'bg-red-600 hover:bg-red-700 focus-visible:ring-red-500'

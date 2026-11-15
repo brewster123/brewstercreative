@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Commission, CommissionProof } from '../types';
 import {
   fetchCommissionProofs,
@@ -53,10 +53,25 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
     isImage: boolean;
   } | null>(null);
 
+  const isMountedRef = useRef<boolean>(true);
+  const activeCommissionIdRef = useRef<string | undefined>(commission?.id);
+
+  useEffect(() => {
+    activeCommissionIdRef.current = commission?.id;
+  }, [commission?.id]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Fetch proofs using client SELECT RLS boundary
   const loadProofs = useCallback(
     async (isRefresh = false) => {
-      if (!commission?.id) {
+      const targetId = commission?.id;
+      if (!targetId) {
         setLoading(false);
         return;
       }
@@ -67,7 +82,9 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
       }
       setFetchError(null);
 
-      const { data, error } = await fetchCommissionProofs(commission.id);
+      const { data, error } = await fetchCommissionProofs(targetId);
+      if (!isMountedRef.current || activeCommissionIdRef.current !== targetId) return;
+
       if (error) {
         setFetchError(error);
       } else {
@@ -113,7 +130,12 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
     setActionError(null);
     setLoadingSignedUrlProofId(proof.id);
 
-    const { signedUrl, error } = await getProofSignedUrl(proof.file_path, 3600);
+    const filePath = proof.file_path || proof.filePath || '';
+    const fileName = proof.file_name || proof.fileName || 'Proof';
+    const fileType = proof.file_type || proof.fileType || '';
+
+    const { signedUrl, error } = await getProofSignedUrl(filePath, 3600);
+    if (!isMountedRef.current) return;
     setLoadingSignedUrlProofId(null);
 
     if (error || !signedUrl) {
@@ -121,8 +143,8 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
       return;
     }
 
-    const lowerName = (proof.file_name || '').toLowerCase();
-    const lowerType = (proof.file_type || '').toLowerCase();
+    const lowerName = fileName.toLowerCase();
+    const lowerType = fileType.toLowerCase();
     const isImage =
       lowerType.startsWith('image/') ||
       lowerName.endsWith('.png') ||
@@ -221,29 +243,31 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
   const formatUploadDate = (isoString?: string) => {
     if (!isoString) return 'Recently';
     try {
-      return new Date(isoString).toLocaleDateString('en-US', {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return 'Recently';
+      return d.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
       });
     } catch {
-      return isoString;
+      return 'Recently';
     }
   };
 
   return (
-    <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-8 space-y-6">
+    <div className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6">
       
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#27272A]">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-4 border-b border-hairline">
         <div>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-1">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block mb-1">
             Art Approval Sheet
           </span>
-          <h3 className="font-display text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+          <h3 className="font-display text-xl sm:text-2xl font-bold text-carbon tracking-tight">
             Creative Proofs & Review Iterations
           </h3>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+          <p className="text-xs text-graphite mt-0.5">
             Inspect high-resolution visual drafts and approve or request composition adjustments.
           </p>
         </div>
@@ -252,23 +276,23 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
           type="button"
           onClick={() => loadProofs(true)}
           disabled={refreshing || loading}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer self-start sm:self-auto disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-hairline text-xs font-mono text-graphite hover:text-carbon hover:bg-surface-secondary transition-colors cursor-pointer self-start sm:self-auto disabled:opacity-50"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[#EA580C]' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-accent' : ''}`} />
           <span>Refresh Iterations</span>
         </button>
       </div>
 
       {/* Notifications */}
       {successMsg && (
-        <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-start gap-2">
+        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-start gap-2">
           <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {actionError && (
-        <div className="p-3.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-start gap-2">
+        <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
           <span>{actionError}</span>
         </div>
@@ -276,27 +300,27 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
 
       {/* Proof Content */}
       {loading ? (
-        <div className="py-16 text-center text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+        <div className="py-16 text-center text-xs font-mono text-graphite">
           Loading creative proof iterations...
         </div>
       ) : fetchError ? (
         <div className="py-12 text-center space-y-3">
           <AlertCircle className="w-6 h-6 text-red-500 mx-auto" />
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fetchError}</p>
+          <p className="text-xs text-graphite">{fetchError}</p>
           <button
             type="button"
             onClick={() => loadProofs(false)}
-            className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold"
+            className="px-4 py-2 rounded-full border border-hairline text-xs font-semibold hover:bg-surface-secondary"
           >
             Retry
           </button>
         </div>
       ) : proofs.length === 0 ? (
         <div className="py-16 text-center space-y-2 max-w-sm mx-auto">
-          <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+          <h4 className="font-display font-bold text-base text-carbon">
             Awaiting Proof Delivery
           </h4>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+          <p className="text-xs text-graphite leading-relaxed">
             High-resolution visual iterations for {commission.projectName} will appear here once initial concepts are rendered.
           </p>
         </div>
@@ -311,15 +335,15 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
             return (
               <article
                 key={proof.id}
-                className="bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-5 sm:p-6 space-y-4"
+                className="bg-surface-secondary border border-hairline rounded-2xl p-5 sm:p-6 space-y-4"
               >
                 {/* Proof Title & Status Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-hairline">
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B]">
+                    <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#111114] text-white dark:bg-white dark:text-[#111114]">
                       v{proof.version}
                     </span>
-                    <h4 className="font-display text-sm sm:text-base font-bold text-[#18181B] dark:text-[#EDEDEC] truncate max-w-xs sm:max-w-md">
+                    <h4 className="font-display text-sm sm:text-base font-bold text-carbon truncate max-w-xs sm:max-w-md">
                       {proof.file_name}
                     </h4>
                   </div>
@@ -331,62 +355,62 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
                       ) : isRevisionRequested ? (
                         <span className="text-amber-600 dark:text-amber-400">Revision in Progress</span>
                       ) : (
-                        <span className="text-[#EA580C]">Awaiting Client Review</span>
+                        <span className="text-accent">Awaiting Client Review</span>
                       )}
                     </span>
                   </div>
                 </div>
 
                 {/* Specs Ledger */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono text-graphite">
                   <div>
                     <span className="text-[10px] uppercase block">Format</span>
-                    <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                    <span className="font-bold text-carbon">
                       {formatProofFileType(proof.file_type, proof.file_name)}
                     </span>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase block">Size</span>
-                    <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                    <span className="font-bold text-carbon">
                       {formatProofFileSize(proof.file_size)}
                     </span>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase block">Uploaded</span>
-                    <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                    <span className="font-bold text-carbon">
                       {formatUploadDate(proof.created_at)}
                     </span>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase block">Access</span>
-                    <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">Private Vault</span>
+                    <span className="font-bold text-carbon">Private Vault</span>
                   </div>
                 </div>
 
                 {/* Revision Note if applicable */}
                 {isRevisionRequested && proof.revision_note && (
-                  <div className="p-3 bg-white dark:bg-[#18181B] border border-amber-300 dark:border-amber-800 rounded-lg text-xs space-y-1">
+                  <div className="p-3 bg-surface border border-amber-300 dark:border-amber-800 rounded-xl text-xs space-y-1">
                     <span className="font-mono text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 font-bold block">
                       Client Adjustment Notes:
                     </span>
-                    <p className="text-[#18181B] dark:text-[#EDEDEC] italic leading-relaxed">
+                    <p className="text-carbon italic leading-relaxed">
                       "{proof.revision_note}"
                     </p>
                   </div>
                 )}
 
                 {/* Action Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#E4E2DC] dark:border-[#27272A]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-hairline">
                   <button
                     type="button"
                     onClick={() => handleViewProof(proof)}
                     disabled={isSigningUrl}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#18181B] dark:hover:border-[#EDEDEC] text-xs font-semibold text-[#18181B] dark:text-[#EDEDEC] transition-all cursor-pointer self-start sm:self-auto disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface border border-hairline hover:border-accent text-xs font-semibold text-carbon transition-all cursor-pointer self-start sm:self-auto disabled:opacity-50"
                   >
                     {isSigningUrl ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#EA580C]" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-accent" />
                     ) : (
-                      <Eye className="w-3.5 h-3.5 text-[#EA580C]" />
+                      <Eye className="w-3.5 h-3.5 text-accent" />
                     )}
                     <span>Inspect Artwork Full-Scale</span>
                   </button>
@@ -397,7 +421,7 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
                         type="button"
                         onClick={() => handleOpenRevisionModal(proof)}
                         disabled={isActionInProgress}
-                        className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] hover:bg-white dark:hover:bg-[#18181B] text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-all cursor-pointer disabled:opacity-50"
+                        className="flex-1 sm:flex-none px-4 py-2 rounded-full border border-hairline bg-surface hover:bg-surface-secondary text-xs font-semibold text-graphite hover:text-carbon transition-all cursor-pointer disabled:opacity-50"
                       >
                         Request Revision
                       </button>
@@ -406,7 +430,7 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
                         type="button"
                         onClick={() => handleOpenApproveModal(proof)}
                         disabled={isActionInProgress}
-                        className="flex-1 sm:flex-none px-5 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        className="flex-1 sm:flex-none px-5 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 btn-tactile"
                       >
                         <Check className="w-3.5 h-3.5" />
                         <span>Approve Proof</span>
@@ -427,16 +451,27 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
 
       {/* CONFIRM APPROVAL MODAL */}
       {approveModalProof && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl max-w-md w-full p-6 sm:p-8 space-y-4 shadow-2xl animate-in fade-in duration-200">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Approve Proof v${approveModalProof.version}`}
+          onClick={() => {
+            if (submittingProofId === null) setApproveModalProof(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-surface border border-hairline rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-4 shadow-2xl animate-in fade-in duration-200"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block">
               Confirm Direction
             </span>
-            <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+            <h3 className="font-display text-xl font-bold text-carbon">
               Approve Proof v{approveModalProof.version}?
             </h3>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
-              By approving <strong>{approveModalProof.file_name}</strong>, you lock in this design direction. Brewster will proceed with compiling the final master production deliverables.
+            <p className="text-xs text-graphite leading-relaxed">
+              By approving <strong>{approveModalProof.file_name || approveModalProof.fileName || 'this proof'}</strong>, you lock in this design direction. Brewster will proceed with compiling the final master production deliverables.
             </p>
 
             <div className="flex items-center gap-3 pt-3">
@@ -444,7 +479,7 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
                 type="button"
                 onClick={() => setApproveModalProof(null)}
                 disabled={submittingProofId !== null}
-                className="flex-1 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] cursor-pointer"
+                className="flex-1 py-2.5 rounded-full border border-hairline text-xs font-semibold text-graphite hover:text-carbon cursor-pointer"
               >
                 Cancel
               </button>
@@ -452,7 +487,7 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
                 type="button"
                 onClick={handleConfirmApprove}
                 disabled={submittingProofId !== null}
-                className="flex-1 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 btn-tactile"
               >
                 {submittingProofId === approveModalProof.id ? (
                   <>
@@ -473,21 +508,34 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
 
       {/* REQUEST REVISION MODAL */}
       {revisionModalProof && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl max-w-lg w-full p-6 sm:p-8 space-y-4 shadow-2xl animate-in fade-in duration-200">
-            <div className="flex items-center justify-between pb-2 border-b border-[#E4E2DC] dark:border-[#27272A]">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Request Revision on Proof v${revisionModalProof.version}`}
+          onClick={() => {
+            if (submittingProofId === null) setRevisionModalProof(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-surface border border-hairline rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-4 shadow-2xl animate-in fade-in duration-200"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-hairline">
               <div>
-                <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block">
                   Studio Dialogue
                 </span>
-                <h3 className="font-display text-lg font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                <h3 className="font-display text-lg font-bold text-carbon">
                   Request Revision on Proof v{revisionModalProof.version}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setRevisionModalProof(null)}
-                className="text-[#71717A] hover:text-[#18181B] dark:hover:text-[#EDEDEC]"
+                disabled={submittingProofId !== null}
+                aria-label="Close revision modal"
+                className="p-1.5 rounded-full text-graphite hover:text-carbon cursor-pointer disabled:opacity-50"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -495,8 +543,8 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
 
             <form onSubmit={handleConfirmRevision} className="space-y-4">
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-[#18181B] dark:text-[#EDEDEC] mb-1.5 font-semibold">
-                  Adjustment Directives <span className="text-[#EA580C]">*</span>
+                <label className="block text-xs font-mono uppercase tracking-wider text-carbon mb-1.5 font-semibold">
+                  Adjustment Directives <span className="text-accent">*</span>
                 </label>
                 <textarea
                   rows={4}
@@ -506,7 +554,7 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
                     if (revisionNoteError) setRevisionNoteError(null);
                   }}
                   placeholder="Detail your feedback: typography weight, color balance, composition adjustments, or specific elements to refine..."
-                  className="w-full bg-[#FAF9F6] dark:bg-[#0F0F11] border border-[#E4E2DC] dark:border-[#27272A] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] placeholder-[#A1A1AA] focus:outline-none focus:border-[#EA580C] resize-none leading-relaxed"
+                  className="w-full bg-surface-secondary border border-hairline rounded-xl p-3.5 text-xs sm:text-sm text-carbon placeholder-graphite/60 focus:outline-none focus:border-accent resize-none leading-relaxed"
                 />
                 {revisionNoteError && (
                   <p className="text-xs text-red-600 dark:text-red-400 mt-1">{revisionNoteError}</p>
@@ -518,14 +566,14 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
                   type="button"
                   onClick={() => setRevisionModalProof(null)}
                   disabled={submittingProofId !== null}
-                  className="px-4 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] cursor-pointer"
+                  className="px-4 py-2 rounded-full border border-hairline text-xs font-semibold text-graphite hover:text-carbon cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submittingProofId !== null}
-                  className="px-5 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 btn-tactile"
                 >
                   {submittingProofId === revisionModalProof.id ? (
                     <>
@@ -574,7 +622,7 @@ export const ClientReviewSection: React.FC<ClientReviewSectionProps> = ({ commis
                     <a
                       href={viewingProof.signedUrl}
                       download={viewingProof.proof.file_name}
-                      className="text-xs text-orange-400 hover:text-orange-300 font-semibold underline"
+                      className="text-xs text-[#0EA5E9] hover:text-sky-300 font-semibold underline"
                     >
                       Download Document
                     </a>

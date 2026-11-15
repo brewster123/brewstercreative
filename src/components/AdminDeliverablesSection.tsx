@@ -66,26 +66,52 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
   const [deliverableToDelete, setDeliverableToDelete] = useState<CommissionDeliverable | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
+  const activeCommissionIdRef = useRef<string | undefined>(commission?.id);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Load deliverables for commission
   const loadDeliverables = async () => {
-    if (!commission?.id) return;
+    const targetId = commission?.id;
+    if (!targetId) return;
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const { data, error } = await fetchCommissionDeliverables(commission.id);
+      const { data, error } = await fetchCommissionDeliverables(targetId);
+      if (!isMountedRef.current || activeCommissionIdRef.current !== targetId) return;
       if (error) {
         setErrorMsg(error);
       } else {
         setDeliverables(data || []);
       }
     } catch (err: any) {
+      if (!isMountedRef.current || activeCommissionIdRef.current !== targetId) return;
       setErrorMsg(err?.message || 'Failed to load deliverables.');
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current && activeCommissionIdRef.current === targetId) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
+    activeCommissionIdRef.current = commission?.id;
+    setSelectedFile(null);
+    setCustomTitle('');
+    setCustomDescription('');
+    setUploadError(null);
+    setUploadSuccess(null);
+    setCompletionSuccess(null);
+    setActionError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     loadDeliverables();
   }, [commission?.id]);
 
@@ -110,6 +136,7 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
     if (!validation.valid) {
       setUploadError(validation.error || 'Invalid deliverable file.');
       setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
@@ -137,7 +164,7 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
     setUploadSuccess(null);
 
     try {
-      const nextVersion = deliverables.length + 1;
+      const nextVersion = deliverables.reduce((max, d) => Math.max(max, Number(d.version) || 0), 0) + 1;
       const { data: newDeliv, error: uploadErr } = await uploadCommissionDeliverable({
         commissionId: commission.id,
         adminUserId: currentUser.id,
@@ -278,24 +305,24 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
   };
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-[28px] p-6 space-y-6 shadow-xs">
+    <div className="bg-surface border border-hairline rounded-3xl p-6 space-y-6 shadow-xs">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-zinc-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-hairline">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
             <FolderArchive className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="font-display font-black text-base text-zinc-900">
+              <h4 className="font-display font-black text-base text-carbon">
                 Final Deliverables Management
               </h4>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono-code font-bold bg-zinc-100 text-zinc-700 border border-zinc-200">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono-code font-bold bg-surface-secondary text-graphite-strong border border-hairline">
                 Stage 08
               </span>
             </div>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-graphite mt-0.5">
               Deliver production-ready master files (.ZIP, .SVG, .PDF, .PNG) stored in private Supabase Storage.
             </p>
           </div>
@@ -303,17 +330,17 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
 
         <div className="flex items-center gap-2">
           {isAlreadyCompleted ? (
-            <span className="px-3 py-1 rounded-xl bg-zinc-900 text-white border border-zinc-900 text-xs font-mono-code font-bold flex items-center gap-1.5">
+            <span className="px-3.5 py-1 rounded-full bg-[#111114] text-white dark:bg-white dark:text-[#111114] text-xs font-mono-code font-bold flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               Completed (Stage 08)
             </span>
           ) : isStageReadyForDelivery ? (
-            <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-mono-code font-bold flex items-center gap-1.5">
+            <span className="px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 text-xs font-mono-code font-bold flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Ready for Delivery
             </span>
           ) : (
-            <span className="px-3 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-xs font-mono-code font-bold flex items-center gap-1.5">
+            <span className="px-3.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 text-xs font-mono-code font-bold flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
               Stage 0{commission.currentStage} (Prior to Final Approval)
             </span>
@@ -322,14 +349,14 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
       </div>
 
       {actionError && (
-        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium">
+        <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400 text-xs flex items-center gap-2 font-medium">
           <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
           <span>{actionError}</span>
         </div>
       )}
 
       {completionSuccess && (
-        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 font-medium">
+        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2 font-medium">
           <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
           <span>{completionSuccess}</span>
         </div>
@@ -337,17 +364,17 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
 
       {/* Completion Action Banner for final_approval */}
       {isFinalApproval && (
-        <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/90 dark:border-emerald-800/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="font-mono-code text-[10px] uppercase tracking-wider text-emerald-800 font-bold px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-200">
+              <span className="font-mono-code text-[10px] uppercase tracking-wider text-emerald-800 dark:text-emerald-300 font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800/50">
                 Action Required · Stage 07 Approved
               </span>
             </div>
-            <h5 className="font-display font-bold text-sm text-zinc-900">
+            <h5 className="font-display font-bold text-sm text-carbon">
               Ready to Finalize Commission
             </h5>
-            <p className="text-xs text-zinc-600">
+            <p className="text-xs text-graphite">
               The creative proof has been approved by the client. Once all production assets are uploaded below, mark this commission as completed to finalize the engagement and update the client portal.
             </p>
           </div>
@@ -356,7 +383,7 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
             type="button"
             onClick={handleMarkCompleted}
             disabled={isCompleting || deliverables.length === 0}
-            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+            className="px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer"
             title={deliverables.length === 0 ? "Upload at least one final deliverable before completing" : "Mark Commission Completed"}
           >
             {isCompleting ? (
@@ -376,34 +403,34 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
 
       {/* Already Completed Status Banner */}
       {isAlreadyCompleted && (
-        <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 flex items-center justify-between gap-3">
+        <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
             </div>
             <div>
-              <h5 className="font-bold text-xs text-zinc-900">
+              <h5 className="font-bold text-xs text-carbon">
                 Commission Completed · Stage 08 (100%)
               </h5>
-              <p className="text-[11px] text-zinc-500">
+              <p className="text-[11px] text-graphite">
                 This project has been finalized and completed. All master files are released to the client.
               </p>
             </div>
           </div>
-          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono-code font-bold">
+          <span className="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 text-[10px] font-mono-code font-bold">
             Archived / Complete
           </span>
         </div>
       )}
 
       {/* Upload Box Form */}
-      <form onSubmit={handleUploadSubmit} className="bg-zinc-50/80 border border-zinc-200/90 rounded-2xl p-5 space-y-4">
+      <form onSubmit={handleUploadSubmit} className="bg-surface-secondary/80 border border-hairline rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-mono-code font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
-            <UploadCloud className="w-4 h-4 text-orange-500" />
+          <span className="text-xs font-mono-code font-bold text-carbon uppercase tracking-wider flex items-center gap-1.5">
+            <UploadCloud className="w-4 h-4 text-accent" />
             Upload Production Deliverable
           </span>
-          <span className="text-[11px] font-mono-code text-zinc-400">
+          <span className="text-[11px] font-mono-code text-graphite">
             Max 100 MB per file (Private Storage)
           </span>
         </div>
@@ -411,7 +438,7 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* File Picker */}
           <div>
-            <label className="block text-xs font-bold text-zinc-700 mb-1">
+            <label className="block text-xs font-bold text-graphite-strong mb-1">
               Select Production File
             </label>
             <input
@@ -419,10 +446,10 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
               type="file"
               onChange={handleFileChange}
               disabled={isUploading}
-              className="w-full text-xs text-zinc-700 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-zinc-900 file:text-white hover:file:bg-zinc-800 file:cursor-pointer p-2 rounded-xl bg-white border border-zinc-200"
+              className="w-full text-xs text-carbon file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#111114] file:text-white hover:file:bg-black dark:file:bg-white dark:file:text-[#111114] file:cursor-pointer p-2 rounded-xl bg-surface border border-hairline"
             />
             {selectedFile && (
-              <p className="text-[11px] font-mono-code text-emerald-600 mt-1">
+              <p className="text-[11px] font-mono-code text-emerald-600 dark:text-emerald-400 mt-1">
                 Selected: {selectedFile.name} ({formatDeliverableFileSize(selectedFile.size)})
               </p>
             )}
@@ -430,7 +457,7 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
 
           {/* Title / Description */}
           <div>
-            <label className="block text-xs font-bold text-zinc-700 mb-1">
+            <label className="block text-xs font-bold text-graphite-strong mb-1">
               Deliverable Display Name
             </label>
             <input
@@ -439,13 +466,13 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
               value={customTitle}
               onChange={(e) => setCustomTitle(e.target.value)}
               disabled={isUploading}
-              className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-surface text-carbon border border-hairline focus:outline-none focus:border-accent"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-zinc-700 mb-1">
+          <label className="block text-xs font-bold text-graphite-strong mb-1">
             Optional Manifest Notes / Instructions
           </label>
           <input
@@ -454,40 +481,40 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
             value={customDescription}
             onChange={(e) => setCustomDescription(e.target.value)}
             disabled={isUploading}
-            className="w-full text-xs px-3.5 py-2 rounded-xl bg-white border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-surface text-carbon border border-hairline focus:outline-none focus:border-accent"
           />
         </div>
 
         {uploadError && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium">
+          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400 text-xs flex items-center gap-2 font-medium">
             <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
             <span>{uploadError}</span>
           </div>
         )}
 
         {uploadSuccess && (
-          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 font-medium">
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2 font-medium">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{uploadSuccess}</span>
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-1">
-          <p className="text-[11px] text-zinc-400 font-medium">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          <p className="text-[11px] text-graphite font-medium">
             File is encrypted and stored in private Supabase Storage. Clients receive real-time alert.
           </p>
           <button
             type="submit"
             disabled={!selectedFile || isUploading}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-xs ${
+            className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs shrink-0 ${
               !selectedFile || isUploading
-                ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-                : 'bg-orange-500 hover:bg-orange-600 text-white cursor-pointer'
+                ? 'bg-surface border border-hairline text-graphite opacity-50 cursor-not-allowed'
+                : 'btn-tactile bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] cursor-pointer'
             }`}
           >
             {isUploading ? (
               <>
-                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-[#111114] border-t-transparent rounded-full animate-spin" />
                 <span>Uploading Deliverable...</span>
               </>
             ) : (
@@ -503,36 +530,36 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
       {/* Deliverables Table / Manifest */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h5 className="text-xs font-mono-code font-bold uppercase text-zinc-600 tracking-wider">
+          <h5 className="text-xs font-mono-code font-bold uppercase text-graphite tracking-wider">
             Active Deliverables Manifest ({deliverables.length})
           </h5>
           <button
             type="button"
             onClick={loadDeliverables}
-            className="text-[11px] font-bold text-zinc-500 hover:text-zinc-900 transition-colors cursor-pointer"
+            className="text-[11px] font-bold text-graphite hover:text-carbon transition-colors cursor-pointer"
           >
             Refresh list
           </button>
         </div>
 
         {isLoading ? (
-          <div className="py-8 text-center text-xs text-zinc-400 font-mono-code">
+          <div className="py-8 text-center text-xs text-graphite font-mono-code">
             Loading deliverables from Supabase...
           </div>
         ) : errorMsg ? (
-          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 text-xs">
             {errorMsg}
           </div>
         ) : deliverables.length === 0 ? (
-          <div className="p-8 text-center rounded-2xl bg-zinc-50 border border-dashed border-zinc-200 text-zinc-500 text-xs space-y-1">
-            <FileText className="w-6 h-6 text-zinc-300 mx-auto mb-1" />
-            <p className="font-bold text-zinc-700">No final files delivered yet</p>
-            <p className="text-[11px] text-zinc-400">
+          <div className="p-8 text-center rounded-2xl bg-surface-secondary border border-dashed border-hairline text-graphite text-xs space-y-1">
+            <FileText className="w-6 h-6 text-graphite/60 mx-auto mb-1" />
+            <p className="font-bold text-carbon">No final files delivered yet</p>
+            <p className="text-[11px] text-graphite">
               When the commission is ready for completion, upload the production assets above.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-zinc-100 border border-zinc-200 rounded-2xl overflow-hidden bg-white">
+          <div className="divide-y divide-hairline border border-hairline rounded-2xl overflow-hidden bg-surface">
             {deliverables.map((item) => {
               const isDownloading = downloadingId === item.id;
               const dateFormatted = item.createdAt 
@@ -540,25 +567,25 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
                 : 'Recent';
 
               return (
-                <div key={item.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-50/70 transition-colors">
+                <div key={item.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-surface-secondary/70 transition-colors">
                   <div className="flex items-start gap-3">
-                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 shrink-0 mt-0.5">
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
                       <FileCheck className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h6 className="text-xs font-bold text-zinc-900">
+                        <h6 className="text-xs font-bold text-carbon">
                           {item.title || item.fileName}
                         </h6>
-                        <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-[10px] font-mono-code font-bold text-zinc-600">
+                        <span className="px-2 py-0.5 rounded-full bg-surface-secondary text-[10px] font-mono-code font-bold text-graphite border border-hairline">
                           v{item.version}
                         </span>
                       </div>
-                      <p className="text-[11px] text-zinc-500 font-mono-code mt-0.5">
+                      <p className="text-[11px] text-graphite font-mono-code mt-0.5">
                         {item.fileName} · {formatDeliverableFileSize(item.fileSize)} · Delivered {dateFormatted}
                       </p>
                       {item.description && (
-                        <p className="text-xs text-zinc-600 mt-1">
+                        <p className="text-xs text-graphite-strong mt-1">
                           {item.description}
                         </p>
                       )}
@@ -570,11 +597,11 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
                       type="button"
                       onClick={() => handleDownload(item)}
                       disabled={isDownloading}
-                      className="px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                      className="px-4 py-1.5 rounded-full bg-[#111114] hover:bg-black text-white dark:bg-white dark:text-[#111114] dark:hover:bg-zinc-200 text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
                       title="Generate secure signed download URL"
                     >
                       {isDownloading ? (
-                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <Download className="w-3.5 h-3.5" />
                       )}
@@ -584,7 +611,7 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
                     <button
                       type="button"
                       onClick={() => handleRequestDelete(item)}
-                      className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-full text-graphite hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                       title="Delete deliverable"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -598,15 +625,15 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
 
         {/* Bottom completion CTA if deliverables exist and project is in final_approval */}
         {isFinalApproval && deliverables.length > 0 && (
-          <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-zinc-100">
-            <span className="text-xs text-zinc-500 font-medium">
+          <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-hairline">
+            <span className="text-xs text-graphite font-medium">
               All deliverables uploaded? Finalize and complete this commission.
             </span>
             <button
               type="button"
               onClick={handleMarkCompleted}
               disabled={isCompleting}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              className="px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
               {isCompleting ? (
                 <>
@@ -634,20 +661,20 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-left"
+            className="bg-surface border border-hairline rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-left"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+              <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shrink-0">
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-base font-bold text-white">Delete Deliverable</h4>
-                <p className="text-xs text-zinc-400">This action cannot be undone.</p>
+                <h4 className="text-base font-bold text-carbon">Delete Deliverable</h4>
+                <p className="text-xs text-graphite">This action cannot be undone.</p>
               </div>
             </div>
 
-            <p className="text-xs text-zinc-300 leading-relaxed">
-              Are you sure you want to permanently remove <strong className="text-white">"{deliverableToDelete.fileName}"</strong>? The file will be removed from private Storage and the project ledger.
+            <p className="text-xs text-graphite-strong leading-relaxed">
+              Are you sure you want to permanently remove <strong className="text-carbon">"{deliverableToDelete.fileName}"</strong>? The file will be removed from private Storage and the project ledger.
             </p>
 
             <div className="pt-2 flex items-center justify-end gap-3">
@@ -655,7 +682,7 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
                 type="button"
                 onClick={() => setDeliverableToDelete(null)}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-xl border border-zinc-800 text-xs font-semibold text-zinc-400 hover:text-white cursor-pointer"
+                className="px-4 py-2 rounded-full border border-hairline text-xs font-semibold text-carbon hover:bg-surface-secondary cursor-pointer transition-colors"
               >
                 Cancel
               </button>
@@ -663,7 +690,7 @@ export const AdminDeliverablesSection: React.FC<AdminDeliverablesSectionProps> =
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="px-5 py-2 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {isDeleting ? (
                   <>

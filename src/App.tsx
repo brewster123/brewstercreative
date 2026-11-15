@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { AlertTriangle, Copy, Check, X, RotateCcw, ShieldCheck } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
@@ -21,6 +21,13 @@ const DatabaseErrorBanner: React.FC = () => {
   const { databaseError, clearDatabaseError, refreshCurrentUserProfile, currentUser } = useApp();
   const [copied, setCopied] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   if (!databaseError) return null;
 
@@ -40,7 +47,7 @@ const DatabaseErrorBanner: React.FC = () => {
       <aside aria-label="Studio Notice" className="bg-[#18181B] text-white border-b border-[#222225] px-4 py-3 text-xs z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-[#EA580C] shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-accent shrink-0" />
             <p className="font-normal text-zinc-200 text-xs">
               Some studio content is temporarily unavailable. Please try again shortly.
             </p>
@@ -74,10 +81,17 @@ const DatabaseErrorBanner: React.FC = () => {
   const isPermissionDenied = databaseError.includes('42501') || databaseError.toLowerCase().includes('permission denied');
   const sqlFix = "GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;";
 
-  const copySql = () => {
-    navigator.clipboard.writeText(sqlFix);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+  const copySql = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(sqlFix);
+        setCopied(true);
+        if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = setTimeout(() => setCopied(false), 2500);
+      }
+    } catch {
+      // Clipboard unavailable in restricted browser contexts
+    }
   };
 
   return (
@@ -111,7 +125,7 @@ const DatabaseErrorBanner: React.FC = () => {
               type="button"
               onClick={handleRetry}
               disabled={retrying}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-mono text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent hover:bg-accent-hover text-white font-mono text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-50"
             >
               <RotateCcw className={`w-3.5 h-3.5 text-white ${retrying ? 'animate-spin' : ''}`} />
               <span>{retrying ? 'Retrying...' : 'Retry Connection'}</span>
@@ -121,7 +135,7 @@ const DatabaseErrorBanner: React.FC = () => {
             <button
               type="button"
               onClick={copySql}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-mono text-[11px] font-bold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent hover:bg-accent-hover text-white font-mono text-[11px] font-bold transition-colors cursor-pointer"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5 text-white" />}
               <span>{copied ? 'Copied SQL!' : 'Copy Grant SQL'}</span>
@@ -165,8 +179,8 @@ const MainLayout: React.FC = () => {
         if (authLoading) {
           return (
             <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
-              <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+              <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-graphite font-mono">
                 Opening studio workspace...
               </p>
             </div>
@@ -178,8 +192,8 @@ const MainLayout: React.FC = () => {
         if (authLoading) {
           return (
             <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
-              <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+              <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-graphite font-mono">
                 Verifying studio credentials...
               </p>
             </div>
@@ -189,14 +203,14 @@ const MainLayout: React.FC = () => {
         if (currentUser?.role !== 'admin') {
           return (
             <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
-              <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
-                <ShieldCheck className="w-5 h-5 text-[#EA580C]" />
+              <div className="w-12 h-12 rounded-xl bg-surface border border-hairline flex items-center justify-center mx-auto text-graphite">
+                <ShieldCheck className="w-5 h-5 text-accent" />
               </div>
               <div className="space-y-2">
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon">
                   Studio Director Access
                 </h2>
-                <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+                <p className="text-xs sm:text-sm text-graphite-strong max-w-md mx-auto leading-relaxed">
                   This production area is reserved for authorized studio directors. Please sign in with your studio account to manage commissions and archive records.
                 </p>
               </div>
@@ -206,7 +220,7 @@ const MainLayout: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveView('client-dashboard')}
-                    className="px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-all cursor-pointer"
+                    className="px-6 py-2.5 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold text-xs transition-all cursor-pointer btn-tactile"
                   >
                     Go to My Client Workspace
                   </button>
@@ -214,7 +228,7 @@ const MainLayout: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveView('auth')}
-                    className="px-6 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] hover:opacity-90 text-white dark:text-[#18181B] font-semibold text-xs transition-all cursor-pointer"
+                    className="px-6 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] hover:opacity-90 text-white dark:text-[#18181B] font-semibold text-xs transition-all cursor-pointer btn-tactile"
                   >
                     Sign In to Studio
                   </button>
@@ -236,8 +250,8 @@ const MainLayout: React.FC = () => {
         if (authLoading) {
           return (
             <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
-              <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+              <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-graphite font-mono">
                 Connecting to studio conversations...
               </p>
             </div>
@@ -250,8 +264,8 @@ const MainLayout: React.FC = () => {
         if (authLoading) {
           return (
             <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
-              <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+              <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-graphite font-mono">
                 Verifying studio director credentials...
               </p>
             </div>
@@ -260,14 +274,14 @@ const MainLayout: React.FC = () => {
         if (currentUser?.role !== 'admin') {
           return (
             <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
-              <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
-                <ShieldCheck className="w-5 h-5 text-[#EA580C]" />
+              <div className="w-12 h-12 rounded-xl bg-surface border border-hairline flex items-center justify-center mx-auto text-graphite">
+                <ShieldCheck className="w-5 h-5 text-accent" />
               </div>
               <div className="space-y-2">
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon">
                   Studio Director Access Required
                 </h2>
-                <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+                <p className="text-xs sm:text-sm text-graphite-strong max-w-md mx-auto leading-relaxed">
                   DESTALION Creative Studio is an administrative design application reserved exclusively for authorized studio directors. Client accounts and unauthenticated visitors do not have access.
                 </p>
               </div>
@@ -277,7 +291,7 @@ const MainLayout: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveView('client-dashboard')}
-                    className="px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-all cursor-pointer"
+                    className="px-6 py-2.5 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold text-xs transition-all cursor-pointer btn-tactile"
                   >
                     Go to My Client Workspace
                   </button>
@@ -285,7 +299,7 @@ const MainLayout: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveView('auth')}
-                    className="px-6 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] hover:opacity-90 text-white dark:text-[#18181B] font-semibold text-xs transition-all cursor-pointer"
+                    className="px-6 py-2.5 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] hover:opacity-90 text-white dark:text-[#18181B] font-semibold text-xs transition-all cursor-pointer btn-tactile"
                   >
                     Sign In to Studio
                   </button>
@@ -305,21 +319,23 @@ const MainLayout: React.FC = () => {
 
   if (isStudioApp) {
     return (
-      <div className="h-screen w-screen overflow-hidden bg-[#09090B] text-[#EDEDEC]">
+      <div className="h-screen w-screen overflow-hidden flex flex-col bg-[#09090B] text-[#EDEDEC]">
         <DatabaseErrorBanner />
-        <CreativeStudioView />
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <CreativeStudioView />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'} flex flex-col bg-[var(--bg-canvas)] dark:bg-[#171311] text-[var(--text-primary)] transition-colors duration-200 selection:bg-orange-500 selection:text-white font-sans antialiased relative [&>header]:fixed [&>header]:inset-x-0 [&>header]:top-0 [&>header]:max-w-none [&>header]:bg-[#FAF9F6]/90 dark:[&>header]:bg-[#171311]/90`}>
+    <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'} flex flex-col bg-canvas text-carbon transition-colors duration-200 selection:bg-accent selection:text-white font-sans antialiased relative`}>
       {/* Navbar flow placeholder for the fixed header */}
-      <div className="h-16 sm:h-[81px] shrink-0">
+      <div className="h-16 sm:h-20 shrink-0">
         {/* Accessible Skip Link */}
         <a 
           href="#main-content" 
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#EA580C] focus:text-white focus:font-semibold focus:rounded-md focus:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-white transition-all motion-reduce:transition-none"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-accent focus:text-white focus:font-semibold focus:rounded-md focus:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-white transition-all motion-reduce:transition-none"
         >
           Skip to main content
         </a>
@@ -338,10 +354,12 @@ const MainLayout: React.FC = () => {
         {renderCurrentView()}
       </main>
 
-      {/* Studio Footer with the layout's reserved top margin */}
-      <div className={`w-full ${isChatView ? 'hidden' : 'pt-20 [&>footer]:mt-0'}`}>
-        {!isChatView && <Footer />}
-      </div>
+      {/* Studio Footer */}
+      {!isChatView && (
+        <div className="w-full [&>footer]:mt-0">
+          <Footer />
+        </div>
+      )}
 
       {/* Primary Fixed Navigation Header */}
       <Navbar />

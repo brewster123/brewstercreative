@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { PortfolioProject, ServiceItem } from '../types';
 import { 
@@ -17,6 +17,7 @@ import {
   Check, 
   Send, 
   ArrowRight, 
+  ArrowUpRight,
   Sparkles, 
   Maximize2,
   Calendar,
@@ -33,7 +34,8 @@ export const CaseStudyView: React.FC = () => {
   const { 
     selectedPortfolioProject, 
     portfolio, 
-    services, 
+    services,
+    studioProfile,
     openCaseStudy, 
     closeCaseStudy, 
     setPreselectedService, 
@@ -43,14 +45,13 @@ export const CaseStudyView: React.FC = () => {
     currentUser,
   } = useApp();
 
-  // Resolve target project: prefer matching selected project, otherwise resolve by URL hash
+  // Resolve target project: when URL hash specifies a case study ID, resolve strictly against that ID
   const hashId = typeof window !== 'undefined' ? extractCaseStudyIdFromHash(window.location.hash) : null;
-  const project: PortfolioProject | null = 
-    (hashId && selectedPortfolioProject?.id === hashId ? selectedPortfolioProject : null) ||
-    (hashId ? portfolio.find(p => p.id === hashId) || null : null) ||
-    selectedPortfolioProject || 
-    portfolio[0] || 
-    null;
+  const project: PortfolioProject | null = hashId
+    ? (selectedPortfolioProject?.id === hashId ? selectedPortfolioProject : null) ||
+      portfolio.find(p => p.id === hashId) ||
+      null
+    : selectedPortfolioProject || portfolio[0] || null;
 
   const [isLiked, setIsLiked] = useState<boolean>(() => project ? isProjectLikedLocally(project.id) : false);
   const [likesCount, setLikesCount] = useState<number>(() => getProjectLikes(project));
@@ -60,6 +61,18 @@ export const CaseStudyView: React.FC = () => {
   const [copiedShare, setCopiedShare] = useState<boolean>(false);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState<number>(0);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
+  const isMountedRef = useRef(true);
+  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (shareTimerRef.current) {
+        clearTimeout(shareTimerRef.current);
+      }
+    };
+  }, []);
 
   // View recording effect: strictly triggered ONLY when the actual viewed project changes
   useEffect(() => {
@@ -101,11 +114,11 @@ export const CaseStudyView: React.FC = () => {
     (project as any)?.shares_count
   ]);
 
-  if (!project && hashId) {
+  if (!project && hashId && portfolio.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
-        <div className="w-10 h-10 rounded-full border-2 border-[#EA580C] border-t-transparent animate-spin mx-auto" />
-        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+        <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin mx-auto" />
+        <p className="text-xs text-graphite">
           Opening case study archive...
         </p>
       </div>
@@ -115,16 +128,16 @@ export const CaseStudyView: React.FC = () => {
   if (!project) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-24 text-center space-y-4">
-        <h2 className="font-display text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+        <h2 className="font-display text-2xl font-bold text-carbon">
           Case study not found
         </h2>
-        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+        <p className="text-xs text-graphite">
           The requested portfolio piece could not be located in the studio archive.
         </p>
         <button
           type="button"
           onClick={closeCaseStudy}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#EA580C] text-white text-xs font-semibold hover:bg-[#D94814] transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-white text-xs font-semibold hover:bg-accent-hover transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Return to Exhibition Archive</span>
@@ -203,9 +216,21 @@ export const CaseStudyView: React.FC = () => {
     }
 
     if (navigator.clipboard && shareUrl) {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedShare(true);
-      setTimeout(() => setCopiedShare(false), 2500);
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        if (!isMountedRef.current) return;
+        setCopiedShare(true);
+        if (shareTimerRef.current) {
+          clearTimeout(shareTimerRef.current);
+        }
+        shareTimerRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            setCopiedShare(false);
+          }
+        }, 2500);
+      } catch {
+        // Ignore clipboard permission errors silently
+      }
     }
   };
 
@@ -241,14 +266,14 @@ export const CaseStudyView: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* 1. TOP SUB-NAV BAR (Breadcrumbs & Engagement Action Controls) */}
       {/* ------------------------------------------------------------- */}
-      <div className="sticky top-0 z-30 bg-[#FAF9F6]/90 dark:bg-[#0F0F11]/90 backdrop-blur-md border-b border-[#E4E2DC] dark:border-[#27272A] px-4 sm:px-6 lg:px-8 py-3.5 transition-colors">
+      <div className="sticky top-0 z-30 bg-canvas/90 backdrop-blur-md border-b border-hairline px-4 sm:px-6 lg:px-8 py-3.5 transition-colors">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
           {/* Back Navigation */}
           <button
             type="button"
             onClick={closeCaseStudy}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer group"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-graphite hover:text-carbon transition-colors cursor-pointer group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span>Exhibition Archive</span>
@@ -257,8 +282,8 @@ export const CaseStudyView: React.FC = () => {
           {/* Engagement Strip */}
           <div className="flex items-center gap-3">
             {/* View Count Indicator */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
-              <Eye className="w-3.5 h-3.5 text-[#A1A1AA]" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface border border-hairline text-xs text-graphite tabular-nums">
+              <Eye className="w-3.5 h-3.5 text-graphite" />
               <span>{formattedViews}</span>
             </div>
 
@@ -268,14 +293,14 @@ export const CaseStudyView: React.FC = () => {
               onClick={handleToggleLike}
               aria-disabled={isLiking}
               aria-label={isLiked ? "Unlike case study" : "Like case study"}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
                 isLiked
                   ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50'
-                  : 'bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] border-[#E4E2DC] dark:border-[#27272A]'
+                  : 'bg-surface hover:bg-surface-secondary text-carbon border-hairline'
               }`}
             >
               <Heart className={`w-3.5 h-3.5 transition-transform ${isLiked ? 'fill-current scale-110' : ''}`} />
-              <span className="font-mono">{formattedLikes}</span>
+              <span className="tabular-nums">{formattedLikes}</span>
             </button>
 
             {/* Share Button */}
@@ -283,7 +308,7 @@ export const CaseStudyView: React.FC = () => {
               type="button"
               onClick={handleShare}
               aria-label="Share case study"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white dark:bg-[#18181B] hover:bg-[#F4F2ED] dark:hover:bg-[#232327] text-[#18181B] dark:text-[#EDEDEC] border border-[#E4E2DC] dark:border-[#27272A] text-xs font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface hover:bg-surface-secondary text-carbon border border-hairline text-xs font-semibold transition-colors cursor-pointer"
             >
               {copiedShare ? (
                 <>
@@ -292,7 +317,7 @@ export const CaseStudyView: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Share2 className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA]" />
+                  <Share2 className="w-3.5 h-3.5 text-graphite" />
                   <span>{formattedShares}</span>
                 </>
               )}
@@ -310,7 +335,7 @@ export const CaseStudyView: React.FC = () => {
         {/* Eyebrow & Badges */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Project Type Badge */}
-          <span className={`font-mono text-[11px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded border ${
+          <span className={`text-[11px] uppercase tracking-wider font-semibold px-3 py-1 rounded-full border ${
             project.projectType === 'concept' || !project.projectType
               ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/50'
               : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
@@ -318,12 +343,12 @@ export const CaseStudyView: React.FC = () => {
             {project.projectType === 'concept' || !project.projectType ? 'Concept Exploration' : 'Client Commission'}
           </span>
 
-          <span className="font-mono text-[11px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] px-2.5 py-1 rounded bg-[#F4F2ED] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A]">
+          <span className="text-[11px] uppercase tracking-wider text-graphite px-3 py-1 rounded-full bg-surface-secondary border border-hairline">
             {project.category}
           </span>
 
           {project.featured && (
-            <span className="font-mono text-[11px] uppercase tracking-wider text-[#EA580C] px-2.5 py-1 rounded bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50 font-semibold inline-flex items-center gap-1">
+            <span className="text-[11px] uppercase tracking-wider text-[#111114] px-3 py-1 rounded-full bg-[#D4FF38] font-bold inline-flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
               <span>Featured Studio Work</span>
             </span>
@@ -332,22 +357,22 @@ export const CaseStudyView: React.FC = () => {
 
         {/* Title & Short Abstract */}
         <div className="space-y-4 max-w-4xl">
-          <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight leading-[1.08]">
+          <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold text-carbon tracking-tight leading-[1.08]">
             {project.title}
           </h1>
 
-          <p className="text-base sm:text-xl text-[#71717A] dark:text-[#A1A1AA] leading-relaxed font-normal">
+          <p className="text-base sm:text-xl text-graphite-strong leading-relaxed font-normal">
             {project.shortDesc}
           </p>
         </div>
 
         {/* Metadata Ledger Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-y border-[#E4E2DC] dark:border-[#27272A] text-xs font-mono">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-y border-hairline text-xs">
           <div>
-            <span className="text-[#A1A1AA] uppercase tracking-wider text-[10px] block mb-1">
+            <span className="text-graphite uppercase tracking-wider text-[10px] block mb-1">
               {project.projectType === 'concept' || !project.projectType ? 'Project Origin' : 'Commission Client'}
             </span>
-            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">
+            <span className="text-carbon font-semibold">
               {project.projectType === 'concept' || !project.projectType
                 ? (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Self-Initiated Studio Work')
                 : (project.client || 'Client Commission')}
@@ -355,18 +380,18 @@ export const CaseStudyView: React.FC = () => {
           </div>
 
           <div>
-            <span className="text-[#A1A1AA] uppercase tracking-wider text-[10px] block mb-1">Timeline / Date</span>
-            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{project.date}</span>
+            <span className="text-graphite uppercase tracking-wider text-[10px] block mb-1">Timeline / Date</span>
+            <span className="text-carbon font-semibold">{project.date}</span>
           </div>
 
           <div>
-            <span className="text-[#A1A1AA] uppercase tracking-wider text-[10px] block mb-1">Discipline</span>
-            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{project.category}</span>
+            <span className="text-graphite uppercase tracking-wider text-[10px] block mb-1">Discipline</span>
+            <span className="text-carbon font-semibold">{project.category}</span>
           </div>
 
           <div>
-            <span className="text-[#A1A1AA] uppercase tracking-wider text-[10px] block mb-1">Archive Classification</span>
-            <span className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">
+            <span className="text-graphite uppercase tracking-wider text-[10px] block mb-1">Archive Classification</span>
+            <span className="text-carbon font-semibold">
               {project.projectType === 'concept' || !project.projectType ? 'Studio R&D' : 'Client Production'}
             </span>
           </div>
@@ -374,7 +399,7 @@ export const CaseStudyView: React.FC = () => {
 
         {/* Full-Bleed Artwork Viewport */}
         <div className="space-y-3">
-          <div className="relative rounded-2xl overflow-hidden bg-black/5 dark:bg-black/40 border border-[#E4E2DC] dark:border-[#27272A] aspect-[16/10] sm:aspect-[16/9] shadow-lg group">
+          <div className="relative rounded-3xl overflow-hidden bg-surface-secondary border border-hairline aspect-[16/10] sm:aspect-[16/9] shadow-lg group">
             <img
               src={galleryImages[activeGalleryIndex] || fallbackCaseStudyImage}
               alt={project.title || 'Exhibition artwork'}
@@ -384,7 +409,7 @@ export const CaseStudyView: React.FC = () => {
               type="button"
               onClick={() => setIsPreviewModalOpen(true)}
               aria-label="Enlarge image in viewer"
-              className="absolute top-4 right-4 p-2.5 rounded-xl bg-black/60 hover:bg-black text-white transition-colors backdrop-blur-xs cursor-pointer shadow-md opacity-0 group-hover:opacity-100 duration-200"
+              className="absolute top-4 right-4 p-2.5 rounded-full bg-black/60 hover:bg-black text-white transition-colors backdrop-blur-xs cursor-pointer shadow-md opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 duration-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
             >
               <Maximize2 className="w-4 h-4" />
             </button>
@@ -398,10 +423,10 @@ export const CaseStudyView: React.FC = () => {
                   key={idx}
                   type="button"
                   onClick={() => setActiveGalleryIndex(idx)}
-                  className={`relative w-20 sm:w-24 aspect-[16/10] rounded-lg overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                  className={`relative w-20 sm:w-24 aspect-[16/10] rounded-xl overflow-hidden border transition-all cursor-pointer shrink-0 ${
                     activeGalleryIndex === idx
-                      ? 'border-[#EA580C] ring-2 ring-[#EA580C]/30 scale-102'
-                      : 'border-[#E4E2DC] dark:border-[#27272A] opacity-70 hover:opacity-100'
+                      ? 'border-accent ring-2 ring-accent/30 scale-102'
+                      : 'border-hairline opacity-70 hover:opacity-100'
                   }`}
                 >
                   <img src={imgUrl || fallbackCaseStudyImage} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
@@ -425,13 +450,13 @@ export const CaseStudyView: React.FC = () => {
             {/* Overview / Background */}
             {(cs?.overview || project.fullDesc) && (
               <div className="space-y-4">
-                <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block">
+                <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   01 / Project Overview
                 </span>
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-                  Context & Architectural Foundation
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon tracking-tight">
+                  Context &amp; Architectural Foundation
                 </h2>
-                <div className="font-sans text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed space-y-4">
+                <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs?.overview || project.fullDesc}</p>
                 </div>
               </div>
@@ -439,14 +464,14 @@ export const CaseStudyView: React.FC = () => {
 
             {/* The Challenge */}
             {cs?.challenge && (
-              <div className="space-y-4 pt-10 border-t border-[#E4E2DC] dark:border-[#27272A]">
-                <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block">
+              <div className="space-y-4 pt-10 border-t border-hairline">
+                <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   02 / The Challenge
                 </span>
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-                  Design Dilemmas & Constraints
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon tracking-tight">
+                  Design Dilemmas &amp; Constraints
                 </h2>
-                <div className="font-sans text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed space-y-4">
+                <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.challenge}</p>
                 </div>
               </div>
@@ -454,14 +479,14 @@ export const CaseStudyView: React.FC = () => {
 
             {/* Objective */}
             {cs?.objective && (
-              <div className="space-y-4 pt-10 border-t border-[#E4E2DC] dark:border-[#27272A]">
-                <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block">
+              <div className="space-y-4 pt-10 border-t border-hairline">
+                <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   03 / Core Objective
                 </span>
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-                  Target Outcomes & Strategic Scope
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon tracking-tight">
+                  Target Outcomes &amp; Strategic Scope
                 </h2>
-                <div className="font-sans text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed space-y-4">
+                <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.objective}</p>
                 </div>
               </div>
@@ -469,14 +494,14 @@ export const CaseStudyView: React.FC = () => {
 
             {/* Research & Inspiration */}
             {cs?.researchInspiration && (
-              <div className="space-y-4 pt-10 border-t border-[#E4E2DC] dark:border-[#27272A]">
-                <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block">
-                  04 / Research & Aesthetic Inquiries
+              <div className="space-y-4 pt-10 border-t border-hairline">
+                <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
+                  04 / Research &amp; Aesthetic Inquiries
                 </span>
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-                  Archival References & Typographic Exploration
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon tracking-tight">
+                  Archival References &amp; Typographic Exploration
                 </h2>
-                <div className="font-sans text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed space-y-4">
+                <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.researchInspiration}</p>
                 </div>
               </div>
@@ -484,14 +509,14 @@ export const CaseStudyView: React.FC = () => {
 
             {/* Concept Development */}
             {cs?.conceptDevelopment && (
-              <div className="space-y-4 pt-10 border-t border-[#E4E2DC] dark:border-[#27272A]">
-                <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block">
+              <div className="space-y-4 pt-10 border-t border-hairline">
+                <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   05 / Concept Development
                 </span>
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-                  Iteration, Vector Construction & Prototyping
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon tracking-tight">
+                  Iteration, Vector Construction &amp; Prototyping
                 </h2>
-                <div className="font-sans text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed space-y-4">
+                <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.conceptDevelopment}</p>
                 </div>
               </div>
@@ -499,14 +524,14 @@ export const CaseStudyView: React.FC = () => {
 
             {/* Design Decisions */}
             {cs?.designDecisions && (
-              <div className="space-y-4 pt-10 border-t border-[#E4E2DC] dark:border-[#27272A]">
-                <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block">
+              <div className="space-y-4 pt-10 border-t border-hairline">
+                <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   06 / Design Decisions
                 </span>
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-                  Form, Color Balance & Grid Architecture
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon tracking-tight">
+                  Form, Color Balance &amp; Grid Architecture
                 </h2>
-                <div className="font-sans text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed space-y-4">
+                <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.designDecisions}</p>
                 </div>
               </div>
@@ -514,14 +539,14 @@ export const CaseStudyView: React.FC = () => {
 
             {/* Final Solution */}
             {cs?.finalSolution && (
-              <div className="space-y-4 pt-10 border-t border-[#E4E2DC] dark:border-[#27272A]">
-                <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block">
+              <div className="space-y-4 pt-10 border-t border-hairline">
+                <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   07 / Final Solution
                 </span>
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon tracking-tight">
                   The Completed Visual System
                 </h2>
-                <div className="font-sans text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed space-y-4">
+                <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.finalSolution}</p>
                 </div>
               </div>
@@ -529,14 +554,14 @@ export const CaseStudyView: React.FC = () => {
 
             {/* Reflection / Lessons */}
             {cs?.reflection && (
-              <div className="space-y-4 pt-10 border-t border-[#E4E2DC] dark:border-[#27272A]">
-                <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block">
+              <div className="space-y-4 pt-10 border-t border-hairline">
+                <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   08 / Studio Reflection
                 </span>
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
-                  Retrospective & Critical Takeaways
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon tracking-tight">
+                  Retrospective &amp; Critical Takeaways
                 </h2>
-                <div className="font-sans text-sm sm:text-base text-[#71717A] dark:text-[#A1A1AA] leading-relaxed space-y-4">
+                <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.reflection}</p>
                 </div>
               </div>
@@ -544,11 +569,11 @@ export const CaseStudyView: React.FC = () => {
 
             {/* Fallback if no narrative is entered yet */}
             {!hasNarrative && !project.fullDesc && (
-              <div className="p-8 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] text-center space-y-2">
-                <p className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC]">
+              <div className="p-8 rounded-3xl bg-surface border border-hairline text-center space-y-2">
+                <p className="font-display text-base font-bold text-carbon">
                   Editorial Case Study in Production
                 </p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                <p className="text-xs text-graphite">
                   Detailed chapter documentation, design decisions, and production rationale are being compiled for this archival piece.
                 </p>
               </div>
@@ -560,23 +585,23 @@ export const CaseStudyView: React.FC = () => {
           <aside className="lg:col-span-4 space-y-8 sticky top-20">
             
             {/* Project Specifications Card */}
-            <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 sm:p-7 space-y-6 shadow-2xs">
-              <h3 className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC] pb-3 border-b border-[#E4E2DC] dark:border-[#27272A]">
+            <div className="bg-surface border border-hairline rounded-3xl p-6 sm:p-7 space-y-6 shadow-2xs">
+              <h3 className="font-display text-base font-bold text-carbon pb-3 border-b border-hairline">
                 Project Specifications
               </h3>
 
               {/* Tools Employed */}
               {project.tools && project.tools.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold flex items-center gap-1.5">
-                    <Wrench className="w-3.5 h-3.5 text-[#EA580C]" />
-                    <span>Tools & Production Software</span>
+                  <span className="text-[11px] uppercase tracking-wider text-graphite font-semibold flex items-center gap-1.5">
+                    <Wrench className="w-3.5 h-3.5 text-accent" />
+                    <span>Tools &amp; Production Software</span>
                   </span>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {project.tools.map((tool, idx) => (
                       <span
                         key={idx}
-                        className="text-xs font-mono px-2.5 py-1 rounded bg-[#FAF9F6] dark:bg-[#232327] border border-[#E4E2DC] dark:border-[#27272A] text-[#18181B] dark:text-[#EDEDEC]"
+                        className="text-xs px-3 py-1 rounded-full bg-surface-secondary border border-hairline text-carbon"
                       >
                         {tool}
                       </span>
@@ -587,14 +612,14 @@ export const CaseStudyView: React.FC = () => {
 
               {/* Deliverables Summary */}
               {cs?.deliverablesSummary && cs.deliverablesSummary.length > 0 && (
-                <div className="space-y-2 pt-4 border-t border-[#E4E2DC] dark:border-[#27272A]">
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold">
+                <div className="space-y-2 pt-4 border-t border-hairline">
+                  <span className="text-[11px] uppercase tracking-wider text-graphite font-semibold">
                     Key Deliverables Package
                   </span>
-                  <ul className="space-y-1.5 pt-1 text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                  <ul className="space-y-1.5 pt-1 text-xs text-graphite-strong">
                     {cs.deliverablesSummary.map((deliv, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C] shrink-0 mt-1.5" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 mt-1.5" />
                         <span>{deliv}</span>
                       </li>
                     ))}
@@ -604,16 +629,16 @@ export const CaseStudyView: React.FC = () => {
 
               {/* Tags / Keywords */}
               {project.tags && project.tags.length > 0 && (
-                <div className="space-y-2 pt-4 border-t border-[#E4E2DC] dark:border-[#27272A]">
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold flex items-center gap-1.5">
-                    <Tag className="w-3.5 h-3.5 text-[#EA580C]" />
+                <div className="space-y-2 pt-4 border-t border-hairline">
+                  <span className="text-[11px] uppercase tracking-wider text-graphite font-semibold flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5 text-accent" />
                     <span>Archival Taxonomy</span>
                   </span>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {project.tags.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#F4F2ED] dark:bg-[#232327] text-[#71717A] dark:text-[#A1A1AA]"
+                        className="text-[11px] px-2.5 py-0.5 rounded-full bg-surface-secondary text-graphite"
                       >
                         #{tag}
                       </span>
@@ -624,19 +649,19 @@ export const CaseStudyView: React.FC = () => {
 
               {/* Color Palette */}
               {project.colorPalette && project.colorPalette.length > 0 && (
-                <div className="space-y-2 pt-4 border-t border-[#E4E2DC] dark:border-[#27272A]">
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold flex items-center gap-1.5">
-                    <Palette className="w-3.5 h-3.5 text-[#EA580C]" />
+                <div className="space-y-2 pt-4 border-t border-hairline">
+                  <span className="text-[11px] uppercase tracking-wider text-graphite font-semibold flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-accent" />
                     <span>Identity Color Palette</span>
                   </span>
                   <div className="grid grid-cols-4 gap-2 pt-1">
                     {project.colorPalette.map((color, idx) => (
                       <div key={idx} className="space-y-1 text-center">
                         <div
-                          className="h-9 rounded-md border border-black/10 dark:border-white/10 shadow-2xs"
+                          className="h-9 rounded-lg border border-black/10 dark:border-white/10 shadow-2xs"
                           style={{ backgroundColor: color }}
                         />
-                        <span className="font-mono text-[9px] uppercase text-[#71717A] dark:text-[#A1A1AA] block truncate">
+                        <span className="text-[9px] uppercase text-graphite block truncate">
                           {color}
                         </span>
                       </div>
@@ -649,55 +674,57 @@ export const CaseStudyView: React.FC = () => {
 
             {/* Associated Studio Service Offering */}
             {associatedService && (
-              <div className="bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] rounded-xl p-6 space-y-4 shadow-2xs">
+              <div className="bg-surface-secondary border border-hairline rounded-3xl p-6 space-y-4 shadow-2xs">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#EA580C] font-semibold block">
+                  <span className="text-[10px] uppercase tracking-widest text-accent font-semibold block">
                     Associated Service Offering
                   </span>
-                  <h4 className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  <h4 className="font-display text-base font-bold text-carbon">
                     {associatedService.name}
                   </h4>
-                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] line-clamp-2">
+                  <p className="text-xs text-graphite-strong line-clamp-2">
                     {associatedService.shortDesc}
                   </p>
                 </div>
 
-                <div className="pt-2 flex items-center justify-between text-xs font-mono border-t border-[#E4E2DC] dark:border-[#27272A]">
-                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Starting at</span>
-                  <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
-                    ${associatedService.startingPrice.toLocaleString()}
+                <div className="pt-2 flex items-center justify-between text-xs border-t border-hairline">
+                  <span className="text-graphite">Starting at</span>
+                  <span className="font-bold text-carbon tabular-nums">
+                    {studioProfile?.currencySymbol || '₱'}{associatedService.startingPrice.toLocaleString()}
                   </span>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleInitiateCommission}
-                  className="w-full py-2.5 px-4 rounded-lg bg-[#18181B] dark:bg-[#EDEDEC] text-white dark:text-[#18181B] font-semibold text-xs hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-full bg-[#111114] dark:bg-white text-white dark:text-[#111114] font-semibold text-xs hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>Commission Similar Scope</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#EA580C]" />
+                  <ArrowRight className="w-3.5 h-3.5 text-[#D4FF38] dark:text-[#0284C7]" />
                 </button>
               </div>
             )}
 
             {/* Direct Consultation Box */}
-            <div className="p-6 rounded-xl bg-gradient-to-br from-[#18181B] to-[#27272A] text-white space-y-3 shadow-md">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
-                Visionary Inquiry
+            <div className="p-6 rounded-3xl hero-sky-gradient text-white space-y-3 shadow-md">
+              <span className="text-[10px] uppercase tracking-widest text-white/85 font-semibold block">
+                · Visionary Inquiry
               </span>
               <h4 className="font-display text-lg font-bold text-white tracking-tight">
                 Commission Something Similar
               </h4>
-              <p className="text-xs text-zinc-300 leading-relaxed">
+              <p className="text-xs text-white/85 leading-relaxed">
                 Bring your bespoke branding, poster, or illustration concept into reality with custom hand-crafted design.
               </p>
               <button
                 type="button"
                 onClick={handleInitiateCommission}
-                className="w-full mt-2 py-3 px-4 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full mt-2 pl-5 pr-2 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] font-bold text-xs uppercase tracking-wider transition-all shadow-xs flex items-center justify-between gap-2 cursor-pointer"
               >
-                <Send className="w-3.5 h-3.5" />
                 <span>Start Studio Inquiry</span>
+                <span className="w-7 h-7 rounded-full bg-[#111114] text-white flex items-center justify-center">
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </span>
               </button>
             </div>
 
@@ -710,14 +737,14 @@ export const CaseStudyView: React.FC = () => {
       {/* 4. RELATED WORKS (2–3 projects in same category/discipline)  */}
       {/* ------------------------------------------------------------- */}
       {relatedProjects.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 border-t border-[#E4E2DC] dark:border-[#27272A]">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 border-t border-hairline">
           <div className="space-y-8">
             <div className="flex items-end justify-between gap-4">
               <div className="space-y-1">
-                <span className="font-mono text-xs uppercase tracking-widest text-[#EA580C] font-semibold block">
+                <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   Archive Continuity
                 </span>
-                <h3 className="font-display text-2xl font-bold text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+                <h3 className="font-display text-2xl font-bold text-carbon tracking-tight">
                   Related Works in {project.category}
                 </h3>
               </div>
@@ -725,7 +752,7 @@ export const CaseStudyView: React.FC = () => {
               <button
                 type="button"
                 onClick={closeCaseStudy}
-                className="text-xs font-semibold text-[#EA580C] hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-accent hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>View Full Catalog</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -736,11 +763,19 @@ export const CaseStudyView: React.FC = () => {
               {relatedProjects.map((relProj) => (
                 <div
                   key={relProj.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => openCaseStudy(relProj)}
-                  className="group bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#27272A] hover:border-[#D4D2CA] dark:hover:border-[#3F3F46] rounded-xl overflow-hidden cursor-pointer shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openCaseStudy(relProj);
+                    }
+                  }}
+                  className="group bg-surface border border-hairline hover:border-accent/40 rounded-3xl overflow-hidden cursor-pointer shadow-2xs hover:shadow-md transition-all flex flex-col justify-between focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <div>
-                    <div className="aspect-[16/10] overflow-hidden bg-[#FAF9F6] dark:bg-[#0F0F11]">
+                    <div className="aspect-[16/10] overflow-hidden bg-surface-secondary">
                       <img
                         src={relProj.image || fallbackCaseStudyImage}
                         alt={relProj.title || 'Related project'}
@@ -749,21 +784,21 @@ export const CaseStudyView: React.FC = () => {
                       />
                     </div>
                     <div className="p-5 space-y-1.5">
-                      <div className="flex items-center gap-2 text-[10px] font-mono uppercase text-[#71717A] dark:text-[#A1A1AA]">
+                      <div className="flex items-center gap-2 text-[10px] uppercase text-graphite">
                         <span>{relProj.category}</span>
                         <span>·</span>
                         <span>{relProj.date}</span>
                       </div>
-                      <h4 className="font-display text-base font-bold text-[#18181B] dark:text-[#EDEDEC] group-hover:text-[#EA580C] transition-colors leading-snug">
+                      <h4 className="font-display text-base font-bold text-carbon group-hover:text-accent transition-colors leading-snug">
                         {relProj.title}
                       </h4>
-                      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] line-clamp-2">
+                      <p className="text-xs text-graphite-strong line-clamp-2">
                         {relProj.shortDesc}
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-5 pt-0 border-t border-[#E4E2DC] dark:border-[#27272A] mt-2 flex items-center justify-between text-xs font-semibold text-[#EA580C]">
+                  <div className="p-5 pt-3 border-t border-hairline mt-2 flex items-center justify-between text-xs font-semibold text-accent">
                     <span>Read Case Study</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </div>

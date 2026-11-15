@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { ProgressBar } from '../components/ProgressBar';
 import { ProgressTimeline } from '../components/ProgressTimeline';
@@ -74,7 +74,7 @@ export const ClientDashboardView: React.FC = () => {
       return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800';
     }
     if (s.includes('progress')) {
-      return 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800';
+      return 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-800';
     }
     if (s.includes('accepted')) {
       return 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
@@ -152,26 +152,48 @@ export const ClientDashboardView: React.FC = () => {
         setActiveTab('overview');
       }
     }
-  }, [activeDashboardTab, setActiveView]);
+  }, [activeDashboardTab]);
+
+  const isMountedRef = useRef(true);
+  const activeCommissionIdRef = useRef<string | undefined>(commission?.id);
+  const profileSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    activeCommissionIdRef.current = commission?.id;
+  }, [commission?.id]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (profileSaveTimerRef.current) clearTimeout(profileSaveTimerRef.current);
+    };
+  }, []);
 
   // Fetch creative proofs for active commission
   const loadDashboardProofs = useCallback(async () => {
-    if (!commission?.id) {
+    const targetId = commission?.id;
+    if (!targetId) {
       setProofs([]);
       return;
     }
     setLoadingProofs(true);
     try {
-      const { data, error } = await fetchCommissionProofs(commission.id);
+      const { data, error } = await fetchCommissionProofs(targetId);
+      if (!isMountedRef.current || activeCommissionIdRef.current !== targetId) return;
       if (!error && data) {
         setProofs(data);
       } else if (error) {
         console.warn('[ClientDashboardView] Notice fetching proofs:', error);
       }
     } catch (err) {
-      console.error('[ClientDashboardView] Exception fetching proofs:', err);
+      if (isMountedRef.current && activeCommissionIdRef.current === targetId) {
+        console.error('[ClientDashboardView] Exception fetching proofs:', err);
+      }
     } finally {
-      setLoadingProofs(false);
+      if (isMountedRef.current && activeCommissionIdRef.current === targetId) {
+        setLoadingProofs(false);
+      }
     }
   }, [commission?.id]);
 
@@ -199,6 +221,8 @@ export const ClientDashboardView: React.FC = () => {
   const [profileBio, setProfileBio] = useState(currentUser?.bio || '');
   const [profileAvatar, setProfileAvatar] = useState(currentUser?.avatar || '');
   const [profileSavedMsg, setProfileSavedMsg] = useState('');
+  const [profileErrorMsg, setProfileErrorMsg] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   React.useEffect(() => {
     if (currentUser) {
@@ -212,21 +236,45 @@ export const ClientDashboardView: React.FC = () => {
     }
   }, [currentUser]);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return;
+    if (!currentUser || isSavingProfile) return;
 
-    updateUserProfile(currentUser.id, {
-      name: profileName,
-      handle: profileHandle,
-      phone: profilePhone,
-      contactMethod: profileContact,
-      bio: profileBio,
-      avatar: profileAvatar || currentUser.avatar,
-    });
+    setProfileSavedMsg('');
+    setProfileErrorMsg('');
+    setIsSavingProfile(true);
 
-    setProfileSavedMsg('Your personal client profile has been updated.');
-    setTimeout(() => setProfileSavedMsg(''), 4000);
+    try {
+      const res = await updateUserProfile(currentUser.id, {
+        name: profileName.trim(),
+        handle: profileHandle.trim(),
+        phone: profilePhone.trim(),
+        contactMethod: profileContact,
+        bio: profileBio.trim(),
+        avatar: profileAvatar || currentUser.avatar,
+      });
+
+      if (!isMountedRef.current) return;
+
+      if (!res?.success) {
+        setProfileErrorMsg(res?.error || 'Could not save profile changes. Please try again.');
+        return;
+      }
+
+      setProfileSavedMsg('Your personal client profile has been updated.');
+      if (profileSaveTimerRef.current) clearTimeout(profileSaveTimerRef.current);
+      profileSaveTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) setProfileSavedMsg('');
+      }, 4000);
+    } catch (err: any) {
+      if (isMountedRef.current) {
+        setProfileErrorMsg(err?.message || 'Unexpected error while saving profile.');
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsSavingProfile(false);
+      }
+    }
   };
 
   // Time-aware greeting
@@ -250,14 +298,14 @@ export const ClientDashboardView: React.FC = () => {
   if (!currentUser) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6 animate-in fade-in duration-300">
-        <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-center mx-auto text-[#71717A] dark:text-[#A1A1AA]">
-          <UserIcon className="w-5 h-5" />
+        <div className="w-14 h-14 rounded-2xl bg-surface border border-hairline flex items-center justify-center mx-auto text-graphite">
+          <UserIcon className="w-5 h-5 text-accent" />
         </div>
         <div className="space-y-2">
-          <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon">
             Private Studio Workspace
           </h2>
-          <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-graphite max-w-md mx-auto leading-relaxed">
             Sign in with your client account to inspect project sheets, review design proofs, and converse directly with DESTALION.
           </p>
         </div>
@@ -265,14 +313,14 @@ export const ClientDashboardView: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveView('auth')}
-            className="px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-all cursor-pointer"
+            className="px-6 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] font-bold text-xs transition-all cursor-pointer btn-tactile"
           >
             Sign In
           </button>
           <button
             type="button"
             onClick={() => setActiveView('commission-form')}
-            className="px-6 py-2.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-[#18181B] dark:text-[#EDEDEC] font-semibold text-xs hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] transition-all cursor-pointer"
+            className="px-6 py-2.5 rounded-full border border-hairline text-carbon font-semibold text-xs hover:bg-surface-secondary transition-all cursor-pointer"
           >
             Start a Commission
           </button>
@@ -284,21 +332,21 @@ export const ClientDashboardView: React.FC = () => {
   if (currentUserCommissions.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6 animate-in fade-in duration-300">
-        <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-center justify-center mx-auto text-[#EA580C]">
+        <div className="w-14 h-14 rounded-2xl bg-surface border border-hairline flex items-center justify-center mx-auto text-accent">
           <FolderArchive className="w-5 h-5" />
         </div>
         <div className="space-y-1.5">
-          <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-carbon">
             No commissions yet
           </h2>
-          <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-graphite max-w-md mx-auto leading-relaxed">
             Your commissioned projects will appear here once initiated. Start your first bespoke design commission with DESTALION.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setActiveView('commission-form')}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white font-semibold text-xs transition-all cursor-pointer shadow-xs"
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] font-bold text-xs transition-all cursor-pointer shadow-xs btn-tactile"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Request a Commission</span>
@@ -365,7 +413,7 @@ export const ClientDashboardView: React.FC = () => {
   const unreadMessagesCount = useMemo(() => {
     if (!currentCommission?.id || !currentUser?.id) return 0;
     return messages.filter(
-      m => m.commissionId === currentCommission.id && m.senderId !== currentUser.id && !m.read
+      m => m.commissionId === currentCommission.id && m.senderId !== currentUser.id && !m.readStatus
     ).length;
   }, [messages, currentCommission?.id, currentUser?.id]);
 
@@ -436,16 +484,16 @@ export const ClientDashboardView: React.FC = () => {
       {viewMode === 'overview' && (
         <div className="space-y-8 animate-in fade-in duration-300">
           {/* Header */}
-          <div className="border-b border-[#E4E2DC] dark:border-[#222225] pb-8">
+          <div className="border-b border-hairline pb-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div className="space-y-2">
-                <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                <span className="font-mono text-xs text-graphite">
                   {getGreeting()}, {currentUser.name}.
                 </span>
-                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-carbon tracking-tight">
                   My Commissions
                 </h1>
-                <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] font-normal">
+                <p className="text-xs sm:text-sm text-graphite font-normal">
                   Select a commission to open its dedicated project workspace, review proofs, verify payments, and download deliverables.
                 </p>
               </div>
@@ -454,7 +502,7 @@ export const ClientDashboardView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveView('commission-form')}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold shadow-xs transition-all cursor-pointer btn-tactile"
                 >
                   <PlusCircle className="w-4 h-4" />
                   <span>New Project Consultation</span>
@@ -465,14 +513,14 @@ export const ClientDashboardView: React.FC = () => {
 
           {/* Filter & Search Bar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2 p-1 bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg">
+            <div className="flex items-center gap-1.5 p-1 bg-surface-secondary border border-hairline rounded-full">
               <button
                 type="button"
                 onClick={() => setOverviewFilter('all')}
-                className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-medium transition-colors cursor-pointer ${
                   overviewFilter === 'all'
-                    ? 'bg-white dark:bg-[#121214] text-[#EA580C] shadow-2xs font-bold'
-                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                    ? 'bg-accent text-white shadow-2xs font-bold'
+                    : 'text-graphite hover:text-carbon'
                 }`}
               >
                 All Projects ({currentUserCommissions.length})
@@ -480,10 +528,10 @@ export const ClientDashboardView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setOverviewFilter('active')}
-                className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-medium transition-colors cursor-pointer ${
                   overviewFilter === 'active'
-                    ? 'bg-white dark:bg-[#121214] text-[#EA580C] shadow-2xs font-bold'
-                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                    ? 'bg-accent text-white shadow-2xs font-bold'
+                    : 'text-graphite hover:text-carbon'
                 }`}
               >
                 Active ({activeCount})
@@ -491,10 +539,10 @@ export const ClientDashboardView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setOverviewFilter('completed')}
-                className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-medium transition-colors cursor-pointer ${
                   overviewFilter === 'completed'
-                    ? 'bg-white dark:bg-[#121214] text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold'
-                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                    ? 'bg-emerald-600 text-white shadow-2xs font-bold'
+                    : 'text-graphite hover:text-carbon'
                 }`}
               >
                 Completed ({completedCount})
@@ -503,13 +551,13 @@ export const ClientDashboardView: React.FC = () => {
 
             {currentUserCommissions.length > 2 && (
               <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-3.5 h-3.5 text-graphite absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Filter commissions..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C]"
+                  className="w-full pl-9 pr-3.5 py-2 text-xs rounded-full bg-surface-secondary border border-hairline text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent"
                 />
               </div>
             )}
@@ -517,12 +565,12 @@ export const ClientDashboardView: React.FC = () => {
 
           {/* Commission Cards Grid */}
           {filteredCommissions.length === 0 ? (
-            <div className="p-12 text-center rounded-xl border border-dashed border-[#E4E2DC] dark:border-[#222225] bg-white dark:bg-[#121214] space-y-3">
-              <FolderArchive className="w-8 h-8 text-[#A1A1AA] mx-auto opacity-70" />
-              <h4 className="font-display font-semibold text-base text-[#18181B] dark:text-[#EDEDEC]">
+            <div className="p-12 text-center rounded-3xl border border-dashed border-hairline bg-surface space-y-3">
+              <FolderArchive className="w-8 h-8 text-graphite mx-auto opacity-70" />
+              <h4 className="font-display font-semibold text-base text-carbon">
                 {searchQuery ? 'No matching commissions' : 'No commissions in this view'}
               </h4>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono">
+              <p className="text-xs text-graphite font-mono">
                 {searchQuery ? 'Try adjusting your search criteria.' : 'Start a new project consultation with DESTALION.'}
               </p>
             </div>
@@ -530,9 +578,13 @@ export const ClientDashboardView: React.FC = () => {
             <div className="space-y-4">
               {filteredCommissions.map((proj) => {
                 const stageInfo = COMMISSION_STAGES.find(s => s.number === (proj.currentStage || 1));
-                const updatedDate = proj.updatedAt
-                  ? new Date(proj.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                  : 'Recently';
+                const updatedDate = (() => {
+                  if (!proj.updatedAt) return 'Recently';
+                  const d = new Date(proj.updatedAt);
+                  return !isNaN(d.getTime())
+                    ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : formatCommissionDate(proj.updatedAt);
+                })();
                 const deadlineDate = proj.deadline ? formatCommissionDate(proj.deadline) : 'Scheduled with Studio';
 
                 return (
@@ -553,23 +605,23 @@ export const ClientDashboardView: React.FC = () => {
                       setViewMode('workspace');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="group relative p-6 sm:p-7 rounded-xl border border-[#E4E2DC] dark:border-[#222225] bg-white dark:bg-[#121214] hover:border-[#EA580C] hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col gap-4 focus-visible:outline-2 focus-visible:outline-[#EA580C]"
+                    className="group relative p-6 sm:p-7 rounded-3xl border border-hairline bg-surface hover:border-accent hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col gap-4 focus-visible:outline-2 focus-visible:outline-accent"
                   >
                     {/* Top Meta Row */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4E2DC]/60 dark:border-[#222225]/60">
-                      <div className="flex items-center gap-2 font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] flex-wrap">
-                        <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">Ref: #{proj.id.slice(0, 8)}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-hairline">
+                      <div className="flex items-center gap-2 font-mono text-xs text-graphite flex-wrap">
+                        <span className="font-semibold text-carbon">Ref: #{proj.id.slice(0, 8)}</span>
                         <span>·</span>
-                        <span className="text-[#EA580C] font-semibold">{proj.serviceType || proj.service}</span>
+                        <span className="text-accent font-semibold">{proj.serviceType || proj.service}</span>
                         <span>·</span>
                         <span>Designer: {proj.assignedDesigner || studioProfile.designerName}</span>
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-mono font-semibold border ${getStatusBadgeClasses(proj.status)}`}>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold border ${getStatusBadgeClasses(proj.status)}`}>
                           Status: {formatCommissionStatus(proj.status)}
                         </span>
-                        <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-mono font-semibold ${getPaymentBadgeClasses(proj.paymentStatus)}`}>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold ${getPaymentBadgeClasses(proj.paymentStatus)}`}>
                           {proj.paymentStatus === 'Paid' ? 'Paid in Full' : proj.paymentStatus === 'Partial' ? 'Deposit Paid' : 'Awaiting Deposit Verification'}
                         </span>
                       </div>
@@ -577,39 +629,39 @@ export const ClientDashboardView: React.FC = () => {
 
                     {/* Project Title and Stage Banner */}
                     <div className="space-y-2">
-                      <h3 className="font-display text-xl sm:text-2xl font-black text-[#18181B] dark:text-[#EDEDEC] group-hover:text-[#EA580C] transition-colors truncate">
+                      <h3 className="font-display text-xl sm:text-2xl font-black text-carbon group-hover:text-accent transition-colors truncate">
                         {proj.projectName}
                       </h3>
 
-                      <div className="p-3.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1">
+                      <div className="p-3.5 rounded-2xl bg-surface-secondary border border-hairline space-y-1">
                         <div className="flex items-center justify-between text-xs font-mono">
-                          <span className="font-bold text-[#EA580C] uppercase tracking-wider">
+                          <span className="font-bold text-accent uppercase tracking-wider">
                             Stage 0{proj.currentStage || 1} of 08 · {stageInfo?.name || 'Production'}
                           </span>
-                          <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                          <span className="font-bold text-carbon">
                             Progress {proj.progress}%
                           </span>
                         </div>
-                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] line-clamp-1">
+                        <p className="text-xs text-graphite line-clamp-1">
                           {stageInfo?.description || 'Applying client feedback and refining design assets'}
                         </p>
                       </div>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="h-1.5 w-full bg-[#E4E2DC] dark:bg-[#222225] rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-surface-secondary rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#EA580C] transition-all duration-300"
+                        className="h-full bg-accent transition-all duration-300"
                         style={{ width: `${Math.min(100, Math.max(5, proj.progress))}%` }}
                       />
                     </div>
 
                     {/* Footer Meta Row & Action Button */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 text-xs font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 text-xs font-mono text-graphite">
                       <div className="flex items-center gap-4 flex-wrap">
                         <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-[#EA580C]" />
-                          <span>Delivery: <strong className="text-[#18181B] dark:text-[#EDEDEC] font-semibold">{deadlineDate}</strong></span>
+                          <Calendar className="w-3.5 h-3.5 text-accent" />
+                          <span>Delivery: <strong className="text-carbon font-semibold">{deadlineDate}</strong></span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
@@ -617,7 +669,7 @@ export const ClientDashboardView: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#EA580C] group-hover:bg-[#D94814] text-white font-semibold text-xs transition-colors self-start sm:self-auto shadow-2xs">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D4FF38] group-hover:bg-[#C4F024] text-[#111114] font-bold text-xs transition-colors self-start sm:self-auto shadow-2xs">
                         <span>View Commission</span>
                         <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                       </div>
@@ -637,56 +689,56 @@ export const ClientDashboardView: React.FC = () => {
         <div className="space-y-8 animate-in fade-in duration-300">
           
           {/* Back Navigation Bar */}
-          <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#222225]">
+          <div className="flex items-center justify-between pb-3 border-b border-hairline">
             <button
               type="button"
               onClick={() => {
                 setViewMode('overview');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-[#E4E2DC] dark:border-[#222225] bg-white dark:bg-[#18181B] hover:bg-[#FAF9F6] dark:hover:bg-[#121214] text-xs font-mono font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-hairline bg-surface hover:bg-surface-secondary text-xs font-mono font-medium text-graphite hover:text-carbon transition-colors cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-[#EA580C]" />
-              <span>← Back to My Commissions</span>
+              <ArrowLeft className="w-3.5 h-3.5 text-accent" />
+              <span>Back to My Commissions</span>
             </button>
 
-            <span className="font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] hidden sm:inline">
+            <span className="font-mono text-xs text-graphite hidden sm:inline">
               My Commissions / #{currentCommission.id.slice(0, 8)}
             </span>
           </div>
 
           {/* Active Project Sheet Header */}
-          <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-4 pb-6 border-b border-[#E4E2DC] dark:border-[#222225]">
+          <div className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-4 pb-6 border-b border-hairline">
               <div className="space-y-1">
-                <div className="flex items-center gap-2 font-mono text-xs text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider flex-wrap">
+                <div className="flex items-center gap-2 font-mono text-xs text-graphite uppercase tracking-wider flex-wrap">
                   <span>Ref: #{currentCommission.id.slice(0, 8)}</span>
                   <span>·</span>
-                  <span className="text-[#EA580C] font-semibold">{currentCommission.serviceType}</span>
+                  <span className="text-accent font-semibold">{currentCommission.serviceType}</span>
                   <span>·</span>
                   <span>Designer: {currentCommission.assignedDesigner || studioProfile.designerName}</span>
                 </div>
-                <h2 className="font-display text-2xl sm:text-3xl font-black text-[#18181B] dark:text-[#EDEDEC] tracking-tight">
+                <h2 className="font-display text-2xl sm:text-3xl font-black text-carbon tracking-tight">
                   {currentCommission.projectName}
                 </h2>
               </div>
 
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 font-mono text-xs">
-                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Status:</span>
-                  <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">{formatCommissionStatus(currentCommission.status)}</span>
+                  <span className="text-graphite">Status:</span>
+                  <span className="font-semibold text-carbon">{formatCommissionStatus(currentCommission.status)}</span>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setIsChatDrawerOpen(true)}
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-[#EA580C]/40 bg-orange-500/10 hover:bg-orange-500/20 text-[#EA580C] text-xs font-mono font-semibold transition-colors cursor-pointer shadow-2xs"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-accent bg-[#E0F2FE]/60 dark:bg-sky-950/30 hover:bg-[#E0F2FE] dark:hover:bg-sky-950/50 text-accent text-xs font-mono font-semibold transition-colors cursor-pointer shadow-2xs"
                   title="Open Project Chat Drawer"
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
                   <span>Project Chat</span>
                   {unreadMessagesCount > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full bg-[#EA580C] text-white text-[10px] font-mono">
+                    <span className="px-1.5 py-0.2 rounded-full bg-accent text-white text-[10px] font-mono">
                       {unreadMessagesCount}
                     </span>
                   )}
@@ -695,16 +747,16 @@ export const ClientDashboardView: React.FC = () => {
             </div>
 
             {/* Stage Info Callout */}
-            <div className="p-4 rounded-xl bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1.5">
+            <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline space-y-1.5">
               <div className="flex items-center justify-between text-xs font-mono">
-                <span className="font-bold text-[#EA580C] uppercase tracking-wider">
+                <span className="font-bold text-accent uppercase tracking-wider">
                   Stage 0{currentCommission.currentStage || 1} of 08 · {currentStageInfo?.name || 'Production'}
                 </span>
-                <span className="font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                <span className="font-bold text-carbon">
                   Progress {currentCommission.progress}%
                 </span>
               </div>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              <p className="text-xs text-graphite">
                 {currentStageInfo?.description || 'Applying client feedback and refining design assets'}
               </p>
             </div>
@@ -715,19 +767,19 @@ export const ClientDashboardView: React.FC = () => {
 
           {/* Pinned Action-Required Contextual Bar */}
           {pendingAction && (
-            <div className="p-5 rounded-xl border-2 border-[#EA580C] bg-gradient-to-r from-orange-500/10 via-[#FAF9F6] to-white dark:via-[#18181B] dark:to-[#121214] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-200">
+            <div className="p-5 sm:p-6 rounded-3xl border-2 border-accent bg-gradient-to-r from-sky-500/10 via-surface-secondary to-surface shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-200">
               <div className="flex items-start gap-3.5">
-                <div className="w-9 h-9 rounded-lg bg-[#EA580C] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center shrink-0 shadow-xs">
                   <AlertCircle className="w-5 h-5" />
                 </div>
                 <div className="space-y-0.5">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-bold block">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-bold block">
                     Action Required
                   </span>
-                  <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                  <h4 className="font-display font-bold text-base text-carbon">
                     {pendingAction.title}
                   </h4>
-                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] max-w-xl leading-relaxed">
+                  <p className="text-xs text-graphite max-w-xl leading-relaxed">
                     {pendingAction.description}
                   </p>
                 </div>
@@ -736,7 +788,7 @@ export const ClientDashboardView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab(pendingAction.targetTab)}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold font-mono uppercase tracking-wider shadow-xs transition-all cursor-pointer shrink-0 self-start sm:self-auto"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold font-mono uppercase tracking-wider shadow-xs transition-all cursor-pointer shrink-0 self-start sm:self-auto btn-tactile"
               >
                 <span>{pendingAction.actionLabel}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -745,7 +797,7 @@ export const ClientDashboardView: React.FC = () => {
           )}
 
           {/* Consolidated Workspace Navigation Bar */}
-          <nav className="flex items-center gap-2 border-b border-[#E4E2DC] dark:border-[#222225] pb-1 overflow-x-auto no-scrollbar" aria-label="Project details navigation">
+          <nav className="flex items-center gap-2 border-b border-hairline pb-1 overflow-x-auto no-scrollbar" aria-label="Project details navigation">
             {[
               { id: 'overview' as const, label: 'Overview', icon: FileText },
               { 
@@ -784,21 +836,21 @@ export const ClientDashboardView: React.FC = () => {
                   key={id}
                   type="button"
                   onClick={() => setActiveTab(id)}
-                  className={`relative px-3.5 py-2 min-h-[44px] text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded-lg ${
+                  className={`relative px-3.5 py-2 min-h-[44px] text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent rounded-xl ${
                     isSelected
-                      ? 'text-[#18181B] dark:text-[#EDEDEC] font-bold'
-                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC]'
+                      ? 'text-carbon font-bold'
+                      : 'text-graphite hover:text-carbon'
                   }`}
                 >
                   <TabIcon className="w-3.5 h-3.5" />
                   <span>{label}</span>
-                  {count && (
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#EA580C] text-white">
+                  {Boolean(count) && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-accent text-white">
                       {count}
                     </span>
                   )}
                   {isSelected && (
-                    <span className="absolute bottom-0 inset-x-3 h-0.5 bg-[#EA580C] rounded-full animate-in fade-in duration-200" />
+                    <span className="absolute bottom-0 inset-x-3 h-0.5 bg-accent rounded-full animate-in fade-in duration-200" />
                   )}
                 </button>
               );
@@ -813,36 +865,36 @@ export const ClientDashboardView: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
                 {/* 1. What is happening with my project? */}
-                <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex flex-col justify-between space-y-3">
+                <div className="p-5 rounded-3xl bg-surface border border-hairline flex flex-col justify-between space-y-3">
                   <div className="space-y-1">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-graphite font-semibold block">
                       Current Production Status
                     </span>
-                    <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                    <h4 className="font-display font-bold text-base text-carbon">
                       Stage 0{currentCommission.currentStage || 1} · {currentStageInfo?.name || 'In Production'}
                     </h4>
-                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                    <p className="text-xs text-graphite leading-relaxed">
                       {currentStageInfo?.description || 'Active vector drafting and aesthetic development underway.'}
                     </p>
                   </div>
-                  <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#222225] flex items-center justify-between text-xs font-mono">
-                    <span className="text-[#71717A] dark:text-[#A1A1AA]">Deadline:</span>
-                    <span className="font-semibold text-[#18181B] dark:text-[#EDEDEC]">{formatCommissionDate(currentCommission.deadline)}</span>
+                  <div className="pt-2 border-t border-hairline flex items-center justify-between text-xs font-mono">
+                    <span className="text-graphite">Deadline:</span>
+                    <span className="font-semibold text-carbon">{formatCommissionDate(currentCommission.deadline)}</span>
                   </div>
                 </div>
 
                 {/* 2. What does the designer need from me? */}
-                <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex flex-col justify-between space-y-3">
+                <div className="p-5 rounded-3xl bg-surface border border-hairline flex flex-col justify-between space-y-3">
                   <div className="space-y-1">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block">
                       Required Client Action
                     </span>
                     {pendingAction ? (
                       <>
-                        <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                        <h4 className="font-display font-bold text-base text-carbon">
                           {pendingAction.title}
                         </h4>
-                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed line-clamp-2">
+                        <p className="text-xs text-graphite leading-relaxed line-clamp-2">
                           {pendingAction.description}
                         </p>
                       </>
@@ -852,23 +904,23 @@ export const ClientDashboardView: React.FC = () => {
                           <Check className="w-4 h-4" />
                           <span>No Actions Pending</span>
                         </h4>
-                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                        <p className="text-xs text-graphite leading-relaxed">
                           All client approvals and receipts are in order. The studio is working on your creative assets.
                         </p>
                       </>
                     )}
                   </div>
-                  <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#222225]">
+                  <div className="pt-2 border-t border-hairline">
                     {pendingAction ? (
                       <button
                         type="button"
                         onClick={() => setActiveTab(pendingAction.targetTab)}
-                        className="text-xs font-mono font-semibold text-[#EA580C] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                        className="text-xs font-mono font-semibold text-accent hover:underline inline-flex items-center gap-1 cursor-pointer"
                       >
                         <span>{pendingAction.actionLabel} →</span>
                       </button>
                     ) : (
-                      <span className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                      <span className="text-[11px] font-mono text-graphite">
                         ✓ All requirements satisfied
                       </span>
                     )}
@@ -876,36 +928,36 @@ export const ClientDashboardView: React.FC = () => {
                 </div>
 
                 {/* 3. What happens next? */}
-                <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex flex-col justify-between space-y-3">
+                <div className="p-5 rounded-3xl bg-surface border border-hairline flex flex-col justify-between space-y-3">
                   <div className="space-y-1">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-graphite font-semibold block">
                       Next Milestone Roadmap
                     </span>
                     {nextStageInfo ? (
                       <>
-                        <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                        <h4 className="font-display font-bold text-base text-carbon">
                           Stage 0{nextStageInfo.number} · {nextStageInfo.name}
                         </h4>
-                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed line-clamp-2">
+                        <p className="text-xs text-graphite leading-relaxed line-clamp-2">
                           {nextStageInfo.description}
                         </p>
                       </>
                     ) : (
                       <>
-                        <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                        <h4 className="font-display font-bold text-base text-carbon">
                           Final Delivery & Archive
                         </h4>
-                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-relaxed">
+                        <p className="text-xs text-graphite leading-relaxed">
                           All milestone stages completed. Vector master files and production packages released.
                         </p>
                       </>
                     )}
                   </div>
-                  <div className="pt-2 border-t border-[#E4E2DC] dark:border-[#222225]">
+                  <div className="pt-2 border-t border-hairline">
                     <button
                       type="button"
                       onClick={() => setActiveTab('milestones')}
-                      className="text-xs font-mono font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] inline-flex items-center gap-1 cursor-pointer"
+                      className="text-xs font-mono font-semibold text-graphite hover:text-carbon inline-flex items-center gap-1 cursor-pointer"
                     >
                       <span>View Full Milestones Log →</span>
                     </button>
@@ -916,23 +968,23 @@ export const ClientDashboardView: React.FC = () => {
 
               {/* Editorial Ledger of Project Terms */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+                <div className="p-5 rounded-3xl bg-surface border border-hairline space-y-1">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-graphite font-semibold block">
                     Delivery Window
                   </span>
-                  <p className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                  <p className="font-display font-bold text-base text-carbon">
                     {formatCommissionDate(currentCommission.deadline)}
                   </p>
-                  <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                  <p className="text-[11px] font-mono text-graphite">
                     Target completion schedule
                   </p>
                 </div>
 
-                <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+                <div className="p-5 rounded-3xl bg-surface border border-hairline space-y-1">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-graphite font-semibold block">
                     Investment & Settlement
                   </span>
-                  <p className="font-mono font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                  <p className="font-mono font-bold text-base text-carbon">
                     {currentCommission.budget}
                   </p>
                   <div className="pt-0.5">
@@ -940,26 +992,26 @@ export const ClientDashboardView: React.FC = () => {
                       <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">✓ Settled in Full</span>
                     ) : currentCommission.paymentStatus === 'Partial' ? (
                       <div className="space-y-1">
-                        <span className="block text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] font-medium">
+                        <span className="block text-[11px] font-mono text-graphite font-medium">
                           50% Deposit Received · Balance Pending
                         </span>
                         <button
                           type="button"
                           onClick={() => setActiveTab('payments')}
-                          className="text-[11px] font-mono text-[#EA580C] hover:underline text-left block font-semibold cursor-pointer"
+                          className="text-[11px] font-mono text-accent hover:underline text-left block font-semibold cursor-pointer"
                         >
                           Submit Final Balance GCash Receipt →
                         </button>
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        <span className="block text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA] font-medium">
+                        <span className="block text-[11px] font-mono text-graphite font-medium">
                           Awaiting Deposit Verification
                         </span>
                         <button
                           type="button"
                           onClick={() => setActiveTab('payments')}
-                          className="text-[11px] font-mono text-[#EA580C] hover:underline text-left block font-semibold cursor-pointer"
+                          className="text-[11px] font-mono text-accent hover:underline text-left block font-semibold cursor-pointer"
                         >
                           Submit GCash Deposit Receipt →
                         </button>
@@ -968,36 +1020,36 @@ export const ClientDashboardView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-5 rounded-xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] space-y-1">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] font-semibold block">
+                <div className="p-5 rounded-3xl bg-surface border border-hairline space-y-1">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-graphite font-semibold block">
                     Revision Allowance
                   </span>
-                  <p className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                  <p className="font-display font-bold text-base text-carbon">
                     {currentCommission.revisionsUsed || 0} used / {currentCommission.revisionsAllowed || 2} included
                   </p>
-                  <p className="text-[11px] font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                  <p className="text-[11px] font-mono text-graphite">
                     Bespoke refinement rounds
                   </p>
                 </div>
               </div>
 
               {/* Creative Brief Specifications Breakdown */}
-              <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6">
-                <div className="space-y-1 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+              <div className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6">
+                <div className="space-y-1 pb-4 border-b border-hairline">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block">
                     Project Record
                   </span>
-                  <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  <h3 className="font-display text-xl font-bold text-carbon">
                     Creative Brief & Directives
                   </h3>
                 </div>
 
                 <div className="space-y-4 text-xs sm:text-sm">
                   <div>
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-graphite font-semibold block mb-1">
                       Scope Description
                     </span>
-                    <p className="text-[#18181B] dark:text-[#EDEDEC] leading-relaxed bg-[#FAF9F6] dark:bg-[#18181B] p-4 rounded-lg border border-[#E4E2DC] dark:border-[#222225] whitespace-pre-line">
+                    <p className="text-carbon leading-relaxed bg-surface-secondary p-4 rounded-2xl border border-hairline whitespace-pre-line">
                       {currentCommission.description}
                     </p>
                   </div>
@@ -1005,49 +1057,49 @@ export const ClientDashboardView: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {currentCommission.purpose && (
                       <div>
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-graphite font-semibold block mb-1">
                           Purpose & Context
                         </span>
-                        <p className="text-[#18181B] dark:text-[#EDEDEC]">{currentCommission.purpose}</p>
+                        <p className="text-carbon">{currentCommission.purpose}</p>
                       </div>
                     )}
 
                     {currentCommission.targetAudience && (
                       <div>
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-graphite font-semibold block mb-1">
                           Target Audience
                         </span>
-                        <p className="text-[#18181B] dark:text-[#EDEDEC]">{currentCommission.targetAudience}</p>
+                        <p className="text-carbon">{currentCommission.targetAudience}</p>
                       </div>
                     )}
 
                     {currentCommission.preferredStyle && (
                       <div>
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-graphite font-semibold block mb-1">
                           Aesthetic Direction
                         </span>
-                        <p className="text-[#18181B] dark:text-[#EDEDEC]">{currentCommission.preferredStyle}</p>
+                        <p className="text-carbon">{currentCommission.preferredStyle}</p>
                       </div>
                     )}
 
                     {currentCommission.requiredDimensions && (
                       <div>
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-graphite font-semibold block mb-1">
                           Required Formats & Dimensions
                         </span>
-                        <p className="font-mono text-[#18181B] dark:text-[#EDEDEC]">{currentCommission.requiredDimensions}</p>
+                        <p className="font-mono text-carbon">{currentCommission.requiredDimensions}</p>
                       </div>
                     )}
                   </div>
 
                   {currentCommission.preferredColors && currentCommission.preferredColors.length > 0 && (
                     <div className="pt-2">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1.5">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-graphite font-semibold block mb-1.5">
                         Brand Palette
                       </span>
                       <div className="flex flex-wrap gap-2">
                         {currentCommission.preferredColors.map((color, idx) => (
-                          <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-xs font-mono text-[#18181B] dark:text-[#EDEDEC]">
+                          <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-secondary border border-hairline text-xs font-mono text-carbon">
                             {color.startsWith('#') && (
                               <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: color }} />
                             )}
@@ -1060,7 +1112,7 @@ export const ClientDashboardView: React.FC = () => {
 
                   {currentCommission.referenceLinks && currentCommission.referenceLinks.length > 0 && (
                     <div className="pt-2">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] dark:text-[#A1A1AA] font-semibold block mb-1.5">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-graphite font-semibold block mb-1.5">
                         Inspiration & Reference Links
                       </span>
                       <div className="flex flex-wrap gap-2">
@@ -1070,7 +1122,7 @@ export const ClientDashboardView: React.FC = () => {
                             href={link} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] text-xs font-mono text-[#EA580C] hover:underline"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-secondary border border-hairline text-xs font-mono text-accent hover:underline"
                           >
                             <ExternalLink className="w-3 h-3 shrink-0" />
                             <span className="truncate max-w-xs">{link}</span>
@@ -1085,37 +1137,44 @@ export const ClientDashboardView: React.FC = () => {
               {/* Recent Activity Feed Preview */}
               {((currentCommission.timelineUpdates && currentCommission.timelineUpdates.length > 0) || 
                 timelineUpdates.filter(t => t.commissionId === currentCommission.id).length > 0) && (
-                <div className="bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#E4E2DC] dark:border-[#222225]">
+                <div className="bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-hairline">
                     <div>
-                      <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block mb-0.5">
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block mb-0.5">
                         Recent Log
                       </span>
-                      <h4 className="font-display font-bold text-base text-[#18181B] dark:text-[#EDEDEC]">
+                      <h4 className="font-display font-bold text-base text-carbon">
                         Project Activity
                       </h4>
                     </div>
                     <button
                       type="button"
                       onClick={() => setActiveTab('milestones')}
-                      className="text-xs font-mono font-semibold text-[#EA580C] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      className="text-xs font-mono font-semibold text-accent hover:underline inline-flex items-center gap-1 cursor-pointer"
                     >
                       <span>View All Milestones →</span>
                     </button>
                   </div>
 
                   <div className="space-y-3">
-                    {(currentCommission.timelineUpdates || timelineUpdates.filter(t => t.commissionId === currentCommission.id))
-                      .slice(0, 3)
+                    {(currentCommission.timelineUpdates && currentCommission.timelineUpdates.length > 0
+                      ? currentCommission.timelineUpdates
+                      : timelineUpdates.filter(t => t.commissionId === currentCommission.id)
+                    )
+                      .slice(-3)
+                      .reverse()
                       .map((update, idx) => (
-                        <div key={idx} className="p-3.5 rounded-lg bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] flex items-start justify-between gap-3 text-xs">
+                        <div key={update.id || idx} className="p-3.5 rounded-2xl bg-surface-secondary border border-hairline flex items-start justify-between gap-3 text-xs">
                           <div className="space-y-0.5">
-                            <span className="font-display font-bold text-[#18181B] dark:text-[#EDEDEC] block">
-                              {update.title || `Stage Update: ${update.stage || 'Production'}`}
+                            <span className="font-display font-bold text-carbon block">
+                              {update.stage || 'Production Update'}
                             </span>
-                            <p className="text-[#71717A] dark:text-[#A1A1AA]">{update.description || update.notes}</p>
+                            <p className="text-graphite">
+                              {update.note || 'Milestone recorded by studio.'}
+                              {update.updatedBy ? ` · ${update.updatedBy}` : ''}
+                            </p>
                           </div>
-                          <span className="font-mono text-[10px] text-[#71717A] dark:text-[#A1A1AA] shrink-0">
+                          <span className="font-mono text-[10px] text-graphite shrink-0">
                             {formatCommissionDate(update.timestamp)}
                           </span>
                         </div>
@@ -1129,7 +1188,7 @@ export const ClientDashboardView: React.FC = () => {
 
           {/* TAB 2: IN-WORKSPACE MESSAGES */}
           {activeTab === 'messages' && (
-            <div className="bg-white dark:bg-[#121214] border border-[#E4E2DC] dark:border-[#222225] rounded-xl overflow-hidden shadow-2xs h-[680px] flex flex-col animate-in fade-in duration-200">
+            <div className="bg-surface border border-hairline rounded-3xl overflow-hidden shadow-2xs h-[680px] flex flex-col animate-in fade-in duration-200">
               <ChatWindow
                 commission={currentCommission}
                 isAdmin={currentUser?.role === 'admin'}
@@ -1149,7 +1208,7 @@ export const ClientDashboardView: React.FC = () => {
                   }}
                 />
               ) : (
-                <div className="p-12 text-center text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl">
+                <div className="p-12 text-center text-xs font-mono text-graphite bg-surface border border-hairline rounded-3xl">
                   Please sign in with your client account to submit payment proofs.
                 </div>
               )}
@@ -1182,13 +1241,13 @@ export const ClientDashboardView: React.FC = () => {
 
           {/* TAB 6: SETTINGS & PROFILE */}
           {activeTab === 'profile' && (
-            <div className="max-w-2xl bg-white dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E4E2DC] dark:border-[#222225]">
+            <div className="max-w-2xl bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-hairline">
                 <div className="space-y-1">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#EA580C] font-semibold block">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block">
                     Client Settings
                   </span>
-                  <h3 className="font-display text-xl font-bold text-[#18181B] dark:text-[#EDEDEC]">
+                  <h3 className="font-display text-xl font-bold text-carbon">
                     Profile & Preferences
                   </h3>
                 </div>
@@ -1196,14 +1255,20 @@ export const ClientDashboardView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveView('settings')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E4E2DC] dark:border-[#222225] text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#EDEDEC] hover:bg-[#FAF9F6] dark:hover:bg-[#18181B] transition-colors cursor-pointer self-start sm:self-auto"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-hairline text-xs font-mono text-graphite hover:text-carbon hover:bg-surface-secondary transition-colors cursor-pointer self-start sm:self-auto"
                 >
                   <span>Theme & Appearance →</span>
                 </button>
               </div>
 
+              {profileErrorMsg && (
+                <div className="p-3 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 text-xs rounded-2xl border border-red-200 dark:border-red-900/50">
+                  {profileErrorMsg}
+                </div>
+              )}
+
               {profileSavedMsg && (
-                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-xs rounded-lg border border-emerald-200 dark:border-emerald-900/50">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-xs rounded-2xl border border-emerald-200 dark:border-emerald-900/50">
                   {profileSavedMsg}
                 </div>
               )}
@@ -1220,7 +1285,7 @@ export const ClientDashboardView: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                    <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
                       Full Name
                     </label>
                     <input
@@ -1228,25 +1293,25 @@ export const ClientDashboardView: React.FC = () => {
                       required
                       value={profileName}
                       onChange={(e) => setProfileName(e.target.value)}
-                      className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C]"
+                      className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                    <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
                       Account Email
                     </label>
                     <input
                       type="email"
                       disabled
                       value={profileEmail}
-                      className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] font-mono cursor-not-allowed opacity-75"
+                      className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-graphite font-mono cursor-not-allowed opacity-75"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                    <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
                       Company / Social Handle
                     </label>
                     <input
@@ -1254,11 +1319,11 @@ export const ClientDashboardView: React.FC = () => {
                       value={profileHandle}
                       onChange={(e) => setProfileHandle(e.target.value)}
                       placeholder="@company"
-                      className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C]"
+                      className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                    <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
                       Phone / WhatsApp
                     </label>
                     <input
@@ -1266,13 +1331,13 @@ export const ClientDashboardView: React.FC = () => {
                       value={profilePhone}
                       onChange={(e) => setProfilePhone(e.target.value)}
                       placeholder="+1 (555) 019-2834"
-                      className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C]"
+                      className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono uppercase text-[#71717A] dark:text-[#A1A1AA] mb-1 font-semibold">
+                  <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
                     Client Bio / Brand Context
                   </label>
                   <textarea
@@ -1280,16 +1345,17 @@ export const ClientDashboardView: React.FC = () => {
                     value={profileBio}
                     onChange={(e) => setProfileBio(e.target.value)}
                     placeholder="e.g. Founder at Solis Labs"
-                    className="w-full bg-[#FAF9F6] dark:bg-[#18181B] border border-[#E4E2DC] dark:border-[#222225] rounded-lg p-3 text-xs sm:text-sm text-[#18181B] dark:text-[#EDEDEC] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#EA580C] focus-visible:border-[#EA580C] resize-none"
+                    className="w-full bg-surface-secondary border border-hairline rounded-xl p-3.5 text-xs sm:text-sm text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent resize-none"
                   />
                 </div>
 
                 <div className="pt-2 flex justify-end">
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-lg bg-[#EA580C] hover:bg-[#D94814] text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                    disabled={isSavingProfile}
+                    className="px-6 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] disabled:opacity-50 text-[#111114] text-xs font-bold transition-all shadow-xs cursor-pointer btn-tactile"
                   >
-                    Save Profile
+                    {isSavingProfile ? 'Saving...' : 'Save Profile'}
                   </button>
                 </div>
               </form>

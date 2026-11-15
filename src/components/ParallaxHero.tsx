@@ -145,7 +145,7 @@ export const ParallaxHero: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveView('services')}
-              className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-white text-[#111114] rounded-2xl p-4 shadow-md border border-white/80 flex flex-col justify-between text-left transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[0]}`}
+              className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-white dark:bg-white text-[#111114] rounded-2xl p-4 shadow-md border border-white/80 flex flex-col justify-between text-left transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[0]}`}
             >
               <div className="space-y-1">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[#0284C7]">
@@ -155,7 +155,7 @@ export const ParallaxHero: React.FC = () => {
                   {services[0]?.name || 'Logo Design'}
                 </p>
               </div>
-              <div className="space-y-2 pt-3 border-t border-gray-100">
+              <div className="space-y-2 pt-3 border-t border-gray-100 dark:border-gray-100">
                 <span className="text-lg font-bold tracking-tight tabular-nums text-[#111114] block">
                   {startingServicePrice}
                 </span>
@@ -172,7 +172,7 @@ export const ParallaxHero: React.FC = () => {
             <button
               type="button"
               onClick={() => (leadProject ? openCaseStudy(leadProject) : setActiveView('portfolio'))}
-              className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-white text-[#111114] rounded-2xl overflow-hidden shadow-md border border-white/80 relative flex flex-col justify-end text-left transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[1]}`}
+              className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-white dark:bg-white text-[#111114] rounded-2xl overflow-hidden shadow-md border border-white/80 relative flex flex-col justify-end text-left transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[1]}`}
             >
               <img
                 src={leadProject?.image || studioBentoSky}
@@ -180,7 +180,7 @@ export const ParallaxHero: React.FC = () => {
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="eager"
               />
-              <div className="relative z-10 m-2 p-2.5 rounded-xl bg-white/95 backdrop-blur-xs shadow-xs">
+              <div className="relative z-10 m-2 p-2.5 rounded-xl bg-white/95 dark:bg-white/95 backdrop-blur-xs shadow-xs">
                 <span className="text-[10px] font-semibold text-[#6B7280] block truncate">
                   {leadProject ? leadProject.category : 'Exhibition Visual'}
                 </span>
@@ -194,7 +194,7 @@ export const ParallaxHero: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveView('services')}
-              className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-white text-[#111114] rounded-2xl p-4 shadow-md border border-white/80 flex flex-col justify-between text-left transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[2]}`}
+              className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-white dark:bg-white text-[#111114] rounded-2xl p-4 shadow-md border border-white/80 flex flex-col justify-between text-left transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[2]}`}
             >
               <div>
                 <span className="text-xs font-bold leading-snug text-[#111114] block">
@@ -247,7 +247,7 @@ export const ParallaxHero: React.FC = () => {
               onClick={() => setActiveView('commission-form')}
               className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-[#0EA5E9]/45 hover:bg-[#0EA5E9]/60 backdrop-blur-md text-white rounded-2xl p-4 shadow-md border border-white/40 flex flex-col items-center justify-center text-center gap-2.5 transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[4]}`}
             >
-              <span className="w-10 h-10 rounded-full bg-white text-[#0284C7] flex items-center justify-center shadow-sm">
+              <span className="w-10 h-10 rounded-full bg-white dark:bg-white text-[#0284C7] flex items-center justify-center shadow-sm">
                 <Plus className="w-5 h-5" />
               </span>
               <div>
@@ -262,10 +262,10 @@ export const ParallaxHero: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveView('services')}
-              className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-white text-[#111114] rounded-2xl p-4 shadow-md border border-white/80 flex flex-col justify-between text-left transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[5]}`}
+              className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-white dark:bg-white text-[#111114] rounded-2xl p-4 shadow-md border border-white/80 flex flex-col justify-between text-left transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[5]}`}
             >
               <div className="flex flex-wrap gap-1">
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[#F4F5F7] text-[#4B5563]">AI / SVG</span>
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[#F4F5F7] dark:bg-[#F4F5F7] text-[#4B5563] dark:text-[#4B5563]">AI / SVG</span>
                 <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[#D4FF38] text-[#111114]">300 DPI</span>
               </div>
               <div className="space-y-0.5">
@@ -285,9 +285,9 @@ export const ParallaxHero: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveView('shop')}
-              className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-white text-[#111114] rounded-2xl p-4 shadow-md border border-white/80 flex flex-col justify-between text-left transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[6]}`}
+              className={`snap-center shrink-0 w-[180px] sm:w-[190px] lg:w-auto bg-white dark:bg-white text-[#111114] rounded-2xl p-4 shadow-md border border-white/80 flex flex-col justify-between text-left transition-transform duration-300 hover:-translate-y-1 cursor-pointer min-h-[185px] ${arcTransforms[6]}`}
             >
-              <div className="w-8 h-8 rounded-xl bg-[#F4F5F7] text-[#0284C7] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-[#F4F5F7] dark:bg-[#F4F5F7] text-[#0284C7] flex items-center justify-center">
                 <FileCheck className="w-4 h-4" />
               </div>
               <div className="space-y-1">
@@ -303,7 +303,7 @@ export const ParallaxHero: React.FC = () => {
 
           {/* Grounded Trust Caption Above Cloud Horizon */}
           <div className="pt-2 text-center">
-            <p className="text-xs font-medium text-[#111114]/80 inline-flex items-center justify-center gap-2 bg-white/75 backdrop-blur-xs px-4 py-1.5 rounded-full shadow-2xs">
+            <p className="text-xs font-medium text-[#111114]/80 inline-flex items-center justify-center gap-2 bg-white/75 dark:bg-white/85 backdrop-blur-xs px-4 py-1.5 rounded-full shadow-2xs">
               <CheckCircle2 className="w-3.5 h-3.5 text-[#0284C7] shrink-0" />
               <span>Directed personally by {studioProfile.designerName} · Real-time client workspace</span>
             </p>

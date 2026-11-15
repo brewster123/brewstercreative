@@ -171,12 +171,21 @@
 }
 
 /* Legacy Text Fallbacks */
-.dark :is(.text-\[\#18181B\], .text-\[\#18181b\], .text-\[\#111114\], .text-black, .text-zinc-900, .text-zinc-800, .text-neutral-900, .text-gray-900, .text-\[\#141416\]):not([class*="dark:text-"]) {
+.dark :is(.text-\[\#18181B\], .text-\[\#18181b\], .text-black, .text-zinc-900, .text-zinc-800, .text-neutral-900, .text-gray-900, .text-\[\#141416\]):not([class*="dark:text-"]) {
   color: var(--text-primary);
 }
 
 .dark :is(.text-\[\#71717A\], .text-\[\#71717a\], .text-zinc-700, .text-zinc-600, .text-zinc-500, .text-zinc-400):not([class*="dark:text-"]) {
   color: var(--text-muted);
+}
+
+/* Acid Lime (#D4FF38) High-Contrast Enforcement — Dark Ink in Light & Dark Modes */
+:is(.bg-\[\#D4FF38\], .bg-\[\#d4ff38\], .bg-\[\#C4F024\], .bg-\[\#c4f024\], .bg-\[\#C6F426\], .bg-\[\#C8F528\], .bg-lime),
+.dark :is(.bg-\[\#D4FF38\], .bg-\[\#d4ff38\], .bg-\[\#C4F024\], .bg-\[\#c4f024\], .bg-\[\#C6F426\], .bg-\[\#C8F528\], .bg-lime),
+.hover\:bg-\[\#D4FF38\]:hover,
+.dark .hover\:bg-\[\#D4FF38\]:hover,
+.dark .dark\:hover\:bg-\[\#D4FF38\]:hover {
+  color: #111114;
 }
 
 /* Legacy Form Control Fallbacks */

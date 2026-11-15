@@ -162,7 +162,7 @@ export const HomeView: React.FC = () => {
                   type="button"
                   onClick={() => setActiveView('portfolio')}
                   aria-label="Inspect portfolio archive"
-                  className="w-9 h-9 rounded-xl bg-white text-[#111114] hover:bg-[#D4FF38] flex items-center justify-center shadow-sm transition-colors cursor-pointer"
+                  className="w-9 h-9 rounded-xl bg-white dark:bg-white text-[#111114] hover:bg-[#D4FF38] flex items-center justify-center shadow-sm transition-colors cursor-pointer"
                 >
                   <ArrowUpRight className="w-4 h-4" />
                 </button>
@@ -195,7 +195,7 @@ export const HomeView: React.FC = () => {
                     { icon: PenTool, bg: 'bg-[#0284C7] text-white' },
                     { icon: Layers, bg: 'bg-[#111114] text-white' },
                     { icon: Palette, bg: 'bg-[#D4FF38] text-[#111114]' },
-                    { icon: FileCheck, bg: 'bg-white text-[#111114] border border-hairline' },
+                    { icon: FileCheck, bg: 'bg-white dark:bg-white text-[#111114] border border-hairline' },
                   ].map(({ icon: BadgeIcon, bg }, i) => (
                     <div
                       key={i}

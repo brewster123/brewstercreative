@@ -43,7 +43,7 @@ export const Footer: React.FC = () => {
             <div className="flex items-center gap-4 pt-2 text-xs text-carbon">
               <div className="flex items-center gap-1.5 text-graphite-strong font-medium">
                 <MapPin className="w-3.5 h-3.5 text-accent" />
-                <span>{studioProfile.location}</span>
+                <span>Cebu City</span>
               </div>
             </div>
           </div>

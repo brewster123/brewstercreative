@@ -272,6 +272,28 @@
   background: linear-gradient(180deg, #073866 0%, #095999 48%, #0E87CE 86%, #38BDF8 100%);
 }
 
+.hero-sky-top-fade {
+  background: linear-gradient(
+    180deg,
+    #026BB5 0%,
+    #0682D4 34%,
+    rgba(9, 140, 224, 0.78) 54%,
+    rgba(60, 185, 249, 0.18) 74%,
+    rgba(255, 255, 255, 0) 90%
+  );
+}
+
+.dark .hero-sky-top-fade {
+  background: linear-gradient(
+    180deg,
+    #073866 0%,
+    #095999 36%,
+    rgba(9, 89, 153, 0.82) 56%,
+    rgba(14, 135, 206, 0.2) 76%,
+    rgba(255, 255, 255, 0) 92%
+  );
+}
+
 /* Crisp Clean Gallery Canvas Surface */
 .bg-graph-outer {
   background-color: var(--bg-canvas);

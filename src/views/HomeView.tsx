@@ -48,7 +48,7 @@ export const HomeView: React.FC = () => {
 
   const commissionAvailabilityLabel =
     studioProfile.commissionStatus === 'open'
-      ? `Open · ${studioProfile.availableSlots ?? 1} ${studioProfile.availableSlots === 1 ? 'Slot' : 'Slots'} Available`
+      ? 'Accepting Commissions'
       : studioProfile.commissionStatus === 'waitlist'
         ? 'Waitlist Active'
         : 'Queue Currently Full';
@@ -124,11 +124,6 @@ export const HomeView: React.FC = () => {
         {/* 3. ABOUT DESTALION & ASYMMETRIC BENTO PROOF GRID */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-14">
           <div className="text-center max-w-3xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-graphite">
-              <span className="w-1.5 h-1.5 rounded-full bg-carbon" />
-              <span>About {studioProfile.studioName}</span>
-            </div>
-
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-carbon leading-[1.15] text-balance">
               A multidisciplinary design studio dedicated to building{' '}
               <span className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#38BDF8] text-white align-middle mx-1 shadow-xs">
@@ -212,46 +207,36 @@ export const HomeView: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Stacked Column: Acid Lime Card + Obsidian Slot Counter */}
-            <div className="flex flex-col gap-5">
-              <button
-                type="button"
-                onClick={() => setActiveView('commission-form')}
-                className="flex-1 rounded-3xl bg-[#D4FF38] hover:bg-[#C8F528] text-[#111114] p-6 sm:p-7 flex flex-col justify-between text-left transition-colors cursor-pointer group min-h-[220px]"
-              >
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#111114]/80">
-                      Milestone Workflow
-                    </span>
-                    <ArrowUpRight className="w-4 h-4 text-[#111114] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                  </div>
-                  <span className="font-display text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums block">
-                    8 Stages
+            {/* Right Expanded Column: Full-Height Acid Lime Milestone Card */}
+            <button
+              type="button"
+              onClick={() => setActiveView('commission-form')}
+              className="rounded-3xl bg-[#D4FF38] hover:bg-[#C8F528] text-[#111114] p-6 sm:p-7 flex flex-col justify-between text-left transition-colors cursor-pointer group min-h-[340px] space-y-6"
+            >
+              <div className="space-y-2 w-full">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold text-[#111114]/80">
+                    Milestone Workflow
+                  </span>
+                  <span className="w-9 h-9 rounded-full bg-[#111114] text-white flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
+                    <ArrowUpRight className="w-4 h-4" />
                   </span>
                 </div>
+                <span className="font-display text-4xl sm:text-5xl font-semibold tracking-tight tabular-nums block">
+                  8 Stages
+                </span>
+              </div>
 
+              <div className="space-y-4 w-full">
                 <p className="text-xs sm:text-sm text-[#111114]/85 leading-relaxed font-medium">
                   Structured progression from brief intake and deposit confirmation to interactive proof reviews and final exports.
                 </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveView('commission-form')}
-                className="rounded-3xl bg-[#111114] dark:bg-[#181B26] hover:bg-[#1D2029] text-white px-7 py-6 flex items-center justify-between transition-colors cursor-pointer border border-transparent dark:border-hairline"
-              >
-                <div className="text-left">
-                  <span className="text-xs text-white/70 block">Open Production Slots</span>
-                  <span className="text-[11px] text-[#D4FF38] font-medium block mt-0.5">
-                    {studioProfile.commissionStatus === 'open' ? 'Accepting Commissions' : studioProfile.commissionStatus}
-                  </span>
+                <div className="pt-4 border-t border-[#111114]/15 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#111114]">
+                  <span>Start a Commission</span>
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </div>
-                <span className="font-display text-3xl font-semibold tracking-tight tabular-nums">
-                  {String(studioProfile.availableSlots ?? 3).padStart(2, '0')}
-                </span>
-              </button>
-            </div>
+              </div>
+            </button>
           </div>
         </section>
 

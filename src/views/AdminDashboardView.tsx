@@ -6,10 +6,7 @@ import {
   CreditCard, 
   Layers, 
   Settings, 
-  ShieldCheck, 
-  ArrowLeft,
-  Clock,
-  Briefcase
+  ShieldCheck
 } from 'lucide-react';
 import { StudioOverview } from '../components/admin/StudioOverview';
 import { CommissionManagement } from '../components/admin/CommissionManagement';
@@ -192,62 +189,8 @@ export const AdminDashboardView: React.FC = () => {
     );
   }
 
-  const activeCommissionsCount = commissions.filter(
-    (c) => c.status !== 'completed' && c.status !== 'cancelled' && c.status !== 'Rejected'
-  ).length;
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Console Header */}
-      <div className="bg-surface border border-hairline rounded-3xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
-        <div className="flex items-center gap-4">
-          <img
-            src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
-            alt="Studio Director"
-            className="w-12 h-12 rounded-full object-cover ring-2 ring-accent shadow-sm"
-          />
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold">
-                Director Console
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface-secondary text-graphite border border-hairline">
-                Phase 3 Unified Hub
-              </span>
-            </div>
-            <h1 className="font-display text-xl sm:text-2xl font-bold text-carbon">
-              DESTALION Studio Administration
-            </h1>
-            <p className="text-xs text-graphite mt-0.5">
-              Production pipeline, GCash settlement verification, creative proofs, and archival deliverables.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 shrink-0 font-mono text-xs self-start md:self-auto border-t md:border-t-0 pt-3 md:pt-0 border-hairline">
-          <div className="px-4 py-2 rounded-2xl bg-surface-secondary border border-hairline">
-            <span className="text-[10px] text-graphite block uppercase">Active Orders</span>
-            <span className="font-bold text-carbon text-sm font-display">
-              {activeCommissionsCount}
-            </span>
-          </div>
-          {pendingPaymentsCount > 0 && (
-            <button
-              type="button"
-              onClick={() => handleSelectHub('payments')}
-              className="px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors cursor-pointer text-left"
-            >
-              <span className="text-[10px] block uppercase font-semibold flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                Pending Verification
-              </span>
-              <span className="font-bold text-sm font-display">
-                {pendingPaymentsCount} Receipts
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
       {/* Primary 5-Hub Navigation Bar */}
       <nav 

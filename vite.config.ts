@@ -1,11 +1,36 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 import path from 'path';
-import {defineConfig} from 'vite';
+import {defineConfig, type Plugin} from 'vite';
+
+function excludeDevResourcesFromBuild(): Plugin {
+  return {
+    name: 'exclude-dev-resources-from-build',
+    apply: 'build',
+    closeBundle() {
+      const aistudioOutDir = path.resolve(__dirname, 'dist', 'assets', 'aistudio');
+      const excludedFile = path.join(aistudioOutDir, 'impeccable-main_cb5c32a0.zip');
+      if (fs.existsSync(excludedFile)) {
+        fs.rmSync(excludedFile, {force: true});
+      }
+      // Also guard against any other oversized (>24 MiB) AI Studio dev attachment copied from public/
+      if (fs.existsSync(aistudioOutDir)) {
+        for (const entry of fs.readdirSync(aistudioOutDir)) {
+          const fullPath = path.join(aistudioOutDir, entry);
+          const stat = fs.statSync(fullPath);
+          if (stat.isFile() && stat.size > 24 * 1024 * 1024) {
+            fs.rmSync(fullPath, {force: true});
+          }
+        }
+      }
+    },
+  };
+}
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), excludeDevResourcesFromBuild()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
@@ -17,6 +42,14 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
+    preview: {
+      allowedHosts: [
+        'brewster-creative-multimedia-artist-design-commis.ai.studio',
+        ...(process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+          ? [process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS]
+          : []),
+      ],
     },
     build: {
       outDir: 'dist',

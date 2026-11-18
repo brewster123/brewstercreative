@@ -54,32 +54,8 @@ export const PortfolioView: React.FC = () => {
   });
 
   return (
-    <div className="bg-canvas min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10 sm:space-y-14">
+    <div className="bg-canvas min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-10 sm:space-y-14">
       
-      {/* Editorial Exhibition Header */}
-      <div className="border-b border-hairline pb-8 sm:pb-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-accent">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-              <span>Exhibition Archive &amp; Case Studies</span>
-            </div>
-
-            <h1 className="font-display text-3xl sm:text-5xl font-bold text-carbon tracking-tight leading-[1.08]">
-              Selected Visual Systems &amp; Bespoke Artworks
-            </h1>
-
-            <p className="text-sm sm:text-base text-graphite-strong leading-relaxed font-normal">
-              An ongoing catalog of commissioned brand marks, typographic systems, screen-print posters, digital illustrations, and experimental studio R&D.
-            </p>
-          </div>
-
-          <div className="text-xs text-graphite self-start md:self-end">
-            <span className="text-carbon font-bold tabular-nums">{filteredProjects.length}</span> Works Documented
-          </div>
-        </div>
-      </div>
-
       {/* Filter Control Ribbon: Project Type Toggles + Category Navigation + Search */}
       <div className="space-y-4 border-b border-hairline pb-5">
         

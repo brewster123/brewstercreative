@@ -6,7 +6,6 @@ import {
   Layers, 
   Download, 
   Send, 
-  ArrowRight,
   ArrowUpRight,
   Palette, 
   Type, 
@@ -20,7 +19,6 @@ import { ShopProductCard } from '../components/ShopProductCard';
 export const ShopView: React.FC = () => {
   const { 
     setActiveView, 
-    studioProfile,
     selectedShopCategory,
     setSelectedShopCategory,
     setSelectedShopProduct
@@ -63,64 +61,8 @@ export const ShopView: React.FC = () => {
   ];
 
   return (
-    <div className="bg-canvas max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 sm:space-y-20">
+    <div className="bg-canvas max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-16 sm:space-y-20">
       
-      {/* Editorial Shop Header */}
-      <div className="border-b border-hairline pb-8 sm:pb-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-accent font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-              <span>Studio Storefront &amp; Editions</span>
-            </div>
-
-            <h1 className="font-display text-3xl sm:text-5xl font-bold text-carbon tracking-tight leading-[1.08]">
-              Editions, Prints &amp; Design Assets
-            </h1>
-
-            <p className="text-sm sm:text-base text-graphite-strong leading-relaxed font-normal">
-              An ongoing release of digital design systems, display typography, screen-print posters, and vector libraries created by {studioProfile.designerName}.
-            </p>
-          </div>
-
-          <div className="text-xs text-graphite self-start md:self-end">
-            <span className="text-carbon font-bold tabular-nums">{filteredProducts.length}</span> Curated Editions
-          </div>
-        </div>
-
-        {/* Storefront Preparation Notice Strip */}
-        <div className="mt-8 p-4 rounded-2xl bg-surface-secondary border border-hairline flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-accent shrink-0" />
-            <p className="text-graphite-strong leading-relaxed font-medium">
-              <span className="font-bold text-carbon uppercase tracking-wider text-[11px] mr-1.5">
-                Catalog in Preparation:
-              </span>
-              Direct purchasing activates upon launch. In the interim, all goods can be commissioned as customized variants.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setActiveView('commission-form')}
-              className="pl-4 pr-3 py-1.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] font-bold text-xs shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Commission Variant</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView('portfolio')}
-              className="px-4 py-1.5 rounded-full bg-surface hover:bg-hairline/40 text-carbon font-semibold text-xs border border-hairline flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <span>Exhibitions</span>
-              <ArrowRight className="w-3 h-3 text-graphite" />
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Catalog Section with Category Navigation */}
       <div className="space-y-8">
         

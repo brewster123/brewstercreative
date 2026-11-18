@@ -549,43 +549,8 @@ export const CommissionFormView: React.FC = () => {
   // GUIDED MULTI-STEP COMMISSION FORM VIEW
   // =========================================================================
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-8 sm:space-y-10">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-8 sm:space-y-10">
       
-      {/* Header & Section Metadata */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-accent font-semibold">
-            <span className="w-2 h-2 rounded-full bg-accent" />
-            <span>Commission Intake Brief</span>
-          </div>
-
-          {/* Quick Authenticated User Status / Sign In Trigger */}
-          {currentUser ? (
-            <div className="flex items-center gap-2 text-xs font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/40">
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>Signed in as <strong>{currentUser.name}</strong></span>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => { setAuthDialogMode('signin'); setIsAuthDialogOpen(true); }}
-              className="text-xs font-mono text-accent hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Have an account? Sign in</span>
-            </button>
-          )}
-        </div>
-
-        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-carbon tracking-tight leading-[1.08]">
-          Initiate a Project Commission
-        </h1>
-
-        <p className="text-xs sm:text-sm text-graphite leading-relaxed max-w-2xl font-normal">
-          A structured 6-step consultation brief to align creative parameters, technical deliverables, and production timelines directly with DESTALION studio.
-        </p>
-      </div>
-
       {/* Restored Draft Alert Banner */}
       {hasRestoredDraft && (
         <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between gap-4 animate-in fade-in duration-200">

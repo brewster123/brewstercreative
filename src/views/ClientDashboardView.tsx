@@ -746,21 +746,6 @@ export const ClientDashboardView: React.FC = () => {
               </div>
             </div>
 
-            {/* Stage Info Callout */}
-            <div className="p-4 rounded-2xl bg-surface-secondary border border-hairline space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="font-bold text-accent uppercase tracking-wider">
-                  Stage 0{currentCommission.currentStage || 1} of 08 · {currentStageInfo?.name || 'Production'}
-                </span>
-                <span className="font-bold text-carbon">
-                  Progress {currentCommission.progress}%
-                </span>
-              </div>
-              <p className="text-xs text-graphite">
-                {currentStageInfo?.description || 'Applying client feedback and refining design assets'}
-              </p>
-            </div>
-
             {/* 8-Stage Production Timeline Component */}
             <ProgressBar commission={currentCommission} interactiveAdmin={false} />
           </div>

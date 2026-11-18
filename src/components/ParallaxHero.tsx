@@ -57,10 +57,12 @@ export const ParallaxHero: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const cloudsRef = useRef<HTMLImageElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [stageWidth, setStageWidth] = useState(1040);
 
   useEffect(() => {
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -96,6 +98,29 @@ export const ParallaxHero: React.FC = () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, [prefersReducedMotion]);
+
+  useEffect(() => {
+    const stageEl = stageRef.current;
+    if (!stageEl) return;
+
+    const updateWidth = () => {
+      const measured = stageEl.clientWidth;
+      if (measured > 0) {
+        setStageWidth(measured);
+      }
+    };
+
+    updateWidth();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(updateWidth);
+      observer.observe(stageEl);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   const explicitFeatured = portfolio.filter((p) => p.featured);
   const featuredWorks = (explicitFeatured.length > 0 ? explicitFeatured : portfolio).slice(0, 10);
@@ -133,13 +158,35 @@ export const ParallaxHero: React.FC = () => {
     return diff;
   };
 
+  const showOuterTier = stageWidth >= 860;
+  const showInnerTier = stageWidth >= 520;
+  const cardBaseWidth = 310;
+  const halfStage = stageWidth / 2;
+  const safeEdgeMargin = 16;
+  const tier2Half = (cardBaseWidth * 0.74) / 2;
+  const tier1Half = (cardBaseWidth * 0.86) / 2;
+  const tier2Distance = Math.max(0, Math.min(380, halfStage - tier2Half - safeEdgeMargin));
+  const tier1Distance = showOuterTier
+    ? Math.max(0, Math.min(215, Math.round(tier2Distance * 0.57)))
+    : Math.max(0, Math.min(215, halfStage - tier1Half - safeEdgeMargin));
+
+  const isSlideHidden = (offset: number) => {
+    const abs = Math.abs(offset);
+    if (abs > 2) return true;
+    if (abs === 2 && !showOuterTier) return true;
+    if (abs === 1 && !showInnerTier) return true;
+    return false;
+  };
+
   const getSlideStyle = (offset: number): React.CSSProperties => {
     const abs = Math.abs(offset);
-    if (abs > 2) {
+    const direction = offset > 0 ? 1 : -1;
+    if (isSlideHidden(offset)) {
+      const hiddenX = showOuterTier ? tier2Distance : showInnerTier ? tier1Distance : 0;
       return {
         opacity: 0,
         pointerEvents: 'none',
-        transform: `translate3d(${offset > 0 ? 440 : -440}px, 0, 0) scale(0.68)`,
+        transform: `translate3d(${direction * hiddenX}px, 18px, 0) scale(0.68)`,
         zIndex: 0,
       };
     }
@@ -153,13 +200,13 @@ export const ParallaxHero: React.FC = () => {
     if (abs === 1) {
       return {
         opacity: 0.94,
-        transform: `translate3d(${offset * 215}px, 8px, 0) scale(0.86) rotateY(${offset * -8}deg)`,
+        transform: `translate3d(${direction * tier1Distance}px, 8px, 0) scale(0.86) rotateY(${offset * -8}deg)`,
         zIndex: 20,
       };
     }
     return {
       opacity: 0.72,
-      transform: `translate3d(${offset * 190}px, 18px, 0) scale(0.74) rotateY(${offset * -12}deg)`,
+      transform: `translate3d(${direction * tier2Distance}px, 18px, 0) scale(0.74) rotateY(${offset * -12}deg)`,
       zIndex: 10,
     };
   };
@@ -226,7 +273,7 @@ export const ParallaxHero: React.FC = () => {
 
         {/* Interactive 3D Coverflow Featured Works Carousel */}
         <div
-          className="relative z-10 px-3 sm:px-6 lg:px-10 pt-2 pb-8 sm:pb-10"
+          className="relative z-10 px-3 sm:px-6 lg:px-8 pt-2 pb-8 sm:pb-10"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onFocus={() => setIsPaused(true)}
@@ -241,7 +288,7 @@ export const ParallaxHero: React.FC = () => {
             }
           }}
         >
-          <div className="max-w-5xl mx-auto flex items-center justify-center gap-2 sm:gap-4 relative">
+          <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 sm:gap-4 relative">
             {/* Previous Slide Button */}
             {totalSlides > 1 && (
               <button
@@ -256,7 +303,8 @@ export const ParallaxHero: React.FC = () => {
 
             {/* Coverflow Stage */}
             <div
-              className="relative flex-1 h-[230px] sm:h-[250px] flex items-center justify-center overflow-hidden"
+              ref={stageRef}
+              className="relative flex-1 h-[235px] sm:h-[255px] flex items-center justify-center overflow-visible"
               style={{ perspective: '1200px' }}
               role="region"
               aria-roledescription="carousel"
@@ -266,7 +314,7 @@ export const ParallaxHero: React.FC = () => {
                 ? featuredWorks.map((work, index) => {
                     const offset = getCircularOffset(index, activeIndex, featuredWorks.length);
                     const isActive = offset === 0;
-                    const abs = Math.abs(offset);
+                    const hidden = isSlideHidden(offset);
                     const hasValidImage = Boolean(
                       work.image && work.image.trim() && !failedImages[work.id]
                     );
@@ -284,12 +332,14 @@ export const ParallaxHero: React.FC = () => {
                             : `Focus featured work: ${work.title}`
                         }
                         aria-current={isActive ? 'true' : undefined}
+                        aria-hidden={hidden || undefined}
+                        tabIndex={hidden ? -1 : 0}
                         style={getSlideStyle(offset)}
                         className={`group absolute w-[250px] sm:w-[310px] h-[210px] sm:h-[230px] rounded-2xl overflow-hidden bg-white dark:bg-white text-[#111114] shadow-xl border transition-all duration-500 ease-out flex flex-col justify-between text-left cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
                           isActive
                             ? 'border-white ring-1 ring-white/80'
                             : 'border-white/70 hover:brightness-105'
-                        } ${abs === 2 ? 'hidden md:flex' : 'flex'}`}
+                        }`}
                       >
                         {hasValidImage ? (
                           <img
@@ -367,7 +417,7 @@ export const ParallaxHero: React.FC = () => {
                       STANDBY_EXHIBITION_SLIDES.length
                     );
                     const isActive = offset === 0;
-                    const abs = Math.abs(offset);
+                    const hidden = isSlideHidden(offset);
 
                     return (
                       <button
@@ -386,12 +436,14 @@ export const ParallaxHero: React.FC = () => {
                             : `Preview ${slide.slot}: ${slide.category}`
                         }
                         aria-current={isActive ? 'true' : undefined}
+                        aria-hidden={hidden || undefined}
+                        tabIndex={hidden ? -1 : 0}
                         style={getSlideStyle(offset)}
                         className={`group absolute w-[250px] sm:w-[310px] h-[205px] sm:h-[225px] rounded-2xl p-4 sm:p-5 flex flex-col justify-between text-left transition-all duration-500 ease-out cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
                           isActive
                             ? 'bg-[#0D0F14] text-white border border-white/25 shadow-2xl'
                             : 'bg-white/90 dark:bg-white/95 text-[#111114] border border-white/80 shadow-lg backdrop-blur-xs'
-                        } ${abs === 2 ? 'hidden md:flex' : 'flex'}`}
+                        }`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span

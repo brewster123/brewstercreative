@@ -244,10 +244,6 @@ export const HomeView: React.FC = () => {
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-hairline pb-6">
             <div className="space-y-2 max-w-xl">
-              <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-accent">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                <span>Selected Works</span>
-              </div>
               <h2 className="font-display text-3xl sm:text-4xl font-semibold text-carbon tracking-tight">
                 Exhibition Archive &amp; Case Studies
               </h2>
@@ -383,10 +379,6 @@ export const HomeView: React.FC = () => {
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-hairline pb-6">
             <div className="space-y-2 max-w-xl">
-              <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-accent">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                <span>Capabilities</span>
-              </div>
               <h2 className="font-display text-3xl sm:text-4xl font-semibold text-carbon tracking-tight">
                 Studio Services &amp; Starting Rates
               </h2>
@@ -511,17 +503,10 @@ export const HomeView: React.FC = () => {
 
         {/* 6. COMMISSION PROCESS STEPS */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
-          <div className="space-y-2 max-w-xl border-b border-hairline pb-6">
-            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-accent">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-              <span>Workflow</span>
-            </div>
+          <div className="border-b border-hairline pb-6">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold text-carbon tracking-tight">
               The Commission Journey
             </h2>
-            <p className="text-sm text-graphite-strong leading-relaxed">
-              Monitored end-to-end in your dedicated client portal from initial inquiry to final download.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

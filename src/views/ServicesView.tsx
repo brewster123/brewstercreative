@@ -58,32 +58,8 @@ export const ServicesView: React.FC = () => {
   ];
 
   return (
-    <div className="bg-canvas min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 sm:space-y-20">
+    <div className="bg-canvas min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-16 sm:space-y-20">
       
-      {/* Editorial Services Header */}
-      <div className="border-b border-hairline pb-8 sm:pb-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-3.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-accent">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-              <span>Studio Practice &amp; Capabilities Menu</span>
-            </div>
-
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-carbon tracking-tight leading-[1.04]">
-              Commission Services &amp; Capabilities
-            </h1>
-
-            <p className="text-sm sm:text-base text-graphite-strong leading-relaxed font-normal">
-              Transparent starting rates, committed delivery windows, and iterative milestone reviews tracked directly through your private client portal.
-            </p>
-          </div>
-
-          <div className="text-xs text-graphite self-start md:self-end">
-            <span className="text-carbon font-bold tabular-nums">{services.length}</span> Active Practices
-          </div>
-        </div>
-      </div>
-
       {/* Admin Notice */}
       {currentUser?.role === 'admin' && (
         <div className="bg-surface-secondary border border-hairline rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">

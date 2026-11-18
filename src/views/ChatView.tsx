@@ -6,7 +6,6 @@ import {
   MessageSquare, 
   Search, 
   X, 
-  SquarePen, 
   FolderArchive,
   Layers
 } from 'lucide-react';
@@ -225,22 +224,22 @@ export const ChatView: React.FC = () => {
 
   if (!currentUser) {
     return (
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-6 text-center space-y-6 bg-[#18191A] text-[#EDEDEC]">
-        <div className="w-14 h-14 rounded-full bg-[#242526] border border-[#2E2F32] flex items-center justify-center mx-auto text-[#0084FF] shadow-sm">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-6 text-center space-y-6 bg-canvas text-carbon">
+        <div className="w-14 h-14 rounded-full bg-surface-secondary border border-hairline flex items-center justify-center mx-auto text-accent shadow-sm">
           <MessageSquare className="w-7 h-7" />
         </div>
         <div className="space-y-1.5 max-w-sm">
-          <h2 className="font-display text-2xl font-bold text-white tracking-tight">
+          <h2 className="font-display text-2xl font-bold text-carbon tracking-tight">
             Studio Chats
           </h2>
-          <p className="text-sm text-[#B0B3B8] leading-relaxed">
+          <p className="text-sm text-graphite-strong leading-relaxed">
             Please sign in to access your direct, encrypted conversations with DESTALION.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setActiveView('auth')}
-          className="px-6 py-2.5 rounded-full bg-[#0084FF] hover:bg-[#0A7CFF] text-white font-semibold text-sm transition-all cursor-pointer shadow-sm"
+          className="px-6 py-2.5 rounded-full bg-accent hover:bg-accent-hover text-white font-semibold text-sm transition-all cursor-pointer shadow-sm"
         >
           Sign In to Chats
         </button>
@@ -249,64 +248,52 @@ export const ChatView: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-full flex-1 min-h-0 flex overflow-hidden bg-[#09090B] text-[#EDEDEC] font-sans antialiased">
+    <div className="w-full h-full flex-1 min-h-0 flex overflow-hidden bg-canvas text-carbon font-sans antialiased">
       
-      {/* 1. LEFT SIDEBAR: Atelier Conversation List (320px–380px) */}
-      <aside 
-        className={`${
-          mobileView === 'chat' ? 'hidden md:flex' : 'flex'
-        } w-full md:w-80 lg:w-[360px] xl:w-[380px] shrink-0 h-full flex-col bg-[#121214] border-r border-[#222225] z-10 overflow-hidden`}
-      >
-        {/* Sidebar Header: "Chats" + Action Icons */}
-        <div className="p-3 sm:p-4 pb-2 shrink-0 space-y-3">
-          <div className="flex items-center justify-between">
-            <h1 className="font-display text-2xl font-bold text-[#EDEDEC] tracking-tight">
-              Chats
-            </h1>
+      {/* 1. LEFT SIDEBAR: Admin-Only Client Conversation List (320px–380px) */}
+      {isAdmin && (
+        <aside 
+          className={`${
+            mobileView === 'chat' ? 'hidden md:flex' : 'flex'
+          } w-full md:w-80 lg:w-[360px] xl:w-[380px] shrink-0 h-full flex-col bg-surface border-r border-hairline z-10 overflow-hidden`}
+        >
+          {/* Sidebar Header: "Chats" + Action Icons */}
+          <div className="p-3 sm:p-4 pb-2 shrink-0 space-y-3">
+            <div className="flex items-center justify-between">
+              <h1 className="font-display text-2xl font-bold text-carbon tracking-tight">
+                Chats
+              </h1>
 
-            <div className="flex items-center gap-2">
-              {/* Back to Workspace button */}
-              <button
-                type="button"
-                onClick={handleBack}
-                className="w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#A1A1AA] hover:text-[#EDEDEC] flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
-                title={isAdmin ? "Return to Studio Dashboard" : "Return to Creative Projects"}
-                aria-label={isAdmin ? "Return to Studio Dashboard" : "Return to Creative Projects"}
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-
-              {/* Client Action: New Commission Chat */}
-              {!isAdmin && (
+              <div className="flex items-center gap-2">
+                {/* Back to Workspace button */}
                 <button
                   type="button"
-                  onClick={() => setActiveView('commission-form')}
-                  className="w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-[#18181B] hover:bg-[#222225] text-[#D4FF38] hover:text-[#C4F024] flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
-                  title="New Commission"
-                  aria-label="New Commission"
+                  onClick={handleBack}
+                  className="w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-surface-secondary hover:bg-hairline/70 text-graphite-strong hover:text-carbon flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                  title="Return to Studio Dashboard"
+                  aria-label="Return to Studio Dashboard"
                 >
-                  <SquarePen className="w-4 h-4" />
+                  <ArrowLeft className="w-4 h-4" />
                 </button>
-              )}
+              </div>
             </div>
-          </div>
 
           {/* Search Input Bar (Atelier Surface) */}
           <div className="relative">
-            <div className="bg-[#18181B] hover:bg-[#1C1C20] focus-within:bg-[#1C1C20] border border-[#222225] focus-within:border-[#0EA5E9] rounded-full px-3.5 py-2 flex items-center gap-2.5 transition-colors">
-              <Search className="w-4 h-4 text-[#A1A1AA] shrink-0" />
+            <div className="bg-surface-secondary hover:bg-hairline/40 focus-within:bg-surface border border-hairline focus-within:border-accent rounded-full px-3.5 py-2 flex items-center gap-2.5 transition-colors">
+              <Search className="w-4 h-4 text-graphite shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search conversations..."
-                className="bg-transparent text-sm text-[#EDEDEC] placeholder-[#71717A] focus:outline-hidden w-full"
+                className="bg-transparent dark:bg-transparent text-sm text-carbon placeholder:text-graphite focus:outline-hidden w-full"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="text-[#A1A1AA] hover:text-white p-1 rounded-full cursor-pointer shrink-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
+                  className="text-graphite hover:text-carbon p-1 rounded-full cursor-pointer shrink-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                   title="Clear search"
                   aria-label="Clear search"
                 >
@@ -321,10 +308,10 @@ export const ChatView: React.FC = () => {
             <button
               type="button"
               onClick={() => setFilter('all')}
-              className={`px-3.5 py-1.5 min-h-[36px] rounded-full text-xs font-semibold transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9] ${
+              className={`px-3.5 py-1.5 min-h-[36px] rounded-full text-xs font-semibold transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
                 filter === 'all'
-                  ? 'bg-[#0EA5E9]/15 text-[#0EA5E9] border border-[#0EA5E9]/40 font-bold'
-                  : 'text-[#A1A1AA] hover:bg-[#18181B] hover:text-[#EDEDEC]'
+                  ? 'bg-accent/15 text-accent border border-accent/40 font-bold'
+                  : 'text-graphite-strong hover:bg-surface-secondary hover:text-carbon border border-transparent'
               }`}
             >
               All
@@ -332,15 +319,15 @@ export const ChatView: React.FC = () => {
             <button
               type="button"
               onClick={() => setFilter('unread')}
-              className={`px-3.5 py-1.5 min-h-[36px] rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9] ${
+              className={`px-3.5 py-1.5 min-h-[36px] rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
                 filter === 'unread'
-                  ? 'bg-[#0EA5E9]/15 text-[#0EA5E9] border border-[#0EA5E9]/40 font-bold'
-                  : 'text-[#A1A1AA] hover:bg-[#18181B] hover:text-[#EDEDEC]'
+                  ? 'bg-accent/15 text-accent border border-accent/40 font-bold'
+                  : 'text-graphite-strong hover:bg-surface-secondary hover:text-carbon border border-transparent'
               }`}
             >
               <span>Unread</span>
               {totalUnreadCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-[#0EA5E9] text-white text-[10px] font-mono font-bold">
+                <span className="px-1.5 py-0.2 rounded-full bg-accent text-white text-[10px] font-mono font-bold">
                   {totalUnreadCount}
                 </span>
               )}
@@ -352,14 +339,14 @@ export const ChatView: React.FC = () => {
         <div className="flex-1 overflow-y-auto px-2 py-1 space-y-1">
           {filteredConversations.length === 0 ? (
             <div className="py-12 text-center px-4 space-y-2">
-              <p className="text-sm font-medium text-[#71717A]">
+              <p className="text-sm font-medium text-graphite">
                 {filter === 'unread' ? 'No unread conversations' : 'No conversations found'}
               </p>
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="text-xs text-[#0EA5E9] hover:underline cursor-pointer"
+                  className="text-xs text-accent hover:underline cursor-pointer"
                 >
                   Clear search query
                 </button>
@@ -379,10 +366,10 @@ export const ChatView: React.FC = () => {
                     markMessagesAsRead(item.commission.id);
                     setMobileView('chat');
                   }}
-                  className={`w-full text-left p-3 rounded-2xl flex items-center gap-3 transition-colors cursor-pointer group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9] ${
+                  className={`w-full text-left p-3 rounded-2xl flex items-center gap-3 transition-colors cursor-pointer group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
                     isSelected
-                      ? 'bg-[#18181B] text-white border border-[#0EA5E9]/40 shadow-2xs'
-                      : 'hover:bg-[#18181B]/60 text-[#EDEDEC] border border-transparent'
+                      ? 'bg-surface-secondary text-carbon border border-accent/40 shadow-2xs'
+                      : 'hover:bg-surface-secondary/70 text-carbon border border-transparent'
                   }`}
                 >
                   {/* Circular Avatar with Active Indicator */}
@@ -390,10 +377,10 @@ export const ChatView: React.FC = () => {
                     <img
                       src={item.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
                       alt={item.displayName || 'Conversation Partner'}
-                      className="w-12 h-12 rounded-full object-cover border border-[#222225]"
+                      className="w-12 h-12 rounded-full object-cover border border-hairline"
                     />
                     <span 
-                      className="w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-[#121214] absolute bottom-0 right-0" 
+                      className="w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-surface absolute bottom-0 right-0" 
                       title="Active"
                     />
                   </div>
@@ -401,21 +388,21 @@ export const ChatView: React.FC = () => {
                   {/* Conversation Summary Body */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <span className={`text-sm truncate font-semibold ${isSelected ? 'text-[#EDEDEC]' : 'text-[#EDEDEC]'}`}>
+                      <span className="text-sm truncate font-semibold text-carbon">
                         {item.displayName}
                       </span>
-                      <span className="text-[11px] font-mono text-[#71717A] shrink-0">
+                      <span className="text-[11px] font-mono text-graphite shrink-0">
                         {item.timeSnippet}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between gap-2">
-                      <p className={`text-xs truncate ${item.hasUnread ? 'text-[#EDEDEC] font-semibold' : 'text-[#71717A]'}`}>
+                      <p className={`text-xs truncate ${item.hasUnread ? 'text-carbon font-semibold' : 'text-graphite'}`}>
                         {item.lastMessageSnippet}
                       </p>
                       {item.hasUnread && (
                         <span 
-                          className="w-2.5 h-2.5 rounded-full bg-[#0EA5E9] shrink-0" 
+                          className="w-2.5 h-2.5 rounded-full bg-accent shrink-0" 
                           title="Unread message"
                         />
                       )}
@@ -428,16 +415,17 @@ export const ChatView: React.FC = () => {
         </div>
 
         {/* Footer Channel Note */}
-        <div className="p-3 border-t border-[#222225] text-center text-[11px] font-mono text-[#71717A] shrink-0">
+        <div className="p-3 border-t border-hairline text-center text-[11px] font-mono text-graphite shrink-0">
           <span>{studioProfile.studioName || 'DESTALION'} Studio Portal</span>
         </div>
-      </aside>
+        </aside>
+      )}
 
       {/* 2. MAIN CHAT PANEL: Atelier Full Width / Height */}
       <main 
         className={`${
-          mobileView === 'list' ? 'hidden md:flex' : 'flex'
-        } flex-1 min-w-0 h-full flex-col bg-[#09090B] overflow-hidden`}
+          isAdmin && mobileView === 'list' ? 'hidden md:flex' : 'flex'
+        } flex-1 min-w-0 h-full flex-col bg-canvas overflow-hidden`}
       >
         {activeComm ? (
           <ChatWindow
@@ -448,20 +436,20 @@ export const ChatView: React.FC = () => {
               setActiveCommissionId(id);
             }}
             isAdmin={isAdmin}
-            onBackToList={() => setMobileView('list')}
-            showBackOnMobile={true}
+            onBackToList={isAdmin ? () => setMobileView('list') : undefined}
+            showBackOnMobile={isAdmin}
           />
         ) : (
           /* Empty Workspace / No Commission Selected State */
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-[#18181B] border border-[#222225] flex items-center justify-center text-[#0EA5E9]">
+            <div className="w-16 h-16 rounded-2xl bg-surface-secondary border border-hairline flex items-center justify-center text-accent">
               <FolderArchive className="w-8 h-8" />
             </div>
             <div className="space-y-1.5 max-w-sm">
-              <h3 className="font-display font-bold text-lg text-[#EDEDEC]">
+              <h3 className="font-display font-bold text-lg text-carbon">
                 {isAdmin ? 'No Client Conversations' : 'No Active Conversations'}
               </h3>
-              <p className="text-xs sm:text-sm text-[#71717A] leading-relaxed">
+              <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed">
                 {isAdmin
                   ? 'Client conversations will appear here as soon as commission requests are submitted.'
                   : 'Start a design inquiry or project commission to open a direct dialogue with DESTALION.'}
@@ -471,7 +459,7 @@ export const ChatView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveView('commission-form')}
-                className="px-6 py-2.5 min-h-[44px] rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold cursor-pointer shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
+                className="px-6 py-2.5 min-h-[44px] rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold cursor-pointer shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
               >
                 Start a Commission
               </button>

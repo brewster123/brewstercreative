@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
+import { StudioProfileSettingsSection } from '../components/admin/StudioProfileSettingsSection';
 import { 
   Sun, 
   Moon, 
@@ -413,6 +414,13 @@ export const SettingsView: React.FC = () => {
             Sign In to Studio
           </button>
         </section>
+      )}
+
+      {currentUser?.role === 'admin' && (
+        <>
+          <div className="border-t border-hairline" />
+          <StudioProfileSettingsSection />
+        </>
       )}
 
       <div className="border-t border-hairline" />

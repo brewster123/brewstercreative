@@ -338,6 +338,8 @@ export interface CaseStudyContent {
   reflection?: string;
   deliverablesSummary?: string[];
   media?: Record<string, CaseStudyMediaItem[]>;
+  presentationLayout?: 'seamless' | 'spaced';
+  presentationLink?: string;
 }
 
 export interface PortfolioProject {

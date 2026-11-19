@@ -11,7 +11,9 @@ import {
   Tag,
   CheckCircle2,
   ChevronDown,
-  Layers
+  Edit3,
+  Trash2,
+  Star
 } from 'lucide-react';
 
 interface ServiceCardProps {
@@ -19,14 +21,21 @@ interface ServiceCardProps {
   index?: number;
   featured?: boolean;
   hideRelatedShopProducts?: boolean;
+  onEdit?: (service: ServiceItem) => void;
+  onDelete?: (service: ServiceItem) => void;
+  onTogglePopular?: (service: ServiceItem) => void;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({ 
   service, 
-  index = 0,
-  hideRelatedShopProducts = false 
+  hideRelatedShopProducts = false,
+  onEdit,
+  onDelete,
+  onTogglePopular,
 }) => {
-  const { setActiveView, setPreselectedService, setSelectedShopProduct, studioProfile } = useApp();
+  const { setActiveView, setPreselectedService, setSelectedShopProduct, studioProfile, currentUser } = useApp();
+  const isAdmin = currentUser?.role === 'admin';
+  const showAdminControls = isAdmin && Boolean(onEdit || onDelete || onTogglePopular);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
   // Cross-selling: Related Shop Products
@@ -56,15 +65,80 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       className="group relative bg-surface border border-hairline hover:border-accent/40 rounded-3xl p-6 sm:p-8 lg:p-10 transition-all duration-300 cursor-pointer shadow-2xs hover:shadow-md space-y-6 motion-reduce:transition-none"
     >
       {/* Top Category & Meta Bar */}
-      <div className="flex items-center justify-between gap-4 border-b border-hairline pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline pb-4">
         <span className="text-xs text-accent uppercase tracking-widest font-bold">
           {service.category}
         </span>
-        {service.popular && (
-          <span className="text-[11px] uppercase tracking-wider font-bold text-[#111114] bg-[#D4FF38] px-3 py-1 rounded-full">
-            Core Offering
-          </span>
-        )}
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {service.popular && (
+            <span className="text-[11px] uppercase tracking-wider font-bold text-[#111114] bg-[#D4FF38] px-3 py-1 rounded-full">
+              Core Offering
+            </span>
+          )}
+
+          {showAdminControls && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 p-1 rounded-full bg-surface-secondary border border-hairline"
+            >
+              {onTogglePopular && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onTogglePopular(service);
+                  }}
+                  title={service.popular ? 'Remove Core Offering highlight' : 'Mark as Core Offering'}
+                  aria-label={service.popular ? 'Remove Core Offering highlight' : 'Mark as Core Offering'}
+                  className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                    service.popular
+                      ? 'bg-[#D4FF38] text-[#111114]'
+                      : 'text-graphite hover:text-carbon hover:bg-surface'
+                  }`}
+                >
+                  <Star className={`w-3.5 h-3.5 ${service.popular ? 'fill-current' : ''}`} />
+                </button>
+              )}
+
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEdit(service);
+                  }}
+                  title={`Edit ${service.name}`}
+                  aria-label={`Edit ${service.name}`}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-graphite hover:text-carbon hover:bg-surface transition-colors cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Edit</span>
+                </button>
+              )}
+
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDelete(service);
+                  }}
+                  title={`Delete ${service.name}`}
+                  aria-label={`Delete ${service.name}`}
+                  className="p-1.5 rounded-full text-graphite hover:text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main Service Title & Starting Rates */}

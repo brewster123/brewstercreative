@@ -1,19 +1,66 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { ServiceCard } from '../components/ServiceCard';
+import {
+  ServiceEditorModal,
+  ServiceDeleteModal,
+} from '../components/admin/ServiceEditorModal';
+import { ServiceItem } from '../types';
 import { 
-  ShieldCheck, 
   Clock, 
   RotateCcw, 
-  Send,
   FileCheck,
   Layers,
-  ArrowRight,
-  ArrowUpRight
+  ArrowUpRight,
+  Plus,
+  AlertCircle
 } from 'lucide-react';
 
 export const ServicesView: React.FC = () => {
-  const { services, studioProfile, setActiveView, currentUser } = useApp();
+  const { services, studioProfile, setActiveView, currentUser, updateServiceItem } = useApp();
+  const isAdmin = currentUser?.role === 'admin';
+
+  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
+  const [editingService, setEditingService] = useState<ServiceItem | null>(null);
+  const [serviceToDelete, setServiceToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [adminError, setAdminError] = useState<string | null>(null);
+
+  const handleOpenAddService = () => {
+    if (!isAdmin) return;
+    setAdminError(null);
+    setEditingService(null);
+    setIsEditorOpen(true);
+  };
+
+  const handleOpenEditService = (service: ServiceItem) => {
+    if (!isAdmin) return;
+    setAdminError(null);
+    setEditingService(service);
+    setIsEditorOpen(true);
+  };
+
+  const handleRequestDeleteService = (service: ServiceItem) => {
+    if (!isAdmin) return;
+    setAdminError(null);
+    setServiceToDelete({ id: service.id, name: service.name });
+  };
+
+  const handleTogglePopularService = async (service: ServiceItem) => {
+    if (!isAdmin) return;
+    setAdminError(null);
+    const res = await updateServiceItem(service.id, { popular: !service.popular });
+    if (res && !res.success) {
+      setAdminError(res.error || 'Failed to update Core Offering status.');
+    }
+  };
+
+  const adminCardProps = isAdmin
+    ? {
+        onEdit: handleOpenEditService,
+        onDelete: handleRequestDeleteService,
+        onTogglePopular: handleTogglePopularService,
+      }
+    : {};
 
   const faqs = [
     {
@@ -59,44 +106,89 @@ export const ServicesView: React.FC = () => {
 
   return (
     <div className="bg-canvas min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-16 sm:space-y-20">
-      
-      {/* Admin Notice */}
-      {currentUser?.role === 'admin' && (
-        <div className="bg-surface-secondary border border-hairline rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-2.5 text-carbon font-medium">
-            <ShieldCheck className="w-4 h-4 text-accent shrink-0" />
-            <span>Studio Director Portal: You can modify service deliverables, rates, or add new disciplines.</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setActiveView('admin-dashboard')}
-            className="px-4 py-2 bg-[#111114] dark:bg-white text-white dark:text-[#111114] font-semibold rounded-full text-xs transition-opacity hover:opacity-90 cursor-pointer min-h-[44px] inline-flex items-center"
-          >
-            Manage Services in Admin Portal →
-          </button>
-        </div>
-      )}
 
       {/* Editorial Service Menu */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between gap-4 border-b border-hairline pb-3">
-          <span className="text-xs uppercase tracking-widest text-graphite font-bold">
-            Service Menu &amp; Scope of Practice
-          </span>
-          <span className="text-xs text-graphite">
-            Select a practice to initiate brief
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-hairline pb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xs uppercase tracking-widest text-graphite font-bold">
+              Service Menu &amp; Scope of Practice
+            </span>
+            {isAdmin && (
+              <span className="text-[11px] font-mono text-graphite px-2 py-0.5 rounded-full bg-surface-secondary border border-hairline">
+                {services.length}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className={`text-xs text-graphite ${isAdmin ? 'hidden sm:inline' : ''}`}>
+              Select a practice to initiate brief
+            </span>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={handleOpenAddService}
+                className="btn-tactile inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] font-bold text-xs transition-colors cursor-pointer shrink-0 shadow-2xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Service</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="space-y-6">
-          {services.map((service, index) => (
-            <ServiceCard 
-              key={service.id} 
-              service={service} 
-              index={index} 
-            />
-          ))}
-        </div>
+        {isAdmin && adminError && (
+          <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{adminError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAdminError(null)}
+              className="text-xs font-semibold hover:underline cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {services.length === 0 ? (
+          <div className="rounded-3xl bg-surface border border-hairline p-10 sm:p-14 text-center space-y-4">
+            <div className="space-y-1.5 max-w-md mx-auto">
+              <h3 className="font-display text-lg font-bold text-carbon">
+                No studio services published yet
+              </h3>
+              <p className="text-xs sm:text-sm text-graphite leading-relaxed">
+                {isAdmin
+                  ? 'Add your first service package with starting rates, turnaround, and deliverables.'
+                  : 'Custom commission packages are currently being updated. Reach out below for bespoke inquiries.'}
+              </p>
+            </div>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={handleOpenAddService}
+                className="btn-tactile inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] font-bold text-xs transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add First Service</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {services.map((service, index) => (
+              <ServiceCard 
+                key={service.id} 
+                service={service} 
+                index={index}
+                {...adminCardProps}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Studio Standards Section */}
@@ -195,6 +287,24 @@ export const ServicesView: React.FC = () => {
           </button>
         </div>
       </section>
+
+      {/* Admin-Only Service Editor & Delete Modals */}
+      {isAdmin && (
+        <>
+          <ServiceEditorModal
+            isOpen={isEditorOpen}
+            service={editingService}
+            onClose={() => {
+              setIsEditorOpen(false);
+              setEditingService(null);
+            }}
+          />
+          <ServiceDeleteModal
+            service={serviceToDelete}
+            onClose={() => setServiceToDelete(null)}
+          />
+        </>
+      )}
 
     </div>
   );

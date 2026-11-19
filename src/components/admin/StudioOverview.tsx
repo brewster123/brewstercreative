@@ -23,8 +23,8 @@ interface StudioOverviewProps {
   commissions?: Commission[];
   users?: User[];
   pendingPaymentsCount?: number;
-  onNavigate?: (hub: 'commissions' | 'payments' | 'creative' | 'studio', commissionId?: string, subTab?: string) => void;
-  onNavigateHub?: (hub: 'commissions' | 'payments' | 'creative' | 'studio', filter?: string) => void;
+  onNavigate?: (hub: 'commissions' | 'payments' | 'studio', commissionId?: string, subTab?: string) => void;
+  onNavigateHub?: (hub: 'commissions' | 'payments' | 'studio', filter?: string) => void;
   onSelectCommission?: (commissionId: string) => void;
 }
 
@@ -75,7 +75,7 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
 
   // Navigation dispatcher supporting both handler signatures
   const triggerNavigation = (
-    hub: 'commissions' | 'payments' | 'creative' | 'studio', 
+    hub: 'commissions' | 'payments' | 'studio', 
     param?: string, 
     subTab?: string
   ) => {
@@ -99,7 +99,14 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
     return s.includes('completed') || c.currentStage === 8;
   });
 
-  const clients = users.filter(u => u && u.role === 'client');
+  const registeredClients = users.filter(u => u && u.role === 'client');
+  const knownUserIds = new Set(users.map(u => u?.id).filter(Boolean));
+  const unseenCommissionClientIds = new Set(
+    commissions
+      .map(c => c?.clientId)
+      .filter((id): id is string => Boolean(id) && id !== appContext?.currentUser?.id && !knownUserIds.has(id))
+  );
+  const clientsCount = registeredClients.length + unseenCommissionClientIds.size;
 
   const pendingIntakeCommissions = commissions.filter(c => {
     if (!c) return false;
@@ -221,11 +228,11 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
         <div
           role="button"
           tabIndex={0}
-          onClick={() => triggerNavigation('creative', undefined, 'proofs')}
+          onClick={() => triggerNavigation('commissions', inReviewCommissions[0]?.id, 'proofs')}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              triggerNavigation('creative', undefined, 'proofs');
+              triggerNavigation('commissions', inReviewCommissions[0]?.id, 'proofs');
             }
           }}
           className="p-5 rounded-3xl bg-surface border border-hairline hover:border-accent/60 transition-all cursor-pointer group shadow-2xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
@@ -272,7 +279,7 @@ export const StudioOverview: React.FC<StudioOverviewProps> = ({
           </div>
           <div className="space-y-1">
             <span className="font-display font-black text-3xl text-carbon block">
-              {clients.length}
+              {clientsCount}
             </span>
             <span className="text-xs text-graphite flex items-center gap-1 group-hover:text-accent transition-colors">
               <span>Manage client profiles</span>

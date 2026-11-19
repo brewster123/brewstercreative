@@ -8,7 +8,10 @@ import {
   Eye, 
   Share2, 
   Check, 
-  Maximize2 
+  Maximize2,
+  Edit3,
+  Trash2,
+  Star
 } from 'lucide-react';
 import { 
   isProjectLikedLocally, 
@@ -20,6 +23,9 @@ interface PortfolioCardProps {
   project: PortfolioProject;
   onSelect: (project: PortfolioProject) => void;
   onPreview?: (project: PortfolioProject) => void;
+  onEdit?: (project: PortfolioProject) => void;
+  onDelete?: (project: PortfolioProject) => void;
+  onToggleFeatured?: (project: PortfolioProject) => void;
   variant?: 'featured' | 'standard' | 'wide' | 'compact';
   className?: string;
 }
@@ -28,10 +34,14 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
   project, 
   onSelect,
   onPreview,
+  onEdit,
+  onDelete,
+  onToggleFeatured,
   variant = 'standard',
   className = ''
 }) => {
-  const { toggleProjectLikeInContext } = useApp();
+  const { toggleProjectLikeInContext, currentUser } = useApp();
+  const isAdmin = currentUser?.role === 'admin';
   const isFeatured = variant === 'featured';
   const isWide = variant === 'wide';
 
@@ -155,6 +165,70 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
           className="w-full h-full object-cover block transition-transform duration-500 ease-out group-hover:scale-103 motion-reduce:transform-none"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-40 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none" />
+
+        {/* Top-Left Admin-Only Direct Edit Controls (Strictly Hidden from Clients & Visitors) */}
+        {isAdmin && (onEdit || onDelete || onToggleFeatured) && (
+          <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 z-20">
+            {onToggleFeatured && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleFeatured(project);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                aria-label={project.featured ? 'Remove from featured works' : 'Feature work on home page'}
+                title={project.featured ? 'Featured on Home (click to unfeature)' : 'Feature on Home'}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer backdrop-blur-xs shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
+                  project.featured
+                    ? 'bg-[#D4FF38] text-[#111114] hover:bg-[#C4F024]'
+                    : 'bg-black/70 hover:bg-black text-white/90 hover:text-white'
+                }`}
+              >
+                <Star className={`w-3.5 h-3.5 ${project.featured ? 'fill-current' : ''}`} />
+              </button>
+            )}
+
+            {onEdit && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit(project);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                aria-label={`Edit ${project.title}`}
+                title="Edit work"
+                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-black/75 hover:bg-black text-white text-[11px] font-semibold transition-all duration-200 cursor-pointer backdrop-blur-xs shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit</span>
+              </button>
+            )}
+
+            {onDelete && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(project);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                aria-label={`Delete ${project.title}`}
+                title="Delete work"
+                className="w-8 h-8 rounded-full bg-black/75 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-200 cursor-pointer backdrop-blur-xs shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Top-Right Quick Actions: Preview / Share / Hover Inspect */}
         <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 z-10">

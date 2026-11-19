@@ -11,6 +11,7 @@ function mapDbCaseStudy(cs: any): CaseStudyContent | undefined {
   if (!cs || typeof cs !== 'object' || Object.keys(cs).length === 0) {
     return undefined;
   }
+  const rawLayout = cs.presentation_layout || cs.presentationLayout;
   return {
     overview: cs.overview || undefined,
     challenge: cs.challenge || undefined,
@@ -24,6 +25,8 @@ function mapDbCaseStudy(cs: any): CaseStudyContent | undefined {
       ? cs.deliverables_summary || cs.deliverablesSummary
       : undefined,
     media: cs.media && typeof cs.media === 'object' ? cs.media : undefined,
+    presentationLayout: rawLayout === 'spaced' ? 'spaced' : 'seamless',
+    presentationLink: cs.presentation_link || cs.presentationLink || undefined,
   };
 }
 
@@ -43,6 +46,8 @@ function mapCaseStudyToDb(cs?: CaseStudyContent): any {
     reflection: cs.reflection || null,
     deliverables_summary: cs.deliverablesSummary || [],
     media: cs.media || {},
+    presentation_layout: cs.presentationLayout || 'seamless',
+    presentation_link: cs.presentationLink || null,
   };
 }
 

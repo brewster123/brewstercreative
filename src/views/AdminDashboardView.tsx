@@ -1,21 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Sparkles, 
   FolderArchive, 
   CreditCard, 
-  Layers, 
-  Settings, 
+  Users, 
   ShieldCheck
 } from 'lucide-react';
 import { StudioOverview } from '../components/admin/StudioOverview';
 import { CommissionManagement } from '../components/admin/CommissionManagement';
 import { PaymentsVerification } from '../components/admin/PaymentsVerification';
-import { CreativeReviewDeliverables } from '../components/admin/CreativeReviewDeliverables';
 import { ClientStudioManagement } from '../components/admin/ClientStudioManagement';
 import { fetchCommissionPaymentProofs, subscribeToPaymentProofs } from '../lib/payments';
 
-type AdminHub = 'overview' | 'commissions' | 'payments' | 'creative' | 'studio';
+type AdminHub = 'overview' | 'commissions' | 'payments' | 'studio';
 
 export const AdminDashboardView: React.FC = () => {
   const { 
@@ -34,8 +32,7 @@ export const AdminDashboardView: React.FC = () => {
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>(
     activeCommission?.id || commissions[0]?.id || ''
   );
-  const [creativeSubTab, setCreativeSubTab] = useState<'proofs' | 'deliverables'>('proofs');
-  const [studioSubTab, setStudioSubTab] = useState<'clients' | 'profile' | 'services' | 'portfolio' | 'account'>('clients');
+  const [commissionWorkspaceTab, setCommissionWorkspaceTab] = useState<'proofs' | 'deliverables' | 'payments' | 'specifications'>('proofs');
 
   // Keep selectedCommissionId synchronized once commissions finish loading asynchronously
   useEffect(() => {
@@ -88,37 +85,31 @@ export const AdminDashboardView: React.FC = () => {
         setActiveHub('payments');
         break;
       case 'proof-uploader':
-        setActiveHub('creative');
-        setCreativeSubTab('proofs');
+      case 'creative':
+        setActiveHub('commissions');
+        setCommissionWorkspaceTab('proofs');
         break;
       case 'deliverables':
-        setActiveHub('creative');
-        setCreativeSubTab('deliverables');
-        break;
-      case 'creative':
-        setActiveHub('creative');
+        setActiveHub('commissions');
+        setCommissionWorkspaceTab('deliverables');
         break;
       case 'clients':
         setActiveHub('studio');
-        setStudioSubTab('clients');
         break;
       case 'website-info':
       case 'profile':
-        setActiveHub('studio');
-        setStudioSubTab('profile');
-        break;
-      case 'services':
-        setActiveHub('studio');
-        setStudioSubTab('services');
-        break;
-      case 'portfolio':
-        setActiveHub('studio');
-        setStudioSubTab('portfolio');
-        break;
       case 'typography':
       case 'admin-account':
-        setActiveHub('studio');
-        setStudioSubTab('account');
+        setActiveDashboardTab('overview');
+        setActiveView('settings');
+        break;
+      case 'services':
+        setActiveDashboardTab('overview');
+        setActiveView('services');
+        break;
+      case 'portfolio':
+        setActiveDashboardTab('overview');
+        setActiveView('portfolio');
         break;
       case 'studio':
         setActiveHub('studio');
@@ -134,22 +125,53 @@ export const AdminDashboardView: React.FC = () => {
   };
 
   const handleHubNavigation = (
-    hub: 'commissions' | 'payments' | 'creative' | 'studio',
+    hub: 'commissions' | 'payments' | 'studio',
     commissionId?: string,
     subTab?: string
   ) => {
     if (commissionId) {
       setSelectedCommissionId(commissionId);
     }
-    if (hub === 'creative' && subTab) {
-      setCreativeSubTab(subTab as 'proofs' | 'deliverables');
+    if (hub === 'commissions' && subTab) {
+      const validWorkspaceTabs = ['proofs', 'deliverables', 'payments', 'specifications'] as const;
+      if (validWorkspaceTabs.includes(subTab as any)) {
+        setCommissionWorkspaceTab(subTab as 'proofs' | 'deliverables' | 'payments' | 'specifications');
+      }
     }
-    if (hub === 'studio' && subTab) {
-      setStudioSubTab(subTab as any);
+    if (hub === 'studio' && subTab === 'profile') {
+      setActiveDashboardTab('overview');
+      setActiveView('settings');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (hub === 'studio' && subTab === 'services') {
+      setActiveDashboardTab('overview');
+      setActiveView('services');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (hub === 'studio' && subTab === 'portfolio') {
+      setActiveDashboardTab('overview');
+      setActiveView('portfolio');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
     }
     setActiveHub(hub);
     setActiveDashboardTab(hub);
   };
+
+  const clientsCount = useMemo(() => {
+    const safeUsers = users || [];
+    const safeCommissions = commissions || [];
+    const registeredClientsCount = safeUsers.filter((u) => u && u.role === 'client').length;
+    const knownUserIds = new Set(safeUsers.map((u) => u?.id).filter(Boolean));
+    const unseenCommissionClientIds = new Set(
+      safeCommissions
+        .map((c) => c?.clientId)
+        .filter((id): id is string => Boolean(id) && id !== currentUser?.id && !knownUserIds.has(id))
+    );
+    return registeredClientsCount + unseenCommissionClientIds.size;
+  }, [users, commissions, currentUser?.id]);
 
   if (authLoading) {
     return (
@@ -192,10 +214,10 @@ export const AdminDashboardView: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
-      {/* Primary 5-Hub Navigation Bar */}
+      {/* Primary Hub Navigation Bar */}
       <nav 
         className="flex items-center gap-2 border-b border-hairline pb-3 overflow-x-auto no-scrollbar" 
-        aria-label="Studio 5-hub administration navigation"
+        aria-label="Studio administration navigation"
       >
         {[
           { 
@@ -217,14 +239,10 @@ export const AdminDashboardView: React.FC = () => {
             badge: pendingPaymentsCount > 0 ? `${pendingPaymentsCount} pending` : undefined 
           },
           { 
-            id: 'creative' as const, 
-            label: 'Creative & Deliverables', 
-            icon: Layers 
-          },
-          { 
             id: 'studio' as const, 
-            label: 'Client & Studio', 
-            icon: Settings 
+            label: 'Clients', 
+            icon: Users,
+            count: clientsCount
           },
         ].map(({ id, label, icon: TabIcon, count, badge }) => {
           const isSelected = activeHub === id;
@@ -282,6 +300,7 @@ export const AdminDashboardView: React.FC = () => {
       {activeHub === 'commissions' && (
         <CommissionManagement
           selectedCommissionId={selectedCommissionId}
+          initialWorkspaceTab={commissionWorkspaceTab}
           onSelectCommission={(id) => setSelectedCommissionId(id)}
           onOpenChat={(commissionId) => {
             if (commissionId) {
@@ -304,21 +323,13 @@ export const AdminDashboardView: React.FC = () => {
         />
       )}
 
-      {/* Hub 4: Creative Review & Deliverables (Proofs + Final Archival Deliverables) */}
-      {activeHub === 'creative' && (
-        <CreativeReviewDeliverables
-          commissions={commissions}
-          currentUser={currentUser}
-          selectedCommissionId={selectedCommissionId}
-          onSelectCommission={(id) => setSelectedCommissionId(id)}
-          defaultSubTab={creativeSubTab}
-        />
-      )}
-
-      {/* Hub 5: Client & Studio Management */}
+      {/* Hub 4: Clients Directory */}
       {activeHub === 'studio' && (
         <ClientStudioManagement
-          initialSubTab={studioSubTab}
+          onSelectCommission={(id) => {
+            setSelectedCommissionId(id);
+            handleHubNavigation('commissions', id);
+          }}
         />
       )}
     </div>

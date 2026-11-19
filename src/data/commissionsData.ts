@@ -202,6 +202,69 @@ export function getCachedClientProfile(clientId: string): User | undefined {
   return clientProfileCache.get(clientId);
 }
 
+const PROFILES_SELECT_FULL = 'id, name, email, role, avatar, handle, contact_method, bio';
+const PROFILES_SELECT_MINIMAL = 'id, name, email, role, avatar';
+
+function mapProfileRowToUser(p: any): User {
+  return {
+    id: p.id,
+    name: p.name || (p.email ? p.email.split('@')[0] : 'Client'),
+    email: p.email || '',
+    role: p.role === 'admin' ? 'admin' : 'client',
+    avatar:
+      p.avatar ||
+      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+    handle: p.handle || undefined,
+    contactMethod: p.contact_method || 'Platform Chat',
+    phone: p.phone || undefined,
+    bio: p.bio || undefined,
+    createdAt: p.created_at || undefined,
+  };
+}
+
+function isMissingColumnError(error: any): boolean {
+  if (!error) return false;
+  return (
+    error.code === '42703' ||
+    /column .* does not exist/i.test(error.message || '')
+  );
+}
+
+/**
+ * Fetches all user profiles visible to the authenticated user (used by Admins to hydrate the Client Directory).
+ * Automatically falls back to minimal core columns if optional profile columns are absent in live schema.
+ */
+export async function fetchAllProfilesFromSupabase(): Promise<{
+  data: User[] | null;
+  error: string | null;
+}> {
+  try {
+    let { data, error } = await supabase
+      .from('profiles')
+      .select(PROFILES_SELECT_FULL);
+
+    if (error && isMissingColumnError(error)) {
+      const fallback = await supabase
+        .from('profiles')
+        .select(PROFILES_SELECT_MINIMAL);
+      data = fallback.data as any;
+      error = fallback.error;
+    }
+
+    if (error) {
+      return { data: null, error: error.message || 'Failed to load profiles from database.' };
+    }
+
+    const mapped = (data || []).map(mapProfileRowToUser);
+    return { data: mapped, error: null };
+  } catch (err: any) {
+    return {
+      data: null,
+      error: err?.message || 'Unexpected error while loading client profiles.',
+    };
+  }
+}
+
 /**
  * Resolves a batch of client profiles by their UUIDs from public.profiles in a single query.
  * Eliminates N+1 queries by leveraging the in-memory cache and a single batch `.in('id', missingIds)` query.
@@ -226,24 +289,23 @@ export async function fetchClientProfilesBatch(clientIds: string[]): Promise<Map
 
   const uniqueMissing = Array.from(new Set(missingIds));
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('profiles')
-      .select('id, name, email, role, avatar, handle, contact_method, bio, created_at')
+      .select(PROFILES_SELECT_FULL)
       .in('id', uniqueMissing);
+
+    if (error && isMissingColumnError(error)) {
+      const fallback = await supabase
+        .from('profiles')
+        .select(PROFILES_SELECT_MINIMAL)
+        .in('id', uniqueMissing);
+      data = fallback.data as any;
+      error = fallback.error;
+    }
 
     if (!error && data) {
       for (const p of data) {
-        const user: User = {
-          id: p.id,
-          name: p.name || (p.email ? p.email.split('@')[0] : 'Client'),
-          email: p.email || '',
-          role: (p.role as UserRole) || 'client',
-          avatar: p.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-          handle: p.handle,
-          contactMethod: p.contact_method || 'Platform Chat',
-          bio: p.bio,
-          createdAt: p.created_at,
-        };
+        const user = mapProfileRowToUser(p);
         clientProfileCache.set(p.id, user);
         result.set(p.id, user);
       }
@@ -868,6 +930,53 @@ export async function approveCommissionInSupabase(
     return {
       success: false,
       error: err?.message || 'An unexpected error occurred while approving creative proof.',
+    };
+  }
+}
+
+/**
+ * Permanently deletes a commission from Supabase public.commissions.
+ * Enforces admin DELETE RLS via .select('id') so silently blocked deletes
+ * are detected and surfaced clearly rather than faking success.
+ * Dependent child tables (messages, milestones, proofs, deliverables,
+ * payment proofs, notifications) cascade-delete via FK constraints.
+ */
+export async function deleteCommissionInSupabase(
+  commissionId: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!commissionId) {
+    return { success: false, error: 'Commission ID is required.' };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('commissions')
+      .delete()
+      .eq('id', commissionId)
+      .select('id');
+
+    if (error) {
+      console.error('[Supabase Commissions] Delete commission error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to remove commission from database.',
+      };
+    }
+
+    if (!data || data.length === 0) {
+      return {
+        success: false,
+        error:
+          'Commission could not be removed. Verify that your admin account has DELETE permissions on public.commissions.',
+      };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('[Supabase Commissions] Unexpected exception during commission delete:', err);
+    return {
+      success: false,
+      error: err?.message || 'An unexpected error occurred while removing the commission.',
     };
   }
 }

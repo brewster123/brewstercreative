@@ -37,6 +37,7 @@ import {
   updateCommissionPaymentInSupabase,
   requestCommissionRevisionInSupabase,
   approveCommissionInSupabase,
+  deleteCommissionInSupabase,
   subscribeToCommissionsChange,
   mapDbCommissionToAppCommission,
   getStageAndProgressFromStatus,
@@ -44,6 +45,7 @@ import {
   cacheClientProfiles,
   getCachedClientProfile,
   fetchClientProfile,
+  fetchAllProfilesFromSupabase,
 } from '../data/commissionsData';
 import {
   fetchCommissionMessages,
@@ -129,6 +131,9 @@ interface AppContextType {
   clearDatabaseError: () => void;
   refreshCurrentUserProfile: () => Promise<User | null>;
   users: User[];
+  usersLoading: boolean;
+  usersLoadError: string | null;
+  refreshUsers: () => Promise<void>;
   loginUser: (email: string, password?: string) => Promise<{ success: boolean; error?: string; user?: User }>;
   signUpUser: (name: string, email: string, password?: string, handle?: string, contactMethod?: string, phone?: string) => Promise<{ success: boolean; error?: string; user?: User; confirmationRequired?: boolean }>;
   emailVerificationStatus: 'success' | 'expired' | 'error' | null;
@@ -174,6 +179,7 @@ interface AppContextType {
   updatePaymentStatus: (commissionId: string, status: 'Unpaid' | 'Partial' | 'Paid') => Promise<{ success: boolean; error?: string }> | void;
   acceptCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
   declineCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
+  deleteCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
   submitClientReviewAction: (commissionId: string, action: 'approve' | 'revision', feedback?: string, proofId?: string) => Promise<{ success: boolean; error?: string }> | void;
   approveCommissionWithProof: (commissionId: string, proofId: string) => Promise<{ success: boolean; error?: string }>;
   deliverFinalFiles: (commissionId: string, finalPackage: FinalFilesPackage) => void;
@@ -446,6 +452,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_USERS;
   });
 
+  const [usersLoading, setUsersLoading] = useState<boolean>(false);
+  const [usersLoadError, setUsersLoadError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [databaseError, setDatabaseError] = useState<string | null>(null);
@@ -1014,32 +1022,70 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // When an admin is logged in, load registered clients from public.profiles table
-  useEffect(() => {
-    if (currentUser?.role === 'admin' && isSupabaseConfigured()) {
-      supabase
-        .from('profiles')
-        .select('id, name, email, role, avatar, handle, contact_method, bio, created_at')
-        .then(({ data, error }) => {
-          if (!error && data) {
-            const dbUsers: User[] = data.map(p => ({
-              id: p.id,
-              name: p.name || p.email?.split('@')[0] || 'Client',
-              email: p.email || '',
-              role: p.role === 'admin' ? 'admin' : 'client',
-              avatar: p.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-              handle: p.handle,
-              contactMethod: p.contact_method,
-              phone: (p as any).phone || undefined,
-              bio: p.bio,
-              createdAt: p.created_at,
-            }));
-            setUsers(dbUsers);
-            cacheClientProfiles(dbUsers);
-          }
-        });
+  // Load registered client profiles from public.profiles when an admin is logged in
+  const refreshUsers = useCallback(async () => {
+    if (currentUser?.role !== 'admin' || !isSupabaseConfigured()) return;
+    setUsersLoading(true);
+    setUsersLoadError(null);
+    try {
+      const { data: dbUsers, error } = await fetchAllProfilesFromSupabase();
+      if (error || !dbUsers) {
+        const msg = error || 'Failed to load client profiles from Supabase.';
+        console.warn('[Supabase Profiles] Error loading client directory:', msg);
+        setUsersLoadError(msg);
+        return;
+      }
+
+      setUsers(dbUsers);
+      cacheClientProfiles(dbUsers);
+
+      // Enrich any already-loaded commissions that fell back to generic "Client" metadata
+      const profileById = new Map(dbUsers.map(u => [u.id, u]));
+      setCommissions(prev =>
+        prev.map(comm => {
+          const matched = profileById.get(comm.clientId);
+          if (!matched) return comm;
+          const needsEnrichment =
+            !comm.clientEmail ||
+            comm.clientName === 'Client' ||
+            comm.clientName !== matched.name ||
+            comm.clientAvatar !== matched.avatar;
+          if (!needsEnrichment) return comm;
+          return {
+            ...comm,
+            clientName: matched.name || comm.clientName,
+            clientEmail: matched.email || comm.clientEmail,
+            clientAvatar: matched.avatar || comm.clientAvatar,
+            clientHandle: matched.handle || comm.clientHandle,
+            contactMethod: matched.contactMethod || comm.contactMethod,
+          };
+        })
+      );
+    } finally {
+      setUsersLoading(false);
     }
   }, [currentUser?.role]);
+
+  useEffect(() => {
+    if (currentUser?.role !== 'admin' || !isSupabaseConfigured()) return;
+    refreshUsers();
+
+    // Keep Client Directory synchronized in realtime when new clients sign up or update profiles
+    const channel = supabase
+      .channel(`admin-profiles-sync-${currentUser.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        () => {
+          refreshUsers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser?.id, currentUser?.role, refreshUsers]);
 
   // Fetch real commissions from public.commissions in Supabase when user is authenticated
   const refreshCommissions = async () => {
@@ -1830,6 +1876,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return await updateCommissionStatus(commissionId, 'cancelled');
   };
 
+  const deleteCommission = async (commissionId: string): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can remove commissions.' };
+    }
+    if (!commissionId) {
+      return { success: false, error: 'Commission ID is required.' };
+    }
+
+    if (isSupabaseConfigured()) {
+      const res = await deleteCommissionInSupabase(commissionId);
+      if (!res.success) {
+        return { success: false, error: res.error || 'Failed to remove commission.' };
+      }
+    }
+
+    setCommissions(prev => prev.filter(c => c.id !== commissionId));
+    setMessages(prev => prev.filter(m => m.commissionId !== commissionId));
+    setTimelineUpdates(prev => prev.filter(t => t.commissionId !== commissionId));
+    setProjectFiles(prev => prev.filter(f => f.commissionId !== commissionId));
+    setNotifications(prev => prev.filter(n => n.commissionId !== commissionId));
+
+    if (selectedCommissionId === commissionId) {
+      setSelectedCommissionId('');
+    }
+
+    return { success: true };
+  };
+
   const approveCommissionWithProof = async (
     commissionId: string,
     proofId: string
@@ -2445,6 +2519,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateStudioProfile = async (updates: Partial<StudioProfile>): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can update studio profile settings.' };
+    }
+
     const previousProfile = studioProfile;
     const updated = { ...studioProfile, ...updates };
     setStudioProfile(updated);
@@ -2460,7 +2538,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateServicePrice = async (serviceId: string, newPrice: number): Promise<{ success: boolean; error?: string }> => {
-    const targetService = services.find(s => s.id === serviceId);
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can update service pricing.' };
+    }
+
+    const targetIndex = services.findIndex(s => s.id === serviceId);
+    const targetService = targetIndex >= 0 ? services[targetIndex] : undefined;
     if (!targetService) return { success: false, error: 'Service not found.' };
 
     const previousServices = services;
@@ -2468,7 +2551,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setServices(prev => prev.map(s => (s.id === serviceId ? updated : s)));
 
     if (isSupabaseConfigured()) {
-      const { error } = await upsertServiceInDb(updated);
+      const { error } = await upsertServiceInDb(updated, targetIndex + 1);
       if (error) {
         setServices(previousServices);
         return { success: false, error };
@@ -2478,6 +2561,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addServiceItem = async (service: ServiceItem): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can add studio services.' };
+    }
+
     const previousServices = services;
     setServices(prev => [...prev, service]);
 
@@ -2492,7 +2579,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateServiceItem = async (serviceId: string, updates: Partial<ServiceItem>): Promise<{ success: boolean; error?: string }> => {
-    const target = services.find(s => s.id === serviceId);
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can edit studio services.' };
+    }
+
+    const targetIndex = services.findIndex(s => s.id === serviceId);
+    const target = targetIndex >= 0 ? services[targetIndex] : undefined;
     if (!target) return { success: false, error: 'Service not found.' };
 
     const previousServices = services;
@@ -2500,7 +2592,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setServices(prev => prev.map(s => (s.id === serviceId ? updated : s)));
 
     if (isSupabaseConfigured()) {
-      const { error } = await upsertServiceInDb(updated);
+      const { error } = await upsertServiceInDb(updated, targetIndex + 1);
       if (error) {
         setServices(previousServices);
         return { success: false, error };
@@ -2510,6 +2602,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteServiceItem = async (serviceId: string): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can delete studio services.' };
+    }
+
     const previousServices = services;
     setServices(prev => prev.filter(s => s.id !== serviceId));
 
@@ -2524,6 +2620,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addPortfolioProject = async (project: PortfolioProject): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can publish portfolio works.' };
+    }
+
     const previousPortfolio = portfolio;
     setPortfolio(prev => [project, ...prev]);
 
@@ -2538,17 +2638,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updatePortfolioProject = async (projectId: string, updates: Partial<PortfolioProject>): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can edit portfolio works.' };
+    }
+
     const target = portfolio.find(p => p.id === projectId);
     if (!target) return { success: false, error: 'Project not found.' };
 
     const previousPortfolio = portfolio;
+    const previousSelected = selectedPortfolioProject;
     const updated = { ...target, ...updates };
     setPortfolio(prev => prev.map(p => (p.id === projectId ? updated : p)));
+    if (selectedPortfolioProject?.id === projectId) {
+      setSelectedPortfolioProject(updated);
+    }
 
     if (isSupabaseConfigured()) {
       const { error } = await upsertPortfolioProjectInDb(updated);
       if (error) {
         setPortfolio(previousPortfolio);
+        if (previousSelected?.id === projectId) {
+          setSelectedPortfolioProject(previousSelected);
+        }
         return { success: false, error };
       }
     }
@@ -2556,7 +2667,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deletePortfolioProject = async (projectId: string): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can delete portfolio works.' };
+    }
+
     const previousPortfolio = portfolio;
+    const previousSelected = selectedPortfolioProject;
     setPortfolio(prev => {
       const updated = prev.filter(p => p.id !== projectId);
       try {
@@ -2564,11 +2680,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch {}
       return updated;
     });
+    if (selectedPortfolioProject?.id === projectId) {
+      setSelectedPortfolioProject(null);
+    }
 
     if (isSupabaseConfigured()) {
       const { success, error } = await deletePortfolioProjectFromDb(projectId);
       if (!success) {
         setPortfolio(previousPortfolio);
+        if (previousSelected?.id === projectId) {
+          setSelectedPortfolioProject(previousSelected);
+        }
         try {
           localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(previousPortfolio));
         } catch {}
@@ -2773,6 +2895,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearDatabaseError,
         refreshCurrentUserProfile,
         users,
+        usersLoading,
+        usersLoadError,
+        refreshUsers,
         loginUser,
         signUpUser,
         emailVerificationStatus,
@@ -2801,6 +2926,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatePaymentStatus,
         acceptCommission,
         declineCommission,
+        deleteCommission,
         submitClientReviewAction,
         approveCommissionWithProof,
         deliverFinalFiles,

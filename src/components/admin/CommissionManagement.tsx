@@ -27,12 +27,15 @@ import {
   AlertCircle,
   Filter,
   Copy,
-  CheckCheck
+  CheckCheck,
+  MoreVertical,
+  Trash2
 } from 'lucide-react';
 
 interface CommissionManagementProps {
   initialFilter?: 'active' | 'completed' | 'cancelled' | 'all';
   initialCommissionId?: string | null;
+  initialWorkspaceTab?: 'proofs' | 'deliverables' | 'payments' | 'specifications';
   selectedCommissionId?: string;
   onSelectCommission?: (commissionId: string) => void;
   onSelectCommissionForChat?: (commissionId: string) => void;
@@ -43,6 +46,7 @@ interface CommissionManagementProps {
 export const CommissionManagement: React.FC<CommissionManagementProps> = ({
   initialFilter = 'active',
   initialCommissionId = null,
+  initialWorkspaceTab = 'proofs',
   selectedCommissionId,
   onSelectCommission,
   onSelectCommissionForChat,
@@ -58,6 +62,7 @@ export const CommissionManagement: React.FC<CommissionManagementProps> = ({
     updatePaymentStatus,
     acceptCommission,
     declineCommission,
+    deleteCommission,
     setActiveCommissionId,
     setActiveView,
   } = useApp();
@@ -68,7 +73,7 @@ export const CommissionManagement: React.FC<CommissionManagementProps> = ({
   const [adminWorkspaceCommissionId, setAdminWorkspaceCommissionId] = useState<string | null>(
     selectedCommissionId || initialCommissionId
   );
-  const [adminWorkspaceTab, setAdminWorkspaceTab] = useState<'proofs' | 'deliverables' | 'payments' | 'specifications'>('proofs');
+  const [adminWorkspaceTab, setAdminWorkspaceTab] = useState<'proofs' | 'deliverables' | 'payments' | 'specifications'>(initialWorkspaceTab);
 
   // Keep adminWorkspaceCommissionId in sync if selectedCommissionId prop changes
   React.useEffect(() => {
@@ -76,6 +81,12 @@ export const CommissionManagement: React.FC<CommissionManagementProps> = ({
       setAdminWorkspaceCommissionId(selectedCommissionId);
     }
   }, [selectedCommissionId]);
+
+  React.useEffect(() => {
+    if (initialWorkspaceTab) {
+      setAdminWorkspaceTab(initialWorkspaceTab);
+    }
+  }, [initialWorkspaceTab]);
   
   // Filtering & search
   const [commissionSection, setCommissionSection] = useState<'active' | 'completed' | 'cancelled' | 'all'>(initialFilter);
@@ -88,8 +99,12 @@ export const CommissionManagement: React.FC<CommissionManagementProps> = ({
   const [statusSuccessId, setStatusSuccessId] = useState<string | null>(null);
   const [priorityUpdatingId, setPriorityUpdatingId] = useState<string | null>(null);
 
-  // Decline confirmation dialog state
+  // Decline & Remove confirmation dialog state
   const [declineTargetCommission, setDeclineTargetCommission] = useState<Commission | null>(null);
+  const [deleteTargetCommission, setDeleteTargetCommission] = useState<Commission | null>(null);
+  const [isDeletingCommission, setIsDeletingCommission] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [openMenuCommissionId, setOpenMenuCommissionId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -103,14 +118,35 @@ export const CommissionManagement: React.FC<CommissionManagementProps> = ({
   }, []);
 
   useEffect(() => {
+    if (!openMenuCommissionId) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest(`[data-commission-menu="${openMenuCommissionId}"]`)) {
+        setOpenMenuCommissionId(null);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [openMenuCommissionId]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && declineTargetCommission) {
-        setDeclineTargetCommission(null);
+      if (e.key === 'Escape') {
+        if (openMenuCommissionId) {
+          setOpenMenuCommissionId(null);
+        }
+        if (declineTargetCommission) {
+          setDeclineTargetCommission(null);
+        }
+        if (deleteTargetCommission && !isDeletingCommission) {
+          setDeleteTargetCommission(null);
+          setDeleteError(null);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [declineTargetCommission]);
+  }, [declineTargetCommission, deleteTargetCommission, isDeletingCommission, openMenuCommissionId]);
 
   const STATUS_OPTIONS: { value: CommissionStatus; label: string }[] = [
     { value: 'pending', label: 'Pending' },
@@ -224,7 +260,26 @@ export const CommissionManagement: React.FC<CommissionManagementProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      
+      {actionError && (
+        <div
+          role="alert"
+          className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-center justify-between gap-2"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            aria-label="Dismiss error"
+            className="text-red-500 hover:text-red-800 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* ======================================================== */}
       {/* LEVEL 2: DEDICATED ADMIN COMMISSION WORKSPACE            */}
       {/* ======================================================== */}
@@ -342,6 +397,47 @@ export const CommissionManagement: React.FC<CommissionManagementProps> = ({
                   <MessageSquare className="w-3.5 h-3.5 text-accent" />
                   <span>Client Chat</span>
                 </button>
+
+                {/* 3-Dots Commission Actions Menu */}
+                <div className="relative" data-commission-menu={`workspace-${workspaceCommission.id}`}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenMenuCommissionId((prev) =>
+                        prev === `workspace-${workspaceCommission.id}` ? null : `workspace-${workspaceCommission.id}`
+                      )
+                    }
+                    aria-label={`More actions for ${workspaceCommission.projectName}`}
+                    aria-haspopup="menu"
+                    aria-expanded={openMenuCommissionId === `workspace-${workspaceCommission.id}`}
+                    title="More actions"
+                    className="p-1.5 rounded-full border border-hairline bg-surface-secondary text-graphite hover:text-carbon hover:border-accent transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+
+                  {openMenuCommissionId === `workspace-${workspaceCommission.id}` && (
+                    <div
+                      role="menu"
+                      aria-label={`Actions for ${workspaceCommission.projectName}`}
+                      className="absolute right-0 top-full mt-1.5 z-30 min-w-[185px] bg-surface border border-hairline rounded-2xl shadow-lg py-1.5 animate-in fade-in duration-100"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setOpenMenuCommissionId(null);
+                          setDeleteError(null);
+                          setDeleteTargetCommission(workspaceCommission);
+                        }}
+                        className="w-full px-3.5 py-2 text-left text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Remove Commission</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -615,23 +711,6 @@ export const CommissionManagement: React.FC<CommissionManagementProps> = ({
             </div>
           </div>
 
-          {actionError && (
-            <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{actionError}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActionError(null)}
-                aria-label="Dismiss error"
-                className="text-red-500 hover:text-red-800 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
           {/* Commission List */}
           {filteredCommissions.length === 0 ? (
             <div className="p-12 text-center text-xs font-mono text-graphite bg-surface border border-hairline rounded-3xl space-y-2">
@@ -722,6 +801,60 @@ export const CommissionManagement: React.FC<CommissionManagementProps> = ({
                             </option>
                           ))}
                         </select>
+
+                        {/* 3-Dots Commission Actions Menu */}
+                        <div className="relative" data-commission-menu={comm.id}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenMenuCommissionId((prev) => (prev === comm.id ? null : comm.id))
+                            }
+                            aria-label={`More actions for ${comm.projectName}`}
+                            aria-haspopup="menu"
+                            aria-expanded={openMenuCommissionId === comm.id}
+                            title="More actions"
+                            className="p-1.5 rounded-xl bg-surface-secondary border border-hairline text-graphite hover:text-carbon hover:border-accent transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+
+                          {openMenuCommissionId === comm.id && (
+                            <div
+                              role="menu"
+                              aria-label={`Actions for ${comm.projectName}`}
+                              className="absolute right-0 top-full mt-1.5 z-30 min-w-[185px] bg-surface border border-hairline rounded-2xl shadow-lg py-1.5 animate-in fade-in duration-100"
+                            >
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setOpenMenuCommissionId(null);
+                                  setAdminWorkspaceCommissionId(comm.id);
+                                  setAdminWorkspaceTab('proofs');
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="w-full px-3.5 py-2 text-left text-xs font-medium text-carbon hover:bg-surface-secondary flex items-center gap-2 transition-colors cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-graphite" />
+                                <span>Open Workspace</span>
+                              </button>
+                              <div className="my-1 border-t border-hairline" />
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setOpenMenuCommissionId(null);
+                                  setDeleteError(null);
+                                  setDeleteTargetCommission(comm);
+                                }}
+                                className="w-full px-3.5 py-2 text-left text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Remove Commission</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -874,6 +1007,101 @@ export const CommissionManagement: React.FC<CommissionManagementProps> = ({
                 className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-semibold cursor-pointer"
               >
                 Confirm Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Commission Confirmation Modal */}
+      {deleteTargetCommission && (
+        <div
+          onClick={() => {
+            if (!isDeletingCommission) {
+              setDeleteTargetCommission(null);
+              setDeleteError(null);
+            }
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="remove-commission-modal-title"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-surface border border-hairline rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4
+                  id="remove-commission-modal-title"
+                  className="font-display font-bold text-base text-carbon"
+                >
+                  Remove Commission?
+                </h4>
+                <p className="text-xs text-graphite leading-relaxed">
+                  Are you sure you want to permanently remove{' '}
+                  <strong className="text-carbon">"{deleteTargetCommission.projectName}"</strong>{' '}
+                  <span className="font-mono">(#{deleteTargetCommission.id.slice(0, 8)})</span>? This
+                  action cannot be undone and removes its associated milestones, messages, proofs, and
+                  payment records.
+                </p>
+              </div>
+            </div>
+
+            {deleteError && (
+              <div
+                role="alert"
+                className="p-3 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-start gap-2"
+              >
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingCommission}
+                onClick={() => {
+                  setDeleteTargetCommission(null);
+                  setDeleteError(null);
+                }}
+                className="px-4 py-2 rounded-full border border-hairline text-xs font-mono text-graphite hover:text-carbon cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingCommission}
+                onClick={async () => {
+                  const targetId = deleteTargetCommission.id;
+                  setIsDeletingCommission(true);
+                  setDeleteError(null);
+                  setActionError(null);
+                  try {
+                    const res = await deleteCommission(targetId);
+                    if (res && !res.success) {
+                      setDeleteError(res.error || 'Failed to remove commission.');
+                      return;
+                    }
+                    setDeleteTargetCommission(null);
+                    setDeleteError(null);
+                    if (adminWorkspaceCommissionId === targetId) {
+                      setAdminWorkspaceCommissionId(null);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  } finally {
+                    setIsDeletingCommission(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-semibold cursor-pointer disabled:opacity-60 inline-flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeletingCommission ? 'Removing...' : 'Remove Commission'}</span>
               </button>
             </div>
           </div>

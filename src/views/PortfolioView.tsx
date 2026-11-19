@@ -2,31 +2,84 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PortfolioCard } from '../components/PortfolioCard';
 import { PortfolioModal } from '../components/PortfolioModal';
-import { PortfolioProject } from '../types';
-import { Search, Layers, Send, Sparkles, ArrowUpRight } from 'lucide-react';
+import {
+  PortfolioEditorModal,
+  PortfolioDeleteModal,
+  PORTFOLIO_CATEGORIES,
+} from '../components/admin/PortfolioEditorModal';
+import { PortfolioProject, ProjectType } from '../types';
+import { Search, Layers, Send, Sparkles, ArrowUpRight, Plus, AlertCircle } from 'lucide-react';
 
 export const PortfolioView: React.FC = () => {
   const { 
+    currentUser,
     portfolio, 
     openCaseStudy,
-    setActiveView
+    setActiveView,
+    updatePortfolioProject
   } = useApp();
+
+  const isAdmin = currentUser?.role === 'admin';
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [typeFilter, setTypeFilter] = useState<'all' | 'client' | 'concept'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [quickPreviewProject, setQuickPreviewProject] = useState<PortfolioProject | null>(null);
 
+  // Admin-only direct portfolio management state
+  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
+  const [editingProject, setEditingProject] = useState<PortfolioProject | null>(null);
+  const [editorDefaultCategory, setEditorDefaultCategory] = useState<PortfolioProject['category']>('Branding');
+  const [editorDefaultType, setEditorDefaultType] = useState<ProjectType>('concept');
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [adminError, setAdminError] = useState<string | null>(null);
+
   const categories = [
     'All',
-    'Branding',
-    'Logo',
-    'Poster',
-    'Illustration',
-    'Social Media',
-    'Book Covers',
-    'Other',
+    ...PORTFOLIO_CATEGORIES,
   ];
+
+  const handleOpenAddWork = (overrides?: {
+    category?: PortfolioProject['category'];
+    projectType?: ProjectType;
+  }) => {
+    if (!isAdmin) return;
+    setAdminError(null);
+    const activeCat =
+      overrides?.category ||
+      (PORTFOLIO_CATEGORIES.includes(selectedCategory as PortfolioProject['category'])
+        ? (selectedCategory as PortfolioProject['category'])
+        : 'Branding');
+    const activeType: ProjectType =
+      overrides?.projectType || (typeFilter === 'client' ? 'client' : 'concept');
+
+    setEditingProject(null);
+    setEditorDefaultCategory(activeCat);
+    setEditorDefaultType(activeType);
+    setIsEditorOpen(true);
+  };
+
+  const handleOpenEditWork = (project: PortfolioProject) => {
+    if (!isAdmin) return;
+    setAdminError(null);
+    setEditingProject(project);
+    setIsEditorOpen(true);
+  };
+
+  const handleRequestDeleteWork = (project: PortfolioProject) => {
+    if (!isAdmin) return;
+    setAdminError(null);
+    setProjectToDelete({ id: project.id, title: project.title });
+  };
+
+  const handleToggleFeaturedWork = async (project: PortfolioProject) => {
+    if (!isAdmin) return;
+    setAdminError(null);
+    const res = await updatePortfolioProject(project.id, { featured: !project.featured });
+    if (res && !res.success) {
+      setAdminError(res.error || 'Failed to update featured status.');
+    }
+  };
 
   const filteredProjects = portfolio.filter((project) => {
     // 1. Category Filter
@@ -53,13 +106,21 @@ export const PortfolioView: React.FC = () => {
     return matchesCategory && matchesType && matchesSearch;
   });
 
+  const adminCardProps = isAdmin
+    ? {
+        onEdit: handleOpenEditWork,
+        onDelete: handleRequestDeleteWork,
+        onToggleFeatured: handleToggleFeaturedWork,
+      }
+    : {};
+
   return (
     <div className="bg-canvas min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-10 sm:space-y-14">
       
       {/* Filter Control Ribbon: Project Type Toggles + Category Navigation + Search */}
       <div className="space-y-4 border-b border-hairline pb-5">
         
-        {/* Row 1: Project Type Tabs & Search */}
+        {/* Row 1: Project Type Tabs, Search & Admin Add Work Action */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           
           {/* Classification Toggles */}
@@ -99,17 +160,31 @@ export const PortfolioView: React.FC = () => {
             </button>
           </div>
 
-          {/* Minimal Search Input */}
-          <div className="relative w-full sm:w-72 shrink-0">
-            <Search className="w-4 h-4 text-graphite absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              id="input-portfolio-search"
-              type="text"
-              placeholder="Search archive, tools, client..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-surface border border-hairline rounded-full pl-10 pr-4 py-2 text-xs sm:text-sm text-carbon placeholder-graphite focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors"
-            />
+          {/* Search Input + Admin-Only Direct Add Button */}
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-72 shrink-0">
+              <Search className="w-4 h-4 text-graphite absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                id="input-portfolio-search"
+                type="text"
+                placeholder="Search archive, tools, client..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-surface border border-hairline rounded-full pl-10 pr-4 py-2 text-xs sm:text-sm text-carbon placeholder-graphite focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-colors"
+              />
+            </div>
+
+            {isAdmin && (
+              <button
+                id="btn-portfolio-add-work"
+                type="button"
+                onClick={() => handleOpenAddWork()}
+                className="btn-tactile inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold shadow-xs transition-colors cursor-pointer shrink-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Work</span>
+              </button>
+            )}
           </div>
 
         </div>
@@ -141,9 +216,48 @@ export const PortfolioView: React.FC = () => {
 
       </div>
 
+      {/* Admin Action Error Feedback (Admin Only) */}
+      {isAdmin && adminError && (
+        <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{adminError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAdminError(null)}
+            className="text-xs font-semibold hover:underline cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Art-Directed Gallery Grid with Visual Rhythm */}
       {filteredProjects.length === 0 ? (
-        typeFilter === 'client' ? (
+        isAdmin && portfolio.length === 0 ? (
+          <div className="bg-surface border border-hairline rounded-3xl p-12 sm:p-16 text-center space-y-5 shadow-2xs max-w-xl mx-auto animate-in fade-in duration-200">
+            <div className="w-12 h-12 rounded-2xl bg-surface-secondary border border-hairline flex items-center justify-center mx-auto text-accent">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="font-display text-xl font-bold text-carbon">
+                No portfolio works yet
+              </h3>
+              <p className="text-xs sm:text-sm text-graphite leading-relaxed max-w-md mx-auto">
+                Publish your first portfolio work or case study directly here. Only your studio admin account can add, edit, feature, or remove works.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleOpenAddWork()}
+              className="btn-tactile inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold shadow-xs transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Your First Work</span>
+            </button>
+          </div>
+        ) : typeFilter === 'client' ? (
           <div className="bg-surface border border-hairline rounded-3xl p-12 sm:p-16 text-center space-y-5 shadow-2xs max-w-xl mx-auto animate-in fade-in duration-200">
             <div className="w-12 h-12 rounded-2xl bg-surface-secondary border border-hairline flex items-center justify-center mx-auto text-accent">
               <Sparkles className="w-5 h-5" />
@@ -157,17 +271,28 @@ export const PortfolioView: React.FC = () => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setActiveView('commission-form')}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 pl-5 pr-2 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold uppercase tracking-wider transition-all shadow-xs cursor-pointer"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Request a Commission</span>
-                <span className="w-6 h-6 rounded-full bg-[#111114] text-white flex items-center justify-center">
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </span>
-              </button>
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => handleOpenAddWork({ projectType: 'client' })}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Client Work</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setActiveView('commission-form')}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 pl-5 pr-2 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold uppercase tracking-wider transition-all shadow-xs cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Request a Commission</span>
+                  <span className="w-6 h-6 rounded-full bg-[#111114] text-white flex items-center justify-center">
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setTypeFilter('all')}
@@ -188,17 +313,29 @@ export const PortfolioView: React.FC = () => {
                 No matching pieces were found matching your current filter criteria.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => { 
-                setSelectedCategory('All'); 
-                setTypeFilter('all');
-                setSearchQuery(''); 
-              }}
-              className="px-5 py-2 rounded-full bg-surface-secondary hover:bg-hairline/50 text-xs font-semibold text-carbon border border-hairline transition-colors cursor-pointer"
-            >
-              Reset All Filters
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => { 
+                  setSelectedCategory('All'); 
+                  setTypeFilter('all');
+                  setSearchQuery(''); 
+                }}
+                className="px-5 py-2 rounded-full bg-surface-secondary hover:bg-hairline/50 text-xs font-semibold text-carbon border border-hairline transition-colors cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => handleOpenAddWork()}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Work</span>
+                </button>
+              )}
+            </div>
           </div>
         )
       ) : (
@@ -214,6 +351,7 @@ export const PortfolioView: React.FC = () => {
                     variant="featured"
                     onSelect={(p) => openCaseStudy(p)}
                     onPreview={(p) => setQuickPreviewProject(p)}
+                    {...adminCardProps}
                   />
                 </div>
 
@@ -223,6 +361,7 @@ export const PortfolioView: React.FC = () => {
                     variant="compact"
                     onSelect={(p) => openCaseStudy(p)}
                     onPreview={(p) => setQuickPreviewProject(p)}
+                    {...adminCardProps}
                   />
                   {filteredProjects[2] && (
                     <PortfolioCard
@@ -230,6 +369,7 @@ export const PortfolioView: React.FC = () => {
                       variant="compact"
                       onSelect={(p) => openCaseStudy(p)}
                       onPreview={(p) => setQuickPreviewProject(p)}
+                      {...adminCardProps}
                     />
                   )}
                 </div>
@@ -243,6 +383,7 @@ export const PortfolioView: React.FC = () => {
                     variant="wide"
                     onSelect={(p) => openCaseStudy(p)}
                     onPreview={(p) => setQuickPreviewProject(p)}
+                    {...adminCardProps}
                   />
                 </div>
               )}
@@ -257,6 +398,7 @@ export const PortfolioView: React.FC = () => {
                       variant="standard"
                       onSelect={(p) => openCaseStudy(p)}
                       onPreview={(p) => setQuickPreviewProject(p)}
+                      {...adminCardProps}
                     />
                   ))}
                 </div>
@@ -273,6 +415,7 @@ export const PortfolioView: React.FC = () => {
                   className={index === 0 && filteredProjects.length > 1 ? 'md:col-span-2' : ''}
                   onSelect={(p) => openCaseStudy(p)}
                   onPreview={(p) => setQuickPreviewProject(p)}
+                  {...adminCardProps}
                 />
               ))}
             </div>
@@ -316,6 +459,24 @@ export const PortfolioView: React.FC = () => {
         />
       )}
 
+      {/* Admin-Only Direct Portfolio Work Editor & Delete Confirmation Modals */}
+      {isAdmin && (
+        <>
+          <PortfolioEditorModal
+            isOpen={isEditorOpen}
+            project={editingProject}
+            defaultCategory={editorDefaultCategory}
+            defaultProjectType={editorDefaultType}
+            onClose={() => setIsEditorOpen(false)}
+          />
+          <PortfolioDeleteModal
+            project={projectToDelete}
+            onClose={() => setProjectToDelete(null)}
+          />
+        </>
+      )}
+
     </div>
   );
 };
+

@@ -26,7 +26,7 @@ export const PaymentsVerification: React.FC<PaymentsVerificationProps> = ({
   selectedCommissionId,
   onNavigateToCommission: _onNavigateToCommission
 }) => {
-  const { commissions: contextCommissions, currentUser: contextUser, updatePaymentStatus, studioProfile } = useApp();
+  const { commissions: contextCommissions, currentUser: contextUser, updatePaymentStatus, studioProfile, setActiveView } = useApp();
   const commissions = propCommissions || contextCommissions || [];
   const currentUser = propUser !== undefined ? propUser : contextUser;
   const [stats, setStats] = useState({
@@ -153,7 +153,20 @@ export const PaymentsVerification: React.FC<PaymentsVerificationProps> = ({
 
           <div className="p-3 rounded-2xl bg-surface border border-hairline flex items-center gap-2 text-[11px] text-graphite">
             <HelpCircle className="w-3.5 h-3.5 text-accent shrink-0" />
-            <span>Need to update details? Edit in Client & Studio Management.</span>
+            <span>
+              Need to update details?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveView('settings');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="font-semibold text-accent hover:underline cursor-pointer"
+              >
+                Edit in Settings
+              </button>
+              .
+            </span>
           </div>
         </div>
       </div>

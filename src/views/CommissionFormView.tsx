@@ -156,6 +156,7 @@ export const CommissionFormView: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
+  const [hasConfirmedBrief, setHasConfirmedBrief] = useState(false);
   const [submittedCommission, setSubmittedCommission] = useState<any | null>(null);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [authDialogMode, setAuthDialogMode] = useState<'signin' | 'register'>('signin');
@@ -303,6 +304,7 @@ export const CommissionFormView: React.FC = () => {
     setDeadline('');
     setFormError(null);
     setStepErrors({});
+    setHasConfirmedBrief(false);
     setSubmittedCommission(null);
     if (services.length > 0) {
       setServiceType(services[0].name);
@@ -357,16 +359,22 @@ export const CommissionFormView: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleNextStep = () => {
+  const handleNextStep = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    e?.preventDefault();
     if (validateStep(currentStep)) {
       setStepErrors({});
+      setFormError(null);
+      setHasConfirmedBrief(false);
       setCurrentStep(prev => Math.min(6, prev + 1));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
-  const handlePrevStep = () => {
+  const handlePrevStep = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    e?.preventDefault();
     setStepErrors({});
+    setFormError(null);
+    setHasConfirmedBrief(false);
     setCurrentStep(prev => Math.max(1, prev - 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -375,12 +383,16 @@ export const CommissionFormView: React.FC = () => {
     if (targetStep < currentStep) {
       // Always allow returning to earlier steps
       setStepErrors({});
+      setFormError(null);
+      setHasConfirmedBrief(false);
       setCurrentStep(targetStep);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (targetStep > currentStep) {
       // Validate current step before skipping forward
       if (validateStep(currentStep)) {
         setStepErrors({});
+        setFormError(null);
+        setHasConfirmedBrief(false);
         setCurrentStep(targetStep);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -392,10 +404,26 @@ export const CommissionFormView: React.FC = () => {
     e.preventDefault();
     setFormError(null);
 
+    // Prevent Enter-key or premature form submission before reaching Step 6 Review
+    if (currentStep < 6) {
+      handleNextStep();
+      return;
+    }
+
     // If client is not signed in, open the inline authentication dialog instead of failing
     if (!currentUser) {
       setAuthDialogMode('signin');
       setIsAuthDialogOpen(true);
+      return;
+    }
+
+    // Require explicit client confirmation on the Review step before creating the commission
+    if (!hasConfirmedBrief) {
+      setStepErrors(prev => ({
+        ...prev,
+        confirm: 'Please confirm that you have reviewed your brief before submitting this commission.',
+      }));
+      setFormError('Please review your project details and check the confirmation box below before submitting.');
       return;
     }
 
@@ -1418,10 +1446,51 @@ export const CommissionFormView: React.FC = () => {
                   </span>
                 </div>
                 <span className="font-mono text-[10px] uppercase text-emerald-700 dark:text-emerald-400 font-bold">
-                  Ready to Transmit
+                  Ready to Confirm
                 </span>
               </div>
             )}
+
+            {/* Explicit Commission Confirmation Checkbox */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="checkbox-confirm-commission"
+                className={`p-4 rounded-2xl border flex items-start gap-3 cursor-pointer transition-colors ${
+                  hasConfirmedBrief
+                    ? 'bg-[#E0F2FE]/45 dark:bg-sky-950/30 border-accent/60'
+                    : stepErrors.confirm
+                    ? 'bg-red-50/70 dark:bg-red-950/20 border-red-400 dark:border-red-800'
+                    : 'bg-surface-secondary border-hairline hover:border-graphite/40'
+                }`}
+              >
+                <input
+                  id="checkbox-confirm-commission"
+                  type="checkbox"
+                  checked={hasConfirmedBrief}
+                  onChange={(e) => {
+                    setHasConfirmedBrief(e.target.checked);
+                    if (stepErrors.confirm) setStepErrors(prev => ({ ...prev, confirm: '' }));
+                    if (formError) setFormError(null);
+                  }}
+                  className="mt-0.5 w-4 h-4 rounded accent-[#0284C7] cursor-pointer shrink-0"
+                />
+                <div className="space-y-0.5 text-xs">
+                  <span className="font-semibold text-carbon block">
+                    I have reviewed my project brief and confirm I want to submit this commission request.
+                  </span>
+                  <span className="text-graphite leading-relaxed block">
+                    Submitting sends your brief for studio review. No payment is charged until your scope is aligned.
+                  </span>
+                </div>
+              </label>
+
+              {stepErrors.confirm && (
+                <p className="text-xs text-red-600 dark:text-red-400 font-mono flex items-center gap-1.5 px-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{stepErrors.confirm}</span>
+                </p>
+              )}
+            </div>
           </section>
         )}
 
@@ -1431,6 +1500,7 @@ export const CommissionFormView: React.FC = () => {
         <div className="flex items-center justify-between gap-4 pt-2">
           {currentStep > 1 ? (
             <button
+              key="btn-step-prev"
               id="btn-step-prev"
               type="button"
               onClick={handlePrevStep}
@@ -1445,30 +1515,32 @@ export const CommissionFormView: React.FC = () => {
 
           {currentStep < 6 ? (
             <button
+              key="btn-step-next"
               id="btn-step-next"
               type="button"
               onClick={handleNextStep}
               className="px-6 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer ml-auto"
             >
-              <span>Continue</span>
+              <span>{currentStep === 5 ? 'Review Brief' : 'Continue'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           ) : (
             <button
+              key="btn-submit-commission-form"
               id="btn-submit-commission-form"
               type="submit"
-              disabled={isSubmitting}
-              className="px-7 py-3 min-h-[44px] rounded-full bg-[#D4FF38] hover:bg-[#C4F024] disabled:opacity-50 text-[#111114] font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ml-auto focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+              disabled={isSubmitting || (Boolean(currentUser) && !hasConfirmedBrief)}
+              className="px-7 py-3 min-h-[44px] rounded-full bg-[#D4FF38] hover:bg-[#C4F024] disabled:opacity-50 disabled:cursor-not-allowed text-[#111114] font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ml-auto focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
             >
               {isSubmitting ? (
                 <>
                   <div className="w-3.5 h-3.5 border-2 border-[#111114] border-t-transparent rounded-full animate-spin" />
-                  <span>Transmitting Brief to Studio...</span>
+                  <span>Submitting Commission...</span>
                 </>
               ) : (
                 <>
                   <Send className="w-3.5 h-3.5" />
-                  <span>{currentUser ? 'Transmit Commission Brief' : 'Sign In & Transmit'}</span>
+                  <span>{currentUser ? 'Confirm & Submit Commission' : 'Sign In & Confirm'}</span>
                 </>
               )}
             </button>

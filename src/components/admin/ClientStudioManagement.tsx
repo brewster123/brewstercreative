@@ -122,7 +122,7 @@ export const ClientStudioManagement: React.FC<ClientStudioManagementProps> = ({
     bio: sp?.bio || '',
     avatar: sp?.avatar || '',
     email: sp?.email || 'contact@destalion.com',
-    location: sp?.location || 'Manila, Philippines',
+    location: sp?.location || 'Cebu City',
     currency: sp?.currency || 'PHP',
     currencySymbol: sp?.currencySymbol || '₱',
     commissionStatus: sp?.commissionStatus || 'open',

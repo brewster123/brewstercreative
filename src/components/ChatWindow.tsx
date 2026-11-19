@@ -423,22 +423,37 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         {/* Right Header Action Icons: Project Context Info Button */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Project Switcher if available and callback provided */}
-          {availableCommissions.length > 1 && onSelectCommission && (
-            <div className="hidden sm:flex items-center gap-1.5 font-mono text-xs mr-1 sm:mr-2">
-              <span className="text-graphite text-[11px]">Thread:</span>
-              <select
-                value={commission.id}
-                onChange={(e) => onSelectCommission(e.target.value)}
-                className="bg-surface-secondary dark:bg-surface-secondary border border-hairline rounded-xl px-2.5 py-1.5 text-xs text-carbon focus:outline-hidden focus:border-accent cursor-pointer max-w-[170px] truncate"
-              >
-                {availableCommissions.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {isAdmin ? `${c.clientName} — ` : ''}{c.projectName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          {availableCommissions.length > 1 && onSelectCommission && (() => {
+            const isSingleClientList = availableCommissions.every(
+              c =>
+                (c.clientId && commission.clientId && c.clientId === commission.clientId) ||
+                (!c.clientId && !commission.clientId && c.clientName === commission.clientName)
+            );
+            return (
+              <div className="flex items-center gap-1.5 font-mono text-xs mr-1 sm:mr-2">
+                <span className="hidden sm:inline text-graphite text-[11px]">Thread:</span>
+                <select
+                  aria-label="Select project thread"
+                  value={commission.id}
+                  onChange={(e) => onSelectCommission(e.target.value)}
+                  className="bg-surface-secondary dark:bg-surface-secondary border border-hairline rounded-xl px-2.5 py-1.5 text-xs text-carbon focus:outline-hidden focus:border-accent cursor-pointer max-w-[125px] sm:max-w-[190px] truncate"
+                >
+                  {availableCommissions.map(c => {
+                    const threadUnread = messages.filter(
+                      m => m.commissionId === c.id && !m.readStatus && m.senderId !== currentUser?.id
+                    ).length;
+                    const prefix = isAdmin && !isSingleClientList ? `${c.clientName} — ` : '';
+                    const unreadSuffix = threadUnread > 0 ? ` (${threadUnread})` : '';
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {prefix}{c.projectName}{unreadSuffix}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            );
+          })()}
 
           {/* Conversation Dossier Info Button */}
           <button

@@ -6,10 +6,42 @@ import {
   MessageSquare, 
   Search, 
   X, 
-  FolderArchive,
-  Layers
+  FolderArchive
 } from 'lucide-react';
 import { Commission } from '../types';
+
+const getClientAccountKey = (c: Commission): string => {
+  const id = (c.clientId || '').trim();
+  if (id) return `id:${id}`;
+  const email = (c.clientEmail || '').trim().toLowerCase();
+  if (email) return `email:${email}`;
+  const name = (c.clientName || '').trim().toLowerCase();
+  if (name) return `name:${name}`;
+  return `comm:${c.id}`;
+};
+
+const formatConversationTime = (dateSource?: string): string => {
+  if (!dateSource) return '';
+  const d = new Date(dateSource);
+  if (isNaN(d.getTime())) return '';
+
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+
+  if (isToday) {
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+  if (isYesterday) {
+    return 'Yesterday';
+  }
+  if (d.getFullYear() === now.getFullYear()) {
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
+};
 
 export const ChatView: React.FC = () => {
   const {
@@ -119,26 +151,24 @@ export const ChatView: React.FC = () => {
     }
   };
 
-  // Compute conversation list items with last message, unread status, and timestamps
+  // Compute per-commission messaging metadata, then group by unique client account for Admin sidebar
   const conversationItems = useMemo(() => {
-    return availableCommissions.map(c => {
+    const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+
+    const commissionMeta = availableCommissions.map(c => {
       const commMsgs = messages.filter(m => m.commissionId === c.id);
-      
-      // Sort messages chronologically to find the latest
-      const sorted = [...commMsgs].sort((a, b) => {
+
+      const sortedMsgs = [...commMsgs].sort((a, b) => {
         const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return timeA - timeB;
       });
 
-      const lastMsg = sorted.length > 0 ? sorted[sorted.length - 1] : null;
-
-      // Count unread messages received from the other party
+      const lastMsg = sortedMsgs.length > 0 ? sortedMsgs[sortedMsgs.length - 1] : null;
       const unreadCount = commMsgs.filter(
         m => !m.readStatus && m.senderId !== currentUser?.id
       ).length;
 
-      // Format last message preview
       let lastMessageSnippet = c.service || c.serviceType || 'Creative Project';
       if (lastMsg) {
         const msgText = (lastMsg.message || lastMsg.body || '').trim();
@@ -148,54 +178,97 @@ export const ChatView: React.FC = () => {
         } else if (lastMsg.attachment) {
           const isMe = lastMsg.senderId === currentUser?.id;
           const prefix = isMe ? 'You: ' : '';
-          lastMessageSnippet = lastMsg.attachment.type === 'image' 
-            ? `${prefix}📷 Sent a photo` 
+          lastMessageSnippet = lastMsg.attachment.type === 'image'
+            ? `${prefix}📷 Sent a photo`
             : `${prefix}📎 Sent a file`;
         }
       }
 
-      // Format timestamp for conversation item
-      let timeSnippet = '';
       const dateSource = lastMsg?.createdAt || c.updatedAt || c.createdAt;
-      if (dateSource) {
-        const d = new Date(dateSource);
-        if (!isNaN(d.getTime())) {
-          const now = new Date();
-          const isToday = d.toDateString() === now.toDateString();
-          const yesterday = new Date(now);
-          yesterday.setDate(yesterday.getDate() - 1);
-          const isYesterday = d.toDateString() === yesterday.toDateString();
-
-          if (isToday) {
-            timeSnippet = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-          } else if (isYesterday) {
-            timeSnippet = 'Yesterday';
-          } else if (d.getFullYear() === now.getFullYear()) {
-            timeSnippet = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          } else {
-            timeSnippet = d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
-          }
-        }
-      }
-
-      // Display name and avatar
-      const displayName = isAdmin ? c.clientName : (c.projectName || studioProfile.studioName || 'DESTALION');
-      const avatarUrl = isAdmin 
-        ? (c.clientAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80')
-        : (studioProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80');
+      const parsedTime = dateSource ? new Date(dateSource).getTime() : 0;
+      const activityTimeMs = !isNaN(parsedTime) ? parsedTime : 0;
 
       return {
         commission: c,
-        displayName,
-        avatarUrl,
         lastMessageSnippet,
-        timeSnippet,
+        dateSource,
+        activityTimeMs,
         unreadCount,
-        hasUnread: unreadCount > 0,
-        statusLabel: formatCommissionStatus(c.status)
       };
     });
-  }, [availableCommissions, messages, currentUser?.id, isAdmin, studioProfile.avatar]);
+
+    if (!isAdmin) {
+      return commissionMeta
+        .sort((a, b) => b.activityTimeMs - a.activityTimeMs)
+        .map(meta => ({
+          accountKey: `comm:${meta.commission.id}`,
+          commissions: [meta.commission],
+          commissionEntries: [meta],
+          primaryCommission: meta.commission,
+          displayName: meta.commission.projectName || studioProfile.studioName || 'DESTALION',
+          clientEmail: meta.commission.clientEmail || '',
+          avatarUrl: studioProfile.avatar || defaultAvatar,
+          lastMessageSnippet: meta.lastMessageSnippet,
+          timeSnippet: formatConversationTime(meta.dateSource),
+          lastActivityMs: meta.activityTimeMs,
+          unreadCount: meta.unreadCount,
+          hasUnread: meta.unreadCount > 0,
+          statusLabel: formatCommissionStatus(meta.commission.status),
+        }));
+    }
+
+    // Group all commissions by unique client account so the Admin sidebar never shows repeating accounts
+    const groupedMap = new Map<string, typeof commissionMeta>();
+    for (const entry of commissionMeta) {
+      const key = getClientAccountKey(entry.commission);
+      const existingGroup = groupedMap.get(key);
+      if (existingGroup) {
+        existingGroup.push(entry);
+      } else {
+        groupedMap.set(key, [entry]);
+      }
+    }
+
+    const groupedAccounts = Array.from(groupedMap.entries()).map(([accountKey, entries]) => {
+      // Sort this client's threads by latest activity descending
+      const sortedEntries = [...entries].sort((a, b) => b.activityTimeMs - a.activityTimeMs);
+      const latestEntry = sortedEntries[0];
+
+      // Primary thread when clicking & previewing this client: prioritize latest unread thread, otherwise latest active thread
+      const latestUnreadEntry = sortedEntries.find(e => e.unreadCount > 0);
+      const primaryEntry = latestUnreadEntry || latestEntry;
+
+      const totalAccountUnread = sortedEntries.reduce((sum, e) => sum + e.unreadCount, 0);
+      const resolvedName =
+        sortedEntries.find(e => e.commission.clientName && e.commission.clientName.trim().toLowerCase() !== 'client')
+          ?.commission.clientName ||
+        latestEntry.commission.clientName ||
+        'Client';
+      const resolvedAvatar =
+        sortedEntries.find(e => Boolean(e.commission.clientAvatar))?.commission.clientAvatar ||
+        defaultAvatar;
+      const resolvedEmail =
+        sortedEntries.find(e => Boolean(e.commission.clientEmail))?.commission.clientEmail || '';
+
+      return {
+        accountKey,
+        commissions: sortedEntries.map(e => e.commission),
+        commissionEntries: sortedEntries,
+        primaryCommission: primaryEntry.commission,
+        displayName: resolvedName,
+        clientEmail: resolvedEmail,
+        avatarUrl: resolvedAvatar,
+        lastMessageSnippet: primaryEntry.lastMessageSnippet,
+        timeSnippet: formatConversationTime(primaryEntry.dateSource),
+        lastActivityMs: Math.max(latestEntry.activityTimeMs, primaryEntry.activityTimeMs),
+        unreadCount: totalAccountUnread,
+        hasUnread: totalAccountUnread > 0,
+        statusLabel: formatCommissionStatus(primaryEntry.commission.status),
+      };
+    });
+
+    return groupedAccounts.sort((a, b) => b.lastActivityMs - a.lastActivityMs);
+  }, [availableCommissions, messages, currentUser?.id, isAdmin, studioProfile.avatar, studioProfile.studioName]);
 
   // Filter conversations by search and unread tab
   const filteredConversations = useMemo(() => {
@@ -207,16 +280,29 @@ export const ChatView: React.FC = () => {
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(item => 
+      result = result.filter(item =>
         item.displayName.toLowerCase().includes(q) ||
-        item.commission.projectName.toLowerCase().includes(q) ||
-        (item.commission.service || '').toLowerCase().includes(q) ||
-        item.lastMessageSnippet.toLowerCase().includes(q)
+        item.clientEmail.toLowerCase().includes(q) ||
+        item.lastMessageSnippet.toLowerCase().includes(q) ||
+        item.commissionEntries.some(entry =>
+          entry.commission.projectName.toLowerCase().includes(q) ||
+          (entry.commission.service || '').toLowerCase().includes(q) ||
+          entry.lastMessageSnippet.toLowerCase().includes(q)
+        )
       );
     }
 
     return result;
   }, [conversationItems, filter, searchQuery]);
+
+  // Scope the ChatWindow thread switcher to the active client's commissions for Admin
+  const activeClientCommissions: Commission[] = useMemo(() => {
+    if (!isAdmin) return availableCommissions;
+    if (!activeComm) return [];
+    const activeKey = getClientAccountKey(activeComm);
+    const activeGroup = conversationItems.find(item => item.accountKey === activeKey);
+    return activeGroup ? activeGroup.commissions : [activeComm];
+  }, [isAdmin, availableCommissions, activeComm, conversationItems]);
 
   const totalUnreadCount = useMemo(() => {
     return conversationItems.reduce((acc, curr) => acc + curr.unreadCount, 0);
@@ -354,16 +440,31 @@ export const ChatView: React.FC = () => {
             </div>
           ) : (
             filteredConversations.map(item => {
-              const isSelected = item.commission.id === activeComm?.id;
+              const isSelected = Boolean(
+                activeComm && getClientAccountKey(activeComm) === item.accountKey
+              );
 
               return (
                 <button
-                  key={item.commission.id}
+                  key={item.accountKey}
                   type="button"
                   onClick={() => {
-                    setSelectedCommissionId(item.commission.id);
-                    setActiveCommissionId(item.commission.id);
-                    markMessagesAsRead(item.commission.id);
+                    const q = searchQuery.trim().toLowerCase();
+                    const matchedEntry = q
+                      ? item.commissionEntries.find(entry =>
+                          entry.commission.projectName.toLowerCase().includes(q) ||
+                          (entry.commission.service || '').toLowerCase().includes(q) ||
+                          entry.lastMessageSnippet.toLowerCase().includes(q)
+                        )
+                      : undefined;
+
+                    const targetCommission =
+                      matchedEntry?.commission ||
+                      (isSelected && activeComm ? activeComm : item.primaryCommission);
+
+                    setSelectedCommissionId(targetCommission.id);
+                    setActiveCommissionId(targetCommission.id);
+                    markMessagesAsRead(targetCommission.id);
                     setMobileView('chat');
                   }}
                   className={`w-full text-left p-3 rounded-2xl flex items-center gap-3 transition-colors cursor-pointer group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
@@ -401,10 +502,19 @@ export const ChatView: React.FC = () => {
                         {item.lastMessageSnippet}
                       </p>
                       {item.hasUnread && (
-                        <span 
-                          className="w-2.5 h-2.5 rounded-full bg-accent shrink-0" 
-                          title="Unread message"
-                        />
+                        item.unreadCount > 1 ? (
+                          <span
+                            className="px-1.5 py-0.5 rounded-full bg-accent text-white text-[10px] font-mono font-bold shrink-0"
+                            title={`${item.unreadCount} unread messages`}
+                          >
+                            {item.unreadCount}
+                          </span>
+                        ) : (
+                          <span 
+                            className="w-2.5 h-2.5 rounded-full bg-accent shrink-0" 
+                            title="Unread message"
+                          />
+                        )
                       )}
                     </div>
                   </div>
@@ -430,7 +540,7 @@ export const ChatView: React.FC = () => {
         {activeComm ? (
           <ChatWindow
             commission={activeComm}
-            availableCommissions={availableCommissions}
+            availableCommissions={activeClientCommissions}
             onSelectCommission={(id) => {
               setSelectedCommissionId(id);
               setActiveCommissionId(id);

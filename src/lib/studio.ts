@@ -16,7 +16,12 @@ export function mapDbToStudioProfile(row: any): StudioProfile {
     bio: row.bio || INITIAL_STUDIO_PROFILE.bio,
     avatar: row.avatar || INITIAL_STUDIO_PROFILE.avatar,
     email: row.email || INITIAL_STUDIO_PROFILE.email,
-    location: row.location || INITIAL_STUDIO_PROFILE.location,
+    location:
+      !row.location ||
+      /manila/i.test(row.location) ||
+      row.location === 'Cebu City / Remote Worldwide'
+        ? 'Cebu City'
+        : row.location,
     socialLinks: row.social_links || INITIAL_STUDIO_PROFILE.socialLinks,
     currency: row.currency || INITIAL_STUDIO_PROFILE.currency,
     currencySymbol: row.currency_symbol || INITIAL_STUDIO_PROFILE.currencySymbol,

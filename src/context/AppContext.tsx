@@ -350,6 +350,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (parsed.email?.toLowerCase().includes('cabandobrewster') || !parsed.email) {
             parsed.email = 'brewstercreates@gmail.com';
           }
+          if (
+            !parsed.location ||
+            /manila/i.test(parsed.location) ||
+            parsed.location === 'Cebu City / Remote Worldwide'
+          ) {
+            parsed.location = 'Cebu City';
+          }
           return { ...INITIAL_STUDIO_PROFILE, ...parsed };
         }
       }

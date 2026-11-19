@@ -37,6 +37,9 @@ export default defineConfig(() => {
       },
     },
     server: {
+      host: '0.0.0.0',
+      port: 3000,
+      allowedHosts: true,
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
@@ -44,12 +47,9 @@ export default defineConfig(() => {
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
     preview: {
-      allowedHosts: [
-        'brewster-creative-multimedia-artist-design-commis.ai.studio',
-        ...(process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
-          ? [process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS]
-          : []),
-      ],
+      host: '0.0.0.0',
+      port: 3000,
+      allowedHosts: true,
     },
     build: {
       outDir: 'dist',

@@ -500,32 +500,6 @@ export const ParallaxHero: React.FC = () => {
             )}
           </div>
 
-          {/* Carousel Pagination Dots + Counter */}
-          {totalSlides > 1 && (
-            <div className="pt-3 flex items-center justify-center gap-2">
-              {Array.from({ length: totalSlides }).map((_, i) => {
-                const isCurrent = i === activeIndex;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setActiveIndex(i)}
-                    aria-label={`Go to slide ${i + 1}`}
-                    aria-current={isCurrent ? 'true' : undefined}
-                    className={`h-2 rounded-full transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white ${
-                      isCurrent
-                        ? 'w-7 bg-[#D4FF38] shadow-xs'
-                        : 'w-2 bg-white/60 hover:bg-white/90'
-                    }`}
-                  />
-                );
-              })}
-              <span className="ml-2 text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-full bg-white/80 dark:bg-white/90 text-[#111114]">
-                {activeIndex + 1 < 10 ? `0${activeIndex + 1}` : activeIndex + 1} / {totalSlides < 10 ? `0${totalSlides}` : totalSlides}
-              </span>
-            </div>
-          )}
-
           {/* Grounded Trust Caption Above Cloud Horizon */}
           <div className="pt-3 text-center">
             <p className="text-xs font-medium text-[#111114]/85 inline-flex items-center justify-center gap-2 bg-white/80 dark:bg-white/90 backdrop-blur-xs px-4 py-1.5 rounded-full shadow-2xs">

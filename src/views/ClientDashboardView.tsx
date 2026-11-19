@@ -5,9 +5,7 @@ import { ProgressTimeline } from '../components/ProgressTimeline';
 import { ClientReviewSection } from '../components/ClientReviewSection';
 import { FinalDeliverySection } from '../components/FinalDeliverySection';
 import { ClientPaymentVerificationCard } from '../components/ClientPaymentVerificationCard';
-import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader';
 import { ProjectChatDrawer } from '../components/ProjectChatDrawer';
-import { ChatWindow } from '../components/ChatWindow';
 import { formatCommissionDate } from '../utils/dateUtils';
 import { fetchCommissionProofs } from '../lib/proofs';
 import { CommissionProof, COMMISSION_STAGES } from '../types';
@@ -24,7 +22,6 @@ import {
   ArrowRight,
   ArrowLeft,
   ShieldCheck,
-  Settings,
   CreditCard,
   Search,
   MessageSquare,
@@ -102,7 +99,6 @@ export const ClientDashboardView: React.FC = () => {
     setActiveView,
     currentUser,
     authLoading,
-    updateUserProfile,
     studioProfile,
     timelineUpdates = [],
     activeDashboardTab,
@@ -114,7 +110,7 @@ export const ClientDashboardView: React.FC = () => {
   const [loadingProofs, setLoadingProofs] = useState<boolean>(false);
 
   // Two-level dashboard navigation state
-  type WorkspaceTab = 'overview' | 'messages' | 'payments' | 'proofs' | 'milestones' | 'delivery' | 'profile';
+  type WorkspaceTab = 'overview' | 'payments' | 'proofs' | 'milestones' | 'delivery';
   const [viewMode, setViewMode] = useState<'overview' | 'workspace'>('overview');
   const [overviewFilter, setOverviewFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -125,8 +121,9 @@ export const ClientDashboardView: React.FC = () => {
   useEffect(() => {
     if (activeDashboardTab) {
       if (activeDashboardTab === 'chat' || activeDashboardTab === 'messages') {
-        setActiveTab('messages');
+        setActiveTab('overview');
         setViewMode('workspace');
+        setIsChatDrawerOpen(true);
         return;
       }
       if (
@@ -146,17 +143,15 @@ export const ClientDashboardView: React.FC = () => {
         setActiveTab('delivery');
         setViewMode('workspace');
       } else if (activeDashboardTab === 'profile') {
-        setActiveTab('profile');
-        setViewMode('workspace');
+        setActiveView('settings');
       } else {
         setActiveTab('overview');
       }
     }
-  }, [activeDashboardTab]);
+  }, [activeDashboardTab, setActiveView]);
 
   const isMountedRef = useRef(true);
   const activeCommissionIdRef = useRef<string | undefined>(commission?.id);
-  const profileSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     activeCommissionIdRef.current = commission?.id;
@@ -166,7 +161,6 @@ export const ClientDashboardView: React.FC = () => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      if (profileSaveTimerRef.current) clearTimeout(profileSaveTimerRef.current);
     };
   }, []);
 
@@ -211,71 +205,6 @@ export const ClientDashboardView: React.FC = () => {
     authLoading,
     activeTab,
   ]);
-
-  // Client profile editing state
-  const [profileName, setProfileName] = useState(currentUser?.name || '');
-  const [profileEmail, setProfileEmail] = useState(currentUser?.email || '');
-  const [profileHandle, setProfileHandle] = useState(currentUser?.handle || '');
-  const [profilePhone, setProfilePhone] = useState(currentUser?.phone || '');
-  const [profileContact, setProfileContact] = useState(currentUser?.contactMethod || 'Platform Chat & Email');
-  const [profileBio, setProfileBio] = useState(currentUser?.bio || '');
-  const [profileAvatar, setProfileAvatar] = useState(currentUser?.avatar || '');
-  const [profileSavedMsg, setProfileSavedMsg] = useState('');
-  const [profileErrorMsg, setProfileErrorMsg] = useState('');
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-
-  React.useEffect(() => {
-    if (currentUser) {
-      setProfileName(currentUser.name);
-      setProfileEmail(currentUser.email);
-      setProfileHandle(currentUser.handle || '');
-      setProfilePhone(currentUser.phone || '');
-      setProfileContact(currentUser.contactMethod || 'Platform Chat & Email');
-      setProfileBio(currentUser.bio || '');
-      setProfileAvatar(currentUser.avatar || '');
-    }
-  }, [currentUser]);
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser || isSavingProfile) return;
-
-    setProfileSavedMsg('');
-    setProfileErrorMsg('');
-    setIsSavingProfile(true);
-
-    try {
-      const res = await updateUserProfile(currentUser.id, {
-        name: profileName.trim(),
-        handle: profileHandle.trim(),
-        phone: profilePhone.trim(),
-        contactMethod: profileContact,
-        bio: profileBio.trim(),
-        avatar: profileAvatar || currentUser.avatar,
-      });
-
-      if (!isMountedRef.current) return;
-
-      if (!res?.success) {
-        setProfileErrorMsg(res?.error || 'Could not save profile changes. Please try again.');
-        return;
-      }
-
-      setProfileSavedMsg('Your personal client profile has been updated.');
-      if (profileSaveTimerRef.current) clearTimeout(profileSaveTimerRef.current);
-      profileSaveTimerRef.current = setTimeout(() => {
-        if (isMountedRef.current) setProfileSavedMsg('');
-      }, 4000);
-    } catch (err: any) {
-      if (isMountedRef.current) {
-        setProfileErrorMsg(err?.message || 'Unexpected error while saving profile.');
-      }
-    } finally {
-      if (isMountedRef.current) {
-        setIsSavingProfile(false);
-      }
-    }
-  };
 
   // Time-aware greeting
   const getGreeting = () => {
@@ -786,12 +715,6 @@ export const ClientDashboardView: React.FC = () => {
             {[
               { id: 'overview' as const, label: 'Overview', icon: FileText },
               { 
-                id: 'messages' as const, 
-                label: 'Messages', 
-                icon: MessageSquare, 
-                count: unreadMessagesCount > 0 ? unreadMessagesCount : undefined 
-              },
-              { 
                 id: 'payments' as const, 
                 label: 'Payments & Receipts', 
                 icon: CreditCard, 
@@ -812,7 +735,6 @@ export const ClientDashboardView: React.FC = () => {
                 icon: FolderArchive, 
                 count: isFinalDelivery ? 'Ready' : undefined 
               },
-              { id: 'profile' as const, label: 'Settings', icon: Settings },
             ].map(({ id, label, icon: TabIcon, count }) => {
               const isSelected = activeTab === id;
 
@@ -1171,17 +1093,7 @@ export const ClientDashboardView: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 2: IN-WORKSPACE MESSAGES */}
-          {activeTab === 'messages' && (
-            <div className="bg-surface border border-hairline rounded-3xl overflow-hidden shadow-2xs h-[680px] flex flex-col animate-in fade-in duration-200">
-              <ChatWindow
-                commission={currentCommission}
-                isAdmin={currentUser?.role === 'admin'}
-              />
-            </div>
-          )}
-
-          {/* TAB 3: PAYMENTS & RECEIPTS (CONSOLIDATED) */}
+          {/* TAB 2: PAYMENTS & RECEIPTS (CONSOLIDATED) */}
           {activeTab === 'payments' && (
             <div className="animate-in fade-in duration-200">
               {currentUser && currentCommission ? (
@@ -1221,129 +1133,6 @@ export const ClientDashboardView: React.FC = () => {
                 commission={currentCommission} 
                 onNavigateToPayment={() => setActiveTab('payments')} 
               />
-            </div>
-          )}
-
-          {/* TAB 6: SETTINGS & PROFILE */}
-          {activeTab === 'profile' && (
-            <div className="max-w-2xl bg-surface border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-hairline">
-                <div className="space-y-1">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block">
-                    Client Settings
-                  </span>
-                  <h3 className="font-display text-xl font-bold text-carbon">
-                    Profile & Preferences
-                  </h3>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveView('settings')}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-hairline text-xs font-mono text-graphite hover:text-carbon hover:bg-surface-secondary transition-colors cursor-pointer self-start sm:self-auto"
-                >
-                  <span>Theme & Appearance →</span>
-                </button>
-              </div>
-
-              {profileErrorMsg && (
-                <div className="p-3 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 text-xs rounded-2xl border border-red-200 dark:border-red-900/50">
-                  {profileErrorMsg}
-                </div>
-              )}
-
-              {profileSavedMsg && (
-                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-xs rounded-2xl border border-emerald-200 dark:border-emerald-900/50">
-                  {profileSavedMsg}
-                </div>
-              )}
-
-              <form onSubmit={handleSaveProfile} className="space-y-5">
-                <ProfilePhotoUploader
-                  userId={currentUser.id}
-                  currentAvatar={profileAvatar || currentUser.avatar}
-                  onAvatarUpdated={(newUrl) => setProfileAvatar(newUrl)}
-                  label="Profile Photo"
-                  description="Upload an avatar representing your brand or client account."
-                  avatarSizeClass="w-16 h-16"
-                />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                      className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
-                      Account Email
-                    </label>
-                    <input
-                      type="email"
-                      disabled
-                      value={profileEmail}
-                      className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-graphite font-mono cursor-not-allowed opacity-75"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
-                      Company / Social Handle
-                    </label>
-                    <input
-                      type="text"
-                      value={profileHandle}
-                      onChange={(e) => setProfileHandle(e.target.value)}
-                      placeholder="@company"
-                      className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
-                      Phone / WhatsApp
-                    </label>
-                    <input
-                      type="tel"
-                      value={profilePhone}
-                      onChange={(e) => setProfilePhone(e.target.value)}
-                      placeholder="+1 (555) 019-2834"
-                      className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
-                    Client Bio / Brand Context
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={profileBio}
-                    onChange={(e) => setProfileBio(e.target.value)}
-                    placeholder="e.g. Founder at Solis Labs"
-                    className="w-full bg-surface-secondary border border-hairline rounded-xl p-3.5 text-xs sm:text-sm text-carbon focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent resize-none"
-                  />
-                </div>
-
-                <div className="pt-2 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={isSavingProfile}
-                    className="px-6 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] disabled:opacity-50 text-[#111114] text-xs font-bold transition-all shadow-xs cursor-pointer btn-tactile"
-                  >
-                    {isSavingProfile ? 'Saving...' : 'Save Profile'}
-                  </button>
-                </div>
-              </form>
             </div>
           )}
 

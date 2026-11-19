@@ -17,7 +17,7 @@ export const INITIAL_STUDIO_PROFILE: StudioProfile = {
   bio: 'Specializing in distinctive visual identities, conceptual poster art, typographic systems, and high-impact digital illustration for innovative brands, creators, and indie studios worldwide.',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
   email: 'brewstercreates@gmail.com',
-  location: 'Cebu City / Remote Worldwide',
+  location: 'Cebu City',
   socialLinks: {
     instagram: 'instagram.com/brewster.cabando',
     behance: 'behance.net/brewstercabando',

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { getProjectLikes, getProjectViews } from '../lib/portfolio';
 import {
@@ -11,6 +12,9 @@ import {
   Heart,
   Eye,
   Layers,
+  Maximize2,
+  Minimize2,
+  X,
 } from 'lucide-react';
 import heroSkyClouds from '../assets/images/hero_sky_clouds_1794752480825.jpg';
 
@@ -58,10 +62,14 @@ export const ParallaxHero: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cloudsRef = useRef<HTMLImageElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const closeModalRef = useRef<HTMLButtonElement>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedGalleryIndex, setExpandedGalleryIndex] = useState(0);
+  const [imageFitMode, setImageFitMode] = useState<'cover' | 'contain'>('cover');
   const [stageWidth, setStageWidth] = useState(1040);
 
   useEffect(() => {
@@ -134,12 +142,16 @@ export const ParallaxHero: React.FC = () => {
   }, [activeIndex, totalSlides]);
 
   useEffect(() => {
-    if (prefersReducedMotion || isPaused || totalSlides <= 1) return;
+    setExpandedGalleryIndex(0);
+  }, [activeIndex, hasRealWorks]);
+
+  useEffect(() => {
+    if (prefersReducedMotion || isPaused || isExpanded || totalSlides <= 1) return;
     const timer = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % totalSlides);
     }, 4500);
     return () => clearInterval(timer);
-  }, [prefersReducedMotion, isPaused, totalSlides]);
+  }, [prefersReducedMotion, isPaused, isExpanded, totalSlides]);
 
   const handlePrev = () => {
     setActiveIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
@@ -148,6 +160,55 @@ export const ParallaxHero: React.FC = () => {
   const handleNext = () => {
     setActiveIndex((prev) => (prev + 1) % totalSlides);
   };
+
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const previousActiveElement = (document.activeElement as HTMLElement) || null;
+    closeModalRef.current?.focus();
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsExpanded(false);
+      } else if (e.key === 'ArrowLeft' && totalSlides > 1) {
+        e.preventDefault();
+        setActiveIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
+      } else if (e.key === 'ArrowRight' && totalSlides > 1) {
+        e.preventDefault();
+        setActiveIndex((prev) => (prev + 1) % totalSlides);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+      previousActiveElement?.focus();
+    };
+  }, [isExpanded, totalSlides]);
+
+  const activeWork = hasRealWorks ? featuredWorks[activeIndex] ?? featuredWorks[0] : null;
+  const activeStandbySlide = !hasRealWorks
+    ? STANDBY_EXHIBITION_SLIDES[activeIndex] ?? STANDBY_EXHIBITION_SLIDES[0]
+    : null;
+  const activeWorkImages = activeWork
+    ? Array.from(
+        new Set(
+          [activeWork.image, ...(activeWork.gallery || [])].filter(
+            (url): url is string => Boolean(url && url.trim())
+          )
+        )
+      )
+    : [];
+  const activeExpandedImageUrl =
+    activeWorkImages[expandedGalleryIndex] || activeWork?.image || '';
+  const activeExpandedImageKey = activeWork
+    ? `${activeWork.id}::${activeExpandedImageUrl}`
+    : '';
 
   const getCircularOffset = (index: number, current: number, length: number) => {
     if (length <= 1) return 0;
@@ -325,20 +386,27 @@ export const ParallaxHero: React.FC = () => {
                       <button
                         key={work.id}
                         type="button"
-                        onClick={() => (isActive ? openCaseStudy(work) : setActiveIndex(index))}
+                        onClick={() => {
+                          if (isActive) {
+                            setExpandedGalleryIndex(0);
+                            setIsExpanded(true);
+                          } else {
+                            setActiveIndex(index);
+                          }
+                        }}
                         aria-label={
                           isActive
-                            ? `Open case study: ${work.title}`
+                            ? `Enlarge artwork preview: ${work.title}`
                             : `Focus featured work: ${work.title}`
                         }
                         aria-current={isActive ? 'true' : undefined}
                         aria-hidden={hidden || undefined}
                         tabIndex={hidden ? -1 : 0}
                         style={getSlideStyle(offset)}
-                        className={`group absolute w-[250px] sm:w-[310px] h-[210px] sm:h-[230px] rounded-2xl overflow-hidden bg-white dark:bg-white text-[#111114] shadow-xl border transition-all duration-500 ease-out flex flex-col justify-between text-left cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
+                        className={`group absolute w-[250px] sm:w-[310px] h-[210px] sm:h-[230px] rounded-2xl overflow-hidden bg-white dark:bg-white text-[#111114] shadow-xl border transition-all duration-500 ease-out flex flex-col justify-between text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
                           isActive
-                            ? 'border-white ring-1 ring-white/80'
-                            : 'border-white/70 hover:brightness-105'
+                            ? 'border-white ring-1 ring-white/80 cursor-zoom-in'
+                            : 'border-white/70 hover:brightness-105 cursor-pointer'
                         }`}
                       >
                         {hasValidImage ? (
@@ -375,8 +443,11 @@ export const ParallaxHero: React.FC = () => {
                           </span>
 
                           {isActive && (
-                            <span className="w-7 h-7 rounded-full bg-[#111114]/85 text-white flex items-center justify-center shadow-xs shrink-0 group-hover:bg-[#D4FF38] group-hover:text-[#111114] transition-colors">
-                              <ArrowUpRight className="w-3.5 h-3.5" />
+                            <span
+                              title="Click to enlarge image"
+                              className="w-7 h-7 rounded-full bg-[#111114]/85 text-white flex items-center justify-center shadow-xs shrink-0 group-hover:bg-[#D4FF38] group-hover:text-[#111114] transition-colors"
+                            >
+                              <Maximize2 className="w-3.5 h-3.5" />
                             </span>
                           )}
                         </div>
@@ -423,26 +494,26 @@ export const ParallaxHero: React.FC = () => {
                       <button
                         key={slide.id}
                         type="button"
-                        onClick={() =>
-                          isActive
-                            ? setActiveView(
-                                currentUser?.role === 'admin' ? 'admin-dashboard' : 'portfolio'
-                              )
-                            : setActiveIndex(index)
-                        }
+                        onClick={() => {
+                          if (isActive) {
+                            setIsExpanded(true);
+                          } else {
+                            setActiveIndex(index);
+                          }
+                        }}
                         aria-label={
                           isActive
-                            ? `${slide.title} — Open Portfolio Archive`
+                            ? `Enlarge preview: ${slide.title}`
                             : `Preview ${slide.slot}: ${slide.category}`
                         }
                         aria-current={isActive ? 'true' : undefined}
                         aria-hidden={hidden || undefined}
                         tabIndex={hidden ? -1 : 0}
                         style={getSlideStyle(offset)}
-                        className={`group absolute w-[250px] sm:w-[310px] h-[205px] sm:h-[225px] rounded-2xl p-4 sm:p-5 flex flex-col justify-between text-left transition-all duration-500 ease-out cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
+                        className={`group absolute w-[250px] sm:w-[310px] h-[205px] sm:h-[225px] rounded-2xl p-4 sm:p-5 flex flex-col justify-between text-left transition-all duration-500 ease-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
                           isActive
-                            ? 'bg-[#0D0F14] text-white border border-white/25 shadow-2xl'
-                            : 'bg-white/90 dark:bg-white/95 text-[#111114] border border-white/80 shadow-lg backdrop-blur-xs'
+                            ? 'bg-[#0D0F14] text-white border border-white/25 shadow-2xl cursor-zoom-in'
+                            : 'bg-white/90 dark:bg-white/95 text-[#111114] border border-white/80 shadow-lg backdrop-blur-xs cursor-pointer'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -457,13 +528,23 @@ export const ParallaxHero: React.FC = () => {
                             <span>{slide.category}</span>
                           </span>
 
-                          <span
-                            className={`text-[10px] font-semibold uppercase tracking-wider ${
-                              isActive ? 'text-white/60' : 'text-[#6B7280]'
-                            }`}
-                          >
-                            {slide.slot}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`text-[10px] font-semibold uppercase tracking-wider ${
+                                isActive ? 'text-white/60' : 'text-[#6B7280]'
+                              }`}
+                            >
+                              {slide.slot}
+                            </span>
+                            {isActive && (
+                              <span
+                                title="Click to expand preview"
+                                className="w-6 h-6 rounded-full bg-white/10 text-white/80 group-hover:bg-[#D4FF38] group-hover:text-[#111114] flex items-center justify-center transition-colors"
+                              >
+                                <Maximize2 className="w-3 h-3" />
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         <div className="space-y-1.5">
@@ -506,13 +587,299 @@ export const ParallaxHero: React.FC = () => {
               <CheckCircle2 className="w-3.5 h-3.5 text-[#0284C7] shrink-0" />
               <span>
                 {hasRealWorks
-                  ? `Featured Works by ${studioProfile.designerName} · Click active card to inspect case study`
-                  : `Directed personally by ${studioProfile.designerName} · Featured works appear in this carousel`}
+                  ? `Featured Works by ${studioProfile.designerName} · Click active card to enlarge image`
+                  : `Directed personally by ${studioProfile.designerName} · Click active card to expand preview`}
               </span>
             </p>
           </div>
         </div>
       </div>
+
+      {/* Expanded Full-Bleed Artwork Showcase Modal */}
+      {isExpanded &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={
+              activeWork
+                ? `Enlarged preview: ${activeWork.title}`
+                : activeStandbySlide
+                  ? `Expanded exhibition preview: ${activeStandbySlide.title}`
+                  : 'Expanded preview'
+            }
+            onClick={() => setIsExpanded(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-md p-3 sm:p-5 lg:p-8 animate-in fade-in duration-200 cursor-zoom-out select-none"
+          >
+            {/* Full-Bleed Edge-to-Edge Showcase Frame */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-6xl h-[80vh] sm:h-[85vh] max-h-[860px] min-h-[440px] rounded-[24px] sm:rounded-[32px] overflow-hidden bg-[#07090E] ring-1 ring-white/15 shadow-[0_32px_90px_-16px_rgba(0,0,0,0.9)] cursor-default animate-in zoom-in-95 duration-200"
+            >
+              {/* Layer 1: Full-Bleed Visual Canvas */}
+              {activeWork ? (
+                activeExpandedImageUrl &&
+                !(expandedGalleryIndex === 0 && failedImages[activeWork.id]) &&
+                !failedImages[activeExpandedImageKey] ? (
+                  <>
+                    {imageFitMode === 'contain' && (
+                      <img
+                        src={activeExpandedImageUrl}
+                        alt=""
+                        aria-hidden="true"
+                        referrerPolicy="no-referrer"
+                        className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-35 pointer-events-none"
+                      />
+                    )}
+                    <img
+                      src={activeExpandedImageUrl}
+                      alt={activeWork.title}
+                      referrerPolicy="no-referrer"
+                      onError={() =>
+                        setFailedImages((prev) => ({
+                          ...prev,
+                          [activeExpandedImageKey]: true,
+                        }))
+                      }
+                      className={`absolute inset-0 w-full h-full transition-all duration-300 ${
+                        imageFitMode === 'contain'
+                          ? 'object-contain p-4 sm:p-8 pb-36 sm:pb-40'
+                          : 'object-cover'
+                      }`}
+                    />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#081226] via-[#073866] to-[#0284C7] flex flex-col items-center justify-center gap-3 text-white/60">
+                    <ImageIcon className="w-12 h-12 opacity-50" />
+                    <span className="text-xs font-medium tracking-wide">
+                      Artwork preview unavailable
+                    </span>
+                  </div>
+                )
+              ) : (
+                <div className="absolute inset-0 overflow-hidden bg-[#061326]">
+                  <img
+                    src={heroSkyClouds}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover object-center scale-105 opacity-55"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gradient-to-br from-[#041833]/85 via-[#073866]/55 to-[#0284C7]/35"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-grid-pattern opacity-40"
+                  />
+                </div>
+              )}
+
+              {/* Layer 2: Subtle Top Edge Scrim (keeps top-right controls legible over bright images) */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/55 via-black/20 to-transparent z-10"
+              />
+
+              {/* Layer 3: Rich Bottom Dark Gradient Scrim for Overlaid Typography */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-[58%] sm:h-[52%] bg-gradient-to-t from-black/95 via-black/70 via-45% to-transparent z-10"
+              />
+
+              {/* Layer 4: Integrated Top-Right Glass Controls */}
+              <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-2">
+                {activeWork && activeExpandedImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setImageFitMode((prev) => (prev === 'cover' ? 'contain' : 'cover'))
+                    }
+                    aria-label={
+                      imageFitMode === 'cover'
+                        ? 'Fit entire artwork inside frame'
+                        : 'Fill frame edge-to-edge'
+                    }
+                    title={imageFitMode === 'cover' ? 'Fit full artwork' : 'Fill frame'}
+                    className="h-11 px-3.5 rounded-full bg-black/45 hover:bg-black/75 backdrop-blur-md text-white/90 hover:text-white border border-white/15 inline-flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
+                  >
+                    {imageFitMode === 'cover' ? (
+                      <>
+                        <Minimize2 className="w-3.5 h-3.5 shrink-0" />
+                        <span className="hidden sm:inline">Fit</span>
+                      </>
+                    ) : (
+                      <>
+                        <Maximize2 className="w-3.5 h-3.5 shrink-0" />
+                        <span className="hidden sm:inline">Fill</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                <button
+                  ref={closeModalRef}
+                  type="button"
+                  onClick={() => setIsExpanded(false)}
+                  aria-label="Close expanded preview"
+                  className="w-11 h-11 rounded-full bg-black/45 hover:bg-black/75 backdrop-blur-md text-white border border-white/15 flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Layer 5: Side Navigation Arrows */}
+              {totalSlides > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrev}
+                    aria-label="Previous work"
+                    className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/45 hover:bg-[#D4FF38] backdrop-blur-md text-white hover:text-[#111114] border border-white/15 shadow-lg flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    aria-label="Next work"
+                    className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/45 hover:bg-[#D4FF38] backdrop-blur-md text-white hover:text-[#111114] border border-white/15 shadow-lg flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+
+              {/* Layer 6: Bottom Overlaid Editorial Typography & Primary Action */}
+              <div className="absolute inset-x-0 bottom-0 z-20 px-5 sm:px-8 lg:px-10 pb-6 sm:pb-8 lg:pb-10 pt-12 flex flex-col gap-4">
+                {/* Multi-Image Gallery Strip (only for real works with additional boards) */}
+                {activeWork && activeWorkImages.length > 1 && (
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full">
+                    {activeWorkImages.map((imgUrl, idx) => (
+                      <button
+                        key={`${activeWork.id}-thumb-${idx}`}
+                        type="button"
+                        onClick={() => setExpandedGalleryIndex(idx)}
+                        aria-label={`View image ${idx + 1} of ${activeWorkImages.length}`}
+                        className={`w-14 h-10 sm:w-16 sm:h-11 rounded-xl overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                          expandedGalleryIndex === idx
+                            ? 'border-[#D4FF38] ring-2 ring-[#D4FF38]/40 opacity-100'
+                            : 'border-white/25 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img
+                          src={imgUrl}
+                          alt={`${activeWork.title} preview ${idx + 1}`}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {activeWork ? (
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-8 text-white">
+                    <div className="min-w-0 max-w-2xl space-y-2">
+                      {/* Quiet Unboxed Editorial Metadata */}
+                      <div className="flex items-center gap-2 text-xs font-medium text-white/75 flex-wrap tracking-wide">
+                        <span className="text-[#D4FF38] font-semibold">{activeWork.category}</span>
+                        <span aria-hidden="true" className="text-white/35">·</span>
+                        <span>
+                          {activeWork.projectType === 'client'
+                            ? activeWork.client || 'Client Commission'
+                            : 'Studio Concept'}
+                        </span>
+                        {activeWork.date && (
+                          <>
+                            <span aria-hidden="true" className="text-white/35">·</span>
+                            <span>{activeWork.date}</span>
+                          </>
+                        )}
+                        <span aria-hidden="true" className="text-white/35">·</span>
+                        <span className="inline-flex items-center gap-1 tabular-nums text-white/70">
+                          <Heart className="w-3.5 h-3.5 text-rose-400" />
+                          {getProjectLikes(activeWork)}
+                        </span>
+                        <span className="inline-flex items-center gap-1 tabular-nums text-white/70">
+                          <Eye className="w-3.5 h-3.5" />
+                          {getProjectViews(activeWork)}
+                        </span>
+                      </div>
+
+                      <h3 className="font-display text-2xl sm:text-4xl font-bold tracking-tight leading-[1.08] text-white text-balance">
+                        {activeWork.title}
+                      </h3>
+
+                      {activeWork.shortDesc && (
+                        <p className="text-sm sm:text-[15px] text-white/80 leading-relaxed line-clamp-2 max-w-xl">
+                          {activeWork.shortDesc}
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsExpanded(false);
+                        openCaseStudy(activeWork);
+                      }}
+                      className="pl-5 pr-1.5 py-1.5 min-h-[44px] rounded-full bg-[#D4FF38] hover:bg-[#C6F426] text-[#111114] text-xs font-bold uppercase tracking-wider inline-flex items-center gap-3 transition-colors cursor-pointer shrink-0 self-start sm:self-auto whitespace-nowrap shadow-lg btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white"
+                    >
+                      <span>Open Case Study</span>
+                      <span className="w-8 h-8 rounded-full bg-[#111114] text-white flex items-center justify-center shrink-0">
+                        <ArrowUpRight className="w-4 h-4" />
+                      </span>
+                    </button>
+                  </div>
+                ) : (
+                  activeStandbySlide && (
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-8 text-white">
+                      <div className="min-w-0 max-w-2xl space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-medium text-white/75 tracking-wide">
+                          <span className="text-[#D4FF38] font-semibold">
+                            {activeStandbySlide.category}
+                          </span>
+                          <span aria-hidden="true" className="text-white/35">·</span>
+                          <span>{activeStandbySlide.slot}</span>
+                          <span aria-hidden="true" className="text-white/35">·</span>
+                          <span className="text-white/60">Featured archive showcase</span>
+                        </div>
+
+                        <h3 className="font-display text-2xl sm:text-4xl font-bold tracking-tight leading-[1.08] text-white text-balance">
+                          {activeStandbySlide.title}
+                        </h3>
+
+                        <p className="text-sm sm:text-[15px] text-white/80 leading-relaxed max-w-xl">
+                          {activeStandbySlide.subtitle}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsExpanded(false);
+                          setActiveView('portfolio');
+                        }}
+                        className="pl-5 pr-1.5 py-1.5 min-h-[44px] rounded-full bg-[#D4FF38] hover:bg-[#C6F426] text-[#111114] text-xs font-bold uppercase tracking-wider inline-flex items-center gap-3 transition-colors cursor-pointer shrink-0 self-start sm:self-auto whitespace-nowrap shadow-lg btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white"
+                      >
+                        <span>
+                          {currentUser?.role === 'admin' ? 'Add Portfolio Work' : 'View Portfolio'}
+                        </span>
+                        <span className="w-8 h-8 rounded-full bg-[#111114] text-white flex items-center justify-center shrink-0">
+                          <ArrowUpRight className="w-4 h-4" />
+                        </span>
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </section>
   );
 };

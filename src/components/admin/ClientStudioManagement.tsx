@@ -502,22 +502,10 @@ export const ClientStudioManagement: React.FC<ClientStudioManagementProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header and Sub-Navigation */}
-      <div className="bg-surface border border-hairline rounded-3xl p-5 sm:p-6 space-y-4">
-        <div>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block mb-1">
-            Studio Administration
-          </span>
-          <h2 className="font-display text-xl sm:text-2xl font-bold text-carbon">
-            Client & Studio Management
-          </h2>
-          <p className="text-xs sm:text-sm text-graphite mt-0.5">
-            Manage your client directory, studio bio & payment instructions, published services, and portfolio showcase.
-          </p>
-        </div>
-
+      {/* Sub-Navigation */}
+      <div className="bg-surface border border-hairline rounded-3xl p-3 sm:p-4">
         {/* Tab Pills */}
-        <div className="flex flex-wrap gap-2 pt-3 border-t border-hairline">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setSubTab('clients')}

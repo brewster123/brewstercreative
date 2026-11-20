@@ -360,8 +360,34 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Seamless Infinite Leftward Marquee */
+@keyframes marquee-left {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee-left {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marquee-left 34s linear infinite;
+}
+
+.marquee-container:hover .animate-marquee-left,
+.marquee-container:focus-within .animate-marquee-left {
+  animation-play-state: paused;
+}
+
 /* Reduced Motion Compliance */
 @media (prefers-reduced-motion: reduce) {
+  .animate-marquee-left {
+    animation: none;
+  }
+
   *,
   *::before,
   *::after {

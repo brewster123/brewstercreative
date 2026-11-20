@@ -99,24 +99,51 @@ export const HomeView: React.FC = () => {
       {/* 1. RADIANT SKY-BLUE HERO + 3D PERSPECTIVE ARC */}
       <ParallaxHero />
 
-      {/* 2. STUDIO DISCIPLINES LOGO STRIP */}
-      <div className="border-b border-hairline py-7 sm:py-9 mt-6 sm:mt-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 items-center">
-            {disciplines.map(({ label, icon: Icon }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => setActiveView('services')}
-                className="flex items-center justify-center gap-2 text-graphite hover:text-carbon transition-colors py-1.5 cursor-pointer group"
-              >
-                <Icon className="w-4 h-4 text-graphite group-hover:text-accent transition-colors shrink-0" />
-                <span className="text-xs sm:text-sm font-semibold tracking-tight whitespace-nowrap">
-                  {label}
-                </span>
-              </button>
-            ))}
-          </div>
+      {/* 2. STUDIO DISCIPLINES CONTINUOUS LEFTWARD MARQUEE STRIP */}
+      <div
+        className="marquee-container relative overflow-hidden border-b border-hairline py-7 sm:py-9 mt-6 sm:mt-8 select-none"
+        aria-label="Studio design disciplines"
+      >
+        {/* Soft Canvas Edge Fades (Light & Dark Mode Synced) */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 w-14 sm:w-28 bg-gradient-to-r from-canvas via-canvas/80 to-transparent z-10"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-14 sm:w-28 bg-gradient-to-l from-canvas via-canvas/80 to-transparent z-10"
+        />
+
+        {/* Dual Identical Track Halves for Seamless -50% Loop */}
+        <div className="animate-marquee-left items-center">
+          {[0, 1].map((halfIndex) => (
+            <div
+              key={halfIndex}
+              aria-hidden={halfIndex === 1 || undefined}
+              className="flex items-center shrink-0 gap-10 sm:gap-16 pr-10 sm:pr-16"
+            >
+              {[0, 1].map((repeatIndex) =>
+                disciplines.map(({ label, icon: Icon }) => {
+                  const isClone = halfIndex === 1 || repeatIndex === 1;
+                  return (
+                    <button
+                      key={`${halfIndex}-${repeatIndex}-${label}`}
+                      type="button"
+                      tabIndex={isClone ? -1 : 0}
+                      aria-hidden={isClone || undefined}
+                      onClick={() => setActiveView('services')}
+                      className="flex items-center justify-center gap-2.5 text-graphite hover:text-carbon transition-colors py-1.5 cursor-pointer group shrink-0 whitespace-nowrap focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent rounded-lg px-2"
+                    >
+                      <Icon className="w-4 h-4 text-graphite group-hover:text-accent transition-colors shrink-0" />
+                      <span className="text-xs sm:text-sm font-semibold tracking-tight whitespace-nowrap">
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          ))}
         </div>
       </div>
 

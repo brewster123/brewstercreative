@@ -221,7 +221,7 @@ export const ParallaxHero: React.FC = () => {
 
   const showOuterTier = stageWidth >= 860;
   const showInnerTier = stageWidth >= 520;
-  const cardBaseWidth = 310;
+  const cardBaseWidth = 320;
   const halfStage = stageWidth / 2;
   const safeEdgeMargin = 16;
   const tier2Half = (cardBaseWidth * 0.74) / 2;
@@ -365,7 +365,7 @@ export const ParallaxHero: React.FC = () => {
             {/* Coverflow Stage */}
             <div
               ref={stageRef}
-              className="relative flex-1 h-[235px] sm:h-[255px] flex items-center justify-center overflow-visible"
+              className="relative flex-1 h-[255px] sm:h-[285px] flex items-center justify-center overflow-visible"
               style={{ perspective: '1200px' }}
               role="region"
               aria-roledescription="carousel"
@@ -403,16 +403,17 @@ export const ParallaxHero: React.FC = () => {
                         aria-hidden={hidden || undefined}
                         tabIndex={hidden ? -1 : 0}
                         style={getSlideStyle(offset)}
-                        className={`group absolute w-[250px] sm:w-[310px] h-[210px] sm:h-[230px] rounded-2xl overflow-hidden bg-white dark:bg-white text-[#111114] shadow-xl border transition-all duration-500 ease-out flex flex-col justify-between text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
+                        className={`group absolute w-[260px] sm:w-[320px] h-[230px] sm:h-[260px] rounded-2xl overflow-hidden bg-[#0B0D12] text-white shadow-xl border transition-all duration-500 ease-out flex flex-col justify-between text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
                           isActive
-                            ? 'border-white ring-1 ring-white/80 cursor-zoom-in'
-                            : 'border-white/70 hover:brightness-105 cursor-pointer'
+                            ? 'border-white/80 ring-1 ring-white/50 cursor-zoom-in'
+                            : 'border-white/30 hover:brightness-105 cursor-pointer'
                         }`}
                       >
                         {hasValidImage ? (
                           <img
                             src={work.image}
                             alt={work.title}
+                            referrerPolicy="no-referrer"
                             onError={() =>
                               setFailedImages((prev) => ({ ...prev, [work.id]: true }))
                             }
@@ -425,9 +426,14 @@ export const ParallaxHero: React.FC = () => {
                           </div>
                         )}
 
+                        {/* Measured Dark Gradient Scrims (Keeps upper artwork clear & bottom text legible) */}
                         <div
                           aria-hidden="true"
-                          className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/15 pointer-events-none"
+                          className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/35 to-transparent pointer-events-none"
+                        />
+                        <div
+                          aria-hidden="true"
+                          className="absolute inset-x-0 bottom-0 h-[56%] bg-gradient-to-t from-black/90 via-black/50 via-45% to-transparent pointer-events-none"
                         />
 
                         {/* Top Bar */}
@@ -436,7 +442,7 @@ export const ParallaxHero: React.FC = () => {
                             className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-xs ${
                               work.featured
                                 ? 'bg-[#D4FF38] text-[#111114]'
-                                : 'bg-white/95 dark:bg-white/95 text-[#111114]'
+                                : 'bg-black/50 backdrop-blur-md text-white border border-white/15'
                             }`}
                           >
                             {work.featured ? 'Featured' : work.date || 'Archive'}
@@ -445,22 +451,22 @@ export const ParallaxHero: React.FC = () => {
                           {isActive && (
                             <span
                               title="Click to enlarge image"
-                              className="w-7 h-7 rounded-full bg-[#111114]/85 text-white flex items-center justify-center shadow-xs shrink-0 group-hover:bg-[#D4FF38] group-hover:text-[#111114] transition-colors"
+                              className="w-7 h-7 rounded-full bg-black/55 backdrop-blur-md text-white border border-white/15 flex items-center justify-center shadow-xs shrink-0 group-hover:bg-[#D4FF38] group-hover:text-[#111114] transition-colors"
                             >
                               <Maximize2 className="w-3.5 h-3.5" />
                             </span>
                           )}
                         </div>
 
-                        {/* Bottom Frosted Case Study Caption */}
-                        <div className="relative z-10 m-2.5 p-3 rounded-xl bg-white/95 dark:bg-white/95 backdrop-blur-xs shadow-sm space-y-1">
+                        {/* Overlaid Caption Directly Over Dark Bottom Gradient */}
+                        <div className="relative z-10 px-3.5 pb-3.5 pt-6 space-y-0.5 text-white">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#0284C7] truncate">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#D4FF38] truncate drop-shadow-xs">
                               {work.category}
                             </span>
-                            <div className="flex items-center gap-2 text-[10px] text-[#6B7280] tabular-nums shrink-0">
+                            <div className="flex items-center gap-2 text-[10px] text-white/80 tabular-nums shrink-0">
                               <span className="inline-flex items-center gap-0.5">
-                                <Heart className="w-3 h-3 text-rose-500" />
+                                <Heart className="w-3 h-3 text-rose-400" />
                                 {likes}
                               </span>
                               <span className="inline-flex items-center gap-0.5">
@@ -469,10 +475,10 @@ export const ParallaxHero: React.FC = () => {
                               </span>
                             </div>
                           </div>
-                          <span className="font-display font-bold text-sm text-[#111114] block truncate">
+                          <span className="font-display font-bold text-sm sm:text-[15px] text-white block truncate leading-tight drop-shadow-xs">
                             {work.title}
                           </span>
-                          <span className="text-[11px] text-[#6B7280] block truncate">
+                          <span className="text-[11px] text-white/75 block truncate">
                             {work.projectType === 'client'
                               ? work.client || 'Client Commission'
                               : 'Studio Concept'}

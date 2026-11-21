@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PortfolioCard } from '../components/PortfolioCard';
 import { PortfolioModal } from '../components/PortfolioModal';
+import { ScrollReveal } from '../components/ScrollMotion';
 import {
   PortfolioEditorModal,
   PortfolioDeleteModal,
@@ -345,7 +346,7 @@ export const PortfolioView: React.FC = () => {
             <>
               {/* Primary Anchor: Large Featured Project + Two Smaller Projects */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                <div className="lg:col-span-8">
+                <ScrollReveal className="lg:col-span-8" y={24}>
                   <PortfolioCard
                     project={filteredProjects[0]}
                     variant="featured"
@@ -353,31 +354,35 @@ export const PortfolioView: React.FC = () => {
                     onPreview={(p) => setQuickPreviewProject(p)}
                     {...adminCardProps}
                   />
-                </div>
+                </ScrollReveal>
 
                 <div className="lg:col-span-4 flex flex-col gap-8">
-                  <PortfolioCard
-                    project={filteredProjects[1]}
-                    variant="compact"
-                    onSelect={(p) => openCaseStudy(p)}
-                    onPreview={(p) => setQuickPreviewProject(p)}
-                    {...adminCardProps}
-                  />
-                  {filteredProjects[2] && (
+                  <ScrollReveal delay={0.08} y={24}>
                     <PortfolioCard
-                      project={filteredProjects[2]}
+                      project={filteredProjects[1]}
                       variant="compact"
                       onSelect={(p) => openCaseStudy(p)}
                       onPreview={(p) => setQuickPreviewProject(p)}
                       {...adminCardProps}
                     />
+                  </ScrollReveal>
+                  {filteredProjects[2] && (
+                    <ScrollReveal delay={0.16} y={24}>
+                      <PortfolioCard
+                        project={filteredProjects[2]}
+                        variant="compact"
+                        onSelect={(p) => openCaseStudy(p)}
+                        onPreview={(p) => setQuickPreviewProject(p)}
+                        {...adminCardProps}
+                      />
+                    </ScrollReveal>
                   )}
                 </div>
               </div>
 
               {/* Middle Section: Wide Panoramic Project if 4th exists */}
               {filteredProjects.length > 3 && (
-                <div className="pt-2">
+                <ScrollReveal className="pt-2" y={28} scale={0.985}>
                   <PortfolioCard
                     project={filteredProjects[3]}
                     variant="wide"
@@ -385,21 +390,22 @@ export const PortfolioView: React.FC = () => {
                     onPreview={(p) => setQuickPreviewProject(p)}
                     {...adminCardProps}
                   />
-                </div>
+                </ScrollReveal>
               )}
 
               {/* Subsequent Works in Alternating Rhythm */}
               {filteredProjects.length > 4 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 pt-4">
-                  {filteredProjects.slice(4).map((project) => (
-                    <PortfolioCard
-                      key={project.id}
-                      project={project}
-                      variant="standard"
-                      onSelect={(p) => openCaseStudy(p)}
-                      onPreview={(p) => setQuickPreviewProject(p)}
-                      {...adminCardProps}
-                    />
+                  {filteredProjects.slice(4).map((project, idx) => (
+                    <ScrollReveal key={project.id} delay={(idx % 3) * 0.08} y={26}>
+                      <PortfolioCard
+                        project={project}
+                        variant="standard"
+                        onSelect={(p) => openCaseStudy(p)}
+                        onPreview={(p) => setQuickPreviewProject(p)}
+                        {...adminCardProps}
+                      />
+                    </ScrollReveal>
                   ))}
                 </div>
               )}
@@ -408,15 +414,20 @@ export const PortfolioView: React.FC = () => {
             /* Filtered or Searched Grid: Clean 2-3 Column Editorial Gallery */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {filteredProjects.map((project, index) => (
-                <PortfolioCard
+                <ScrollReveal
                   key={project.id}
-                  project={project}
-                  variant={index === 0 && filteredProjects.length > 1 ? 'featured' : 'standard'}
+                  delay={(index % 3) * 0.08}
+                  y={24}
                   className={index === 0 && filteredProjects.length > 1 ? 'md:col-span-2' : ''}
-                  onSelect={(p) => openCaseStudy(p)}
-                  onPreview={(p) => setQuickPreviewProject(p)}
-                  {...adminCardProps}
-                />
+                >
+                  <PortfolioCard
+                    project={project}
+                    variant={index === 0 && filteredProjects.length > 1 ? 'featured' : 'standard'}
+                    onSelect={(p) => openCaseStudy(p)}
+                    onPreview={(p) => setQuickPreviewProject(p)}
+                    {...adminCardProps}
+                  />
+                </ScrollReveal>
               ))}
             </div>
           )}
@@ -425,30 +436,32 @@ export const PortfolioView: React.FC = () => {
 
       {/* Editorial Closing Invitation */}
       <section className="pt-10 border-t border-hairline">
-        <div className="hero-sky-gradient text-white rounded-3xl p-8 sm:p-12 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <span className="text-[11px] uppercase tracking-widest text-white/85 font-bold block">
-              · Bespoke Inquiries
-            </span>
-            <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Have a visionary project in mind?
-            </h3>
-            <p className="text-xs sm:text-sm text-white/85 leading-relaxed font-normal">
-              Every commission begins with an open dialogue about your aesthetic ambitions, target deliverables, and deadlines.
-            </p>
-          </div>
+        <ScrollReveal y={28} scale={0.98}>
+          <div className="hero-sky-gradient text-white rounded-3xl p-8 sm:p-12 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-2 max-w-xl">
+              <span className="text-[11px] uppercase tracking-widest text-white/85 font-bold block">
+                · Bespoke Inquiries
+              </span>
+              <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                Have a visionary project in mind?
+              </h3>
+              <p className="text-xs sm:text-sm text-white/85 leading-relaxed font-normal">
+                Every commission begins with an open dialogue about your aesthetic ambitions, target deliverables, and deadlines.
+              </p>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => setActiveView('commission-form')}
-            className="pl-6 pr-2.5 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md inline-flex items-center gap-3 cursor-pointer shrink-0 btn-tactile"
-          >
-            <span>Initiate Project Consultation</span>
-            <span className="w-8 h-8 rounded-full bg-[#111114] text-white flex items-center justify-center">
-              <ArrowUpRight className="w-4 h-4" />
-            </span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => setActiveView('commission-form')}
+              className="pl-6 pr-2.5 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md inline-flex items-center gap-3 cursor-pointer shrink-0 btn-tactile"
+            >
+              <span>Initiate Project Consultation</span>
+              <span className="w-8 h-8 rounded-full bg-[#111114] text-white flex items-center justify-center">
+                <ArrowUpRight className="w-4 h-4" />
+              </span>
+            </button>
+          </div>
+        </ScrollReveal>
       </section>
 
       {/* Quick Visual Preview Modal (Lightweight lightbox option) */}

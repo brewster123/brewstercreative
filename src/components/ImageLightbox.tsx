@@ -69,7 +69,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label={title ? `Image viewer: ${title}` : 'Image viewer'}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 sm:p-8 animate-in fade-in duration-200 select-none cursor-zoom-out"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 sm:p-8 animate-in fade-in duration-200 select-none cursor-pointer"
       onClick={onClose}
     >
       {/* Top action bar */}

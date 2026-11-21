@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ServiceItem, ShopProduct } from '../types';
 import { useApp } from '../context/AppContext';
-import { SHOP_PRODUCTS } from '../data/shopData';
 import { ShopProductCard } from './ShopProductCard';
 import { 
   ArrowRight,
@@ -33,14 +32,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   onDelete,
   onTogglePopular,
 }) => {
-  const { setActiveView, setPreselectedService, setSelectedShopProduct, studioProfile, currentUser } = useApp();
+  const { setActiveView, setPreselectedService, setSelectedShopProduct, studioProfile, currentUser, shopProducts } = useApp();
   const isAdmin = currentUser?.role === 'admin';
   const showAdminControls = isAdmin && Boolean(onEdit || onDelete || onTogglePopular);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
   // Cross-selling: Related Shop Products
   const relatedShopProducts: ShopProduct[] = (service.relatedShopProductIds || [])
-    .map((id) => SHOP_PRODUCTS.find((p) => p.id === id))
+    .map((id) => shopProducts.find((p) => p.id === id))
     .filter((p): p is ShopProduct => Boolean(p));
 
   const handleSelectShopProduct = (shopProduct: ShopProduct) => {

@@ -5,26 +5,36 @@ import {
   Download, 
   Box, 
   ArrowRight,
-  Eye,
   Tag,
   Palette,
   Package,
   Type,
-  Layers
+  Layers,
+  Edit3,
+  Trash2,
+  Star
 } from 'lucide-react';
 
 interface ShopProductCardProps {
   product: ShopProduct;
   onSelect?: (product: ShopProduct) => void;
   actionLabel?: string;
+  onEdit?: (product: ShopProduct) => void;
+  onDelete?: (product: ShopProduct) => void;
+  onToggleFeatured?: (product: ShopProduct) => void;
 }
 
 export const ShopProductCard: React.FC<ShopProductCardProps> = ({ 
   product, 
   onSelect,
-  actionLabel 
+  actionLabel,
+  onEdit,
+  onDelete,
+  onToggleFeatured,
 }) => {
-  const { studioProfile } = useApp();
+  const { studioProfile, currentUser } = useApp();
+  const isAdmin = currentUser?.role === 'admin';
+  const showAdminControls = isAdmin && Boolean(onEdit || onDelete || onToggleFeatured);
   const [imgError, setImgError] = useState(false);
   const currencySymbol = studioProfile?.currencySymbol || '₱';
 
@@ -93,7 +103,11 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
 
   return (
     <article
-      onClick={handleCardClick}
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('button') || target.closest('a')) return;
+        handleCardClick();
+      }}
       tabIndex={0}
       role="button"
       onKeyDown={(e) => {
@@ -140,6 +154,69 @@ export const ShopProductCard: React.FC<ShopProductCardProps> = ({
               <span className="text-[10px] text-graphite uppercase tracking-wider mt-1">
                 {product.category}
               </span>
+            </div>
+          )}
+
+          {/* Admin-Only Quick Action Pills (Bottom Right of Preview Stage) */}
+          {showAdminControls && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5"
+            >
+              {onToggleFeatured && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onToggleFeatured(product);
+                  }}
+                  title={product.featured ? 'Featured edition (click to unfeature)' : 'Feature edition'}
+                  aria-label={product.featured ? `Unfeature ${product.name}` : `Feature ${product.name}`}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer backdrop-blur-xs shadow-xs ${
+                    product.featured
+                      ? 'bg-[#D4FF38] text-[#111114] hover:bg-[#C4F024]'
+                      : 'bg-black/70 hover:bg-black text-white/90 hover:text-white'
+                  }`}
+                >
+                  <Star className={`w-3.5 h-3.5 ${product.featured ? 'fill-current' : ''}`} />
+                </button>
+              )}
+
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEdit(product);
+                  }}
+                  title={`Edit ${product.name}`}
+                  aria-label={`Edit ${product.name}`}
+                  className="inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-black/75 hover:bg-black text-white text-[11px] font-semibold transition-colors cursor-pointer backdrop-blur-xs shadow-xs"
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span>Edit</span>
+                </button>
+              )}
+
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDelete(product);
+                  }}
+                  title={`Delete ${product.name}`}
+                  aria-label={`Delete ${product.name}`}
+                  className="w-7 h-7 rounded-full bg-black/75 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer backdrop-blur-xs shadow-xs"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
         </div>

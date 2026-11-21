@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { ServiceCard } from '../components/ServiceCard';
+import { ScrollReveal } from '../components/ScrollMotion';
 import {
   ServiceEditorModal,
   ServiceDeleteModal,
@@ -180,12 +181,13 @@ export const ServicesView: React.FC = () => {
         ) : (
           <div className="space-y-6">
             {services.map((service, index) => (
-              <ServiceCard 
-                key={service.id} 
-                service={service} 
-                index={index}
-                {...adminCardProps}
-              />
+              <ScrollReveal key={service.id} delay={Math.min(index * 0.06, 0.24)} y={26}>
+                <ServiceCard 
+                  service={service} 
+                  index={index}
+                  {...adminCardProps}
+                />
+              </ScrollReveal>
             ))}
           </div>
         )}
@@ -193,7 +195,7 @@ export const ServicesView: React.FC = () => {
 
       {/* Studio Standards Section */}
       <section className="pt-10 border-t border-hairline space-y-10">
-        <div className="max-w-2xl space-y-2">
+        <ScrollReveal className="max-w-2xl space-y-2">
           <span className="text-xs uppercase tracking-widest text-accent font-bold">
             · Commitments &amp; Rigor
           </span>
@@ -203,26 +205,25 @@ export const ServicesView: React.FC = () => {
           <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed">
             Every engagement adheres to non-negotiable craftsmanship benchmarks regardless of scope.
           </p>
-        </div>
+        </ScrollReveal>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {standards.map((std, idx) => {
             const Icon = std.icon;
             return (
-              <div 
-                key={idx} 
-                className="p-6 rounded-3xl bg-surface-secondary border border-hairline space-y-3"
-              >
-                <div className="w-10 h-10 rounded-full bg-surface border border-hairline text-accent flex items-center justify-center shadow-2xs">
-                  <Icon className="w-5 h-5" />
+              <ScrollReveal key={idx} delay={idx * 0.08} className="h-full">
+                <div className="h-full p-6 rounded-3xl bg-surface-secondary border border-hairline space-y-3">
+                  <div className="w-10 h-10 rounded-full bg-surface border border-hairline text-accent flex items-center justify-center shadow-2xs">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-display text-base font-bold text-carbon">
+                    {std.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed font-normal">
+                    {std.desc}
+                  </p>
                 </div>
-                <h3 className="font-display text-base font-bold text-carbon">
-                  {std.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed font-normal">
-                  {std.desc}
-                </p>
-              </div>
+              </ScrollReveal>
             );
           })}
         </div>
@@ -230,7 +231,7 @@ export const ServicesView: React.FC = () => {
 
       {/* Frequently Asked Questions */}
       <section className="pt-10 border-t border-hairline space-y-10">
-        <div className="max-w-2xl space-y-2">
+        <ScrollReveal className="max-w-2xl space-y-2">
           <span className="text-xs uppercase tracking-widest text-accent font-bold">
             · Clarity &amp; Guidance
           </span>
@@ -240,52 +241,56 @@ export const ServicesView: React.FC = () => {
           <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed">
             Everything you need to know regarding commissioning custom artworks, payment schedules, and revision rounds.
           </p>
-        </div>
+        </ScrollReveal>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
           {faqs.map((faq, idx) => (
-            <div key={idx} className="p-6 rounded-3xl bg-surface border border-hairline space-y-2">
-              <h3 className="font-display text-base font-bold text-carbon flex items-baseline gap-2.5">
-                <span className="text-accent text-xs font-bold tabular-nums">0{idx + 1}.</span>
-                <span>{faq.q}</span>
-              </h3>
-              <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed pl-6 font-normal">
-                {faq.a}
-              </p>
-            </div>
+            <ScrollReveal key={idx} delay={(idx % 2) * 0.08} className="h-full">
+              <div className="h-full p-6 rounded-3xl bg-surface border border-hairline space-y-2">
+                <h3 className="font-display text-base font-bold text-carbon flex items-baseline gap-2.5">
+                  <span className="text-accent text-xs font-bold tabular-nums">0{idx + 1}.</span>
+                  <span>{faq.q}</span>
+                </h3>
+                <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed pl-6 font-normal">
+                  {faq.a}
+                </p>
+              </div>
+            </ScrollReveal>
           ))}
         </div>
       </section>
 
       {/* Closing Radiant CTA Banner */}
       <section className="pt-6">
-        <div className="hero-sky-gradient text-white rounded-3xl p-8 sm:p-12 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <span className="text-xs uppercase tracking-widest text-white/85 font-bold block">
-              · Creative Dialogue · Make noise. Make meaning.
-            </span>
-            <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Require a custom scope not listed above?
-            </h3>
-            <p className="text-xs sm:text-sm text-white/85 leading-relaxed font-normal">
-              DESTALION regularly directs bespoke multimedia installations, experimental typographic releases, and one-off publication editions.
-            </p>
-          </div>
+        <ScrollReveal y={28} scale={0.98}>
+          <div className="hero-sky-gradient text-white rounded-3xl p-8 sm:p-12 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-2 max-w-xl">
+              <span className="text-xs uppercase tracking-widest text-white/85 font-bold block">
+                · Creative Dialogue · Make noise. Make meaning.
+              </span>
+              <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                Require a custom scope not listed above?
+              </h3>
+              <p className="text-xs sm:text-sm text-white/85 leading-relaxed font-normal">
+                DESTALION regularly directs bespoke multimedia installations, experimental typographic releases, and one-off publication editions.
+              </p>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setActiveView('commission-form');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="pl-6 pr-2.5 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md inline-flex items-center gap-3 cursor-pointer shrink-0 min-h-[44px] btn-tactile"
-          >
-            <span>Submit Custom Project Brief</span>
-            <span className="w-8 h-8 rounded-full bg-[#111114] text-white flex items-center justify-center">
-              <ArrowUpRight className="w-4 h-4" />
-            </span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView('commission-form');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="pl-6 pr-2.5 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md inline-flex items-center gap-3 cursor-pointer shrink-0 min-h-[44px] btn-tactile"
+            >
+              <span>Submit Custom Project Brief</span>
+              <span className="w-8 h-8 rounded-full bg-[#111114] text-white flex items-center justify-center">
+                <ArrowUpRight className="w-4 h-4" />
+              </span>
+            </button>
+          </div>
+        </ScrollReveal>
       </section>
 
       {/* Admin-Only Service Editor & Delete Modals */}

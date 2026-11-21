@@ -13,10 +13,10 @@ import {
   Eye,
   Layers,
   Maximize2,
-  Minimize2,
   X,
 } from 'lucide-react';
 import heroSkyClouds from '../assets/images/hero_sky_clouds_1794752480825.jpg';
+import { ArtworkHoverWave } from './ArtworkHoverWave';
 
 const STANDBY_EXHIBITION_SLIDES = [
   {
@@ -61,6 +61,7 @@ export const ParallaxHero: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const cloudsRef = useRef<HTMLImageElement>(null);
+  const headlineRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const closeModalRef = useRef<HTMLButtonElement>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -69,7 +70,6 @@ export const ParallaxHero: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedGalleryIndex, setExpandedGalleryIndex] = useState(0);
-  const [imageFitMode, setImageFitMode] = useState<'cover' | 'contain'>('cover');
   const [stageWidth, setStageWidth] = useState(1040);
 
   useEffect(() => {
@@ -89,8 +89,16 @@ export const ParallaxHero: React.FC = () => {
       if (!containerRef.current || !cloudsRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const scrollY = Math.max(0, -rect.top);
-      if (scrollY <= rect.height + 100) {
-        cloudsRef.current.style.transform = `translate3d(0, ${Math.min(scrollY * 0.05, 16)}px, 0) scale(1.06)`;
+      if (scrollY <= rect.height + 160) {
+        const cloudOffset = Math.min(scrollY * 0.14, 52);
+        cloudsRef.current.style.transform = `translate3d(0, ${cloudOffset}px, 0) scale(1.1)`;
+
+        if (headlineRef.current) {
+          const textLift = Math.min(scrollY * 0.08, 28);
+          const progress = Math.min(scrollY / 420, 1);
+          headlineRef.current.style.transform = `translate3d(0, ${textLift}px, 0)`;
+          headlineRef.current.style.opacity = `${1 - progress * 0.25}`;
+        }
       }
     };
 
@@ -288,7 +296,7 @@ export const ParallaxHero: React.FC = () => {
             ref={cloudsRef}
             src={heroSkyClouds}
             alt=""
-            className="w-full h-full object-cover object-bottom scale-[1.06] opacity-95"
+            className="w-full h-full object-cover object-bottom scale-[1.1] opacity-95 will-change-transform"
             loading="eager"
             decoding="sync"
           />
@@ -296,7 +304,10 @@ export const ParallaxHero: React.FC = () => {
         </div>
 
         {/* Centered Editorial Proposition & Primary Actions */}
-        <div className="relative z-10 px-4 sm:px-8 pt-8 sm:pt-10 lg:pt-12 pb-4 sm:pb-6 text-center max-w-4xl mx-auto space-y-4">
+        <div
+          ref={headlineRef}
+          className="relative z-10 px-4 sm:px-8 pt-8 sm:pt-10 lg:pt-12 pb-4 sm:pb-6 text-center max-w-4xl mx-auto space-y-4 will-change-transform"
+        >
           <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl xl:text-[64px] font-semibold tracking-tight leading-[1.05] text-white text-balance">
             Crafting bold brands
             <span className="block font-light text-white/90">
@@ -403,10 +414,10 @@ export const ParallaxHero: React.FC = () => {
                         aria-hidden={hidden || undefined}
                         tabIndex={hidden ? -1 : 0}
                         style={getSlideStyle(offset)}
-                        className={`group absolute w-[260px] sm:w-[320px] h-[230px] sm:h-[260px] rounded-2xl overflow-hidden bg-[#0B0D12] text-white shadow-xl border transition-all duration-500 ease-out flex flex-col justify-between text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
+                        className={`group absolute w-[260px] sm:w-[320px] h-[230px] sm:h-[260px] rounded-2xl overflow-hidden bg-[#0B0D12] text-white shadow-xl border transition-all duration-500 ease-out flex flex-col justify-between text-left cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
                           isActive
-                            ? 'border-white/80 ring-1 ring-white/50 cursor-zoom-in'
-                            : 'border-white/30 hover:brightness-105 cursor-pointer'
+                            ? 'border-white/80 ring-1 ring-white/50'
+                            : 'border-white/30 hover:brightness-105'
                         }`}
                       >
                         {hasValidImage ? (
@@ -417,7 +428,7 @@ export const ParallaxHero: React.FC = () => {
                             onError={() =>
                               setFailedImages((prev) => ({ ...prev, [work.id]: true }))
                             }
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transform-none"
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02] motion-reduce:transform-none"
                             loading="eager"
                           />
                         ) : (
@@ -435,6 +446,9 @@ export const ParallaxHero: React.FC = () => {
                           aria-hidden="true"
                           className="absolute inset-x-0 bottom-0 h-[56%] bg-gradient-to-t from-black/90 via-black/50 via-45% to-transparent pointer-events-none"
                         />
+
+                        {/* Fluid Hover Wave Overlay (replaces zoom cursor feedback) */}
+                        <ArtworkHoverWave className="z-[5]" />
 
                         {/* Top Bar */}
                         <div className="relative z-10 p-3 flex items-center justify-between gap-2">
@@ -516,13 +530,14 @@ export const ParallaxHero: React.FC = () => {
                         aria-hidden={hidden || undefined}
                         tabIndex={hidden ? -1 : 0}
                         style={getSlideStyle(offset)}
-                        className={`group absolute w-[250px] sm:w-[310px] h-[205px] sm:h-[225px] rounded-2xl p-4 sm:p-5 flex flex-col justify-between text-left transition-all duration-500 ease-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
+                        className={`group absolute w-[250px] sm:w-[310px] h-[205px] sm:h-[225px] rounded-2xl p-4 sm:p-5 flex flex-col justify-between text-left transition-all duration-500 ease-out cursor-pointer overflow-hidden focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
                           isActive
-                            ? 'bg-[#0D0F14] text-white border border-white/25 shadow-2xl cursor-zoom-in'
-                            : 'bg-white/90 dark:bg-white/95 text-[#111114] border border-white/80 shadow-lg backdrop-blur-xs cursor-pointer'
+                            ? 'bg-[#0D0F14] text-white border border-white/25 shadow-2xl'
+                            : 'bg-white/90 dark:bg-white/95 text-[#111114] border border-white/80 shadow-lg backdrop-blur-xs'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-2">
+                        {isActive && <ArtworkHoverWave className="z-0" />}
+                        <div className="relative z-10 flex items-center justify-between gap-2">
                           <span
                             className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
                               isActive
@@ -553,7 +568,7 @@ export const ParallaxHero: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="relative z-10 space-y-1.5">
                           <h3
                             className={`font-display text-base sm:text-lg font-bold tracking-tight ${
                               isActive ? 'text-white' : 'text-[#111114]'
@@ -616,28 +631,90 @@ export const ParallaxHero: React.FC = () => {
                   : 'Expanded preview'
             }
             onClick={() => setIsExpanded(false)}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-md p-3 sm:p-5 lg:p-8 animate-in fade-in duration-200 cursor-zoom-out select-none"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-md p-2.5 sm:p-4 lg:p-6 animate-in fade-in duration-200 cursor-pointer select-none"
           >
-            {/* Full-Bleed Edge-to-Edge Showcase Frame */}
+            {/* Full-Bleed Exhibition Showcase Frame */}
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-6xl h-[80vh] sm:h-[85vh] max-h-[860px] min-h-[440px] rounded-[24px] sm:rounded-[32px] overflow-hidden bg-[#07090E] ring-1 ring-white/15 shadow-[0_32px_90px_-16px_rgba(0,0,0,0.9)] cursor-default animate-in zoom-in-95 duration-200"
+              className="relative w-full max-w-6xl h-[86vh] sm:h-[88vh] max-h-[920px] min-h-[460px] rounded-[24px] sm:rounded-[32px] overflow-hidden bg-[#07090E] ring-1 ring-white/15 shadow-[0_32px_90px_-16px_rgba(0,0,0,0.9)] cursor-default animate-in zoom-in-95 duration-200 flex flex-col"
             >
-              {/* Layer 1: Full-Bleed Visual Canvas */}
-              {activeWork ? (
-                activeExpandedImageUrl &&
-                !(expandedGalleryIndex === 0 && failedImages[activeWork.id]) &&
-                !failedImages[activeExpandedImageKey] ? (
-                  <>
-                    {imageFitMode === 'contain' && (
+              {/* Background Atmospheric Backdrop & Gradient Scrims */}
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+                {activeWork ? (
+                  activeExpandedImageUrl &&
+                  !(expandedGalleryIndex === 0 && failedImages[activeWork.id]) &&
+                  !failedImages[activeExpandedImageKey] ? (
+                    <>
                       <img
                         src={activeExpandedImageUrl}
                         alt=""
-                        aria-hidden="true"
                         referrerPolicy="no-referrer"
-                        className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-35 pointer-events-none"
+                        className="absolute inset-0 w-full h-full object-cover scale-110 blur-3xl opacity-40"
                       />
-                    )}
+                      <div className="absolute inset-0 bg-[#07090E]/50" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#081226] via-[#073866] to-[#0284C7]" />
+                  )
+                ) : (
+                  <div className="absolute inset-0 bg-[#061326]">
+                    <img
+                      src={heroSkyClouds}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover object-center scale-105 opacity-55"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#041833]/85 via-[#073866]/55 to-[#0284C7]/35" />
+                    <div className="absolute inset-0 bg-grid-pattern opacity-40" />
+                  </div>
+                )}
+
+                {/* Subtle Top & Bottom Atmospheric Gradient Scrims */}
+                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/55 via-black/20 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-black/95 via-black/75 via-55% to-transparent" />
+              </div>
+
+              {/* Integrated Top-Right Close Button */}
+              <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 flex items-center">
+                <button
+                  ref={closeModalRef}
+                  type="button"
+                  onClick={() => setIsExpanded(false)}
+                  aria-label="Close expanded preview"
+                  className="w-11 h-11 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-md text-white border border-white/15 flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Flex Child 1: Dedicated Uncropped Artwork Stage (never overlaps bottom typography) */}
+              <div className="relative z-10 flex-1 min-h-0 flex items-center justify-center pt-5 sm:pt-7 pb-3 sm:pb-4 px-14 sm:px-20">
+                {/* Side Navigation Arrows Centered Against Artwork */}
+                {totalSlides > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handlePrev}
+                      aria-label="Previous work"
+                      className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/45 hover:bg-[#D4FF38] backdrop-blur-md text-white hover:text-[#111114] border border-white/15 shadow-lg flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      aria-label="Next work"
+                      className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/45 hover:bg-[#D4FF38] backdrop-blur-md text-white hover:text-[#111114] border border-white/15 shadow-lg flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+
+                {activeWork &&
+                  (activeExpandedImageUrl &&
+                  !(expandedGalleryIndex === 0 && failedImages[activeWork.id]) &&
+                  !failedImages[activeExpandedImageKey] ? (
                     <img
                       src={activeExpandedImageUrl}
                       alt={activeWork.title}
@@ -648,118 +725,20 @@ export const ParallaxHero: React.FC = () => {
                           [activeExpandedImageKey]: true,
                         }))
                       }
-                      className={`absolute inset-0 w-full h-full transition-all duration-300 ${
-                        imageFitMode === 'contain'
-                          ? 'object-contain p-4 sm:p-8 pb-36 sm:pb-40'
-                          : 'object-cover'
-                      }`}
+                      className="max-w-full max-h-full w-auto h-auto object-contain rounded-xl shadow-[0_24px_70px_-12px_rgba(0,0,0,0.8)] ring-1 ring-white/10 transition-all duration-300"
                     />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#081226] via-[#073866] to-[#0284C7] flex flex-col items-center justify-center gap-3 text-white/60">
-                    <ImageIcon className="w-12 h-12 opacity-50" />
-                    <span className="text-xs font-medium tracking-wide">
-                      Artwork preview unavailable
-                    </span>
-                  </div>
-                )
-              ) : (
-                <div className="absolute inset-0 overflow-hidden bg-[#061326]">
-                  <img
-                    src={heroSkyClouds}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover object-center scale-105 opacity-55"
-                  />
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 bg-gradient-to-br from-[#041833]/85 via-[#073866]/55 to-[#0284C7]/35"
-                  />
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 bg-grid-pattern opacity-40"
-                  />
-                </div>
-              )}
-
-              {/* Layer 2: Subtle Top Edge Scrim (keeps top-right controls legible over bright images) */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/55 via-black/20 to-transparent z-10"
-              />
-
-              {/* Layer 3: Rich Bottom Dark Gradient Scrim for Overlaid Typography */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-[58%] sm:h-[52%] bg-gradient-to-t from-black/95 via-black/70 via-45% to-transparent z-10"
-              />
-
-              {/* Layer 4: Integrated Top-Right Glass Controls */}
-              <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-2">
-                {activeWork && activeExpandedImageUrl && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setImageFitMode((prev) => (prev === 'cover' ? 'contain' : 'cover'))
-                    }
-                    aria-label={
-                      imageFitMode === 'cover'
-                        ? 'Fit entire artwork inside frame'
-                        : 'Fill frame edge-to-edge'
-                    }
-                    title={imageFitMode === 'cover' ? 'Fit full artwork' : 'Fill frame'}
-                    className="h-11 px-3.5 rounded-full bg-black/45 hover:bg-black/75 backdrop-blur-md text-white/90 hover:text-white border border-white/15 inline-flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
-                  >
-                    {imageFitMode === 'cover' ? (
-                      <>
-                        <Minimize2 className="w-3.5 h-3.5 shrink-0" />
-                        <span className="hidden sm:inline">Fit</span>
-                      </>
-                    ) : (
-                      <>
-                        <Maximize2 className="w-3.5 h-3.5 shrink-0" />
-                        <span className="hidden sm:inline">Fill</span>
-                      </>
-                    )}
-                  </button>
-                )}
-
-                <button
-                  ref={closeModalRef}
-                  type="button"
-                  onClick={() => setIsExpanded(false)}
-                  aria-label="Close expanded preview"
-                  className="w-11 h-11 rounded-full bg-black/45 hover:bg-black/75 backdrop-blur-md text-white border border-white/15 flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-3 text-white/60">
+                      <ImageIcon className="w-12 h-12 opacity-50" />
+                      <span className="text-xs font-medium tracking-wide">
+                        Artwork preview unavailable
+                      </span>
+                    </div>
+                  ))}
               </div>
 
-              {/* Layer 5: Side Navigation Arrows */}
-              {totalSlides > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handlePrev}
-                    aria-label="Previous work"
-                    className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/45 hover:bg-[#D4FF38] backdrop-blur-md text-white hover:text-[#111114] border border-white/15 shadow-lg flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    aria-label="Next work"
-                    className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/45 hover:bg-[#D4FF38] backdrop-blur-md text-white hover:text-[#111114] border border-white/15 shadow-lg flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </>
-              )}
-
-              {/* Layer 6: Bottom Overlaid Editorial Typography & Primary Action */}
-              <div className="absolute inset-x-0 bottom-0 z-20 px-5 sm:px-8 lg:px-10 pb-6 sm:pb-8 lg:pb-10 pt-12 flex flex-col gap-4">
+              {/* Flex Child 2: Dedicated Bottom Editorial Typography & Primary Action Bar */}
+              <div className="relative z-20 shrink-0 px-5 sm:px-8 lg:px-10 pt-3 sm:pt-4 pb-5 sm:pb-7 lg:pb-8 flex flex-col gap-3.5 bg-gradient-to-t from-black/95 via-black/75 to-transparent">
                 {/* Multi-Image Gallery Strip (only for real works with additional boards) */}
                 {activeWork && activeWorkImages.length > 1 && (
                   <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full">
@@ -769,7 +748,7 @@ export const ParallaxHero: React.FC = () => {
                         type="button"
                         onClick={() => setExpandedGalleryIndex(idx)}
                         aria-label={`View image ${idx + 1} of ${activeWorkImages.length}`}
-                        className={`w-14 h-10 sm:w-16 sm:h-11 rounded-xl overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                        className={`w-14 h-10 sm:w-16 sm:h-11 rounded-xl overflow-hidden bg-black/70 border transition-all cursor-pointer shrink-0 ${
                           expandedGalleryIndex === idx
                             ? 'border-[#D4FF38] ring-2 ring-[#D4FF38]/40 opacity-100'
                             : 'border-white/25 opacity-60 hover:opacity-100'
@@ -779,7 +758,7 @@ export const ParallaxHero: React.FC = () => {
                           src={imgUrl}
                           alt={`${activeWork.title} preview ${idx + 1}`}
                           referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
                       </button>
                     ))}
@@ -788,7 +767,7 @@ export const ParallaxHero: React.FC = () => {
 
                 {activeWork ? (
                   <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-8 text-white">
-                    <div className="min-w-0 max-w-2xl space-y-2">
+                    <div className="min-w-0 max-w-2xl space-y-1.5">
                       {/* Quiet Unboxed Editorial Metadata */}
                       <div className="flex items-center gap-2 text-xs font-medium text-white/75 flex-wrap tracking-wide">
                         <span className="text-[#D4FF38] font-semibold">{activeWork.category}</span>

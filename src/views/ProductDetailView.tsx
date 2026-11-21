@@ -1,21 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { SHOP_PRODUCTS } from '../data/shopData';
 import { ShopProductCard } from '../components/ShopProductCard';
+import { ShopEditorModal } from '../components/admin/ShopEditorModal';
 import { 
   ArrowLeft, 
   ChevronRight, 
   Download, 
   Box, 
   Sparkles, 
-  Send, 
   ArrowRight, 
   ArrowUpRight,
-  FileCheck2, 
-  Clock,
   ExternalLink,
-  Layers,
-  Wand2
+  Edit3
 } from 'lucide-react';
 import { ShopProduct, PortfolioProject, ServiceItem } from '../types';
 import { ServiceCard } from '../components/ServiceCard';
@@ -23,6 +19,8 @@ import { isProductCheckoutAvailable } from '../utils/urlUtils';
 
 export const ProductDetailView: React.FC = () => {
   const { 
+    currentUser,
+    shopProducts,
     selectedShopProduct, 
     setSelectedShopProduct, 
     setSelectedShopCategory, 
@@ -34,37 +32,57 @@ export const ProductDetailView: React.FC = () => {
     setPreselectedService
   } = useApp();
 
+  const isAdmin = currentUser?.role === 'admin';
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+
   // Scroll to top upon entering view
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [selectedShopProduct]);
+  }, [selectedShopProduct?.id]);
 
-  // Resolve product or fallback to the first catalog item
-  const product: ShopProduct = selectedShopProduct || SHOP_PRODUCTS[0];
-  const isCheckoutAvailable = isProductCheckoutAvailable(product);
+  // Resolve live product from reactive catalog or fallback to first available item
+  const product: ShopProduct | undefined =
+    (selectedShopProduct && shopProducts.find((p) => p.id === selectedShopProduct.id)) ||
+    selectedShopProduct ||
+    shopProducts[0];
 
-  const hasVariants = Boolean(product.variants && product.variants.length > 0);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
+
+  const rawImage = product?.productImage || product?.image;
 
   useEffect(() => {
-    if (product.variants && product.variants.length > 0) {
+    if (product?.variants && product.variants.length > 0) {
       setSelectedVariantId(product.variants[0].id);
     } else {
       setSelectedVariantId(null);
     }
-  }, [product.id, product.variants]);
-
-  const selectedVariant = product.variants?.find(v => v.id === selectedVariantId) || (product.variants?.[0] ?? null);
-  const currencySymbol = studioProfile?.currencySymbol || '₱';
-  const displayPriceLabel = selectedVariant?.priceLabel || product.priceLabel || (product.price > 0 ? `${currencySymbol}${product.price.toLocaleString()}` : 'Price TBA');
-
-  const [imgError, setImgError] = useState(false);
-  const rawImage = product.productImage || product.image;
+  }, [product?.id, product?.variants]);
 
   useEffect(() => {
     setImgError(false);
-  }, [product.id, rawImage]);
+  }, [product?.id, rawImage]);
 
+  if (!product) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-24 text-center space-y-4">
+        <h2 className="font-display text-2xl font-bold text-carbon">No Edition Selected</h2>
+        <button
+          type="button"
+          onClick={() => setActiveView('shop')}
+          className="px-5 py-2.5 rounded-full bg-surface-secondary border border-hairline text-xs font-semibold text-carbon hover:bg-surface cursor-pointer"
+        >
+          Return to Storefront
+        </button>
+      </div>
+    );
+  }
+
+  const isCheckoutAvailable = isProductCheckoutAvailable(product);
+  const hasVariants = Boolean(product.variants && product.variants.length > 0);
+  const selectedVariant = product.variants?.find(v => v.id === selectedVariantId) || (product.variants?.[0] ?? null);
+  const currencySymbol = studioProfile?.currencySymbol || '₱';
+  const displayPriceLabel = selectedVariant?.priceLabel || product.priceLabel || (product.price > 0 ? `${currencySymbol}${product.price.toLocaleString()}` : 'Price TBA');
   const hasImage = Boolean(rawImage) && !imgError;
   const imageAlt = product.productImageAlt || `${product.name} - ${product.category}`;
 
@@ -112,7 +130,7 @@ export const ProductDetailView: React.FC = () => {
     }
   };
 
-  const relatedProducts = SHOP_PRODUCTS.filter(p => p.id !== product.id);
+  const relatedProducts = shopProducts.filter(p => p.id !== product.id);
 
   const relatedPortfolioProjects: PortfolioProject[] = (product.relatedPortfolioIds || [])
     .map((id) => portfolio.find((p) => p.id === id))
@@ -169,14 +187,27 @@ export const ProductDetailView: React.FC = () => {
           </span>
         </nav>
 
-        <button
-          type="button"
-          onClick={handleBackToShop}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-graphite hover:text-carbon hover:bg-surface-secondary transition-all cursor-pointer self-start sm:self-auto"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Return to Storefront</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsEditorOpen(true)}
+              className="btn-tactile inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-colors cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Edit Edition</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleBackToShop}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-graphite hover:text-carbon hover:bg-surface-secondary transition-all cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Return to Storefront</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Product Showcase: 2-Column Presentation */}
@@ -560,6 +591,13 @@ export const ProductDetailView: React.FC = () => {
         </section>
       )}
 
+      {isAdmin && (
+        <ShopEditorModal
+          isOpen={isEditorOpen}
+          product={product}
+          onClose={() => setIsEditorOpen(false)}
+        />
+      )}
     </div>
   );
 };

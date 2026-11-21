@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PortfolioProject, ShopProduct } from '../types';
 import { useApp } from '../context/AppContext';
-import { SHOP_PRODUCTS } from '../data/shopData';
 import { ShopProductCard } from './ShopProductCard';
 import { 
   X, 
@@ -19,7 +18,7 @@ interface PortfolioModalProps {
 }
 
 export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose }) => {
-  const { setActiveView, setPreselectedService, setSelectedShopProduct } = useApp();
+  const { setActiveView, setPreselectedService, setSelectedShopProduct, shopProducts } = useApp();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -63,7 +62,7 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
 
   // Cross-selling: Related Shop Products
   const relatedShopProducts: ShopProduct[] = (project.relatedShopProductIds || [])
-    .map((id) => SHOP_PRODUCTS.find((p) => p.id === id))
+    .map((id) => shopProducts.find((p) => p.id === id))
     .filter((p): p is ShopProduct => Boolean(p));
 
   const handleSelectShopProduct = (shopProduct: ShopProduct) => {

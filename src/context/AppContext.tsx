@@ -28,6 +28,7 @@ import {
   INITIAL_FILES,
   INITIAL_NOTIFICATIONS,
 } from '../data/initialData';
+import { SHOP_PRODUCTS } from '../data/shopData';
 import { supabase, isSupabaseConfigured, supabaseUrl } from '../lib/supabase';
 import {
   insertCommissionToSupabase,
@@ -147,6 +148,7 @@ interface AppContextType {
   studioProfile: StudioProfile;
   services: ServiceItem[];
   portfolio: PortfolioProject[];
+  shopProducts: ShopProduct[];
   commissions: Commission[];
   currentUserCommissions: Commission[];
   activeCommission?: Commission;
@@ -218,6 +220,10 @@ interface AppContextType {
   addPortfolioProject: (project: PortfolioProject) => Promise<{ success: boolean; error?: string }>;
   updatePortfolioProject: (projectId: string, updates: Partial<PortfolioProject>) => Promise<{ success: boolean; error?: string }>;
   deletePortfolioProject: (projectId: string) => Promise<{ success: boolean; error?: string }>;
+  addShopProduct: (product: ShopProduct) => Promise<{ success: boolean; error?: string }>;
+  updateShopProduct: (productId: string, updates: Partial<ShopProduct>) => Promise<{ success: boolean; error?: string }>;
+  deleteShopProduct: (productId: string) => Promise<{ success: boolean; error?: string }>;
+  resetShopCatalog: () => Promise<{ success: boolean; error?: string }>;
   resetAllData: () => void;
 }
 
@@ -235,6 +241,7 @@ export const STORAGE_KEYS = {
   FILES: 'cabando_files_v3',
   NOTIFICATIONS: 'cabando_notifications_v3',
   COMMISSION_DRAFT: 'brewster_commission_form_draft_v1',
+  SHOP_PRODUCTS: 'destalion_shop_products_v1',
 };
 
 
@@ -432,6 +439,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
     return [];
+  });
+
+  const [shopProducts, setShopProducts] = useState<ShopProduct[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SHOP_PRODUCTS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return SHOP_PRODUCTS;
   });
 
   const [users, setUsers] = useState<User[]>(() => {
@@ -727,6 +747,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(portfolio));
   }, [portfolio]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SHOP_PRODUCTS, JSON.stringify(shopProducts));
+    } catch {}
+  }, [shopProducts]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
@@ -2700,6 +2726,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
+  const addShopProduct = async (product: ShopProduct): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can add storefront editions.' };
+    }
+    setShopProducts(prev => [product, ...prev]);
+    return { success: true };
+  };
+
+  const updateShopProduct = async (productId: string, updates: Partial<ShopProduct>): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can edit storefront editions.' };
+    }
+    const target = shopProducts.find(p => p.id === productId);
+    if (!target) return { success: false, error: 'Shop edition not found.' };
+
+    const updated: ShopProduct = { ...target, ...updates };
+    setShopProducts(prev => prev.map(p => (p.id === productId ? updated : p)));
+    if (selectedShopProduct?.id === productId) {
+      setSelectedShopProduct(updated);
+    }
+    return { success: true };
+  };
+
+  const deleteShopProduct = async (productId: string): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can delete storefront editions.' };
+    }
+    setShopProducts(prev => prev.filter(p => p.id !== productId));
+    if (selectedShopProduct?.id === productId) {
+      setSelectedShopProduct(null);
+    }
+    return { success: true };
+  };
+
+  const resetShopCatalog = async (): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Only studio administrators can reset the storefront catalog.' };
+    }
+    setShopProducts(SHOP_PRODUCTS);
+    try {
+      localStorage.setItem(STORAGE_KEYS.SHOP_PRODUCTS, JSON.stringify(SHOP_PRODUCTS));
+    } catch {}
+    return { success: true };
+  };
+
   const resetAllData = () => {
     try {
       localStorage.clear();
@@ -2721,6 +2792,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setServices(INITIAL_SERVICES);
       setPortfolio([]);
     }
+    setShopProducts(SHOP_PRODUCTS);
     setUsers(INITIAL_USERS);
     setCurrentUser(null);
     setCommissions(INITIAL_COMMISSIONS);
@@ -2909,6 +2981,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         studioProfile,
         services,
         portfolio,
+        shopProducts,
         commissions,
         currentUserCommissions,
         activeCommission,
@@ -2950,6 +3023,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addPortfolioProject,
         updatePortfolioProject,
         deletePortfolioProject,
+        addShopProduct,
+        updateShopProduct,
+        deleteShopProduct,
+        resetShopCatalog,
         resetAllData,
       }}
     >

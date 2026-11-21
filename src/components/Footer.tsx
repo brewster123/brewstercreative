@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { Sparkles, Send, ShieldCheck, Instagram, Dribbble, Twitter, ArrowUp, Mail, MapPin } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
+import { ScrollReveal } from './ScrollMotion';
 import { normalizeSocialMediaUrl } from '../utils/urlUtils';
 
 export const Footer: React.FC = () => {
@@ -15,7 +16,7 @@ export const Footer: React.FC = () => {
     <footer className="bg-canvas border-t border-hairline text-graphite-strong text-sm mt-20 relative overflow-hidden transition-colors">
       <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 relative z-10">
+      <ScrollReveal y={20} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10 lg:gap-8 mb-10 sm:mb-12">
           
           {/* Studio Brand & Bio */}
@@ -240,7 +241,7 @@ export const Footer: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
+      </ScrollReveal>
     </footer>
   );
 };

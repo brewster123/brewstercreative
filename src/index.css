@@ -382,9 +382,56 @@
   animation-play-state: paused;
 }
 
+/* Fluid Hover Wave Effect for Showcase Artwork */
+@keyframes artwork-wave-sweep {
+  0% {
+    transform: translate3d(-140%, 0, 0) skewX(-18deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  44% {
+    opacity: 1;
+  }
+  54% {
+    transform: translate3d(260%, 0, 0) skewX(-18deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(260%, 0, 0) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+.artwork-wave-sheen {
+  position: absolute;
+  inset: -10% 0;
+  width: 52%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 24%,
+    rgba(255, 255, 255, 0.28) 50%,
+    rgba(212, 255, 56, 0.14) 64%,
+    rgba(255, 255, 255, 0.05) 80%,
+    transparent 100%
+  );
+  transform: translate3d(-140%, 0, 0) skewX(-18deg);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.group:hover .artwork-wave-sheen,
+.group:focus-visible .artwork-wave-sheen {
+  animation: artwork-wave-sweep 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
 /* Reduced Motion Compliance */
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee-left {
+  .animate-marquee-left,
+  .artwork-wave-sheen {
     animation: none;
   }
 

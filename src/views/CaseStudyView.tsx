@@ -32,6 +32,8 @@ import {
 } from 'lucide-react';
 import { ServiceCard } from '../components/ServiceCard';
 import { ImageLightbox } from '../components/ImageLightbox';
+import { ArtworkHoverWave } from '../components/ArtworkHoverWave';
+import { ScrollReveal } from '../components/ScrollMotion';
 import {
   PortfolioEditorModal,
   PortfolioDeleteModal,
@@ -461,14 +463,9 @@ export const CaseStudyView: React.FC = () => {
           </div>
         </div>
 
-        {/* Full-Bleed Artwork Viewport */}
+        {/* Full-Artwork Exhibition Viewport (Uncropped for Portrait, Square & Landscape Works) */}
         <div className="space-y-3">
-          <div className="relative rounded-3xl overflow-hidden bg-surface-secondary border border-hairline aspect-[16/10] sm:aspect-[16/9] shadow-lg group">
-            <img
-              src={galleryImages[activeGalleryIndex] || fallbackCaseStudyImage}
-              alt={project.title || 'Exhibition artwork'}
-              className="w-full h-full object-cover"
-            />
+          <div className="relative rounded-3xl overflow-hidden bg-surface-secondary border border-hairline shadow-lg group">
             <button
               type="button"
               onClick={() =>
@@ -478,11 +475,25 @@ export const CaseStudyView: React.FC = () => {
                   index: activeGalleryIndex,
                 })
               }
-              aria-label="Enlarge image in viewer"
-              className="absolute top-4 right-4 p-2.5 rounded-full bg-black/60 hover:bg-black text-white transition-colors backdrop-blur-xs cursor-pointer shadow-md opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 duration-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+              aria-label="Enlarge full artwork in viewer"
+              className="w-full flex items-center justify-center p-3 sm:p-5 lg:p-6 cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+            >
+              <span className="relative inline-flex overflow-hidden rounded-2xl shadow-sm">
+                <img
+                  src={galleryImages[activeGalleryIndex] || fallbackCaseStudyImage}
+                  alt={project.title || 'Exhibition artwork'}
+                  referrerPolicy="no-referrer"
+                  className="w-auto h-auto max-w-full max-h-[82vh] object-contain"
+                />
+                <ArtworkHoverWave className="z-10" />
+              </span>
+            </button>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute top-4 right-4 p-2.5 rounded-full bg-black/60 text-white transition-opacity backdrop-blur-xs shadow-md opacity-80 group-hover:opacity-100 duration-200"
             >
               <Maximize2 className="w-4 h-4" />
-            </button>
+            </span>
           </div>
 
           {/* Secondary Gallery Thumbnails */}
@@ -493,13 +504,18 @@ export const CaseStudyView: React.FC = () => {
                   key={idx}
                   type="button"
                   onClick={() => setActiveGalleryIndex(idx)}
-                  className={`relative w-20 sm:w-24 aspect-[16/10] rounded-xl overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                  className={`relative w-20 sm:w-24 aspect-[16/10] rounded-xl overflow-hidden bg-surface-secondary border transition-all cursor-pointer shrink-0 flex items-center justify-center ${
                     activeGalleryIndex === idx
                       ? 'border-accent ring-2 ring-accent/30 scale-102'
                       : 'border-hairline opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <img src={imgUrl || fallbackCaseStudyImage} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img
+                    src={imgUrl || fallbackCaseStudyImage}
+                    alt={`Thumbnail ${idx + 1}`}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-contain"
+                  />
                 </button>
               ))}
             </div>
@@ -561,7 +577,7 @@ export const CaseStudyView: React.FC = () => {
                             })
                           }
                           aria-label={`Inspect presentation board ${idx + 1} fullscreen`}
-                          className="block w-full text-left cursor-zoom-in focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                          className="relative block w-full text-left overflow-hidden cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
                         >
                           <img
                             src={slide.url}
@@ -569,6 +585,7 @@ export const CaseStudyView: React.FC = () => {
                             loading={idx === 0 ? 'eager' : 'lazy'}
                             className="w-full h-auto block"
                           />
+                          <ArtworkHoverWave className="z-10" />
                         </button>
                         <span className="pointer-events-none absolute top-3.5 right-3.5 p-2 rounded-full bg-black/60 text-white backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           <Maximize2 className="w-3.5 h-3.5" />
@@ -584,38 +601,38 @@ export const CaseStudyView: React.FC = () => {
                 ) : (
                   <div className="space-y-5">
                     {presentationSlides.map((slide, idx) => (
-                      <figure
-                        key={slide.id || `${slide.url}-${idx}`}
-                        className="relative group rounded-3xl overflow-hidden border border-hairline bg-surface shadow-2xs m-0"
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setLightboxState({
-                              isOpen: true,
-                              images: presentationUrls,
-                              index: idx,
-                            })
-                          }
-                          aria-label={`Inspect presentation slide ${idx + 1} fullscreen`}
-                          className="block w-full text-left cursor-zoom-in focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
-                        >
-                          <img
-                            src={slide.url}
-                            alt={slide.caption || `${project.title} — Presentation slide ${idx + 1}`}
-                            loading={idx === 0 ? 'eager' : 'lazy'}
-                            className="w-full h-auto block"
-                          />
-                        </button>
-                        <span className="pointer-events-none absolute top-3.5 right-3.5 p-2 rounded-full bg-black/60 text-white backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <Maximize2 className="w-3.5 h-3.5" />
-                        </span>
-                        {slide.caption && (
-                          <figcaption className="px-5 py-3 text-xs text-graphite-strong border-t border-hairline">
-                            {slide.caption}
-                          </figcaption>
-                        )}
-                      </figure>
+                      <ScrollReveal key={slide.id || `${slide.url}-${idx}`} y={26}>
+                        <figure className="relative group rounded-3xl overflow-hidden border border-hairline bg-surface shadow-2xs m-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLightboxState({
+                                isOpen: true,
+                                images: presentationUrls,
+                                index: idx,
+                              })
+                            }
+                            aria-label={`Inspect presentation slide ${idx + 1} fullscreen`}
+                            className="relative block w-full text-left overflow-hidden cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                          >
+                            <img
+                              src={slide.url}
+                              alt={slide.caption || `${project.title} — Presentation slide ${idx + 1}`}
+                              loading={idx === 0 ? 'eager' : 'lazy'}
+                              className="w-full h-auto block"
+                            />
+                            <ArtworkHoverWave className="z-10" />
+                          </button>
+                          <span className="pointer-events-none absolute top-3.5 right-3.5 p-2 rounded-full bg-black/60 text-white backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <Maximize2 className="w-3.5 h-3.5" />
+                          </span>
+                          {slide.caption && (
+                            <figcaption className="px-5 py-3 text-xs text-graphite-strong border-t border-hairline">
+                              {slide.caption}
+                            </figcaption>
+                          )}
+                        </figure>
+                      </ScrollReveal>
                     ))}
                   </div>
                 )}
@@ -650,7 +667,7 @@ export const CaseStudyView: React.FC = () => {
             
             {/* Overview / Background (Legacy Narrative Chapters) */}
             {(cs?.overview || (!hasPresentation && hasDistinctFullDesc)) && (
-              <div className={`space-y-4 ${hasPresentation ? 'pt-10 border-t border-hairline' : ''}`}>
+              <ScrollReveal className={`space-y-4 ${hasPresentation ? 'pt-10 border-t border-hairline' : ''}`}>
                 <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   01 / Project Overview
                 </span>
@@ -660,12 +677,12 @@ export const CaseStudyView: React.FC = () => {
                 <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs?.overview || project.fullDesc}</p>
                 </div>
-              </div>
+              </ScrollReveal>
             )}
 
             {/* The Challenge */}
             {cs?.challenge && (
-              <div className="space-y-4 pt-10 border-t border-hairline">
+              <ScrollReveal className="space-y-4 pt-10 border-t border-hairline">
                 <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   02 / The Challenge
                 </span>
@@ -675,12 +692,12 @@ export const CaseStudyView: React.FC = () => {
                 <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.challenge}</p>
                 </div>
-              </div>
+              </ScrollReveal>
             )}
 
             {/* Objective */}
             {cs?.objective && (
-              <div className="space-y-4 pt-10 border-t border-hairline">
+              <ScrollReveal className="space-y-4 pt-10 border-t border-hairline">
                 <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   03 / Core Objective
                 </span>
@@ -690,12 +707,12 @@ export const CaseStudyView: React.FC = () => {
                 <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.objective}</p>
                 </div>
-              </div>
+              </ScrollReveal>
             )}
 
             {/* Research & Inspiration */}
             {cs?.researchInspiration && (
-              <div className="space-y-4 pt-10 border-t border-hairline">
+              <ScrollReveal className="space-y-4 pt-10 border-t border-hairline">
                 <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   04 / Research &amp; Aesthetic Inquiries
                 </span>
@@ -705,12 +722,12 @@ export const CaseStudyView: React.FC = () => {
                 <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.researchInspiration}</p>
                 </div>
-              </div>
+              </ScrollReveal>
             )}
 
             {/* Concept Development */}
             {cs?.conceptDevelopment && (
-              <div className="space-y-4 pt-10 border-t border-hairline">
+              <ScrollReveal className="space-y-4 pt-10 border-t border-hairline">
                 <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   05 / Concept Development
                 </span>
@@ -720,12 +737,12 @@ export const CaseStudyView: React.FC = () => {
                 <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.conceptDevelopment}</p>
                 </div>
-              </div>
+              </ScrollReveal>
             )}
 
             {/* Design Decisions */}
             {cs?.designDecisions && (
-              <div className="space-y-4 pt-10 border-t border-hairline">
+              <ScrollReveal className="space-y-4 pt-10 border-t border-hairline">
                 <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   06 / Design Decisions
                 </span>
@@ -735,12 +752,12 @@ export const CaseStudyView: React.FC = () => {
                 <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.designDecisions}</p>
                 </div>
-              </div>
+              </ScrollReveal>
             )}
 
             {/* Final Solution */}
             {cs?.finalSolution && (
-              <div className="space-y-4 pt-10 border-t border-hairline">
+              <ScrollReveal className="space-y-4 pt-10 border-t border-hairline">
                 <span className="text-xs uppercase tracking-widest text-accent font-semibold block">
                   07 / Final Solution
                 </span>
@@ -750,7 +767,7 @@ export const CaseStudyView: React.FC = () => {
                 <div className="text-sm sm:text-base text-graphite-strong leading-relaxed space-y-4">
                   <p>{cs.finalSolution}</p>
                 </div>
-              </div>
+              </ScrollReveal>
             )}
 
             {/* Reflection / Lessons */}

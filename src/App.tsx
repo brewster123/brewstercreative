@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { MotionConfig } from 'motion/react';
 import { AlertTriangle, Copy, Check, X, RotateCcw, ShieldCheck } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
@@ -369,8 +370,10 @@ const MainLayout: React.FC = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <MainLayout />
-    </AppProvider>
+    <MotionConfig reducedMotion="user">
+      <AppProvider>
+        <MainLayout />
+      </AppProvider>
+    </MotionConfig>
   );
 }

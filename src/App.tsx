@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { MotionConfig } from 'motion/react';
-import { AlertTriangle, Copy, Check, X, RotateCcw, ShieldCheck, Bell, ArrowRight } from 'lucide-react';
+import { AlertTriangle, Copy, Check, X, RotateCcw, ShieldCheck } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -149,100 +149,6 @@ const DatabaseErrorBanner: React.FC = () => {
             className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </aside>
-  );
-};
-
-const LiveNotificationToast: React.FC = () => {
-  const {
-    liveAlert,
-    dismissLiveAlert,
-    markNotificationAsRead,
-    setSelectedCommissionId,
-    setActiveDashboardTab,
-    setActiveView,
-    currentUser,
-  } = useApp();
-
-  useEffect(() => {
-    if (!liveAlert) return;
-    const isUrgentIntake = liveAlert.title === 'New Commission Intake';
-    if (isUrgentIntake) return;
-    const timer = setTimeout(() => {
-      dismissLiveAlert();
-    }, 12000);
-    return () => clearTimeout(timer);
-  }, [liveAlert, dismissLiveAlert]);
-
-  if (!liveAlert || !currentUser) return null;
-
-  const handleOpen = () => {
-    markNotificationAsRead(liveAlert.id);
-    const targetCommId = liveAlert.commissionId || liveAlert.commission_id;
-    if (targetCommId) {
-      setSelectedCommissionId(targetCommId);
-    }
-    const rawLinkTab = liveAlert.linkTab || liveAlert.link_tab;
-    const isChatMessage = liveAlert.type === 'message' || rawLinkTab === 'chat';
-
-    if (currentUser.role === 'admin') {
-      if (isChatMessage) {
-        setActiveView('chat');
-      } else {
-        setActiveDashboardTab(
-          targetCommId && (!rawLinkTab || rawLinkTab === 'overview')
-            ? 'commissions'
-            : rawLinkTab || 'commissions'
-        );
-        setActiveView('admin-dashboard');
-      }
-    } else {
-      if (rawLinkTab) {
-        setActiveDashboardTab(rawLinkTab);
-      }
-      setActiveView(isChatMessage ? 'chat' : 'client-dashboard');
-    }
-    dismissLiveAlert();
-  };
-
-  return (
-    <aside
-      role="status"
-      aria-live="polite"
-      className="fixed bottom-5 right-5 z-50 w-[calc(100vw-2.5rem)] max-w-sm bg-surface border border-accent/40 rounded-2xl shadow-2xl p-4 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200"
-    >
-      <div className="w-9 h-9 rounded-xl bg-[#E0F2FE] dark:bg-[#0C4A6E]/60 text-accent flex items-center justify-center shrink-0">
-        <Bell className="w-4 h-4" />
-      </div>
-      <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-start justify-between gap-2">
-          <h4 className="text-xs font-bold text-carbon truncate">
-            {liveAlert.title || 'Studio Notice'}
-          </h4>
-          <button
-            type="button"
-            onClick={dismissLiveAlert}
-            aria-label="Dismiss notification alert"
-            className="p-0.5 rounded text-graphite hover:text-carbon cursor-pointer shrink-0"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        <p className="text-xs text-graphite-strong leading-relaxed line-clamp-2">
-          {liveAlert.message}
-        </p>
-        <div className="pt-1 flex items-center justify-between">
-          <span className="text-[10px] font-mono text-graphite">Just now</span>
-          <button
-            type="button"
-            onClick={handleOpen}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-accent hover:underline cursor-pointer"
-          >
-            <span>Open</span>
-            <ArrowRight className="w-3 h-3" />
           </button>
         </div>
       </div>
@@ -455,9 +361,6 @@ const MainLayout: React.FC = () => {
           <Footer />
         </div>
       )}
-
-      {/* Live Notification Toast */}
-      <LiveNotificationToast />
     </div>
   );
 };

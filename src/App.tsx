@@ -423,16 +423,16 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className={`${isChatView ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'} flex flex-col bg-canvas text-carbon transition-colors duration-200 selection:bg-accent selection:text-white font-sans antialiased relative`}>
-      {/* Navbar flow placeholder for the fixed header */}
-      <div className="h-16 sm:h-20 shrink-0">
-        {/* Accessible Skip Link */}
-        <a 
-          href="#main-content" 
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-accent focus:text-white focus:font-semibold focus:rounded-md focus:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-white transition-all motion-reduce:transition-none"
-        >
-          Skip to main content
-        </a>
-      </div>
+      {/* Accessible Skip Link */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-accent focus:text-white focus:font-semibold focus:rounded-md focus:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-white transition-all motion-reduce:transition-none"
+      >
+        Skip to main content
+      </a>
+
+      {/* Primary Navigation Header */}
+      <Navbar />
 
       {/* Main Page Body View with Subtle View Transition */}
       <main 
@@ -453,9 +453,6 @@ const MainLayout: React.FC = () => {
           <Footer />
         </div>
       )}
-
-      {/* Primary Fixed Navigation Header */}
-      <Navbar />
 
       {/* Live Notification Toast */}
       <LiveNotificationToast />

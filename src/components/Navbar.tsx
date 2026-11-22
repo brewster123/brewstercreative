@@ -145,7 +145,7 @@ export const Navbar: React.FC = () => {
     .join('') || 'U';
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 w-full bg-canvas/90 backdrop-blur-md border-b border-hairline transition-colors">
+    <header className="relative z-40 w-full shrink-0 bg-canvas/90 backdrop-blur-md border-b border-hairline transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-8 h-16 sm:h-20">
           
@@ -422,7 +422,7 @@ export const Navbar: React.FC = () => {
       {mobileMenuOpen && (
         <div 
           ref={mobileMenuRef}
-          className="lg:hidden bg-surface border-b border-hairline px-4 sm:px-6 pt-3 pb-6 space-y-3.5 shadow-lg animate-in fade-in duration-150 max-h-[calc(100vh-5rem)] overflow-y-auto"
+          className="lg:hidden absolute inset-x-0 top-full z-50 bg-surface border-b border-hairline px-4 sm:px-6 pt-3 pb-6 space-y-3.5 shadow-lg animate-in fade-in duration-150 max-h-[calc(100vh-5rem)] overflow-y-auto"
         >
           {currentUser && (
             <div className="p-3 rounded-2xl bg-surface-secondary border border-hairline flex items-center justify-between">

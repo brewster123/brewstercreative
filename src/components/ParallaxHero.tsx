@@ -483,24 +483,6 @@ export const ParallaxHero: React.FC = () => {
           </p>
 
           <div className="pt-1 flex flex-wrap items-center justify-center gap-3 sm:gap-3.5">
-            <div
-              aria-label="Software used: Adobe Illustrator, Adobe Lightroom, Adobe Photoshop, Figma, and Affinity"
-              title="Adobe Illustrator · Adobe Lightroom · Adobe Photoshop · Figma · Affinity"
-              className="px-3.5 py-1.5 rounded-full bg-[#065994]/50 border border-white/20 backdrop-blur-xs min-h-[44px] inline-flex items-center gap-2.5 shadow-xs"
-            >
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-white/80 whitespace-nowrap">
-                Software
-              </span>
-              <span className="h-4 w-px bg-white/20 shrink-0" aria-hidden="true" />
-              <img
-                src="/assets/aistudio/image_a69e1370.png"
-                alt="Software used: Adobe Illustrator, Adobe Lightroom, Adobe Photoshop, Figma, and Affinity"
-                className="h-7 w-auto object-contain select-none"
-                loading="eager"
-                decoding="async"
-              />
-            </div>
-
             <button
               id="hero-cta-explore-portfolio"
               type="button"

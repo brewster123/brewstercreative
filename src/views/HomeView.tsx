@@ -494,6 +494,25 @@ export const HomeView: React.FC = () => {
                   <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed">
                     {studioProfile.bio}
                   </p>
+
+                  <div className="pt-1 space-y-2">
+                    <span className="text-[11px] uppercase tracking-widest text-graphite font-semibold block">
+                      Proficient in:
+                    </span>
+                    <div
+                      aria-label="Software used: Adobe Illustrator, Adobe Lightroom, Adobe Photoshop, Figma, and Affinity"
+                      title="Adobe Illustrator · Adobe Lightroom · Adobe Photoshop · Figma · Affinity"
+                      className="inline-flex items-center px-3 py-2 rounded-2xl bg-surface border border-hairline shadow-2xs"
+                    >
+                      <img
+                        src="/assets/aistudio/image_a69e1370.png"
+                        alt="Adobe Illustrator, Adobe Lightroom, Adobe Photoshop, Figma, and Affinity"
+                        className="h-7 sm:h-8 w-auto object-contain select-none"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-hairline flex flex-wrap items-center justify-between gap-3">

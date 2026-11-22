@@ -20,7 +20,6 @@ import { ParallaxHero } from '../components/ParallaxHero';
 import { ScrollReveal, ScrollParallaxLayer } from '../components/ScrollMotion';
 import { ArtworkHoverWave } from '../components/ArtworkHoverWave';
 import { getProjectLikes, getProjectViews } from '../lib/portfolio';
-import studioBentoSky from '../assets/images/studio_bento_sky_1794752481393.jpg';
 import heroSkyClouds from '../assets/images/hero_sky_clouds_1794752480825.jpg';
 
 export const HomeView: React.FC = () => {
@@ -173,35 +172,39 @@ export const HomeView: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
             {/* Left Photo Bento Card */}
             <ScrollReveal delay={0} className="h-full">
-              <div className="relative rounded-3xl overflow-hidden min-h-[340px] h-full flex flex-col justify-between p-5 bg-[#0284C7] shadow-sm group">
-                <ScrollParallaxLayer offset={22} className="absolute inset-0 pointer-events-none">
+              <div className="relative rounded-3xl overflow-hidden min-h-[340px] h-full flex flex-col justify-between p-5 bg-[#007CFF] shadow-sm group">
+                <ScrollParallaxLayer offset={14} className="absolute inset-0 pointer-events-none">
                   <img
-                    src={studioBentoSky}
-                    alt="DESTALION geometric visual identity study against clear azure sky"
-                    className="w-full h-full object-cover scale-[1.14] group-hover:scale-[1.17] motion-reduce:transform-none transition-transform duration-500"
+                    src="/assets/aistudio/image_b44d4207.png"
+                    alt="GCash — sole accepted payment method"
+                    className="w-full h-full object-cover object-center scale-[1.06] group-hover:scale-[1.09] motion-reduce:transform-none transition-transform duration-500"
                   />
                 </ScrollParallaxLayer>
-                <div className="relative z-10 flex items-center justify-between">
-                  <span className="font-display font-bold text-sm tracking-wider uppercase text-white drop-shadow-xs">
-                    {studioProfile.studioName}
-                  </span>
+                <div className="relative z-10 flex items-center justify-end">
                   <button
                     type="button"
-                    onClick={() => setActiveView('portfolio')}
-                    aria-label="Inspect portfolio archive"
+                    onClick={() => setActiveView('commission-form')}
+                    aria-label="Start a commission via GCash"
                     className="w-9 h-9 rounded-xl bg-white dark:bg-white text-[#111114] hover:bg-[#D4FF38] flex items-center justify-center shadow-sm transition-colors cursor-pointer"
                   >
                     <ArrowUpRight className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="relative z-10 bg-surface text-carbon rounded-2xl p-5 shadow-md space-y-2 border border-hairline/40">
-                  <span className="font-display text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums block">
-                    {services.length}+
-                  </span>
-                  <p className="text-xs text-graphite-strong leading-relaxed">
-                    Specialized visual craft disciplines tailored for ambitious creators and indie studios.
-                  </p>
+                <div className="relative z-10 bg-surface text-carbon rounded-2xl p-4 sm:p-5 shadow-md border border-hairline/40">
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-display font-extrabold text-sm sm:text-base tracking-tight text-[#007DFE] dark:text-[#38BDF8]">
+                        GCash
+                      </span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-carbon">
+                        Only
+                      </span>
+                    </div>
+                    <span className="text-xs text-graphite-strong block leading-snug">
+                      Only GCash is accepted as payment.
+                    </span>
+                  </div>
                 </div>
               </div>
             </ScrollReveal>

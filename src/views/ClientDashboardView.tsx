@@ -214,6 +214,102 @@ export const ClientDashboardView: React.FC = () => {
     return 'Good evening';
   };
 
+  // Selected commission details (fallback to first project)
+  const currentCommission = commission || currentUserCommissions[0];
+  const isFinalDelivery =
+    currentCommission?.currentStage === 8 ||
+    currentCommission?.status === 'Completed' ||
+    currentCommission?.status === 'completed';
+  const effectiveProofs = proofs && proofs.length > 0 ? proofs : (currentCommission?.proofs || []);
+  const latestProof = effectiveProofs.length > 0 ? effectiveProofs[0] : null;
+
+  const stageNum = currentCommission?.currentStage;
+  const latestProofStatus = (latestProof?.status || '').toLowerCase().trim();
+
+  const isProofPendingReview =
+    !isFinalDelivery &&
+    Boolean(latestProof) &&
+    (latestProofStatus === 'pending_review' ||
+      latestProofStatus === 'pending review' ||
+      latestProofStatus === 'pending' ||
+      (stageNum === 5 &&
+        !latestProofStatus.includes('revision') &&
+        latestProofStatus !== 'approved'));
+
+  const currentStageInfo = COMMISSION_STAGES.find(s => s.number === (currentCommission?.currentStage || 1));
+  const nextStageInfo = COMMISSION_STAGES.find(s => s.number === ((currentCommission?.currentStage || 1) + 1));
+
+  // Payment conjunction security invariant
+  const isPaymentSettled = currentUser?.role === 'admin' || (
+    currentCommission?.paymentStatus === 'Paid' && currentCommission?.totalPaid === true
+  );
+
+  // Unread messages for active commission
+  const unreadMessagesCount = useMemo(() => {
+    if (!currentCommission?.id || !currentUser?.id) return 0;
+    return messages.filter(
+      m => m.commissionId === currentCommission.id && m.senderId !== currentUser.id && !m.readStatus
+    ).length;
+  }, [messages, currentCommission?.id, currentUser?.id]);
+
+  // Derived Action Required states
+  const isDepositRequired = Boolean(
+    currentCommission &&
+    !currentCommission.depositPaid && 
+    currentCommission.paymentStatus !== 'Paid' && 
+    currentCommission.paymentStatus !== 'Partial' &&
+    ((currentCommission.currentStage || 1) <= 2 || currentCommission.status === 'pending' || currentCommission.status === 'reviewing' || currentCommission.status === 'accepted')
+  );
+
+  const isBalancePending = Boolean(
+    currentCommission &&
+    (currentCommission.depositPaid || currentCommission.paymentStatus === 'Partial') && 
+    currentCommission.paymentStatus !== 'Paid' && 
+    !currentCommission.totalPaid && 
+    ((currentCommission.currentStage || 1) >= 7 || currentCommission.status === 'final_approval' || isFinalDelivery)
+  );
+
+  const isDeliverablesLocked = Boolean(
+    currentCommission &&
+    isFinalDelivery && 
+    !isPaymentSettled
+  );
+
+  // Derive highest-priority pending client action
+  const pendingAction = useMemo(() => {
+    if (!currentCommission) return null;
+    if (isProofPendingReview) {
+      return {
+        type: 'proof' as const,
+        title: `Creative Proof v${latestProof?.version || 1} Awaiting Review`,
+        description: 'Your designer has published a high-resolution milestone proof. Please inspect the visual draft and submit your approval or revision directives.',
+        actionLabel: 'Review Creative Proof',
+        targetTab: 'proofs' as const,
+      };
+    }
+    if (isDepositRequired) {
+      return {
+        type: 'deposit' as const,
+        title: 'Initial Production Deposit Required',
+        description: 'Submit your 50% GCash deposit receipt to commence conceptual art direction and vector drafting.',
+        actionLabel: 'Submit Deposit Receipt',
+        targetTab: 'payments' as const,
+      };
+    }
+    if (isBalancePending || isDeliverablesLocked) {
+      return {
+        type: 'balance' as const,
+        title: isDeliverablesLocked ? 'Final Deliverables Locked Pending Balance' : 'Final Balance Outstanding',
+        description: isDeliverablesLocked 
+          ? 'Final vector packages and commercial licenses are ready for release once remaining balance verification is complete.'
+          : 'Creative work is complete. Settle the remaining balance via GCash to unlock final vector deliverables.',
+        actionLabel: 'Settle Remaining Balance',
+        targetTab: 'payments' as const,
+      };
+    }
+    return null;
+  }, [currentCommission, isProofPendingReview, isDepositRequired, isBalancePending, isDeliverablesLocked, latestProof?.version]);
+
   if (authLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3 animate-in fade-in duration-300">
@@ -310,99 +406,6 @@ export const ClientDashboardView: React.FC = () => {
     return !s.includes('completed') && !s.includes('cancelled') && !s.includes('rejected');
   }).length;
   const completedCount = currentUserCommissions.filter(c => (c.status || '').toLowerCase().includes('completed')).length;
-
-  // Selected commission details (fallback to first project)
-  const currentCommission = commission || currentUserCommissions[0];
-  const isFinalDelivery = currentCommission.currentStage === 8 || currentCommission.status === 'Completed' || currentCommission.status === 'completed';
-  const effectiveProofs = proofs && proofs.length > 0 ? proofs : (currentCommission.proofs || []);
-  const latestProof = effectiveProofs.length > 0 ? effectiveProofs[0] : null;
-
-  const stageNum = currentCommission.currentStage;
-  const latestProofStatus = (latestProof?.status || '').toLowerCase().trim();
-
-  const isProofPendingReview =
-    !isFinalDelivery &&
-    Boolean(latestProof) &&
-    (latestProofStatus === 'pending_review' ||
-      latestProofStatus === 'pending review' ||
-      latestProofStatus === 'pending' ||
-      (stageNum === 5 &&
-        !latestProofStatus.includes('revision') &&
-        latestProofStatus !== 'approved'));
-
-  const currentStageInfo = COMMISSION_STAGES.find(s => s.number === (currentCommission?.currentStage || 1));
-  const nextStageInfo = COMMISSION_STAGES.find(s => s.number === ((currentCommission?.currentStage || 1) + 1));
-
-  // Payment conjunction security invariant
-  const isPaymentSettled = currentUser?.role === 'admin' || (
-    currentCommission?.paymentStatus === 'Paid' && currentCommission?.totalPaid === true
-  );
-
-  // Unread messages for active commission
-  const unreadMessagesCount = useMemo(() => {
-    if (!currentCommission?.id || !currentUser?.id) return 0;
-    return messages.filter(
-      m => m.commissionId === currentCommission.id && m.senderId !== currentUser.id && !m.readStatus
-    ).length;
-  }, [messages, currentCommission?.id, currentUser?.id]);
-
-  // Derived Action Required states
-  const isDepositRequired = Boolean(
-    currentCommission &&
-    !currentCommission.depositPaid && 
-    currentCommission.paymentStatus !== 'Paid' && 
-    currentCommission.paymentStatus !== 'Partial' &&
-    ((currentCommission.currentStage || 1) <= 2 || currentCommission.status === 'pending' || currentCommission.status === 'reviewing' || currentCommission.status === 'accepted')
-  );
-
-  const isBalancePending = Boolean(
-    currentCommission &&
-    (currentCommission.depositPaid || currentCommission.paymentStatus === 'Partial') && 
-    currentCommission.paymentStatus !== 'Paid' && 
-    !currentCommission.totalPaid && 
-    ((currentCommission.currentStage || 1) >= 7 || currentCommission.status === 'final_approval' || isFinalDelivery)
-  );
-
-  const isDeliverablesLocked = Boolean(
-    currentCommission &&
-    isFinalDelivery && 
-    !isPaymentSettled
-  );
-
-  // Derive highest-priority pending client action
-  const pendingAction = useMemo(() => {
-    if (!currentCommission) return null;
-    if (isProofPendingReview) {
-      return {
-        type: 'proof' as const,
-        title: `Creative Proof v${latestProof?.version || 1} Awaiting Review`,
-        description: 'Your designer has published a high-resolution milestone proof. Please inspect the visual draft and submit your approval or revision directives.',
-        actionLabel: 'Review Creative Proof',
-        targetTab: 'proofs' as const,
-      };
-    }
-    if (isDepositRequired) {
-      return {
-        type: 'deposit' as const,
-        title: 'Initial Production Deposit Required',
-        description: 'Submit your 50% GCash deposit receipt to commence conceptual art direction and vector drafting.',
-        actionLabel: 'Submit Deposit Receipt',
-        targetTab: 'payments' as const,
-      };
-    }
-    if (isBalancePending || isDeliverablesLocked) {
-      return {
-        type: 'balance' as const,
-        title: isDeliverablesLocked ? 'Final Deliverables Locked Pending Balance' : 'Final Balance Outstanding',
-        description: isDeliverablesLocked 
-          ? 'Final vector packages and commercial licenses are ready for release once remaining balance verification is complete.'
-          : 'Creative work is complete. Settle the remaining balance via GCash to unlock final vector deliverables.',
-        actionLabel: 'Settle Remaining Balance',
-        targetTab: 'payments' as const,
-      };
-    }
-    return null;
-  }, [currentCommission, isProofPendingReview, isDepositRequired, isBalancePending, isDeliverablesLocked, latestProof?.version]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10 animate-in fade-in duration-300">

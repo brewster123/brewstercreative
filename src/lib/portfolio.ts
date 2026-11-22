@@ -623,9 +623,59 @@ export function extractCaseStudyIdFromHash(hash?: string): string | null {
   const clean = hash.replace(/^[#/]+/, '');
   if (clean.startsWith('case-study-')) {
     const id = clean.slice('case-study-'.length).trim();
-    return id.length > 0 ? id : null;
+    if (!id) return null;
+    try {
+      return decodeURIComponent(id);
+    } catch {
+      return id;
+    }
   }
   return null;
+}
+
+/**
+ * Extracts a case study project ID from pathname (/case-study/{id}),
+ * query parameter (?case-study={id} or ?work={id}), or legacy hash (#case-study-{id}).
+ */
+export function extractCaseStudyIdFromLocation(loc?: {
+  pathname?: string;
+  search?: string;
+  hash?: string;
+}): string | null {
+  if (!loc) return null;
+
+  const pathname = loc.pathname || '';
+  const pathMatch = pathname.match(/^\/case-study\/([^/?#]+)\/?$/i);
+  if (pathMatch && pathMatch[1]) {
+    try {
+      return decodeURIComponent(pathMatch[1]).trim() || null;
+    } catch {
+      return pathMatch[1].trim() || null;
+    }
+  }
+
+  if (loc.search) {
+    try {
+      const params = new URLSearchParams(loc.search);
+      const queryId = (params.get('case-study') || params.get('work') || '').trim();
+      if (queryId) return queryId;
+    } catch {
+      // Ignore malformed query strings
+    }
+  }
+
+  return extractCaseStudyIdFromHash(loc.hash);
+}
+
+/**
+ * Builds the canonical crawlable URL for a case study so external platforms
+ * receive server-rendered OpenGraph image and title metadata.
+ */
+export function buildCaseStudyShareUrl(projectId: string, origin?: string): string {
+  const baseOrigin =
+    origin || (typeof window !== 'undefined' ? window.location.origin : '');
+  const encodedId = encodeURIComponent(projectId);
+  return baseOrigin ? `${baseOrigin}/case-study/${encodedId}` : `/case-study/${encodedId}`;
 }
 
 /**

@@ -16,7 +16,8 @@ import {
 import { 
   isProjectLikedLocally, 
   getProjectLikes, 
-  getProjectViews 
+  getProjectViews,
+  buildCaseStudyShareUrl,
 } from '../lib/portfolio';
 
 interface PortfolioCardProps {
@@ -100,7 +101,7 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname}#case-study-${project.id}`
+      ? buildCaseStudyShareUrl(project.id, window.location.origin)
       : '';
 
     if (typeof navigator !== 'undefined' && navigator.share) {

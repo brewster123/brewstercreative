@@ -77,9 +77,11 @@ import {
   toggleProjectLike,
   recordPortfolioViewDebounced,
   fetchUserLikedProjectIds,
-  extractCaseStudyIdFromHash,
+  extractCaseStudyIdFromLocation,
+  buildCaseStudyShareUrl,
   normalizeNumericStat,
 } from '../lib/portfolio';
+import { syncDocumentSeoForProject } from '../lib/seo';
 
 export type AppView = 
   | 'home'
@@ -312,7 +314,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (hash === '#creative-studio' || hash === '#admin-creative-studio' || pathname === '/admin/creative-studio') {
         return 'creative-studio';
       }
-      const caseStudyId = extractCaseStudyIdFromHash(window.location.hash);
+      const caseStudyId = extractCaseStudyIdFromLocation(window.location);
       if (caseStudyId) {
         return 'case-study';
       }
@@ -324,15 +326,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveViewRaw(view);
     if (view !== 'case-study') {
       setSelectedPortfolioProject(null);
-      if (typeof window !== 'undefined' && window.location.hash.startsWith('#case-study-')) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      if (typeof window !== 'undefined') {
+        const hasCaseStudyPath = window.location.pathname.toLowerCase().startsWith('/case-study/');
+        const hasCaseStudyHash = window.location.hash.startsWith('#case-study-');
+        if (hasCaseStudyPath) {
+          window.history.replaceState(null, '', '/');
+        } else if (hasCaseStudyHash) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
       }
     }
   }, []);
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>('');
   const [selectedPortfolioProject, setSelectedPortfolioProject] = useState<PortfolioProject | null>(() => {
     if (typeof window !== 'undefined') {
-      const caseStudyId = extractCaseStudyIdFromHash(window.location.hash);
+      const caseStudyId = extractCaseStudyIdFromLocation(window.location);
       if (caseStudyId) {
         try {
           const saved = localStorage.getItem(STORAGE_KEYS.PORTFOLIO);
@@ -596,10 +604,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     let isMounted = true;
 
-    // Helper to resolve deep-link hash against hydrated projects
+    // Helper to resolve deep-link path/query/hash against hydrated projects
     const resolveHashProject = (projects: PortfolioProject[]) => {
       if (typeof window === 'undefined') return;
-      const requestedId = extractCaseStudyIdFromHash(window.location.hash);
+      const requestedId = extractCaseStudyIdFromLocation(window.location);
       if (!requestedId) return;
 
       const found = projects.find((p) => p.id === requestedId);
@@ -607,9 +615,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedPortfolioProject(found);
         setActiveView('case-study');
       } else {
-        // Nonexistent project hash -> return gracefully to home
+        // Nonexistent project link -> return gracefully to home
         setActiveView('home');
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        window.history.replaceState(null, '', '/');
       }
     };
 
@@ -2826,15 +2834,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSelectedPortfolioProject(project);
     setActiveView('case-study');
     if (typeof window !== 'undefined') {
-      window.location.hash = `case-study-${project.id}`;
+      const targetUrl = buildCaseStudyShareUrl(project.id);
+      if (`${window.location.pathname}${window.location.search}` !== targetUrl) {
+        window.history.pushState(null, '', targetUrl);
+      }
     }
   };
 
   const closeCaseStudy = () => {
     setSelectedPortfolioProject(null);
     setActiveView('portfolio');
-    if (typeof window !== 'undefined' && window.location.hash.startsWith('#case-study-')) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname.toLowerCase().startsWith('/case-study/')) {
+        window.history.replaceState(null, '', '/');
+      } else if (window.location.hash.startsWith('#case-study-')) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
     }
   };
 
@@ -2896,12 +2911,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return res;
   };
 
-  // Deep-linking: Support #case-study-{projectId} & browser back/forward
+  // Keep document title & OpenGraph social metadata synchronized with active case study
+  useEffect(() => {
+    if (activeView === 'case-study' && selectedPortfolioProject) {
+      syncDocumentSeoForProject(selectedPortfolioProject);
+    } else {
+      syncDocumentSeoForProject(null);
+    }
+  }, [activeView, selectedPortfolioProject]);
+
+  // Deep-linking: Support /case-study/{projectId}, ?case-study={projectId}, legacy #case-study-{projectId}, & browser back/forward
   useEffect(() => {
     const handleHashNavigation = () => {
       if (typeof window === 'undefined') return;
-      const hash = window.location.hash || '';
-      const projId = extractCaseStudyIdFromHash(hash);
+      const projId = extractCaseStudyIdFromLocation(window.location);
       if (projId) {
         const found = portfolio.find((p) => p.id === projId);
         if (found) {
@@ -2918,7 +2941,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               }
             }
             setActiveView('home');
-            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            window.history.replaceState(null, '', '/');
           });
         }
       } else if (activeView === 'case-study' && !projId) {

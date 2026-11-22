@@ -64,6 +64,13 @@ export const ParallaxHero: React.FC = () => {
   const headlineRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const closeModalRef = useRef<HTMLButtonElement>(null);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const isHorizontalSwipeRef = useRef(false);
+  const suppressClickRef = useRef(false);
+  const suppressClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modalTouchStartXRef = useRef<number | null>(null);
+  const modalTouchStartYRef = useRef<number | null>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [activeIndex, setActiveIndex] = useState(0);
@@ -71,6 +78,7 @@ export const ParallaxHero: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedGalleryIndex, setExpandedGalleryIndex] = useState(0);
   const [stageWidth, setStageWidth] = useState(1040);
+  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
 
   useEffect(() => {
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -170,6 +178,159 @@ export const ParallaxHero: React.FC = () => {
   };
 
   useEffect(() => {
+    return () => {
+      if (suppressClickTimerRef.current) clearTimeout(suppressClickTimerRef.current);
+    };
+  }, []);
+
+  const mouseStartXRef = useRef<number | null>(null);
+  const isMouseDraggingRef = useRef(false);
+
+  const handleCarouselMouseDown = (e: React.MouseEvent) => {
+    if (totalSlides <= 1 || e.button !== 0) return;
+    mouseStartXRef.current = e.clientX;
+    isMouseDraggingRef.current = false;
+  };
+
+  const handleCarouselMouseMove = (e: React.MouseEvent) => {
+    if (totalSlides <= 1 || mouseStartXRef.current === null) return;
+    const dx = e.clientX - mouseStartXRef.current;
+
+    if (!isMouseDraggingRef.current && Math.abs(dx) > 10) {
+      isMouseDraggingRef.current = true;
+      suppressClickRef.current = true;
+    }
+
+    if (isMouseDraggingRef.current) {
+      const clamped = Math.max(-76, Math.min(76, dx * 0.5));
+      setSwipeOffsetX(clamped);
+    }
+  };
+
+  const handleCarouselMouseEnd = (e: React.MouseEvent) => {
+    if (mouseStartXRef.current !== null && totalSlides > 1) {
+      const dx = e.clientX - mouseStartXRef.current;
+      if (isMouseDraggingRef.current && Math.abs(dx) >= 34) {
+        if (dx < 0) {
+          handleNext();
+        } else {
+          handlePrev();
+        }
+      }
+    }
+
+    mouseStartXRef.current = null;
+    isMouseDraggingRef.current = false;
+    setSwipeOffsetX(0);
+
+    if (suppressClickRef.current) {
+      if (suppressClickTimerRef.current) clearTimeout(suppressClickTimerRef.current);
+      suppressClickTimerRef.current = setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 80);
+    }
+  };
+
+  const handleCarouselTouchStart = (e: React.TouchEvent) => {
+    if (totalSlides <= 1 || e.touches.length !== 1) return;
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    isHorizontalSwipeRef.current = false;
+    setIsPaused(true);
+  };
+
+  const handleCarouselTouchMove = (e: React.TouchEvent) => {
+    if (
+      totalSlides <= 1 ||
+      touchStartXRef.current === null ||
+      touchStartYRef.current === null ||
+      e.touches.length !== 1
+    ) {
+      return;
+    }
+
+    const dx = e.touches[0].clientX - touchStartXRef.current;
+    const dy = e.touches[0].clientY - touchStartYRef.current;
+
+    // Abort horizontal swipe tracking if user is clearly scrolling vertically
+    if (!isHorizontalSwipeRef.current && Math.abs(dy) > 14 && Math.abs(dy) > Math.abs(dx)) {
+      touchStartXRef.current = null;
+      touchStartYRef.current = null;
+      setSwipeOffsetX(0);
+      return;
+    }
+
+    if (!isHorizontalSwipeRef.current && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.1) {
+      isHorizontalSwipeRef.current = true;
+      suppressClickRef.current = true;
+    }
+
+    if (isHorizontalSwipeRef.current) {
+      const clamped = Math.max(-76, Math.min(76, dx * 0.5));
+      setSwipeOffsetX(clamped);
+    }
+  };
+
+  const handleCarouselTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current !== null && totalSlides > 1) {
+      const endX = e.changedTouches?.[0]?.clientX ?? touchStartXRef.current;
+      const dx = endX - touchStartXRef.current;
+
+      if (isHorizontalSwipeRef.current && Math.abs(dx) >= 34) {
+        if (dx < 0) {
+          handleNext();
+        } else {
+          handlePrev();
+        }
+      }
+    }
+
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    isHorizontalSwipeRef.current = false;
+    setSwipeOffsetX(0);
+    setIsPaused(false);
+
+    if (suppressClickRef.current) {
+      if (suppressClickTimerRef.current) clearTimeout(suppressClickTimerRef.current);
+      suppressClickTimerRef.current = setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 80);
+    }
+  };
+
+  const handleModalTouchStart = (e: React.TouchEvent) => {
+    if (totalSlides <= 1 || e.touches.length !== 1) return;
+    modalTouchStartXRef.current = e.touches[0].clientX;
+    modalTouchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleModalTouchEnd = (e: React.TouchEvent) => {
+    if (
+      totalSlides <= 1 ||
+      modalTouchStartXRef.current === null ||
+      modalTouchStartYRef.current === null
+    ) {
+      return;
+    }
+    const endX = e.changedTouches?.[0]?.clientX ?? modalTouchStartXRef.current;
+    const endY = e.changedTouches?.[0]?.clientY ?? modalTouchStartYRef.current;
+    const dx = endX - modalTouchStartXRef.current;
+    const dy = endY - modalTouchStartYRef.current;
+
+    if (Math.abs(dx) >= 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      if (dx < 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+
+    modalTouchStartXRef.current = null;
+    modalTouchStartYRef.current = null;
+  };
+
+  useEffect(() => {
     if (!isExpanded) return;
 
     const previousActiveElement = (document.activeElement as HTMLElement) || null;
@@ -260,10 +421,12 @@ export const ParallaxHero: React.FC = () => {
       };
     }
     if (offset === 0) {
+      const dragRotate = swipeOffsetX !== 0 ? swipeOffsetX * 0.04 : 0;
       return {
         opacity: 1,
-        transform: 'translate3d(0px, 0px, 0) scale(1)',
+        transform: `translate3d(${swipeOffsetX}px, 0px, 0) scale(1) rotateZ(${dragRotate}deg)`,
         zIndex: 30,
+        transition: swipeOffsetX !== 0 ? 'none' : undefined,
       };
     }
     if (abs === 1) {
@@ -360,23 +523,19 @@ export const ParallaxHero: React.FC = () => {
             }
           }}
         >
-          <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 sm:gap-4 relative">
-            {/* Previous Slide Button */}
-            {totalSlides > 1 && (
-              <button
-                type="button"
-                onClick={handlePrev}
-                aria-label="Previous featured work"
-                className="relative z-40 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 dark:bg-white/95 hover:bg-[#D4FF38] text-[#111114] shadow-md border border-white/80 flex items-center justify-center transition-all cursor-pointer shrink-0 btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
-              >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            )}
-
-            {/* Coverflow Stage */}
+          <div className="max-w-6xl mx-auto flex items-center justify-center relative">
+            {/* Coverflow Stage (Click flanking cards, swipe, drag, or use arrow keys) */}
             <div
               ref={stageRef}
-              className="relative flex-1 h-[255px] sm:h-[285px] flex items-center justify-center overflow-visible"
+              onMouseDown={handleCarouselMouseDown}
+              onMouseMove={handleCarouselMouseMove}
+              onMouseUp={handleCarouselMouseEnd}
+              onMouseLeave={handleCarouselMouseEnd}
+              onTouchStart={handleCarouselTouchStart}
+              onTouchMove={handleCarouselTouchMove}
+              onTouchEnd={handleCarouselTouchEnd}
+              onTouchCancel={handleCarouselTouchEnd}
+              className="relative w-full h-[255px] sm:h-[285px] flex items-center justify-center overflow-visible touch-pan-y select-none"
               style={{ perspective: '1200px' }}
               role="region"
               aria-roledescription="carousel"
@@ -398,6 +557,7 @@ export const ParallaxHero: React.FC = () => {
                         key={work.id}
                         type="button"
                         onClick={() => {
+                          if (suppressClickRef.current) return;
                           if (isActive) {
                             setExpandedGalleryIndex(0);
                             setIsExpanded(true);
@@ -414,7 +574,7 @@ export const ParallaxHero: React.FC = () => {
                         aria-hidden={hidden || undefined}
                         tabIndex={hidden ? -1 : 0}
                         style={getSlideStyle(offset)}
-                        className={`group absolute w-[260px] sm:w-[320px] h-[230px] sm:h-[260px] rounded-2xl overflow-hidden bg-[#0B0D12] text-white shadow-xl border transition-all duration-500 ease-out flex flex-col justify-between text-left cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
+                        className={`group absolute w-[280px] sm:w-[320px] h-[230px] sm:h-[260px] rounded-2xl overflow-hidden bg-[#0B0D12] text-white shadow-xl border transition-all duration-500 ease-out flex flex-col justify-between text-left cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
                           isActive
                             ? 'border-white/80 ring-1 ring-white/50'
                             : 'border-white/30 hover:brightness-105'
@@ -424,6 +584,7 @@ export const ParallaxHero: React.FC = () => {
                           <img
                             src={work.image}
                             alt={work.title}
+                            draggable={false}
                             referrerPolicy="no-referrer"
                             onError={() =>
                               setFailedImages((prev) => ({ ...prev, [work.id]: true }))
@@ -515,6 +676,7 @@ export const ParallaxHero: React.FC = () => {
                         key={slide.id}
                         type="button"
                         onClick={() => {
+                          if (suppressClickRef.current) return;
                           if (isActive) {
                             setIsExpanded(true);
                           } else {
@@ -530,7 +692,7 @@ export const ParallaxHero: React.FC = () => {
                         aria-hidden={hidden || undefined}
                         tabIndex={hidden ? -1 : 0}
                         style={getSlideStyle(offset)}
-                        className={`group absolute w-[250px] sm:w-[310px] h-[205px] sm:h-[225px] rounded-2xl p-4 sm:p-5 flex flex-col justify-between text-left transition-all duration-500 ease-out cursor-pointer overflow-hidden focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
+                        className={`group absolute w-[272px] sm:w-[310px] h-[205px] sm:h-[225px] rounded-2xl p-4 sm:p-5 flex flex-col justify-between text-left transition-all duration-500 ease-out cursor-pointer overflow-hidden focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38] ${
                           isActive
                             ? 'bg-[#0D0F14] text-white border border-white/25 shadow-2xl'
                             : 'bg-white/90 dark:bg-white/95 text-[#111114] border border-white/80 shadow-lg backdrop-blur-xs'
@@ -588,28 +750,21 @@ export const ParallaxHero: React.FC = () => {
                     );
                   })}
             </div>
-
-            {/* Next Slide Button */}
-            {totalSlides > 1 && (
-              <button
-                type="button"
-                onClick={handleNext}
-                aria-label="Next featured work"
-                className="relative z-40 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 dark:bg-white/95 hover:bg-[#D4FF38] text-[#111114] shadow-md border border-white/80 flex items-center justify-center transition-all cursor-pointer shrink-0 btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
-              >
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            )}
           </div>
 
           {/* Grounded Trust Caption Above Cloud Horizon */}
           <div className="pt-3 text-center">
             <p className="text-xs font-medium text-[#111114]/85 inline-flex items-center justify-center gap-2 bg-white/80 dark:bg-white/90 backdrop-blur-xs px-4 py-1.5 rounded-full shadow-2xs">
               <CheckCircle2 className="w-3.5 h-3.5 text-[#0284C7] shrink-0" />
-              <span>
+              <span className="hidden sm:inline">
                 {hasRealWorks
                   ? `Featured Works by ${studioProfile.designerName} · Click active card to enlarge image`
                   : `Directed personally by ${studioProfile.designerName} · Click active card to expand preview`}
+              </span>
+              <span className="sm:hidden">
+                {hasRealWorks
+                  ? `Featured Works by ${studioProfile.designerName} · Swipe or tap to view`
+                  : `Directed by ${studioProfile.designerName} · Swipe or tap to preview`}
               </span>
             </p>
           </div>
@@ -686,16 +841,20 @@ export const ParallaxHero: React.FC = () => {
                 </button>
               </div>
 
-              {/* Flex Child 1: Dedicated Uncropped Artwork Stage (never overlaps bottom typography) */}
-              <div className="relative z-10 flex-1 min-h-0 flex items-center justify-center pt-5 sm:pt-7 pb-3 sm:pb-4 px-14 sm:px-20">
-                {/* Side Navigation Arrows Centered Against Artwork */}
+              {/* Flex Child 1: Dedicated Uncropped Artwork Stage (never overlaps bottom typography; swipe-enabled on mobile) */}
+              <div
+                onTouchStart={handleModalTouchStart}
+                onTouchEnd={handleModalTouchEnd}
+                className="relative z-10 flex-1 min-h-0 flex items-center justify-center pt-5 sm:pt-7 pb-3 sm:pb-4 px-5 sm:px-20 touch-pan-y"
+              >
+                {/* Side Navigation Arrows Centered Against Artwork (Desktop & Tablet) */}
                 {totalSlides > 1 && (
                   <>
                     <button
                       type="button"
                       onClick={handlePrev}
                       aria-label="Previous work"
-                      className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/45 hover:bg-[#D4FF38] backdrop-blur-md text-white hover:text-[#111114] border border-white/15 shadow-lg flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
+                      className="hidden sm:flex absolute left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/45 hover:bg-[#D4FF38] backdrop-blur-md text-white hover:text-[#111114] border border-white/15 shadow-lg items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -704,7 +863,7 @@ export const ParallaxHero: React.FC = () => {
                       type="button"
                       onClick={handleNext}
                       aria-label="Next work"
-                      className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/45 hover:bg-[#D4FF38] backdrop-blur-md text-white hover:text-[#111114] border border-white/15 shadow-lg flex items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
+                      className="hidden sm:flex absolute right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/45 hover:bg-[#D4FF38] backdrop-blur-md text-white hover:text-[#111114] border border-white/15 shadow-lg items-center justify-center transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#D4FF38]"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>

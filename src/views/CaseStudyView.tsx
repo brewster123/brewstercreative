@@ -3,7 +3,8 @@ import { useApp } from '../context/AppContext';
 import { PortfolioProject, ServiceItem } from '../types';
 import { 
   isProjectLikedLocally, 
-  extractCaseStudyIdFromHash,
+  extractCaseStudyIdFromLocation,
+  buildCaseStudyShareUrl,
   getProjectViews,
   getProjectLikes,
   getProjectShares,
@@ -54,11 +55,14 @@ export const CaseStudyView: React.FC = () => {
     currentUser,
   } = useApp();
 
-  // Resolve target project: when URL hash specifies a case study ID, resolve strictly against that ID
-  const hashId = typeof window !== 'undefined' ? extractCaseStudyIdFromHash(window.location.hash) : null;
-  const project: PortfolioProject | null = hashId
-    ? (selectedPortfolioProject?.id === hashId ? selectedPortfolioProject : null) ||
-      portfolio.find(p => p.id === hashId) ||
+  // Resolve target project: when URL specifies a case study ID (/case-study/:id, query, or hash), resolve strictly against that ID
+  const urlCaseStudyId =
+    typeof window !== 'undefined'
+      ? extractCaseStudyIdFromLocation(window.location)
+      : null;
+  const project: PortfolioProject | null = urlCaseStudyId
+    ? (selectedPortfolioProject?.id === urlCaseStudyId ? selectedPortfolioProject : null) ||
+      portfolio.find(p => p.id === urlCaseStudyId) ||
       null
     : selectedPortfolioProject || portfolio[0] || null;
 
@@ -133,7 +137,7 @@ export const CaseStudyView: React.FC = () => {
     (project as any)?.shares_count
   ]);
 
-  if (!project && hashId && portfolio.length === 0) {
+  if (!project && urlCaseStudyId && portfolio.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
         <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin mx-auto" />
@@ -217,8 +221,8 @@ export const CaseStudyView: React.FC = () => {
 
   // Handle Share Link
   const handleShare = async () => {
-    const shareUrl = typeof window !== 'undefined' 
-      ? `${window.location.origin}${window.location.pathname}#case-study-${project.id}`
+    const shareUrl = typeof window !== 'undefined' && project
+      ? buildCaseStudyShareUrl(project.id, window.location.origin)
       : '';
 
     if (typeof navigator !== 'undefined' && navigator.share) {

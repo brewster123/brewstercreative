@@ -261,6 +261,18 @@ export async function createNotificationInDb(params: {
       fullPayload.link_tab = linkTab;
     }
 
+    const payloadWithoutLinkTab = {
+      ...basicPayload,
+      ...(commissionId ? { commission_id: commissionId } : {}),
+    };
+
+    const minimalPayload = {
+      user_id: recipientId,
+      type,
+      message: message.trim(),
+      is_read: false,
+    };
+
     const isCrossUserInsert = Boolean(callerUserId && callerUserId !== recipientId);
 
     const insertWithOptionalSelect = async (payloadToInsert: any, useSelect: boolean) => {
@@ -268,6 +280,16 @@ export async function createNotificationInDb(params: {
         return supabase.from('notifications').insert(payloadToInsert).select().single();
       }
       return supabase.from('notifications').insert(payloadToInsert);
+    };
+
+    const isMissingColumnError = (err: { code?: string; message?: string } | null | undefined) => {
+      if (!err) return false;
+      return (
+        err.code === '42703' ||
+        err.code === 'PGRST204' ||
+        /could not find.*column/i.test(err.message || '') ||
+        /column .* does not exist/i.test(err.message || '')
+      );
     };
 
     let useSelect = !isCrossUserInsert;
@@ -283,9 +305,15 @@ export async function createNotificationInDb(params: {
       res = await insertWithOptionalSelect(fullPayload, false);
     }
 
-    // If commission_id or link_tab column does not exist in schema, retry with core columns
-    if (res.error && res.error.code === '42703') {
+    // Progressive schema fallbacks if link_tab, commission_id, or title columns are absent
+    if (isMissingColumnError(res.error) && linkTab) {
+      res = await insertWithOptionalSelect(payloadWithoutLinkTab, useSelect);
+    }
+    if (isMissingColumnError(res.error)) {
       res = await insertWithOptionalSelect(basicPayload, useSelect);
+    }
+    if (isMissingColumnError(res.error)) {
+      res = await insertWithOptionalSelect(minimalPayload, useSelect);
     }
 
     if (res.error) {
@@ -396,3 +424,37 @@ export function subscribeToUserNotifications(
     supabase.removeChannel(channel);
   };
 }
+
+/**
+ * Triggers a native desktop/browser notification when permission has been granted.
+ * Silently no-ops in unsupported environments or restricted iframes.
+ */
+export function showBrowserNotification(params: {
+  title: string;
+  message: string;
+  tag?: string;
+  onClick?: () => void;
+}): void {
+  if (typeof window === 'undefined' || !('Notification' in window)) return;
+  if (window.Notification.permission !== 'granted') return;
+
+  try {
+    const nativeNotif = new window.Notification(params.title || 'DESTALION Studio Notice', {
+      body: params.message,
+      icon: '/favicon-32x32.png',
+      tag: params.tag,
+    });
+    nativeNotif.onclick = () => {
+      try {
+        window.focus();
+        params.onClick?.();
+        nativeNotif.close();
+      } catch {
+        // Ignore iframe focus restrictions
+      }
+    };
+  } catch {
+    // Native Notification constructor may throw in restricted environments
+  }
+}
+

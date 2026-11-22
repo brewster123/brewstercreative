@@ -169,9 +169,11 @@ const LiveNotificationToast: React.FC = () => {
 
   useEffect(() => {
     if (!liveAlert) return;
+    const isUrgentIntake = liveAlert.title === 'New Commission Intake';
+    if (isUrgentIntake) return;
     const timer = setTimeout(() => {
       dismissLiveAlert();
-    }, 10000);
+    }, 12000);
     return () => clearTimeout(timer);
   }, [liveAlert, dismissLiveAlert]);
 

@@ -31,6 +31,19 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
+  const [browserPerm, setBrowserPerm] = useState<string>(() =>
+    typeof window !== 'undefined' && 'Notification' in window ? window.Notification.permission : 'unsupported'
+  );
+
+  const handleEnableBrowserAlerts = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    try {
+      const result = await window.Notification.requestPermission();
+      setBrowserPerm(result);
+    } catch {
+      // Ignore permission request errors in restricted iframes
+    }
+  };
 
   // Scope notifications to authenticated user (or allow admin oversight)
   const userNotifications = notifications.filter(n => 
@@ -214,6 +227,22 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
           </button>
         </div>
       </div>
+
+      {/* Optional Desktop Alert Opt-In for Studio Admins */}
+      {currentUser?.role === 'admin' && browserPerm === 'default' && (
+        <div className="px-4 py-2 bg-[#E0F2FE]/60 dark:bg-sky-950/30 border-b border-hairline flex items-center justify-between gap-2">
+          <span className="text-[11px] font-medium text-carbon">
+            Get instant browser popups for new commissions
+          </span>
+          <button
+            type="button"
+            onClick={handleEnableBrowserAlerts}
+            className="px-2.5 py-1 rounded-full bg-accent hover:bg-accent-hover text-white text-[10px] font-bold transition-colors cursor-pointer shrink-0"
+          >
+            Enable
+          </button>
+        </div>
+      )}
 
       {/* Notifications List */}
       <div className="max-h-80 overflow-y-auto divide-y divide-border-hairline dark:divide-[#222634]">

@@ -5,7 +5,9 @@ import {
   FolderArchive, 
   CreditCard, 
   Users, 
-  ShieldCheck
+  ShieldCheck,
+  Bell,
+  ArrowRight
 } from 'lucide-react';
 import { StudioOverview } from '../components/admin/StudioOverview';
 import { CommissionManagement } from '../components/admin/CommissionManagement';
@@ -179,6 +181,11 @@ export const AdminDashboardView: React.FC = () => {
     return registeredClientsCount + unseenCommissionClientIds.size;
   }, [users, commissions, currentUser?.id]);
 
+  const pendingIntakeCommissions = useMemo(
+    () => commissions.filter((c) => (c.status || '').toLowerCase().trim() === 'pending'),
+    [commissions]
+  );
+
   if (authLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-3">
@@ -236,7 +243,8 @@ export const AdminDashboardView: React.FC = () => {
             id: 'commissions' as const, 
             label: 'Commissions', 
             icon: FolderArchive, 
-            count: commissions.length 
+            count: commissions.length,
+            badge: pendingIntakeCommissions.length > 0 ? `${pendingIntakeCommissions.length} new` : undefined
           },
           { 
             id: 'payments' as const, 
@@ -287,6 +295,41 @@ export const AdminDashboardView: React.FC = () => {
           );
         })}
       </nav>
+
+      {/* Pending Commission Intake Alert */}
+      {pendingIntakeCommissions.length > 0 && activeHub !== 'commissions' && (
+        <div
+          role="status"
+          className="rounded-2xl bg-[#E0F2FE]/80 dark:bg-sky-950/40 border border-accent/30 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center shrink-0">
+              <Bell className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-carbon truncate">
+                {pendingIntakeCommissions.length === 1
+                  ? `New commission intake: "${pendingIntakeCommissions[0].projectName}"`
+                  : `${pendingIntakeCommissions.length} new commission requests awaiting studio review`}
+              </p>
+              <p className="text-[11px] text-graphite-strong truncate">
+                {pendingIntakeCommissions.length === 1
+                  ? `Submitted by ${pendingIntakeCommissions[0].clientName || 'Client'} · Review brief and budget alignment`
+                  : `Latest from ${pendingIntakeCommissions[0].clientName || 'Client'} (${pendingIntakeCommissions[0].projectName})`}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleHubNavigation('commissions', pendingIntakeCommissions[0].id)}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-accent hover:bg-accent-hover text-white text-xs font-bold transition-colors cursor-pointer shrink-0 btn-tactile"
+          >
+            <span>Review Commission</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Hub 1: Studio Overview */}
       {activeHub === 'overview' && (

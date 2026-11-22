@@ -62,6 +62,7 @@ import {
   resolveAdminUserId,
   resolveAdminUserIds,
   clearResolvedAdminCache,
+  showBrowserNotification,
 } from '../lib/notifications';
 import { NotificationType } from '../types';
 import {
@@ -535,6 +536,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [notifications]);
 
   const intakeInFlightRef = useRef<Set<string>>(new Set());
+  const sessionNotifiedIntakeIdsRef = useRef<Set<string>>(new Set());
+  const lastBackgroundSyncRef = useRef<number>(0);
 
   const dismissLiveAlert = useCallback(() => {
     setLiveAlert(null);
@@ -584,7 +587,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           (n.title === 'New Commission Intake' || n.type === 'commission_update' || n.type === 'status')
       );
       if (alreadyInMemory) {
-        markSeenIntakeLocally(adminId, commission.id);
+        sessionNotifiedIntakeIdsRef.current.add(commission.id);
+        return;
+      }
+
+      if (sessionNotifiedIntakeIdsRef.current.has(commission.id)) {
         return;
       }
 
@@ -594,37 +601,72 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (intakeInFlightRef.current.has(commission.id)) return;
       intakeInFlightRef.current.add(commission.id);
-      markSeenIntakeLocally(adminId, commission.id);
+      sessionNotifiedIntakeIdsRef.current.add(commission.id);
 
       try {
         const clientLabel =
           commission.clientName && commission.clientName !== 'Client'
             ? commission.clientName
             : 'a client';
+        const intakeMessage = `New commission requested: "${commission.projectName}" by ${clientLabel}.`;
         const { data } = await createNotificationInDb({
           recipientId: adminId,
           callerUserId: adminId,
           type: 'commission_update',
           title: 'New Commission Intake',
-          message: `New commission requested: "${commission.projectName}" by ${clientLabel}.`,
+          message: intakeMessage,
           commissionId: commission.id,
           linkTab: 'commissions',
         });
 
+        const nowIso = new Date().toISOString();
+        const resolvedNotif: AppNotification = data ?? {
+          id: `local-intake-${commission.id}`,
+          userId: adminId,
+          user_id: adminId,
+          recipientId: adminId,
+          recipient_id: adminId,
+          commissionId: commission.id,
+          commission_id: commission.id,
+          title: 'New Commission Intake',
+          message: intakeMessage,
+          type: 'commission_update',
+          readStatus: false,
+          is_read: false,
+          timestamp: 'Just now',
+          created_at: nowIso,
+          createdAt: nowIso,
+          linkTab: 'commissions',
+          link_tab: 'commissions',
+        };
+
         if (data) {
-          setNotifications((prev) => {
-            const exists = prev.some(
-              (n) =>
-                n.id === data.id ||
-                ((n.commissionId === commission.id || n.commission_id === commission.id) &&
-                  n.title === 'New Commission Intake')
-            );
-            if (exists) return prev;
-            return [data, ...prev];
+          markSeenIntakeLocally(adminId, commission.id);
+        }
+
+        setNotifications((prev) => {
+          const exists = prev.some(
+            (n) =>
+              n.id === resolvedNotif.id ||
+              ((n.commissionId === commission.id || n.commission_id === commission.id) &&
+                n.title === 'New Commission Intake')
+          );
+          if (exists) return prev;
+          return [resolvedNotif, ...prev];
+        });
+
+        if (options.triggerLiveAlert) {
+          setLiveAlert(resolvedNotif);
+          showBrowserNotification({
+            title: resolvedNotif.title || 'New Commission Intake',
+            message: resolvedNotif.message,
+            tag: `commission-intake-${commission.id}`,
+            onClick: () => {
+              setSelectedCommissionId(commission.id);
+              setActiveDashboardTab('commissions');
+              setActiveView('admin-dashboard');
+            },
           });
-          if (options.triggerLiveAlert) {
-            setLiveAlert(data);
-          }
         }
       } finally {
         intakeInFlightRef.current.delete(commission.id);
@@ -651,6 +693,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setLiveAlert(null);
         setNotificationsHydratedForUserId(null);
         setCommissionsHydratedForUserId(null);
+        sessionNotifiedIntakeIdsRef.current.clear();
       }
       return;
     }
@@ -670,7 +713,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubscribe = subscribeToUserNotifications(activeUserId, (newNotif) => {
       if (!isMounted) return;
       if (currentUser.role === 'admin' && (newNotif.commissionId || newNotif.commission_id) && newNotif.title === 'New Commission Intake') {
-        markSeenIntakeLocally(activeUserId, (newNotif.commissionId || newNotif.commission_id)!);
+        const targetCommId = (newNotif.commissionId || newNotif.commission_id)!;
+        sessionNotifiedIntakeIdsRef.current.add(targetCommId);
+        markSeenIntakeLocally(activeUserId, targetCommId);
       }
       setNotifications(prev => {
         if (prev.some(n => n.id === newNotif.id)) return prev;
@@ -693,6 +738,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (!newNotif.readStatus && !newNotif.is_read) {
         setLiveAlert(newNotif);
+        showBrowserNotification({
+          title: newNotif.title || 'Studio Notice',
+          message: newNotif.message,
+          tag: newNotif.id,
+          onClick: () => {
+            const targetCommId = newNotif.commissionId || newNotif.commission_id;
+            if (targetCommId) setSelectedCommissionId(targetCommId);
+            if (currentUser.role === 'admin') {
+              setActiveDashboardTab(
+                newNotif.linkTab || newNotif.link_tab || (targetCommId ? 'commissions' : 'overview')
+              );
+              setActiveView('admin-dashboard');
+            } else {
+              if (newNotif.linkTab || newNotif.link_tab) {
+                setActiveDashboardTab(newNotif.linkTab || newNotif.link_tab || 'overview');
+              }
+              setActiveView('client-dashboard');
+            }
+          },
+        });
       }
     });
 
@@ -1349,6 +1414,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           (n.title === 'New Commission Intake' || n.type === 'commission_update' || n.type === 'status')
       );
       if (alreadyHasNotif) return false;
+      if (sessionNotifiedIntakeIdsRef.current.has(c.id)) return false;
       return !hasSeenIntakeLocally(currentUser.id, c.id);
     });
 
@@ -1365,6 +1431,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     hasSeenIntakeLocally,
     ensureAdminIntakeNotification,
   ]);
+
+  // Tab-focus, visibility, and lightweight periodic sync so admins receive commission intake
+  // notifications within seconds even when Supabase Realtime publications/WebSockets are inactive.
+  useEffect(() => {
+    if (!currentUser?.id || !isSupabaseConfigured()) return;
+
+    let isMounted = true;
+
+    const runBackgroundSync = async (force = false) => {
+      if (!isMounted) return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+
+      const now = Date.now();
+      if (!force && now - lastBackgroundSyncRef.current < 4000) return;
+      lastBackgroundSyncRef.current = now;
+
+      const prevNotifIds = new Set(notificationsRef.current.map((n) => n.id));
+      const { data: freshNotifs, error: notifErr } = await fetchUserNotifications(currentUser.id);
+      if (!isMounted) return;
+
+      if (!notifErr && freshNotifs) {
+        setNotifications((prev) => {
+          const dbIds = new Set(freshNotifs.map((n) => n.id));
+          const localFallbacks = prev.filter(
+            (n) =>
+              n.id.startsWith('local-intake-') &&
+              !freshNotifs.some(
+                (dn) =>
+                  (dn.commissionId === n.commissionId || dn.commission_id === n.commission_id) &&
+                  dn.title === 'New Commission Intake'
+              ) &&
+              !dbIds.has(n.id)
+          );
+          return [...localFallbacks, ...freshNotifs];
+        });
+
+        const newlyArrivedUnread = freshNotifs.find(
+          (n) => !prevNotifIds.has(n.id) && !n.readStatus && !n.is_read
+        );
+        if (newlyArrivedUnread) {
+          setLiveAlert(newlyArrivedUnread);
+          showBrowserNotification({
+            title: newlyArrivedUnread.title || 'Studio Notice',
+            message: newlyArrivedUnread.message,
+            tag: newlyArrivedUnread.id,
+          });
+        }
+      }
+
+      if (currentUser.role === 'admin') {
+        const { success, data: freshComms } = await fetchCommissionsFromSupabase(currentUser);
+        if (!isMounted || !success) return;
+
+        setCommissions(freshComms || []);
+        setCommissionsHydratedForUserId(currentUser.id);
+
+        const unnotifiedPending = (freshComms || []).filter((c) => {
+          const normalizedStatus = (c.status || '').toLowerCase().trim();
+          if (normalizedStatus !== 'pending') return false;
+          const alreadyNotified =
+            sessionNotifiedIntakeIdsRef.current.has(c.id) ||
+            hasSeenIntakeLocally(currentUser.id, c.id) ||
+            notificationsRef.current.some(
+              (n) =>
+                (n.commissionId === c.id || n.commission_id === c.id) &&
+                (n.title === 'New Commission Intake' || n.type === 'commission_update' || n.type === 'status')
+            );
+          return !alreadyNotified;
+        });
+
+        unnotifiedPending.forEach((comm, index) => {
+          ensureAdminIntakeNotification(comm, { triggerLiveAlert: index === 0 });
+        });
+      }
+    };
+
+    const handleVisibilityOrFocus = () => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        runBackgroundSync(false);
+      }
+    };
+
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    const intervalId = window.setInterval(() => {
+      runBackgroundSync(false);
+    }, 12000);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.clearInterval(intervalId);
+    };
+  }, [currentUser, hasSeenIntakeLocally, ensureAdminIntakeNotification]);
 
   const loginUser = async (
     email: string, 
@@ -2575,7 +2736,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, readStatus: true, is_read: true } : n))
     );
-    if (isSupabaseConfigured() && currentUser) {
+    if (isSupabaseConfigured() && currentUser && !id.startsWith('local-') && !id.startsWith('notif-')) {
       await markNotificationReadInDb(id);
     }
   };

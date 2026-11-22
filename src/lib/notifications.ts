@@ -101,27 +101,62 @@ export function mapDbRowToNotification(row: DbNotificationRow): AppNotification 
 }
 
 /**
- * Dynamically resolves the primary studio administrator's UUID from the database.
+ * Dynamically resolves all studio administrator UUIDs from the database.
+ * Tries the SECURITY DEFINER RPC `get_studio_admin_ids` first (works for clients under profiles RLS),
+ * then falls back to querying `public.profiles` (works for admins), and finally the canonical fallback UUID.
  */
-let cachedAdminId: string | null = null;
-export async function resolveAdminUserId(): Promise<string> {
-  if (cachedAdminId) return cachedAdminId;
+const FALLBACK_ADMIN_ID = 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69';
+let cachedAdminIds: string[] | null = null;
+
+export function clearResolvedAdminCache(): void {
+  cachedAdminIds = null;
+}
+
+export async function resolveAdminUserIds(): Promise<string[]> {
+  if (cachedAdminIds && cachedAdminIds.length > 0) return cachedAdminIds;
+
+  try {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_studio_admin_ids');
+    if (!rpcError && Array.isArray(rpcData)) {
+      const ids = rpcData
+        .map((row: any) => (typeof row === 'string' ? row : row?.id || row?.admin_id))
+        .filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+      if (ids.length > 0) {
+        cachedAdminIds = Array.from(new Set(ids));
+        return cachedAdminIds;
+      }
+    }
+  } catch {
+    // RPC may not exist yet in older databases; fall through to profiles query
+  }
+
   try {
     const { data } = await supabase
       .from('profiles')
       .select('id')
-      .eq('role', 'admin')
-      .limit(1)
-      .maybeSingle();
+      .eq('role', 'admin');
 
-    if (data?.id) {
-      cachedAdminId = data.id;
-      return data.id;
+    const ids = (data || [])
+      .map((row: any) => row?.id)
+      .filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+
+    if (ids.length > 0) {
+      cachedAdminIds = Array.from(new Set(ids));
+      return cachedAdminIds;
     }
   } catch {
     // Non-fatal fallback
   }
-  return 'd4440c2e-aeea-4a8d-bcaf-7b844ec2be69';
+
+  return [FALLBACK_ADMIN_ID];
+}
+
+/**
+ * Dynamically resolves the primary studio administrator's UUID from the database.
+ */
+export async function resolveAdminUserId(): Promise<string> {
+  const ids = await resolveAdminUserIds();
+  return ids[0] || FALLBACK_ADMIN_ID;
 }
 
 /**
@@ -163,6 +198,8 @@ export async function fetchUserNotifications(
 
 /**
  * Inserts a persistent notification in Supabase public.notifications.
+ * Avoids `INSERT ... RETURNING *` (`.select()`) when inserting for another user so
+ * SELECT RLS (`auth.uid() = user_id or public.is_admin()`) does not reject cross-user inserts.
  * Includes graceful column fallback for table resilience.
  */
 export async function createNotificationInDb(params: {
@@ -172,8 +209,9 @@ export async function createNotificationInDb(params: {
   message: string;
   commissionId?: string | null;
   linkTab?: string | null;
+  callerUserId?: string | null;
 }): Promise<{ data: AppNotification | null; error: string | null }> {
-  const { recipientId, type, title, message, commissionId, linkTab } = params;
+  const { recipientId, type, title, message, commissionId, linkTab, callerUserId } = params;
 
   if (!recipientId?.trim()) {
     return { data: null, error: 'Recipient ID is required for notification.' };
@@ -182,9 +220,32 @@ export async function createNotificationInDb(params: {
     return { data: null, error: 'Notification message cannot be empty.' };
   }
 
+  const nowIso = new Date().toISOString();
+  const buildSynthesizedNotification = (): AppNotification => ({
+    id:
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `notif-${Date.now()}`,
+    userId: recipientId,
+    user_id: recipientId,
+    recipientId,
+    recipient_id: recipientId,
+    commissionId: commissionId || undefined,
+    commission_id: commissionId || undefined,
+    title: title || 'Studio Notice',
+    message: message.trim(),
+    type: normalizeNotificationType(type),
+    readStatus: false,
+    is_read: false,
+    timestamp: 'Just now',
+    created_at: nowIso,
+    createdAt: nowIso,
+    linkTab: linkTab || 'overview',
+    link_tab: linkTab || 'overview',
+  });
+
   try {
-    // Try complete payload with commission_id and link_tab
-    const payload: any = {
+    const basicPayload = {
       user_id: recipientId,
       type,
       title: title || 'Studio Notice',
@@ -192,52 +253,54 @@ export async function createNotificationInDb(params: {
       is_read: false,
     };
 
+    const fullPayload: any = { ...basicPayload };
     if (commissionId) {
-      payload.commission_id = commissionId;
+      fullPayload.commission_id = commissionId;
     }
     if (linkTab) {
-      payload.link_tab = linkTab;
+      fullPayload.link_tab = linkTab;
     }
 
-    let { data, error } = await supabase
-      .from('notifications')
-      .insert(payload)
-      .select()
-      .single();
+    const isCrossUserInsert = Boolean(callerUserId && callerUserId !== recipientId);
+
+    const insertWithOptionalSelect = async (payloadToInsert: any, useSelect: boolean) => {
+      if (useSelect) {
+        return supabase.from('notifications').insert(payloadToInsert).select().single();
+      }
+      return supabase.from('notifications').insert(payloadToInsert);
+    };
+
+    let useSelect = !isCrossUserInsert;
+    let res = await insertWithOptionalSelect(fullPayload, useSelect);
+
+    // If RETURNING * was blocked by SELECT RLS on a cross-user insert, retry without .select()
+    if (
+      res.error &&
+      useSelect &&
+      (res.error.code === '42501' || /row-level security/i.test(res.error.message || ''))
+    ) {
+      useSelect = false;
+      res = await insertWithOptionalSelect(fullPayload, false);
+    }
 
     // If commission_id or link_tab column does not exist in schema, retry with core columns
-    if (error && error.code === '42703') {
-      const basicPayload = {
-        user_id: recipientId,
-        type,
-        title: title || 'Studio Notice',
-        message: message.trim(),
-        is_read: false,
-      };
-
-      const fallback = await supabase
-        .from('notifications')
-        .insert(basicPayload)
-        .select()
-        .single();
-
-      data = fallback.data;
-      error = fallback.error;
+    if (res.error && res.error.code === '42703') {
+      res = await insertWithOptionalSelect(basicPayload, useSelect);
     }
 
-    if (error) {
+    if (res.error) {
       return {
         data: null,
-        error: error.message || 'Failed to record notification in database.',
+        error: res.error.message || 'Failed to record notification in database.',
       };
     }
 
-    if (!data) {
-      return { data: null, error: 'No notification data returned from database insert.' };
+    if (res.data) {
+      const mapped = mapDbRowToNotification(res.data as DbNotificationRow);
+      return { data: mapped, error: null };
     }
 
-    const mapped = mapDbRowToNotification(data as DbNotificationRow);
-    return { data: mapped, error: null };
+    return { data: buildSynthesizedNotification(), error: null };
   } catch (err: any) {
     return {
       data: null,

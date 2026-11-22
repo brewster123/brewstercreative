@@ -60,6 +60,8 @@ import {
   markAllNotificationsReadInDb,
   subscribeToUserNotifications,
   resolveAdminUserId,
+  resolveAdminUserIds,
+  clearResolvedAdminCache,
 } from '../lib/notifications';
 import { NotificationType } from '../types';
 import {
@@ -157,48 +159,10 @@ interface AppContextType {
   messages: Message[];
   timelineUpdates: ProgressUpdate[];
   projectFiles: ProjectFile[];
-  notifications: AppNotification[];
-  
-  // Commission Actions
-  submitCommission: (formData: any) => string;
-  submitCommissionRequest: (data: {
-    serviceType: string;
-    title: string;
-    description: string;
-    budget: number | string;
-    deadline: string;
-    purpose?: string;
-    targetAudience?: string;
-    preferredStyle?: string;
-    preferredColors?: string[];
-    requiredDimensions?: string;
-    referenceLinks?: string[];
-    additionalNotes?: string;
-  }) => Promise<{ success: boolean; commission?: Commission; error?: string }>;
-  refreshCommissions: () => Promise<void>;
-  updateCommissionStage: (commissionId: string, newStageNumber: number, stageName?: string, stageNote?: string) => Promise<{ success: boolean; error?: string }>;
-  updateCommissionStatus: (commissionId: string, status: CommissionStatus) => Promise<{ success: boolean; error?: string }>;
-  updateCommissionPriority: (commissionId: string, priority: CommissionPriority) => Promise<{ success: boolean; error?: string }>;
-  updateCommissionDetails: (commissionId: string, updates: Partial<Commission>) => void;
-  updatePaymentStatus: (commissionId: string, status: 'Unpaid' | 'Partial' | 'Paid') => Promise<{ success: boolean; error?: string }> | void;
-  acceptCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
-  declineCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
-  deleteCommission: (commissionId: string) => Promise<{ success: boolean; error?: string }>;
-  submitClientReviewAction: (commissionId: string, action: 'approve' | 'revision', feedback?: string, proofId?: string) => Promise<{ success: boolean; error?: string }> | void;
-  approveCommissionWithProof: (commissionId: string, proofId: string) => Promise<{ success: boolean; error?: string }>;
-  deliverFinalFiles: (commissionId: string, finalPackage: FinalFilesPackage) => void;
-  uploadDesignForReview: (commissionId: string, previewImages: string[], reviewNotes: string) => void;
-  uploadDesignReviewDraft: (commissionId: string, previewImages: string[], reviewNotes: string) => void;
-  
-  // Messaging
-  sendMessage: (commissionId: string, text: string, attachment?: MessageAttachment, attachmentFile?: File) => Promise<{ success: boolean; error?: string; message?: Message }>;
-  fetchMessagesForCommission: (commissionId: string) => Promise<{ data: Message[] | null; error: string | null }>;
-  markMessagesAsRead: (commissionId: string) => void;
-  
-  // Files
-  uploadProjectFile: (file: Omit<ProjectFile, 'id' | 'timestamp'>) => void;
-  
   // Notifications
+  notifications: AppNotification[];
+  liveAlert: AppNotification | null;
+  dismissLiveAlert: () => void;
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
@@ -560,7 +524,114 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [liveAlert, setLiveAlert] = useState<AppNotification | null>(null);
+  const [notificationsHydratedForUserId, setNotificationsHydratedForUserId] = useState<string | null>(null);
+  const [commissionsHydratedForUserId, setCommissionsHydratedForUserId] = useState<string | null>(null);
   const [activeDashboardTab, setActiveDashboardTab] = useState<string>('overview');
+
+  const notificationsRef = useRef<AppNotification[]>([]);
+  useEffect(() => {
+    notificationsRef.current = notifications;
+  }, [notifications]);
+
+  const intakeInFlightRef = useRef<Set<string>>(new Set());
+
+  const dismissLiveAlert = useCallback(() => {
+    setLiveAlert(null);
+  }, []);
+
+  const hasSeenIntakeLocally = useCallback((adminId: string, commissionId: string): boolean => {
+    try {
+      const raw = localStorage.getItem(`destalion_intake_notified_${adminId}`);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) && parsed.includes(commissionId);
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const markSeenIntakeLocally = useCallback((adminId: string, commissionId: string): void => {
+    try {
+      const key = `destalion_intake_notified_${adminId}`;
+      const raw = localStorage.getItem(key);
+      const existing: string[] = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(existing)) {
+        localStorage.setItem(key, JSON.stringify([commissionId]));
+        return;
+      }
+      if (!existing.includes(commissionId)) {
+        const next = [commissionId, ...existing].slice(0, 200);
+        localStorage.setItem(key, JSON.stringify(next));
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const ensureAdminIntakeNotification = useCallback(
+    async (
+      commission: Commission,
+      options: { triggerLiveAlert?: boolean; skipLocalSeenCheck?: boolean } = {}
+    ) => {
+      if (!currentUser || currentUser.role !== 'admin' || !isSupabaseConfigured()) return;
+      if (!commission?.id) return;
+
+      const adminId = currentUser.id;
+      const alreadyInMemory = notificationsRef.current.some(
+        (n) =>
+          (n.commissionId === commission.id || n.commission_id === commission.id) &&
+          (n.title === 'New Commission Intake' || n.type === 'commission_update' || n.type === 'status')
+      );
+      if (alreadyInMemory) {
+        markSeenIntakeLocally(adminId, commission.id);
+        return;
+      }
+
+      if (!options.skipLocalSeenCheck && hasSeenIntakeLocally(adminId, commission.id)) {
+        return;
+      }
+
+      if (intakeInFlightRef.current.has(commission.id)) return;
+      intakeInFlightRef.current.add(commission.id);
+      markSeenIntakeLocally(adminId, commission.id);
+
+      try {
+        const clientLabel =
+          commission.clientName && commission.clientName !== 'Client'
+            ? commission.clientName
+            : 'a client';
+        const { data } = await createNotificationInDb({
+          recipientId: adminId,
+          callerUserId: adminId,
+          type: 'commission_update',
+          title: 'New Commission Intake',
+          message: `New commission requested: "${commission.projectName}" by ${clientLabel}.`,
+          commissionId: commission.id,
+          linkTab: 'commissions',
+        });
+
+        if (data) {
+          setNotifications((prev) => {
+            const exists = prev.some(
+              (n) =>
+                n.id === data.id ||
+                ((n.commissionId === commission.id || n.commission_id === commission.id) &&
+                  n.title === 'New Commission Intake')
+            );
+            if (exists) return prev;
+            return [data, ...prev];
+          });
+          if (options.triggerLiveAlert) {
+            setLiveAlert(data);
+          }
+        }
+      } finally {
+        intakeInFlightRef.current.delete(commission.id);
+      }
+    },
+    [currentUser, hasSeenIntakeLocally, markSeenIntakeLocally]
+  );
 
   // Supabase Notification Persistence & Realtime Subscription
   const fetchNotifications = useCallback(async () => {
@@ -568,37 +639,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data, error } = await fetchUserNotifications(currentUser.id);
     if (!error && data) {
       setNotifications(data);
+      setNotificationsHydratedForUserId(currentUser.id);
     }
   }, [currentUser?.id]);
 
   useEffect(() => {
     if (!currentUser?.id || !isSupabaseConfigured()) {
       // Clear notifications if logged out
-      if (!currentUser) setNotifications([]);
+      if (!currentUser) {
+        setNotifications([]);
+        setLiveAlert(null);
+        setNotificationsHydratedForUserId(null);
+        setCommissionsHydratedForUserId(null);
+      }
       return;
     }
 
     let isMounted = true;
+    const activeUserId = currentUser.id;
+    setNotificationsHydratedForUserId(null);
 
-    fetchUserNotifications(currentUser.id).then(({ data, error }) => {
-      if (!error && data && isMounted) {
+    fetchUserNotifications(activeUserId).then(({ data, error }) => {
+      if (!isMounted) return;
+      if (!error && data) {
         setNotifications(data);
       }
+      setNotificationsHydratedForUserId(activeUserId);
     });
 
-    const unsubscribe = subscribeToUserNotifications(currentUser.id, (newNotif) => {
+    const unsubscribe = subscribeToUserNotifications(activeUserId, (newNotif) => {
       if (!isMounted) return;
+      if (currentUser.role === 'admin' && (newNotif.commissionId || newNotif.commission_id) && newNotif.title === 'New Commission Intake') {
+        markSeenIntakeLocally(activeUserId, (newNotif.commissionId || newNotif.commission_id)!);
+      }
       setNotifications(prev => {
         if (prev.some(n => n.id === newNotif.id)) return prev;
+        // Replace optimistic local intake notification with authoritative DB row if same commission
+        if (
+          newNotif.title === 'New Commission Intake' &&
+          (newNotif.commissionId || newNotif.commission_id)
+        ) {
+          const targetCommId = newNotif.commissionId || newNotif.commission_id;
+          const withoutDuplicate = prev.filter(
+            (n) =>
+              !(
+                (n.commissionId === targetCommId || n.commission_id === targetCommId) &&
+                n.title === 'New Commission Intake'
+              )
+          );
+          return [newNotif, ...withoutDuplicate];
+        }
         return [newNotif, ...prev];
       });
+      if (!newNotif.readStatus && !newNotif.is_read) {
+        setLiveAlert(newNotif);
+      }
     });
 
     return () => {
       isMounted = false;
       unsubscribe();
     };
-  }, [currentUser?.id]);
+  }, [currentUser?.id, currentUser?.role, markSeenIntakeLocally]);
 
   // Phase 5D & 5F: Mount query to hydrate Studio Profile, Services, and Portfolio from Supabase
   useEffect(() => {
@@ -1044,8 +1146,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       } else if (event === 'SIGNED_OUT') {
+        clearResolvedAdminCache();
         if (isMounted) {
           setCurrentUser(null);
+          setLiveAlert(null);
         }
       }
     });
@@ -1134,6 +1238,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // forever, and also meant a real empty result never actually
         // cleared stale local data.
         setCommissions(data || []);
+        setCommissionsHydratedForUserId(currentUser.id);
       } else if (error) {
         console.warn('[Supabase Commissions] Notice fetching commissions:', error);
       }
@@ -1144,6 +1249,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     if (currentUser && isSupabaseConfigured()) {
+      setCommissionsHydratedForUserId(null);
       refreshCommissions();
 
       // Phase 5E-1: Centralized Realtime subscription for public.commissions
@@ -1162,6 +1268,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (prev.some(c => c.id === mapped.id)) return prev;
               return [mapped, ...prev];
             });
+
+            // Guarantee the studio admin receives an instant persistent intake notification & live alert
+            if (currentUser.role === 'admin') {
+              ensureAdminIntakeNotification(mapped, {
+                triggerLiveAlert: true,
+                skipLocalSeenCheck: true,
+              });
+            }
           }
         },
         onUpdate: (row) => {
@@ -1211,7 +1325,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         unsubscribe();
       };
     }
-  }, [currentUser?.id, currentUser?.role]);
+  }, [currentUser?.id, currentUser?.role, ensureAdminIntakeNotification]);
+
+  // Offline / catch-up guarantee for admins: if a pending commission arrived while the admin
+  // was offline and has no intake notification row in DB yet, create it once after hydration.
+  useEffect(() => {
+    if (
+      !currentUser ||
+      currentUser.role !== 'admin' ||
+      !isSupabaseConfigured() ||
+      notificationsHydratedForUserId !== currentUser.id ||
+      commissionsHydratedForUserId !== currentUser.id
+    ) {
+      return;
+    }
+
+    const pendingUnnotified = commissions.filter((c) => {
+      const normalizedStatus = (c.status || '').toLowerCase().trim();
+      if (normalizedStatus !== 'pending') return false;
+      const alreadyHasNotif = notificationsRef.current.some(
+        (n) =>
+          (n.commissionId === c.id || n.commission_id === c.id) &&
+          (n.title === 'New Commission Intake' || n.type === 'commission_update' || n.type === 'status')
+      );
+      if (alreadyHasNotif) return false;
+      return !hasSeenIntakeLocally(currentUser.id, c.id);
+    });
+
+    if (pendingUnnotified.length === 0) return;
+
+    pendingUnnotified.forEach((comm, index) => {
+      ensureAdminIntakeNotification(comm, { triggerLiveAlert: index === 0 });
+    });
+  }, [
+    currentUser,
+    commissions,
+    notificationsHydratedForUserId,
+    commissionsHydratedForUserId,
+    hasSeenIntakeLocally,
+    ensureAdminIntakeNotification,
+  ]);
 
   const loginUser = async (
     email: string, 
@@ -1488,6 +1641,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = async () => {
+    clearResolvedAdminCache();
     if (isSupabaseConfigured()) {
       try {
         await supabase.auth.signOut();
@@ -1495,6 +1649,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.error('Error signing out from Supabase:', err);
       }
     }
+    setLiveAlert(null);
     setCurrentUser(null);
     setActiveView('home');
   };
@@ -1699,14 +1854,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       linkTab: 'overview',
     });
 
-    resolveAdminUserId().then(adminId => {
-      dispatchNotification({
-        recipientId: adminId,
-        type: 'commission_update',
-        title: 'New Commission Intake',
-        message: `New commission requested: "${newCommission.projectName}" by ${currentUser.name}.`,
-        commissionId: newCommission.id,
-        linkTab: 'overview',
+    resolveAdminUserIds().then(adminIds => {
+      adminIds.forEach(adminId => {
+        dispatchNotification({
+          recipientId: adminId,
+          type: 'commission_update',
+          title: 'New Commission Intake',
+          message: `New commission requested: "${newCommission.projectName}" by ${currentUser.name}.`,
+          commissionId: newCommission.id,
+          linkTab: 'commissions',
+        });
       });
     });
 
@@ -2448,6 +2605,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         message: params.message,
         commissionId: params.commissionId || null,
         linkTab: params.linkTab || null,
+        callerUserId: currentUser.id,
       });
       if (data) {
         if (params.recipientId === currentUser.id) {
@@ -2461,9 +2619,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (error) {
         console.warn('[Supabase Notifications] Dispatch notice:', error);
       }
+      // Do not pollute sender's local notification list with another recipient's failed notification
+      if (params.recipientId !== currentUser.id) {
+        return;
+      }
     }
 
-    // Local fallback for offline/demo preview
+    // Local fallback for offline/demo preview (or self-notification fallback)
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       userId: params.recipientId,
@@ -3012,6 +3174,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         timelineUpdates,
         projectFiles,
         notifications,
+        liveAlert,
+        dismissLiveAlert,
         submitCommission,
         submitCommissionRequest,
         refreshCommissions,

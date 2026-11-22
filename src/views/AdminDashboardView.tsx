@@ -34,15 +34,16 @@ export const AdminDashboardView: React.FC = () => {
   );
   const [commissionWorkspaceTab, setCommissionWorkspaceTab] = useState<'proofs' | 'deliverables' | 'payments' | 'specifications'>('proofs');
 
-  // Keep selectedCommissionId synchronized once commissions finish loading asynchronously
+  // Keep selectedCommissionId synchronized with external deep-links (notifications / toasts) or async load
   useEffect(() => {
-    if (!selectedCommissionId) {
-      const fallbackId = activeCommission?.id || commissions[0]?.id || '';
-      if (fallbackId) {
-        setSelectedCommissionId(fallbackId);
-      }
+    if (activeCommission?.id) {
+      setSelectedCommissionId(activeCommission.id);
+      return;
     }
-  }, [selectedCommissionId, activeCommission?.id, commissions]);
+    if (!selectedCommissionId && commissions[0]?.id) {
+      setSelectedCommissionId(commissions[0].id);
+    }
+  }, [activeCommission?.id, selectedCommissionId, commissions]);
 
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState<number>(0);
 
@@ -79,6 +80,10 @@ export const AdminDashboardView: React.FC = () => {
         break;
       case 'commissions':
         setActiveHub('commissions');
+        break;
+      case 'specifications':
+        setActiveHub('commissions');
+        setCommissionWorkspaceTab('specifications');
         break;
       case 'payment-verification':
       case 'payments':
@@ -131,6 +136,7 @@ export const AdminDashboardView: React.FC = () => {
   ) => {
     if (commissionId) {
       setSelectedCommissionId(commissionId);
+      setActiveCommissionId(commissionId);
     }
     if (hub === 'commissions' && subTab) {
       const validWorkspaceTabs = ['proofs', 'deliverables', 'payments', 'specifications'] as const;
@@ -301,7 +307,10 @@ export const AdminDashboardView: React.FC = () => {
         <CommissionManagement
           selectedCommissionId={selectedCommissionId}
           initialWorkspaceTab={commissionWorkspaceTab}
-          onSelectCommission={(id) => setSelectedCommissionId(id)}
+          onSelectCommission={(id) => {
+            setSelectedCommissionId(id);
+            setActiveCommissionId(id);
+          }}
           onOpenChat={(commissionId) => {
             if (commissionId) {
               setSelectedCommissionId(commissionId);

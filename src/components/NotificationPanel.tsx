@@ -78,25 +78,32 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
     }
   };
 
-  const handleNotificationClick = (n: AppNotification) => {
+  const navigateFromNotification = (n: AppNotification) => {
     if (isNotificationUnread(n)) {
       markNotificationAsRead(n.id);
     }
-    if (n.commissionId || n.commission_id) {
-      setSelectedCommissionId(n.commissionId || n.commission_id!);
+    const targetCommissionId = n.commissionId || n.commission_id;
+    if (targetCommissionId) {
+      setSelectedCommissionId(targetCommissionId);
     }
-    if (n.linkTab || n.link_tab) {
-      setActiveDashboardTab?.(n.linkTab || n.link_tab!);
-    }
-    const isChatMessage = n.type === 'message' || n.linkTab === 'chat' || n.link_tab === 'chat';
+    const rawLinkTab = n.linkTab || n.link_tab;
+    const isChatMessage = n.type === 'message' || rawLinkTab === 'chat';
 
     if (currentUser?.role === 'admin') {
       if (isChatMessage) {
         setActiveView('chat');
       } else {
+        const resolvedAdminTab =
+          targetCommissionId && (!rawLinkTab || rawLinkTab === 'overview')
+            ? 'commissions'
+            : rawLinkTab || 'commissions';
+        setActiveDashboardTab?.(resolvedAdminTab);
         setActiveView('admin-dashboard');
       }
     } else {
+      if (rawLinkTab) {
+        setActiveDashboardTab?.(rawLinkTab);
+      }
       if (isChatMessage) {
         setActiveView('chat');
       } else {
@@ -106,33 +113,13 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose })
     onClose();
   };
 
+  const handleNotificationClick = (n: AppNotification) => {
+    navigateFromNotification(n);
+  };
+
   const handleNavigate = (e: React.MouseEvent, n: AppNotification) => {
     e.stopPropagation();
-    if (isNotificationUnread(n)) {
-      markNotificationAsRead(n.id);
-    }
-    if (n.commissionId || n.commission_id) {
-      setSelectedCommissionId(n.commissionId || n.commission_id!);
-    }
-    if (n.linkTab || n.link_tab) {
-      setActiveDashboardTab?.(n.linkTab || n.link_tab!);
-    }
-    const isChatMessage = n.type === 'message' || n.linkTab === 'chat' || n.link_tab === 'chat';
-
-    if (currentUser?.role === 'admin') {
-      if (isChatMessage) {
-        setActiveView('chat');
-      } else {
-        setActiveView('admin-dashboard');
-      }
-    } else {
-      if (isChatMessage) {
-        setActiveView('chat');
-      } else {
-        setActiveView('client-dashboard');
-      }
-    }
-    onClose();
+    navigateFromNotification(n);
   };
 
   return (

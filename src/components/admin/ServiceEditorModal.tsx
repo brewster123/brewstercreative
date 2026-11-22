@@ -12,9 +12,9 @@ interface ServiceEditorModalProps {
 interface ServiceFormState {
   name: string;
   category: string;
-  startingPrice: number;
+  startingPrice: string;
   turnaround: string;
-  revisionsCount: number;
+  revisionsCount: string;
   shortDesc: string;
   popular: boolean;
 }
@@ -22,9 +22,9 @@ interface ServiceFormState {
 const DEFAULT_FORM_STATE: ServiceFormState = {
   name: '',
   category: 'Branding',
-  startingPrice: 3500,
+  startingPrice: '3500',
   turnaround: '3–7 days',
-  revisionsCount: 2,
+  revisionsCount: '2',
   shortDesc: '',
   popular: false,
 };
@@ -49,9 +49,15 @@ export const ServiceEditorModal: React.FC<ServiceEditorModalProps> = ({
       setForm({
         name: service.name || '',
         category: service.category || 'Branding',
-        startingPrice: typeof service.startingPrice === 'number' ? service.startingPrice : 0,
+        startingPrice:
+          typeof service.startingPrice === 'number' && Number.isFinite(service.startingPrice)
+            ? String(service.startingPrice)
+            : '0',
         turnaround: service.turnaround || '',
-        revisionsCount: typeof service.revisionsCount === 'number' ? service.revisionsCount : 2,
+        revisionsCount:
+          typeof service.revisionsCount === 'number' && Number.isFinite(service.revisionsCount)
+            ? String(service.revisionsCount)
+            : '2',
         shortDesc: service.shortDesc || '',
         popular: Boolean(service.popular),
       });
@@ -86,9 +92,11 @@ export const ServiceEditorModal: React.FC<ServiceEditorModalProps> = ({
       return;
     }
 
-    const sanitizedPrice = Number.isFinite(form.startingPrice) ? Math.max(0, form.startingPrice) : 0;
-    const sanitizedRevisions = Number.isFinite(form.revisionsCount)
-      ? Math.max(0, Math.floor(form.revisionsCount))
+    const parsedPrice = Number(form.startingPrice);
+    const sanitizedPrice = Number.isFinite(parsedPrice) ? Math.max(0, parsedPrice) : 0;
+    const parsedRevisions = Number(form.revisionsCount);
+    const sanitizedRevisions = Number.isFinite(parsedRevisions)
+      ? Math.max(0, Math.floor(parsedRevisions))
       : 0;
     const parsedDeliverables = deliverablesText
       .split('\n')
@@ -208,13 +216,16 @@ export const ServiceEditorModal: React.FC<ServiceEditorModalProps> = ({
                 Starting Price ({currencySymbol})
               </label>
               <input
-                type="number"
-                min={0}
+                type="text"
+                inputMode="numeric"
                 value={form.startingPrice}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, startingPrice: Math.max(0, Number(e.target.value) || 0) }))
-                }
-                className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs text-carbon focus:outline-none focus:border-accent"
+                onChange={(e) => {
+                  const parts = e.target.value.replace(/[^0-9.]/g, '').split('.');
+                  const cleaned = parts.length > 1 ? `${parts[0]}.${parts.slice(1).join('')}` : parts[0];
+                  setForm((prev) => ({ ...prev, startingPrice: cleaned }));
+                }}
+                placeholder="0"
+                className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs text-carbon tabular-nums focus:outline-none focus:border-accent"
               />
             </div>
 
@@ -236,13 +247,15 @@ export const ServiceEditorModal: React.FC<ServiceEditorModalProps> = ({
                 Revisions
               </label>
               <input
-                type="number"
-                min={0}
+                type="text"
+                inputMode="numeric"
                 value={form.revisionsCount}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, revisionsCount: Math.max(0, Number(e.target.value) || 0) }))
-                }
-                className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs text-carbon focus:outline-none focus:border-accent"
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/[^0-9]/g, '');
+                  setForm((prev) => ({ ...prev, revisionsCount: cleaned }));
+                }}
+                placeholder="0"
+                className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs text-carbon tabular-nums focus:outline-none focus:border-accent"
               />
             </div>
           </div>

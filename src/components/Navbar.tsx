@@ -226,7 +226,12 @@ export const Navbar: React.FC = () => {
               >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#0284C7] rounded-full" />
+                  <span
+                    aria-label={`${unreadCount} unread notifications`}
+                    className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#0284C7] text-white text-[9px] font-bold tabular-nums flex items-center justify-center ring-2 ring-canvas"
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
                 )}
               </button>
 

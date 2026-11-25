@@ -9,6 +9,9 @@ import {
   getProjectLikes,
   getProjectShares,
   normalizeNumericStat,
+  resolveProjectClassification,
+  getClassificationInfo,
+  getProjectEntityLabel,
 } from '../lib/portfolio';
 import { 
   ArrowLeft, 
@@ -182,9 +185,16 @@ export const CaseStudyView: React.FC = () => {
     ? services.find(s => s.id === project.serviceId) 
     : services.find(s => s.category.toLowerCase() === project.category.toLowerCase());
 
-  // Resolve Related Projects (same category or project type, exclude self, limit 3)
+  // Resolve Related Projects (same discipline or portfolio category, exclude self, limit 3)
+  const currentClassification = resolveProjectClassification(project);
+  const currentClassificationInfo = getClassificationInfo(currentClassification);
   const relatedProjects: PortfolioProject[] = portfolio
-    .filter(p => p.id !== project.id && (p.category.toLowerCase() === project.category.toLowerCase() || p.projectType === project.projectType))
+    .filter(
+      (p) =>
+        p.id !== project.id &&
+        (p.category.toLowerCase() === project.category.toLowerCase() ||
+          resolveProjectClassification(p) === currentClassification)
+    )
     .slice(0, 3);
 
   // Handle Like Toggle
@@ -404,13 +414,17 @@ export const CaseStudyView: React.FC = () => {
         
         {/* Eyebrow & Badges */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Project Type Badge */}
+          {/* Portfolio Category Badge */}
           <span className={`text-[11px] uppercase tracking-wider font-semibold px-3 py-1 rounded-full border ${
-            project.projectType === 'concept' || !project.projectType
-              ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/50'
-              : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
+            currentClassification === 'client'
+              ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
+              : currentClassification === 'institutional'
+                ? 'bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800/50'
+                : currentClassification === 'academic'
+                  ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50'
+                  : 'bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/50'
           }`}>
-            {project.projectType === 'concept' || !project.projectType ? 'Concept Exploration' : 'Client Commission'}
+            {currentClassificationInfo.number} · {currentClassificationInfo.title}
           </span>
 
           <span className="text-[11px] uppercase tracking-wider text-graphite px-3 py-1 rounded-full bg-surface-secondary border border-hairline">
@@ -440,12 +454,10 @@ export const CaseStudyView: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-y border-hairline text-xs">
           <div>
             <span className="text-graphite uppercase tracking-wider text-[10px] block mb-1">
-              {project.projectType === 'concept' || !project.projectType ? 'Project Origin' : 'Commission Client'}
+              {currentClassificationInfo.originHeading}
             </span>
             <span className="text-carbon font-semibold">
-              {project.projectType === 'concept' || !project.projectType
-                ? (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Self-Initiated Studio Work')
-                : (project.client || 'Client Commission')}
+              {getProjectEntityLabel(project)}
             </span>
           </div>
 
@@ -460,9 +472,9 @@ export const CaseStudyView: React.FC = () => {
           </div>
 
           <div>
-            <span className="text-graphite uppercase tracking-wider text-[10px] block mb-1">Archive Classification</span>
+            <span className="text-graphite uppercase tracking-wider text-[10px] block mb-1">Portfolio Category</span>
             <span className="text-carbon font-semibold">
-              {project.projectType === 'concept' || !project.projectType ? 'Studio R&D' : 'Client Production'}
+              {currentClassificationInfo.title}
             </span>
           </div>
         </div>

@@ -318,6 +318,7 @@ export interface ServiceItem {
 }
 
 export type ProjectType = 'client' | 'concept';
+export type ProjectClassification = 'client' | 'institutional' | 'personal' | 'academic';
 
 export interface CaseStudyMediaItem {
   id?: string;
@@ -340,6 +341,7 @@ export interface CaseStudyContent {
   media?: Record<string, CaseStudyMediaItem[]>;
   presentationLayout?: 'seamless' | 'spaced';
   presentationLink?: string;
+  projectClassification?: ProjectClassification;
 }
 
 export interface PortfolioProject {
@@ -362,6 +364,7 @@ export interface PortfolioProject {
 
   // Phase 5F: Social Portfolio & Case Study Studio
   projectType?: ProjectType;
+  projectClassification?: ProjectClassification;
   serviceId?: string;
   commissionId?: string;
   caseStudy?: CaseStudyContent;

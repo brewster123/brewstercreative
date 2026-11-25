@@ -3,10 +3,16 @@ import { useApp } from '../../context/AppContext';
 import {
   PortfolioProject,
   ProjectType,
+  ProjectClassification,
   CaseStudyContent,
   CaseStudyMediaItem,
 } from '../../types';
-import { uploadPortfolioMedia } from '../../lib/portfolio';
+import {
+  uploadPortfolioMedia,
+  PORTFOLIO_CLASSIFICATIONS,
+  getClassificationInfo,
+  resolveProjectClassification,
+} from '../../lib/portfolio';
 import {
   X,
   UploadCloud,
@@ -61,6 +67,7 @@ interface PortfolioEditorModalProps {
   project: PortfolioProject | null;
   defaultCategory?: PortfolioProject['category'];
   defaultProjectType?: ProjectType;
+  defaultClassification?: ProjectClassification;
   onClose: () => void;
   onSaved?: (saved: PortfolioProject) => void;
 }
@@ -70,6 +77,7 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
   project,
   defaultCategory = 'Branding',
   defaultProjectType = 'concept',
+  defaultClassification,
   onClose,
   onSaved,
 }) => {
@@ -81,6 +89,8 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
   } = useApp();
 
   const isAdmin = currentUser?.role === 'admin';
+  const resolvedDefaultClassification: ProjectClassification =
+    defaultClassification || (defaultProjectType === 'client' ? 'client' : 'personal');
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<PortfolioProject['category']>(
@@ -91,7 +101,9 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
   const [shortDesc, setShortDesc] = useState('');
   const [image, setImage] = useState('');
   const [featured, setFeatured] = useState(false);
-  const [projectType, setProjectType] = useState<ProjectType>(defaultProjectType);
+  const [classification, setClassification] = useState<ProjectClassification>(
+    resolvedDefaultClassification
+  );
   const [serviceId, setServiceId] = useState<string | undefined>(undefined);
   const [toolsInput, setToolsInput] = useState('');
   const [tagsInput, setTagsInput] = useState('');
@@ -122,7 +134,7 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
       setShortDesc(project.shortDesc || '');
       setImage(project.image || '');
       setFeatured(Boolean(project.featured));
-      setProjectType(project.projectType || 'concept');
+      setClassification(resolveProjectClassification(project));
       setServiceId(project.serviceId);
       setToolsInput((project.tools || []).join(', '));
       setTagsInput((project.tags || []).join(', '));
@@ -150,7 +162,7 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
       setShortDesc('');
       setImage('');
       setFeatured(false);
-      setProjectType(defaultProjectType);
+      setClassification(resolvedDefaultClassification);
       setServiceId(undefined);
       setToolsInput('');
       setTagsInput('');
@@ -163,7 +175,7 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
     setSlideUploadProgress(null);
     setIsDragActive(false);
     setError(null);
-  }, [isOpen, project, defaultCategory, defaultProjectType]);
+  }, [isOpen, project, defaultCategory, resolvedDefaultClassification]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -365,11 +377,15 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
       presentation: cleanedSlides,
     };
 
+    const classificationInfo = getClassificationInfo(classification);
+    const derivedProjectType: ProjectType = classificationInfo.dbProjectType;
+
     const nextCaseStudy: CaseStudyContent = {
       ...existingCaseStudy,
       media: nextMedia,
       presentationLayout,
       presentationLink: cleanPresentationLink || undefined,
+      projectClassification: classification,
     };
 
     setIsSaving(true);
@@ -394,7 +410,8 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
           image: resolvedImg,
           gallery: updatedGallery,
           featured,
-          projectType,
+          projectType: derivedProjectType,
+          projectClassification: classification,
           serviceId,
           tools: parsedTools,
           tags: resolvedTags,
@@ -423,7 +440,8 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
           image: resolvedImg,
           gallery: [resolvedImg],
           featured,
-          projectType,
+          projectType: derivedProjectType,
+          projectClassification: classification,
           serviceId,
           tools: parsedTools,
           tags: resolvedTags,
@@ -517,12 +535,20 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
 
             <div>
               <label className="block text-xs font-mono uppercase text-graphite mb-1 font-semibold">
-                Client / Entity
+                {getClassificationInfo(classification).originHeading}
               </label>
               <input
                 type="text"
                 value={client}
-                placeholder="e.g. Acme Studio"
+                placeholder={
+                  classification === 'institutional'
+                    ? 'e.g. CIT-U Marketing Office'
+                    : classification === 'personal'
+                      ? 'e.g. Personal Exploration'
+                      : classification === 'academic'
+                        ? 'e.g. Multimedia Design Course'
+                        : 'e.g. Acme Studio'
+                }
                 onChange={(e) => setClient(e.target.value)}
                 className="w-full bg-surface-secondary border border-hairline rounded-xl px-3.5 py-2.5 text-xs text-carbon focus:outline-hidden focus:border-accent"
               />
@@ -546,16 +572,22 @@ export const PortfolioEditorModal: React.FC<PortfolioEditorModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-surface-secondary border border-hairline">
             <div>
               <label className="block text-[11px] font-mono uppercase text-graphite mb-1 font-semibold">
-                Archive Classification
+                Portfolio Category
               </label>
               <select
-                value={projectType}
-                onChange={(e) => setProjectType(e.target.value as ProjectType)}
+                value={classification}
+                onChange={(e) => setClassification(e.target.value as ProjectClassification)}
                 className="w-full bg-surface border border-hairline rounded-xl px-3 py-2 text-xs text-carbon focus:outline-hidden focus:border-accent"
               >
-                <option value="concept">Concept Exploration (Studio R&D)</option>
-                <option value="client">Client Work (Commissioned)</option>
+                {PORTFOLIO_CLASSIFICATIONS.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.number}. {group.title}
+                  </option>
+                ))}
               </select>
+              <p className="text-[11px] text-graphite mt-1.5 leading-snug">
+                {getClassificationInfo(classification).description}
+              </p>
             </div>
 
             <div>

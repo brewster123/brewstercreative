@@ -19,7 +19,11 @@ import {
 import { ParallaxHero } from '../components/ParallaxHero';
 import { ScrollReveal, ScrollParallaxLayer } from '../components/ScrollMotion';
 import { ArtworkHoverWave } from '../components/ArtworkHoverWave';
-import { getProjectLikes, getProjectViews } from '../lib/portfolio';
+import {
+  getProjectLikes,
+  getProjectViews,
+  getProjectEntityLabel,
+} from '../lib/portfolio';
 import heroSkyClouds from '../assets/images/hero_sky_clouds_1794752480825.jpg';
 
 export const HomeView: React.FC = () => {
@@ -305,8 +309,7 @@ export const HomeView: React.FC = () => {
                 const projectLikes = getProjectLikes(project);
                 const projectViews = getProjectViews(project);
                 const isFirst = idx === 0;
-                const isClient = project.projectType === 'client';
-                const clientLabel = isClient ? project.client || 'Client Commission' : 'Studio Concept';
+                const clientLabel = getProjectEntityLabel(project);
                 const hasValidImage = Boolean(project.image && project.image.trim() && !failedImages[project.id]);
 
                 return (

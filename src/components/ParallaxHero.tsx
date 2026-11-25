@@ -1,7 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
-import { getProjectLikes, getProjectViews } from '../lib/portfolio';
+import {
+  getProjectLikes,
+  getProjectViews,
+  getProjectEntityLabel,
+} from '../lib/portfolio';
 import {
   ArrowUpRight,
   ChevronLeft,
@@ -654,9 +658,7 @@ export const ParallaxHero: React.FC = () => {
                             {work.title}
                           </span>
                           <span className="text-[11px] text-white/75 block truncate">
-                            {work.projectType === 'client'
-                              ? work.client || 'Client Commission'
-                              : 'Studio Concept'}
+                            {getProjectEntityLabel(work)}
                           </span>
                         </div>
                       </button>
@@ -932,9 +934,7 @@ export const ParallaxHero: React.FC = () => {
                         <span className="text-[#D4FF38] font-semibold">{activeWork.category}</span>
                         <span aria-hidden="true" className="text-white/35">·</span>
                         <span>
-                          {activeWork.projectType === 'client'
-                            ? activeWork.client || 'Client Commission'
-                            : 'Studio Concept'}
+                          {getProjectEntityLabel(activeWork)}
                         </span>
                         {activeWork.date && (
                           <>

@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PortfolioProject, ShopProduct } from '../types';
 import { useApp } from '../context/AppContext';
+import {
+  getClassificationInfo,
+  resolveProjectClassification,
+  getProjectEntityLabel,
+} from '../lib/portfolio';
 import { ShopProductCard } from './ShopProductCard';
 import { 
   X, 
@@ -123,12 +128,12 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
           
           {/* 1. Project Title & Metadata Header */}
           <div className="space-y-4 max-w-3xl">
-            <div className="flex items-center gap-3 text-xs sm:text-sm font-mono text-graphite tracking-wider uppercase">
+            <div className="flex items-center gap-3 text-xs sm:text-sm font-mono text-graphite tracking-wider uppercase flex-wrap">
               <span className="text-carbon font-semibold">
-                {project.projectType === 'concept' || !project.projectType
-                  ? (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Studio Concept')
-                  : (project.client || 'Client Project')}
+                {getProjectEntityLabel(project)}
               </span>
+              <span aria-hidden="true" className="text-graphite">·</span>
+              <span>{getClassificationInfo(resolveProjectClassification(project)).shortLabel}</span>
               <span aria-hidden="true" className="text-graphite">·</span>
               <span>{project.category}</span>
               <span aria-hidden="true" className="text-graphite">·</span>
@@ -279,18 +284,16 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({ project, onClose
             {/* Right 4 columns: Creative Details & Production Specs (Clean Ledger) */}
             <div className="lg:col-span-4 space-y-6 lg:border-l lg:border-hairline lg:pl-8">
               
-              {/* Project Client & Year */}
+              {/* Project Client / Entity & Year */}
               <div className="space-y-1.5 pb-4 border-b border-hairline">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-graphite font-semibold">
-                  {project.projectType === 'concept' || !project.projectType ? 'Project Origin' : 'Commission Client'}
+                  {getClassificationInfo(resolveProjectClassification(project)).originHeading}
                 </span>
                 <p className="text-sm font-bold text-carbon">
-                  {project.projectType === 'concept' || !project.projectType
-                    ? (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Self-Initiated Studio Work')
-                    : (project.client || 'Client Commission')}
+                  {getProjectEntityLabel(project)}
                 </p>
                 <p className="text-xs text-graphite">
-                  {project.projectType === 'concept' || !project.projectType ? 'Archived' : 'Completed'}: {project.date}
+                  {resolveProjectClassification(project) === 'client' ? 'Completed' : 'Archived'}: {project.date}
                 </p>
               </div>
 

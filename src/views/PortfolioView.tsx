@@ -8,7 +8,12 @@ import {
   PortfolioDeleteModal,
   PORTFOLIO_CATEGORIES,
 } from '../components/admin/PortfolioEditorModal';
-import { PortfolioProject, ProjectType } from '../types';
+import { PortfolioProject, ProjectClassification } from '../types';
+import {
+  PORTFOLIO_CLASSIFICATIONS,
+  resolveProjectClassification,
+  getClassificationInfo,
+} from '../lib/portfolio';
 import { Search, Layers, Send, Sparkles, ArrowUpRight, Plus, AlertCircle } from 'lucide-react';
 
 export const PortfolioView: React.FC = () => {
@@ -23,7 +28,7 @@ export const PortfolioView: React.FC = () => {
   const isAdmin = currentUser?.role === 'admin';
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'client' | 'concept'>('all');
+  const [classificationFilter, setClassificationFilter] = useState<'all' | ProjectClassification>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [quickPreviewProject, setQuickPreviewProject] = useState<PortfolioProject | null>(null);
 
@@ -31,7 +36,7 @@ export const PortfolioView: React.FC = () => {
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [editingProject, setEditingProject] = useState<PortfolioProject | null>(null);
   const [editorDefaultCategory, setEditorDefaultCategory] = useState<PortfolioProject['category']>('Branding');
-  const [editorDefaultType, setEditorDefaultType] = useState<ProjectType>('concept');
+  const [editorDefaultClassification, setEditorDefaultClassification] = useState<ProjectClassification>('personal');
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; title: string } | null>(null);
   const [adminError, setAdminError] = useState<string | null>(null);
 
@@ -42,7 +47,7 @@ export const PortfolioView: React.FC = () => {
 
   const handleOpenAddWork = (overrides?: {
     category?: PortfolioProject['category'];
-    projectType?: ProjectType;
+    classification?: ProjectClassification;
   }) => {
     if (!isAdmin) return;
     setAdminError(null);
@@ -51,12 +56,12 @@ export const PortfolioView: React.FC = () => {
       (PORTFOLIO_CATEGORIES.includes(selectedCategory as PortfolioProject['category'])
         ? (selectedCategory as PortfolioProject['category'])
         : 'Branding');
-    const activeType: ProjectType =
-      overrides?.projectType || (typeFilter === 'client' ? 'client' : 'concept');
+    const activeClassification: ProjectClassification =
+      overrides?.classification || (classificationFilter !== 'all' ? classificationFilter : 'personal');
 
     setEditingProject(null);
     setEditorDefaultCategory(activeCat);
-    setEditorDefaultType(activeType);
+    setEditorDefaultClassification(activeClassification);
     setIsEditorOpen(true);
   };
 
@@ -82,17 +87,27 @@ export const PortfolioView: React.FC = () => {
     }
   };
 
+  const classificationCounts = PORTFOLIO_CLASSIFICATIONS.reduce<Record<ProjectClassification, number>>(
+    (acc, group) => {
+      acc[group.id] = portfolio.filter(
+        (project) => resolveProjectClassification(project) === group.id
+      ).length;
+      return acc;
+    },
+    { client: 0, institutional: 0, personal: 0, academic: 0 }
+  );
+
   const filteredProjects = portfolio.filter((project) => {
-    // 1. Category Filter
+    // 1. Medium / Discipline Filter
     const matchesCategory = 
       selectedCategory === 'All' || 
       project.category.toLowerCase() === selectedCategory.toLowerCase();
 
-    // 2. Project Type Filter ('client' vs 'concept')
-    const projectType = project.projectType || 'concept';
-    const matchesType = 
-      typeFilter === 'all' || 
-      projectType === typeFilter;
+    // 2. Portfolio Category Filter ('client' | 'institutional' | 'personal' | 'academic')
+    const projectClassification = resolveProjectClassification(project);
+    const matchesClassification = 
+      classificationFilter === 'all' || 
+      projectClassification === classificationFilter;
 
     // 3. Keyword Search Filter
     const query = searchQuery.toLowerCase().trim();
@@ -104,8 +119,11 @@ export const PortfolioView: React.FC = () => {
       (project.tags && project.tags.some(t => t.toLowerCase().includes(query))) ||
       (project.tools && project.tools.some(tool => tool.toLowerCase().includes(query)));
 
-    return matchesCategory && matchesType && matchesSearch;
+    return matchesCategory && matchesClassification && matchesSearch;
   });
+
+  const activeClassificationInfo =
+    classificationFilter !== 'all' ? getClassificationInfo(classificationFilter) : null;
 
   const adminCardProps = isAdmin
     ? {
@@ -118,46 +136,26 @@ export const PortfolioView: React.FC = () => {
   return (
     <div className="bg-canvas min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-10 sm:space-y-14">
       
-      {/* Filter Control Ribbon: Project Type Toggles + Category Navigation + Search */}
-      <div className="space-y-4 border-b border-hairline pb-5">
+      {/* Filter Control Ribbon: 4 Portfolio Categories + Medium Navigation + Search */}
+      <div className="space-y-5 border-b border-hairline pb-5">
         
-        {/* Row 1: Project Type Tabs, Search & Admin Add Work Action */}
+        {/* Row 1: Header Bar with All Works Toggle, Search & Admin Add Work Action */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           
-          {/* Classification Toggles */}
-          <div className="inline-flex p-1 rounded-full bg-surface-secondary border border-hairline self-start">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-mono text-[11px] uppercase tracking-widest text-graphite font-semibold">
+              Portfolio Categories
+            </span>
             <button
               type="button"
-              onClick={() => setTypeFilter('all')}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
-                typeFilter === 'all'
-                  ? 'bg-surface text-carbon shadow-2xs font-bold'
-                  : 'text-graphite hover:text-carbon'
+              onClick={() => setClassificationFilter('all')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer btn-tactile border focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
+                classificationFilter === 'all'
+                  ? 'bg-[#111114] dark:bg-white text-white dark:text-[#111114] border-transparent font-bold'
+                  : 'bg-surface-secondary text-graphite hover:text-carbon border-hairline'
               }`}
             >
-              All Works
-            </button>
-            <button
-              type="button"
-              onClick={() => setTypeFilter('client')}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
-                typeFilter === 'client'
-                  ? 'bg-[#E0F2FE] dark:bg-[#0C4A6E]/50 text-[#0369A1] dark:text-[#38BDF8] shadow-2xs font-bold'
-                  : 'text-graphite hover:text-carbon'
-              }`}
-            >
-              Client Work
-            </button>
-            <button
-              type="button"
-              onClick={() => setTypeFilter('concept')}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer btn-tactile focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
-                typeFilter === 'concept'
-                  ? 'bg-[#D4FF38] text-[#111114] shadow-2xs font-bold'
-                  : 'text-graphite hover:text-carbon'
-              }`}
-            >
-              Concept Explorations
+              All Works ({portfolio.length})
             </button>
           </div>
 
@@ -190,8 +188,55 @@ export const PortfolioView: React.FC = () => {
 
         </div>
 
-        {/* Row 2: Category Navigation Strip */}
-        <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-1" aria-label="Portfolio categories">
+        {/* Row 2: 4 Editorial Portfolio Category Cards */}
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+          role="group"
+          aria-label="DESTALION Portfolio Categories"
+        >
+          {PORTFOLIO_CLASSIFICATIONS.map((group) => {
+            const isSelected = classificationFilter === group.id;
+            const count = classificationCounts[group.id] || 0;
+            return (
+              <button
+                key={group.id}
+                id={`filter-group-${group.id}`}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() =>
+                  setClassificationFilter((prev) => (prev === group.id ? 'all' : group.id))
+                }
+                className={`text-left rounded-2xl p-4 border transition-all cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
+                  isSelected
+                    ? 'bg-surface border-accent shadow-xs ring-1 ring-accent/25'
+                    : 'bg-surface-secondary/70 hover:bg-surface border-hairline'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <span
+                    className={`font-mono text-[11px] font-bold tracking-widest ${
+                      isSelected ? 'text-accent' : 'text-graphite'
+                    }`}
+                  >
+                    {group.number}.
+                  </span>
+                  <span className="font-mono text-[10px] text-graphite tabular-nums">
+                    {count} {count === 1 ? 'work' : 'works'}
+                  </span>
+                </div>
+                <h2 className="font-display text-sm font-bold text-carbon leading-snug">
+                  {group.title}
+                </h2>
+                <p className="text-[11px] text-graphite leading-relaxed mt-1 line-clamp-2">
+                  {group.description}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Row 3: Medium / Discipline Navigation Strip */}
+        <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-1" aria-label="Portfolio disciplines">
           {categories.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
             return (
@@ -258,30 +303,33 @@ export const PortfolioView: React.FC = () => {
               <span>Add Your First Work</span>
             </button>
           </div>
-        ) : typeFilter === 'client' ? (
+        ) : activeClassificationInfo ? (
           <div className="bg-surface border border-hairline rounded-3xl p-12 sm:p-16 text-center space-y-5 shadow-2xs max-w-xl mx-auto animate-in fade-in duration-200">
             <div className="w-12 h-12 rounded-2xl bg-surface-secondary border border-hairline flex items-center justify-center mx-auto text-accent">
               <Sparkles className="w-5 h-5" />
             </div>
             <div className="space-y-2">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-accent font-semibold block">
+                {activeClassificationInfo.number} · {activeClassificationInfo.title}
+              </span>
               <h3 className="font-display text-xl font-bold text-carbon">
-                No Client Commission Archives Yet
+                {activeClassificationInfo.emptyHeading}
               </h3>
               <p className="text-xs sm:text-sm text-graphite-strong leading-relaxed max-w-md mx-auto">
-                DESTALION is currently building its studio archive through self-initiated creative explorations and is accepting select commissions for 2026.
+                {activeClassificationInfo.emptyDescription}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               {isAdmin ? (
                 <button
                   type="button"
-                  onClick={() => handleOpenAddWork({ projectType: 'client' })}
+                  onClick={() => handleOpenAddWork({ classification: activeClassificationInfo.id })}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#D4FF38] hover:bg-[#C4F024] text-[#111114] text-xs font-bold transition-all shadow-xs cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Add Client Work</span>
+                  <span>{activeClassificationInfo.addLabel}</span>
                 </button>
-              ) : (
+              ) : activeClassificationInfo.id === 'client' ? (
                 <button
                   type="button"
                   onClick={() => setActiveView('commission-form')}
@@ -293,13 +341,13 @@ export const PortfolioView: React.FC = () => {
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </span>
                 </button>
-              )}
+              ) : null}
               <button
                 type="button"
-                onClick={() => setTypeFilter('all')}
+                onClick={() => setClassificationFilter('all')}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-hairline text-xs font-semibold text-carbon hover:bg-surface-secondary transition-colors cursor-pointer"
               >
-                <span>View Concept Explorations</span>
+                <span>View All Works</span>
               </button>
             </div>
           </div>
@@ -319,7 +367,7 @@ export const PortfolioView: React.FC = () => {
                 type="button"
                 onClick={() => { 
                   setSelectedCategory('All'); 
-                  setTypeFilter('all');
+                  setClassificationFilter('all');
                   setSearchQuery(''); 
                 }}
                 className="px-5 py-2 rounded-full bg-surface-secondary hover:bg-hairline/50 text-xs font-semibold text-carbon border border-hairline transition-colors cursor-pointer"
@@ -342,7 +390,7 @@ export const PortfolioView: React.FC = () => {
       ) : (
         <div className="space-y-8 sm:space-y-12">
           {/* Asymmetric Exhibition Flow: Leading Piece is Featured if on All / no search */}
-          {selectedCategory === 'All' && typeFilter === 'all' && !searchQuery && filteredProjects.length >= 3 ? (
+          {selectedCategory === 'All' && classificationFilter === 'all' && !searchQuery && filteredProjects.length >= 3 ? (
             <>
               {/* Primary Anchor: Large Featured Project + Two Smaller Projects */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -479,7 +527,7 @@ export const PortfolioView: React.FC = () => {
             isOpen={isEditorOpen}
             project={editingProject}
             defaultCategory={editorDefaultCategory}
-            defaultProjectType={editorDefaultType}
+            defaultClassification={editorDefaultClassification}
             onClose={() => setIsEditorOpen(false)}
           />
           <PortfolioDeleteModal

@@ -18,6 +18,9 @@ import {
   getProjectLikes, 
   getProjectViews,
   buildCaseStudyShareUrl,
+  resolveProjectClassification,
+  getClassificationInfo,
+  getProjectEntityLabel,
 } from '../lib/portfolio';
 
 interface PortfolioCardProps {
@@ -277,17 +280,28 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
       <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
         <div className="space-y-2.5">
           {/* Editorial Unboxed Metadata String */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-wider font-semibold">
-            <span className="text-accent">{project.category}</span>
-            <span aria-hidden="true" className="text-graphite">·</span>
-            <span className={project.projectType === 'client' ? 'text-emerald-600 dark:text-emerald-400' : 'text-graphite'}>
-              {project.projectType === 'client'
-                ? (project.client || 'Client Commission')
-                : (project.client && project.client !== 'Client Commission' && project.client !== 'Commission Client' ? project.client : 'Studio Concept')}
-            </span>
-            <span aria-hidden="true" className="text-graphite">·</span>
-            <span className="text-graphite">{project.date}</span>
-          </div>
+          {(() => {
+            const classification = resolveProjectClassification(project);
+            const info = getClassificationInfo(classification);
+            const entityLabel = getProjectEntityLabel(project);
+            const accentColor =
+              classification === 'client'
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : classification === 'institutional'
+                  ? 'text-sky-600 dark:text-sky-400'
+                  : 'text-graphite';
+            return (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-wider font-semibold">
+                <span className="text-accent">{project.category}</span>
+                <span aria-hidden="true" className="text-graphite">·</span>
+                <span className={accentColor} title={info.title}>
+                  {entityLabel}
+                </span>
+                <span aria-hidden="true" className="text-graphite">·</span>
+                <span className="text-graphite">{project.date}</span>
+              </div>
+            );
+          })()}
 
           <h3 className="font-display text-xl sm:text-2xl font-bold leading-snug">
             <button

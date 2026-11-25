@@ -392,6 +392,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const viewsCount = normalizeNumericStat(rawViews, 0);
             const sharesCount = normalizeNumericStat(rawShares, 0);
 
+            const resolvedType = p.projectType || 'concept';
+            const resolvedClassification =
+              p.projectClassification ||
+              p.caseStudy?.projectClassification ||
+              (resolvedType === 'client' ? 'client' : 'personal');
             const item: PortfolioProject = {
               ...p,
               likesCount,
@@ -400,8 +405,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               likes_count: likesCount,
               views_count: viewsCount,
               shares_count: sharesCount,
-              projectType: p.projectType || 'concept',
-              client: p.client || 'Studio Concept',
+              projectType: resolvedType,
+              projectClassification: resolvedClassification,
+              client: p.client || '',
               fullDesc: p.fullDesc,
             };
             return item;

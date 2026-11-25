@@ -1,8 +1,136 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { PortfolioProject, ProjectType, CaseStudyContent } from '../types';
+import {
+  PortfolioProject,
+  ProjectType,
+  ProjectClassification,
+  CaseStudyContent,
+} from '../types';
 
 export const PORTFOLIO_MEDIA_BUCKET = 'portfolio-media';
 export const MAX_PORTFOLIO_IMAGE_BYTES = 20 * 1024 * 1024; // 20 MB
+
+export interface PortfolioClassificationInfo {
+  id: ProjectClassification;
+  number: string;
+  title: string;
+  shortLabel: string;
+  description: string;
+  dbProjectType: ProjectType;
+  defaultEntityLabel: string;
+  originHeading: string;
+  emptyHeading: string;
+  emptyDescription: string;
+  addLabel: string;
+}
+
+export const PORTFOLIO_CLASSIFICATIONS: readonly PortfolioClassificationInfo[] = [
+  {
+    id: 'client',
+    number: '01',
+    title: 'Client Projects',
+    shortLabel: 'Client Projects',
+    description: 'Commissioned work for individual clients and businesses.',
+    dbProjectType: 'client',
+    defaultEntityLabel: 'Client Commission',
+    originHeading: 'Commission Client',
+    emptyHeading: 'No Client Projects Archived Yet',
+    emptyDescription:
+      'Commissioned work for individual clients and businesses will appear here once published.',
+    addLabel: 'Add Client Project',
+  },
+  {
+    id: 'institutional',
+    number: '02',
+    title: 'Institutional Projects',
+    shortLabel: 'Institutional Projects',
+    description: 'CIT-U Marketing Office outputs and other organizational work.',
+    dbProjectType: 'concept',
+    defaultEntityLabel: 'CIT-U Marketing Office',
+    originHeading: 'Institution / Organization',
+    emptyHeading: 'No Institutional Projects Archived Yet',
+    emptyDescription:
+      'CIT-U Marketing Office outputs and other organizational work will appear here once published.',
+    addLabel: 'Add Institutional Project',
+  },
+  {
+    id: 'personal',
+    number: '03',
+    title: 'Personal Projects',
+    shortLabel: 'Personal Projects',
+    description: 'Self-initiated designs, experiments, and creative explorations.',
+    dbProjectType: 'concept',
+    defaultEntityLabel: 'Personal Exploration',
+    originHeading: 'Project Origin',
+    emptyHeading: 'No Personal Projects Archived Yet',
+    emptyDescription:
+      'Self-initiated designs, experiments, and creative explorations will appear here once published.',
+    addLabel: 'Add Personal Project',
+  },
+  {
+    id: 'academic',
+    number: '04',
+    title: 'Academic Projects',
+    shortLabel: 'Academic Projects',
+    description: 'School activities, coursework, and collaborative academic outputs.',
+    dbProjectType: 'concept',
+    defaultEntityLabel: 'Academic Output',
+    originHeading: 'Academic Context',
+    emptyHeading: 'No Academic Projects Archived Yet',
+    emptyDescription:
+      'School activities, coursework, and collaborative academic outputs will appear here once published.',
+    addLabel: 'Add Academic Project',
+  },
+] as const;
+
+export function isProjectClassification(val: unknown): val is ProjectClassification {
+  return (
+    val === 'client' ||
+    val === 'institutional' ||
+    val === 'personal' ||
+    val === 'academic'
+  );
+}
+
+export function getClassificationInfo(
+  classification: ProjectClassification
+): PortfolioClassificationInfo {
+  return (
+    PORTFOLIO_CLASSIFICATIONS.find((c) => c.id === classification) ||
+    PORTFOLIO_CLASSIFICATIONS[2]
+  );
+}
+
+export function resolveProjectClassification(
+  project?: Partial<PortfolioProject> | null
+): ProjectClassification {
+  if (!project) return 'personal';
+  if (isProjectClassification(project.projectClassification)) {
+    return project.projectClassification;
+  }
+  if (isProjectClassification(project.caseStudy?.projectClassification)) {
+    return project.caseStudy!.projectClassification;
+  }
+  return project.projectType === 'client' ? 'client' : 'personal';
+}
+
+const LEGACY_GENERIC_LABELS = new Set([
+  'Client Commission',
+  'Commission Client',
+  'Studio Concept',
+  'Self-Initiated Studio Work',
+]);
+
+export function getProjectEntityLabel(
+  project?: Partial<PortfolioProject> | null
+): string {
+  const classification = resolveProjectClassification(project);
+  const info = getClassificationInfo(classification);
+  const rawClient = (project?.client || '').trim();
+  if (rawClient && !LEGACY_GENERIC_LABELS.has(rawClient)) {
+    return rawClient;
+  }
+  return info.defaultEntityLabel;
+}
 
 /**
  * Maps database JSONB case_study column to strongly typed CaseStudyContent.
@@ -12,6 +140,7 @@ function mapDbCaseStudy(cs: any): CaseStudyContent | undefined {
     return undefined;
   }
   const rawLayout = cs.presentation_layout || cs.presentationLayout;
+  const rawClass = cs.project_classification || cs.projectClassification;
   return {
     overview: cs.overview || undefined,
     challenge: cs.challenge || undefined,
@@ -27,27 +156,36 @@ function mapDbCaseStudy(cs: any): CaseStudyContent | undefined {
     media: cs.media && typeof cs.media === 'object' ? cs.media : undefined,
     presentationLayout: rawLayout === 'spaced' ? 'spaced' : 'seamless',
     presentationLink: cs.presentation_link || cs.presentationLink || undefined,
+    projectClassification: isProjectClassification(rawClass) ? rawClass : undefined,
   };
 }
 
 /**
  * Maps frontend CaseStudyContent to database JSONB payload.
  */
-function mapCaseStudyToDb(cs?: CaseStudyContent): any {
-  if (!cs) return {};
+function mapCaseStudyToDb(
+  cs?: CaseStudyContent,
+  fallbackClassification?: ProjectClassification
+): any {
+  const classification =
+    (cs && isProjectClassification(cs.projectClassification)
+      ? cs.projectClassification
+      : undefined) || fallbackClassification;
+  if (!cs && !classification) return {};
   return {
-    overview: cs.overview || null,
-    challenge: cs.challenge || null,
-    objective: cs.objective || null,
-    research_inspiration: cs.researchInspiration || null,
-    concept_development: cs.conceptDevelopment || null,
-    design_decisions: cs.designDecisions || null,
-    final_solution: cs.finalSolution || null,
-    reflection: cs.reflection || null,
-    deliverables_summary: cs.deliverablesSummary || [],
-    media: cs.media || {},
-    presentation_layout: cs.presentationLayout || 'seamless',
-    presentation_link: cs.presentationLink || null,
+    overview: cs?.overview || null,
+    challenge: cs?.challenge || null,
+    objective: cs?.objective || null,
+    research_inspiration: cs?.researchInspiration || null,
+    concept_development: cs?.conceptDevelopment || null,
+    design_decisions: cs?.designDecisions || null,
+    final_solution: cs?.finalSolution || null,
+    reflection: cs?.reflection || null,
+    deliverables_summary: cs?.deliverablesSummary || [],
+    media: cs?.media || {},
+    presentation_layout: cs?.presentationLayout || 'seamless',
+    presentation_link: cs?.presentationLink || null,
+    project_classification: classification || null,
   };
 }
 
@@ -115,10 +253,22 @@ export function mapDbToPortfolioProject(row: any): PortfolioProject {
     row.client === 'HyperPulse Activewear' ||
     row.client === 'Commission Client';
 
-  const cleanClient = isFictionalSeedClient ? 'Studio Concept' : (row.client || 'Studio Concept');
+  const cleanClient = isFictionalSeedClient ? 'Personal Exploration' : (row.client || '');
   const projectType = (isFictionalSeedClient || row.project_type === 'concept' || row.projectType === 'concept' || !row.project_type)
     ? 'concept'
     : ((row.project_type || row.projectType) as ProjectType);
+  const mappedCaseStudy = mapDbCaseStudy(row.case_study ?? row.caseStudy);
+  const projectClassification: ProjectClassification = isFictionalSeedClient
+    ? 'personal'
+    : isProjectClassification(row.project_classification)
+      ? row.project_classification
+      : isProjectClassification(row.projectClassification)
+        ? row.projectClassification
+        : isProjectClassification(mappedCaseStudy?.projectClassification)
+          ? mappedCaseStudy!.projectClassification
+          : projectType === 'client'
+            ? 'client'
+            : 'personal';
 
   const defaultProjectImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop&q=80';
   const resolvedImage = (row.image_url && String(row.image_url).trim()) || (row.image && String(row.image).trim()) || defaultProjectImage;
@@ -158,9 +308,10 @@ export function mapDbToPortfolioProject(row: any): PortfolioProject {
 
     // Phase 5F: Social Portfolio & Case Study Studio
     projectType,
+    projectClassification,
     serviceId: row.service_id || row.serviceId || undefined,
     commissionId: row.commission_id || row.commissionId || undefined,
-    caseStudy: mapDbCaseStudy(row.case_study ?? row.caseStudy),
+    caseStudy: mappedCaseStudy,
     likesCount,
     viewsCount,
     sharesCount,
@@ -174,6 +325,8 @@ export function mapDbToPortfolioProject(row: any): PortfolioProject {
  * Maps a frontend PortfolioProject to database columns for public.portfolio_projects.
  */
 export function mapPortfolioProjectToDb(proj: PortfolioProject, displayOrder: number = 0): any {
+  const classification = resolveProjectClassification(proj);
+  const info = getClassificationInfo(classification);
   return {
     id: proj.id,
     title: proj.title,
@@ -184,7 +337,7 @@ export function mapPortfolioProjectToDb(proj: PortfolioProject, displayOrder: nu
     gallery_urls: proj.gallery || [proj.image],
     tools: proj.tools || [],
     date: proj.date || '2026',
-    client: proj.client || 'Studio Concept',
+    client: proj.client || info.defaultEntityLabel,
     color_palette: proj.colorPalette || [],
     tags: proj.tags || [],
     featured: !!proj.featured,
@@ -192,10 +345,11 @@ export function mapPortfolioProjectToDb(proj: PortfolioProject, displayOrder: nu
     display_order: displayOrder,
 
     // Phase 5F: Social Portfolio & Case Study Studio
-    project_type: proj.projectType || 'concept',
+    // Maintain DB check_portfolio_project_type ('client' | 'concept') while storing exact 4-category classification in case_study JSONB
+    project_type: proj.projectType || info.dbProjectType,
     service_id: proj.serviceId || null,
     commission_id: proj.commissionId || null,
-    case_study: mapCaseStudyToDb(proj.caseStudy),
+    case_study: mapCaseStudyToDb(proj.caseStudy, classification),
     updated_at: new Date().toISOString(),
   };
 }
